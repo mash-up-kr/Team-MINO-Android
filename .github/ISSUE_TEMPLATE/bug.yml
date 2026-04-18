@@ -1,0 +1,53 @@
+name: "버그 제보"
+description: "앱에서 발생한 버그/크래시를 제보할 때 사용합니다."
+labels: ["bug"]
+body:
+  - type: input
+    id: summary
+    attributes:
+      label: 요약
+      description: 발생 중인 현상을 한 줄로 요약해주세요.
+      placeholder: 예) 홈 화면 진입 시 앱이 즉시 종료됨
+    validations:
+      required: true
+
+  - type: textarea
+    id: history
+    attributes:
+      label: 크래시 발생 히스토리
+      description: 언제·어떤 행동에서 발생했는지 시간순으로 기술해주세요.
+      placeholder: |
+        1. 앱 실행
+        2. 로그인 완료
+        3. 하단 탭에서 "홈" 탭 터치 → 즉시 종료
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 개선 후 예상 동작
+      description: 버그가 고쳐졌을 때 어떤 모습이어야 하는지 적어주세요.
+      placeholder: 예) 홈 화면이 정상적으로 로드되고 콘텐츠가 표시됨
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: 실행 환경
+      description: Device, OS 버전, 앱 버전 등 재현 환경 정보를 적어주세요.
+      value: |
+        - Device:
+        - OS 버전:
+        - 앱 버전:
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: 추가 설명
+      description: 스크린샷, 로그, 기타 참고 정보.
+    validations:
+      required: false
