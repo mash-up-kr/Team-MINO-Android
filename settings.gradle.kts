@@ -24,4 +24,10 @@ dependencyResolutionManagement {
 
 rootProject.name = "Mino-Android"
 include(":app")
- 
+include(":core:data")
+include(":core:domain")
+include(":core:common:android")
+include(":core:common:kotlin")
+include(":core:common:ui")
+include(":core:design-system")
+include(":feature:sample")
