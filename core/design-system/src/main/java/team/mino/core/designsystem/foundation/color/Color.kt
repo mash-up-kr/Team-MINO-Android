@@ -1,4 +1,4 @@
-package team.mino.ui.theme
+package team.mino.core.designsystem.foundation.color
 
 import androidx.compose.ui.graphics.Color
 
