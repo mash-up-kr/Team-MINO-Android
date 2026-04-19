@@ -1,4 +1,4 @@
-package team.mino
+package team.mino.feature.sample
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -11,9 +11,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import team.mino.ui.theme.MinoAndroidTheme
+import team.mino.core.designsystem.theme.MinoAndroidTheme
 
-class MainActivity : ComponentActivity() {
+class SampleActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
