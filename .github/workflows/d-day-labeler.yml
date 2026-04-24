@@ -1,0 +1,27 @@
+name: D-day Labeler
+
+# PR에 부착된 D-n 라벨을 매일 카운트다운한다 (D-4 → D-3 → D-2 → D-1).
+# 최초 라벨은 `/pr` 커맨드 또는 수동으로 부착된다.
+# 라벨 정책은 docs/conventions/pull-request.md 참조.
+
+on:
+  schedule:
+    - cron: '0 15 * * *'  # UTC 15:00 = KST 00:00 (매일 자정)
+  workflow_dispatch:
+
+permissions:
+  pull-requests: write
+
+concurrency:
+  group: d-day-labeler
+  cancel-in-progress: false
+
+jobs:
+  update-d-day-labels:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update D-n Labels
+        uses: naver/d-day-labeler@aea47de8ace290469956c4e6d20052d34706c906  # v1.0.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          skipDraft: true
