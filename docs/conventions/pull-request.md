@@ -79,9 +79,34 @@ PR을 draft로 생성할지 ready로 생성할지 `/pr` 실행 시 **매번 선�
 ## Assignee / 레이블 / 리뷰어
 
 - **Assignee**: 현재 `gh` 사용자(`@me`) 자동 할당
-- **레이블**: 자동 부여하지 않음 (필요 시 수동)
+- **레이블**:
+  - **D-n 라벨**: `/pr` 커맨드가 PR 생성 직후 사용자에게 선택받아 부착한다. 수동 부착도 가능. 상세는 아래 "D-n 라벨 정책" 참조
+  - **그 외 라벨**: 자동 부여하지 않음 (필요 시 수동)
 - **리뷰어**: [`.github/CODEOWNERS`](../../.github/CODEOWNERS) 기반으로 **GitHub가 자동 요청**한다. `/pr` 커맨드는 `--reviewer` 옵션을 지정하지 않는다. PR 작성자 본인은 자동 제외됨.
   - 리뷰를 강제하려면 레포 설정의 Branch protection rules에서 **"Require review from Code Owners"** 를 활성화
+
+## D-n 라벨 정책
+
+PR의 리뷰 마감일을 `D-n` 라벨로 표기한다. `n`은 리뷰 완료까지 남은 일수.
+
+### 사용 라벨
+
+| 라벨 | 의미 | 색상 |
+|---|---|---|
+| `D-1` | 긴급 / 1일 내 리뷰 | 빨강 |
+| `D-2` | 2일 내 리뷰 (**기본값**) | 주황 |
+| `D-3` | 3일 내 리뷰 | 노랑 |
+| `D-4` | 4일 내 리뷰 | 연녹 |
+
+### 부착 시점
+
+- `/pr` 커맨드 실행 시 PR 생성 직후 AskUserQuestion으로 라벨을 선택받아 부착
+- 웹 UI/`gh pr edit`으로 수동 부착도 동일하게 동작
+- "붙이지 않음"을 선택한 PR은 카운트다운 대상에서 제외됨
+
+### 자동 카운트다운
+
+[`.github/workflows/d-day-labeler.yml`](../../.github/workflows/d-day-labeler.yml)이 매일 자정(KST)에 [`naver/d-day-labeler`](https://github.com/naver/d-day-labeler) Action으로 모든 열린 PR의 `D-n` 라벨을 1씩 감소시킨다 (`D-4` → `D-3` → `D-2` → `D-1`). Draft PR은 제외(`skipDraft: true`).
 
 ## 보호 브랜치에서 실행
 
