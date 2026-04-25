@@ -1,33 +1,26 @@
 plugins {
-    alias(libs.plugins.android.library)
+    alias(libs.plugins.mino.android.library)
+    alias(libs.plugins.mino.android.hilt)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.ktorfit)
 }
 
 android {
     namespace = "team.mino.core.data"
-    compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
-    }
-
-    defaultConfig {
-        minSdk = 29
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-    }
-
-    buildTypes {
-        release {
-            isMinifyEnabled = false
-        }
-    }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
 }
 
 dependencies {
     implementation(project(":core:common:kotlin"))
     implementation(project(":core:common:android"))
     implementation(project(":core:domain"))
+
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.serialization.json)
+
+    implementation(libs.ktorfit.lib)
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.okhttp)
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.client.logging)
+    implementation(libs.ktor.serialization.kotlinx.json)
 }
