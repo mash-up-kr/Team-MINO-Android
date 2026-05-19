@@ -219,7 +219,7 @@ rm -f "$TMP"
 **브랜치 네이밍 규칙·prefix 가이드·slug 작성 규칙·Git Flow 절차는 [`docs/conventions/branch-naming.md`](../../docs/conventions/branch-naming.md)을 단일 출처로 따른다.** 아직 읽지 않았다면 여기서 먼저 Read. 이 섹션은 규칙에 맞게 브랜치를 **구성·실행하는 절차**만 정의한다.
 
 ### 8-1. 브랜치 이름 구성
-- `docs/conventions/branch-naming.md`의 prefix 가이드를 참고하여 이슈 종류에 맞는 prefix 선택 (성격에 따라 조정 가능)
+- `docs/conventions/branch-naming.md`의 prefix 가이드에 따라 prefix 결정
 - 이슈 제목을 영어 kebab-case slug로 변환 (한국어면 의미 번역 후)
 - 최종 포맷: `<prefix>/<issue-number>-<slug>`
 
