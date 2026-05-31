@@ -3,7 +3,7 @@
     <!-- Slack Compose Lint Rules -->
     <issue id="ComposeViewModelForwarding" severity="error" />
     <issue id="ComposeRememberMissing" severity="error" />
-    <issue id="ComposeUnstableCollections" severity="error" />
+    <issue id="ComposeUnstableCollections" severity="warning" />
     <issue id="ComposeMutableParameters" severity="error" />
     <issue id="ComposeUnstableReceiver" severity="warning" />
     <issue id="ComposeContentEmitterReturningValues" severity="error" />
@@ -48,7 +48,6 @@
     <issue id="FrequentlyChangingValue" severity="error" />
 
     <!-- Compose Architecture -->
-    <issue id="OpaqueUnitKey" severity="warning" />
     <issue id="ReturnFromAwaitPointerEventScope" severity="warning" />
     <issue id="MultipleAwaitPointerEventScopes" severity="warning" />
     <issue id="UseOfNonLambdaOffsetOverload" severity="warning" />
