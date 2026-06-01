@@ -129,4 +129,5 @@ mino-android-library = { id = "team.mino.android.library", version = "unspecifie
 mino-android-compose = { id = "team.mino.android.compose", version = "unspecified" }
 mino-android-feature = { id = "team.mino.android.feature", version = "unspecified" }
 mino-android-hilt = { id = "team.mino.android.hilt", version = "unspecified" }
+mino-android-flavor = { id = "team.mino.android.flavor", version = "unspecified" }
 mino-kotlin-jvm = { id = "team.mino.kotlin.jvm", version = "unspecified" }
