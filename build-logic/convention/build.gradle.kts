@@ -46,6 +46,10 @@ gradlePlugin {
             id = "team.mino.android.hilt"
             implementationClass = "AndroidHiltConventionPlugin"
         }
+        register("androidFlavor") {
+            id = "team.mino.android.flavor"
+            implementationClass = "AndroidFlavorConventionPlugin"
+        }
         register("kotlinJvm") {
             id = "team.mino.kotlin.jvm"
             implementationClass = "KotlinJvmConventionPlugin"

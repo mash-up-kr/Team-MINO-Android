@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.mino.android.library)
     alias(libs.plugins.mino.android.hilt)
+    alias(libs.plugins.mino.android.flavor)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ktorfit)
 }

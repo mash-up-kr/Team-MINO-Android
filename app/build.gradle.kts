@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.mino.android.application.compose)
     alias(libs.plugins.mino.android.hilt)
+    alias(libs.plugins.mino.android.flavor)
 }
 
 android {
