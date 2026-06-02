@@ -1,0 +1,66 @@
+name: CD - Promote to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_code:
+        description: "승급할 internal 빌드의 versionCode (비우면 최신)"
+        required: false
+        type: string
+      version_name:
+        description: "버전명 (알림 표기용, 예: 1.0.0)"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cd-promote
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+
+      - name: Restore Play service account
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          mkdir -p fastlane
+          printf '%s' "$PLAY_SERVICE_ACCOUNT_JSON" > fastlane/play-service-account.json
+
+      - name: Promote internal to production
+        env:
+          VERSION_CODE: ${{ inputs.version_code }}
+        run: bundle exec fastlane promote
+
+      - name: Notify Discord (success)
+        if: success()
+        uses: ./.github/actions/discord-notify
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          title: "🚀 프로덕션 승급 완료 · 심사 대기중"
+          description: |
+            버전 `${{ inputs.version_name }}`${{ inputs.version_code && format(' (versionCode {0})', inputs.version_code) || '' }}
+            production 트랙 제출 완료. Google 심사 통과 후 출시됩니다.
+          color: "15105570"
+
+      - name: Notify Discord (failure)
+        if: failure()
+        uses: ./.github/actions/discord-notify
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          title: "❌ 프로덕션 승급 실패"
+          description: |
+            버전 `${{ inputs.version_name }}`
+            [워크플로 로그 보기](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          color: "15158332"

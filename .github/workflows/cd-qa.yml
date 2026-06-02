@@ -1,0 +1,81 @@
+name: CD - QA Distribution
+
+on:
+  push:
+    branches:
+      - "release/**"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cd-qa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Restore signing config
+        env:
+          KEYSTORE_PROPERTIES_B64: ${{ secrets.KEYSTORE_PROPERTIES_B64 }}
+          KEYSTORE_QA_B64: ${{ secrets.KEYSTORE_QA_B64 }}
+        run: |
+          echo "$KEYSTORE_PROPERTIES_B64" | base64 -d > keystore.properties
+          mkdir -p keystore
+          echo "$KEYSTORE_QA_B64" | base64 -d > keystore/qa.jks
+
+      - name: Resolve version
+        run: |
+          version_name="${GITHUB_REF_NAME#release/}"
+          echo "VERSION_NAME=${version_name}" >> "$GITHUB_ENV"
+          echo "TAG=qa-${version_name}" >> "$GITHUB_ENV"
+
+      - name: Build qaRelease APK
+        run: >
+          ./gradlew :app:assembleQaRelease
+          -PversionCode=${{ github.run_number }}
+          -PversionName=${{ env.VERSION_NAME }}
+
+      - name: Publish APK to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAG }}
+          name: "QA ${{ env.VERSION_NAME }} (build ${{ github.run_number }})"
+          prerelease: true
+          files: app/build/outputs/apk/qa/release/app-qa-release.apk
+
+      - name: Notify Discord (success)
+        if: success()
+        uses: ./.github/actions/discord-notify
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          title: "📦 QA 빌드 배포 완료 — 다운로드"
+          description: |
+            버전 `${{ env.VERSION_NAME }}` (build ${{ github.run_number }})
+            브랜치 `${{ github.ref_name }}` · `${{ github.sha }}`
+            아래 링크에서 APK를 받아 설치하세요.
+          url: ${{ github.server_url }}/${{ github.repository }}/releases/download/${{ env.TAG }}/app-qa-release.apk
+          color: "5763719"
+
+      - name: Notify Discord (failure)
+        if: failure()
+        uses: ./.github/actions/discord-notify
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          title: "❌ QA 빌드 배포 실패"
+          description: |
+            브랜치 `${{ github.ref_name }}` · `${{ github.sha }}`
+            [워크플로 로그 보기](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          color: "15158332"

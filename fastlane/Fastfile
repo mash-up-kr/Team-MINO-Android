@@ -1,0 +1,48 @@
+default_platform(:android)
+
+SKIP_NON_BINARY = {
+  skip_upload_apk: true,
+  skip_upload_metadata: true,
+  skip_upload_images: true,
+  skip_upload_screenshots: true,
+}.freeze
+
+platform :android do
+  desc "prodRelease AAB를 빌드해 Play 내부테스트(internal) 트랙에 업로드"
+  lane :internal do
+    properties = {
+      "versionCode" => ENV["VERSION_CODE"],
+      "versionName" => ENV["VERSION_NAME"],
+    }.compact
+
+    gradle(
+      task: "bundle",
+      flavor: "prod",
+      build_type: "Release",
+      properties: properties,
+    )
+
+    upload_to_play_store(
+      track: "internal",
+      aab: lane_context[SharedValues::GRADLE_AAB_OUTPUT_PATH],
+      release_status: "completed",
+      **SKIP_NON_BINARY,
+    )
+  end
+
+  desc "내부테스트 빌드를 production 트랙으로 승급(promote). 재빌드하지 않는다."
+  lane :promote do
+    options = {
+      track: "internal",
+      track_promote_to: "production",
+      release_status: "completed",
+      skip_upload_aab: true,
+      **SKIP_NON_BINARY,
+    }
+
+    version_code = ENV["VERSION_CODE"].to_s.strip
+    options[:version_code] = version_code.to_i unless version_code.empty?
+
+    upload_to_play_store(**options)
+  end
+end

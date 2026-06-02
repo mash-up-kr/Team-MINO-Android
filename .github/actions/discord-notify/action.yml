@@ -1,0 +1,48 @@
+name: Discord Notify
+description: Discord 웹훅으로 embed 알림을 전송한다
+
+inputs:
+  webhook-url:
+    description: Discord webhook URL
+    required: true
+  title:
+    description: embed 제목
+    required: true
+  description:
+    description: embed 본문
+    required: false
+    default: ""
+  url:
+    description: 제목에 연결할 링크 (비우면 링크 없음)
+    required: false
+    default: ""
+  color:
+    description: embed 색상 (10진수)
+    required: false
+    default: "5814783"
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        WEBHOOK_URL: ${{ inputs.webhook-url }}
+        TITLE: ${{ inputs.title }}
+        DESCRIPTION: ${{ inputs.description }}
+        URL: ${{ inputs.url }}
+        COLOR: ${{ inputs.color }}
+      run: |
+        if [ -z "$WEBHOOK_URL" ]; then
+          echo "::warning::DISCORD_WEBHOOK_URL 미설정 — 알림을 건너뜁니다."
+          exit 0
+        fi
+        payload=$(jq -n \
+          --arg title "$TITLE" \
+          --arg description "$DESCRIPTION" \
+          --arg url "$URL" \
+          --argjson color "$COLOR" \
+          '{embeds: [
+            ({title: $title, description: $description, color: $color}
+              + (if $url != "" then {url: $url} else {} end))
+          ]}')
+        curl -sf -H "Content-Type: application/json" -d "$payload" "$WEBHOOK_URL"
