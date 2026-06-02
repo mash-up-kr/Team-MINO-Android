@@ -9,8 +9,6 @@ import kotlinx.coroutines.flow.update
 
 /**
  * [MviContainer]의 실제 동작을 담당하는 구현체입니다.
- *
- * 외부 모듈(Feature)에는 노출하지 않고 인터페이스를 통해서만 접근하도록 제한합니다.
  */
 class MviContainerImpl<S : UiState, E : UiSideEffect>(
     initialState: S

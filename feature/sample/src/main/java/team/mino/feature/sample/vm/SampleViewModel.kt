@@ -33,7 +33,7 @@ class SampleViewModel @Inject constructor() : ViewModel(),
             updateState {
                 copy(
                     isLoading = false,
-                    teamMembers = listOf("재성리", "은석킴", "윤지")
+                    teamMembers = listOf("재성리", "은석심", "윤지")
                 )
             }
 
