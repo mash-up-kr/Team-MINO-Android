@@ -32,11 +32,9 @@ jobs:
           bundler-cache: true
 
       - name: Restore Play service account
-        env:
-          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
-        run: |
-          mkdir -p fastlane
-          printf '%s' "$PLAY_SERVICE_ACCOUNT_JSON" > fastlane/play-service-account.json
+        uses: ./.github/actions/restore-play-credentials
+        with:
+          service-account-json: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
 
       - name: Promote internal to production
         env:
