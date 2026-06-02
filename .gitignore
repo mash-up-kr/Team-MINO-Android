@@ -34,6 +34,13 @@ keystore.properties
 # Google Services (e.g. APIs or Firebase)
 google-services.json
 
+# Fastlane
+fastlane/play-service-account.json
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/test_output/
+fastlane/README.md
+
 # Android Profiling
 *.hprof
 

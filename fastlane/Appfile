@@ -1,0 +1,2 @@
+json_key_file(ENV["PLAY_SERVICE_ACCOUNT_JSON_PATH"] || "fastlane/play-service-account.json")
+package_name("team.mino")

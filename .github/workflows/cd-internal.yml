@@ -1,0 +1,82 @@
+name: CD - Internal Testing
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: "릴리스 버전명 (예: 1.0.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cd-internal
+  cancel-in-progress: false
+
+jobs:
+  internal:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+
+      - name: Restore signing config
+        env:
+          KEYSTORE_PROPERTIES_B64: ${{ secrets.KEYSTORE_PROPERTIES_B64 }}
+          KEYSTORE_PROD_B64: ${{ secrets.KEYSTORE_PROD_B64 }}
+        run: |
+          echo "$KEYSTORE_PROPERTIES_B64" | base64 -d > keystore.properties
+          mkdir -p keystore
+          echo "$KEYSTORE_PROD_B64" | base64 -d > keystore/prod.jks
+
+      - name: Restore Play service account
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          mkdir -p fastlane
+          printf '%s' "$PLAY_SERVICE_ACCOUNT_JSON" > fastlane/play-service-account.json
+
+      - name: Build & upload to internal track
+        env:
+          VERSION_CODE: ${{ github.run_number }}
+          VERSION_NAME: ${{ inputs.version_name }}
+        run: bundle exec fastlane internal
+
+      - name: Notify Discord (success)
+        if: success()
+        uses: ./.github/actions/discord-notify
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          title: "🧪 내부테스트 배포 완료"
+          description: |
+            버전 `${{ inputs.version_name }}` (build ${{ github.run_number }})
+            브랜치 `${{ github.ref_name }}` · `${{ github.sha }}`
+          url: ${{ vars.PLAY_INTERNAL_OPT_IN_URL }}
+          color: "3447003"
+
+      - name: Notify Discord (failure)
+        if: failure()
+        uses: ./.github/actions/discord-notify
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          title: "❌ 내부테스트 배포 실패"
+          description: |
+            버전 `${{ inputs.version_name }}` (build ${{ github.run_number }})
+            [워크플로 로그 보기](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          color: "15158332"
