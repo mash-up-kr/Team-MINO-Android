@@ -1,0 +1,33 @@
+name: Restore Signing Config
+description: keystore.properties와 필요한 jks 키스토어를 복원한다
+
+inputs:
+  keystore-properties:
+    description: keystore.properties의 base64
+    required: true
+  qa-keystore:
+    description: qa.jks의 base64 (qa flavor 빌드 시)
+    required: false
+    default: ""
+  prod-keystore:
+    description: prod.jks의 base64 (prod flavor 빌드 시)
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        KEYSTORE_PROPERTIES_B64: ${{ inputs.keystore-properties }}
+        KEYSTORE_QA_B64: ${{ inputs.qa-keystore }}
+        KEYSTORE_PROD_B64: ${{ inputs.prod-keystore }}
+      run: |
+        echo "$KEYSTORE_PROPERTIES_B64" | base64 -d > keystore.properties
+        mkdir -p keystore
+        if [ -n "$KEYSTORE_QA_B64" ]; then
+          echo "$KEYSTORE_QA_B64" | base64 -d > keystore/qa.jks
+        fi
+        if [ -n "$KEYSTORE_PROD_B64" ]; then
+          echo "$KEYSTORE_PROD_B64" | base64 -d > keystore/prod.jks
+        fi

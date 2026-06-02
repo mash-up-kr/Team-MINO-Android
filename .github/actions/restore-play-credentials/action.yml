@@ -1,0 +1,17 @@
+name: Restore Play Credentials
+description: Play 서비스계정 JSON 키를 fastlane 경로에 복원한다
+
+inputs:
+  service-account-json:
+    description: Play 서비스계정 JSON (원문)
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        PLAY_SERVICE_ACCOUNT_JSON: ${{ inputs.service-account-json }}
+      run: |
+        mkdir -p fastlane
+        printf '%s' "$PLAY_SERVICE_ACCOUNT_JSON" > fastlane/play-service-account.json
