@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MinoAndroid CD 파이프라인 Architecture Diagram</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" integrity="sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js" integrity="sha384-en/ztfPSRkGfME4KIm05joYXynqzUgbsG5nMrj/xEFAHXkeZfO3yMK8QQ+mP7p1/" crossorigin="anonymous"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'JetBrains Mono', monospace;
+      background: #020617;
+      min-height: 100vh;
+      padding: 2rem;
+      color: white;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .header {
+      margin-bottom: 2rem;
+    }
+
+    .header-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .pulse-dot {
+      width: 12px;
+      height: 12px;
+      background: #34d399;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+    }
+
+    .subtitle {
+      color: #94a3b8;
+      font-size: 0.875rem;
+      margin-left: 1.75rem;
+    }
+
+    .diagram-container {
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 1rem;
+      border: 1px solid #1e293b;
+      padding: 1.5rem;
+      overflow-x: auto;
+    }
+
+    svg {
+      width: 100%;
+      min-width: 900px;
+      display: block;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    .card {
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 0.75rem;
+      border: 1px solid #1e293b;
+      padding: 1.25rem;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .card-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .card-dot.cyan { background: #22d3ee; }
+    .card-dot.emerald { background: #34d399; }
+    .card-dot.violet { background: #a78bfa; }
+    .card-dot.amber { background: #fbbf24; }
+    .card-dot.rose { background: #fb7185; }
+
+    .card h3 {
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+
+    .card ul {
+      list-style: none;
+      color: #94a3b8;
+      font-size: 0.75rem;
+    }
+
+    .card li {
+      margin-bottom: 0.375rem;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 1.5rem;
+      color: #475569;
+      font-size: 0.75rem;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 0.5rem;
+      margin-left: auto;
+      flex-shrink: 0;
+      align-items: center;
+    }
+    .toolbar-toggle {
+      background: transparent;
+      border: none;
+      color: #475569;
+      cursor: pointer;
+      font-size: 1.25rem;
+      line-height: 1;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.375rem;
+      transition: color 0.2s, background 0.2s;
+    }
+    .toolbar-toggle:hover { color: #94a3b8; background: rgba(30, 41, 59, 0.5); }
+    .toolbar-actions {
+      display: none;
+      gap: 0.5rem;
+    }
+    .toolbar.expanded .toolbar-actions { display: flex; }
+    .toolbar-actions button {
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid #334155;
+      color: #94a3b8;
+      padding: 0.375rem 0.75rem;
+      border-radius: 0.375rem;
+      font-family: inherit;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .toolbar-actions button:hover {
+      background: rgba(51, 65, 85, 0.8);
+      color: white;
+      border-color: #475569;
+    }
+
+    @media print {
+      body { background: #020617; padding: 1rem; }
+      .toolbar { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="report-container">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-row">
+        <div class="pulse-dot"></div>
+        <h1>MinoAndroid CD 파이프라인</h1>
+        <div class="toolbar">
+          <div class="toolbar-actions">
+            <button onclick="copyAsImage(this)">📋 Copy</button>
+            <button onclick="downloadPNG(this)">🖼️ PNG</button>
+            <button onclick="downloadPDF(this)">📄 PDF</button>
+          </div>
+          <button class="toolbar-toggle" onclick="this.parentElement.classList.toggle('expanded')" title="내보내기" aria-label="내보내기">⋯</button>
+        </div>
+      </div>
+      <p class="subtitle">GitHub Actions + Fastlane 기반 Play Store 배포 자동화 · release/* 브랜치에서 단계적 배포</p>
+    </div>
+
+    <!-- Main Diagram -->
+    <div class="diagram-container">
+      <svg viewBox="0 0 1000 745">
+        <!-- Definitions -->
+        <defs>
+          <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#64748b" />
+          </marker>
+          <marker id="arrowhead-rose" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#fb7185" />
+          </marker>
+          <marker id="arrowhead-orange" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#fb923c" />
+          </marker>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+          </pattern>
+        </defs>
+
+        <!-- Background Grid -->
+        <rect width="100%" height="100%" fill="url(#grid)" />
+
+        <!-- =====================  ARROWS (drawn first, behind boxes)  ===================== -->
+
+        <!-- develop -> release -->
+        <line x1="360" y1="60" x2="423" y2="60" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="392" y="54" fill="#94a3b8" font-size="8" text-anchor="middle">분기</text>
+
+        <!-- release -> 1 (push auto) -->
+        <line x1="500" y1="84" x2="500" y2="128" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="512" y="110" fill="#22d3ee" font-size="8">push · 자동</text>
+
+        <!-- gate 1 -> 2 (manual, human) -->
+        <line x1="500" y1="216" x2="500" y2="294" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="5,5" marker-end="url(#arrowhead-rose)"/>
+        <text x="514" y="250" fill="#fb7185" font-size="9">QA 검수 통과 (사람 판단)</text>
+        <text x="514" y="264" fill="#94a3b8" font-size="8">→ 수동 dispatch</text>
+
+        <!-- gate 2 -> 3 (manual, human) -->
+        <line x1="500" y1="382" x2="500" y2="460" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="5,5" marker-end="url(#arrowhead-rose)"/>
+        <text x="514" y="416" fill="#fb7185" font-size="9">내부테스트 통과 (사람 판단)</text>
+        <text x="514" y="430" fill="#94a3b8" font-size="8">→ 수동 dispatch</text>
+
+        <!-- 3 -> 4 -->
+        <line x1="500" y1="548" x2="500" y2="626" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="514" y="590" fill="#34d399" font-size="9">제출 성공 = 배포 완료</text>
+
+        <!-- workflow -> notification arrows (orange) -->
+        <line x1="700" y1="173" x2="758" y2="173" stroke="#fb923c" stroke-width="1.5" marker-end="url(#arrowhead-orange)"/>
+        <line x1="700" y1="339" x2="758" y2="339" stroke="#fb923c" stroke-width="1.5" marker-end="url(#arrowhead-orange)"/>
+        <line x1="700" y1="505" x2="758" y2="505" stroke="#fb923c" stroke-width="1.5" marker-end="url(#arrowhead-orange)"/>
+
+        <!-- =====================  SOURCE BRANCHES  ===================== -->
+
+        <!-- develop -->
+        <rect x="210" y="40" width="150" height="40" rx="6" fill="#0f172a"/>
+        <rect x="210" y="40" width="150" height="40" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="285" y="64" fill="white" font-size="11" font-weight="600" text-anchor="middle">develop</text>
+
+        <!-- release/x.y.z -->
+        <rect x="425" y="40" width="150" height="40" rx="6" fill="#0f172a"/>
+        <rect x="425" y="40" width="150" height="40" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="500" y="64" fill="white" font-size="11" font-weight="600" text-anchor="middle">release/x.y.z</text>
+
+        <!-- =====================  WORKFLOW STAGES  ===================== -->
+
+        <!-- (1) cd-qa.yml -->
+        <rect x="300" y="130" width="400" height="86" rx="6" fill="#0f172a"/>
+        <rect x="300" y="130" width="400" height="86" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="500" y="157" fill="white" font-size="13" font-weight="600" text-anchor="middle">① cd-qa.yml — QA 배포</text>
+        <text x="500" y="179" fill="#94a3b8" font-size="9" text-anchor="middle">qaRelease APK 빌드 → GitHub Release(qa-x.y.z) 첨부</text>
+        <text x="500" y="197" fill="#34d399" font-size="8" text-anchor="middle">트리거: push release/** · 자동 · team.mino.qa</text>
+
+        <!-- (2) cd-internal.yml -->
+        <rect x="300" y="296" width="400" height="86" rx="6" fill="#0f172a"/>
+        <rect x="300" y="296" width="400" height="86" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="500" y="323" fill="white" font-size="13" font-weight="600" text-anchor="middle">② cd-internal.yml — 내부테스트</text>
+        <text x="500" y="345" fill="#94a3b8" font-size="9" text-anchor="middle">prodRelease AAB 빌드 → Play 내부테스트 트랙 업로드</text>
+        <text x="500" y="363" fill="#34d399" font-size="8" text-anchor="middle">트리거: 수동 workflow_dispatch · team.mino</text>
+
+        <!-- (3) cd-promote.yml -->
+        <rect x="300" y="462" width="400" height="86" rx="6" fill="#0f172a"/>
+        <rect x="300" y="462" width="400" height="86" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="500" y="489" fill="white" font-size="13" font-weight="600" text-anchor="middle">③ cd-promote.yml — production 승급</text>
+        <text x="500" y="511" fill="#94a3b8" font-size="9" text-anchor="middle">②가 올린 내부테스트 빌드를 그대로 production 승급</text>
+        <text x="500" y="529" fill="#fbbf24" font-size="8" text-anchor="middle">재빌드 없음 — 검증한 바이너리 = 출시 바이너리</text>
+
+        <!-- (4) release record (not a deploy) -->
+        <rect x="300" y="628" width="400" height="64" rx="6" fill="#0f172a"/>
+        <rect x="300" y="628" width="400" height="64" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="8,4"/>
+        <text x="500" y="654" fill="white" font-size="12" font-weight="600" text-anchor="middle">④ release → main 병합 · vX.Y.Z 태그</text>
+        <text x="500" y="675" fill="#94a3b8" font-size="9" text-anchor="middle">develop 역병합 · 출시 기록 (배포 아님)</text>
+
+        <!-- =====================  ARTIFACTS / NOTIFICATIONS  ===================== -->
+
+        <!-- (1) notification -->
+        <rect x="760" y="146" width="210" height="54" rx="6" fill="rgba(251, 146, 60, 0.3)" stroke="#fb923c" stroke-width="1.5"/>
+        <text x="865" y="170" fill="white" font-size="10" font-weight="600" text-anchor="middle">📦 GitHub Release APK</text>
+        <text x="865" y="187" fill="#fb923c" font-size="8" text-anchor="middle">→ Discord 다운로드 링크</text>
+
+        <!-- (2) notification -->
+        <rect x="760" y="312" width="210" height="54" rx="6" fill="rgba(251, 146, 60, 0.3)" stroke="#fb923c" stroke-width="1.5"/>
+        <text x="865" y="336" fill="white" font-size="10" font-weight="600" text-anchor="middle">🧪 Play 내부테스트 트랙</text>
+        <text x="865" y="353" fill="#fb923c" font-size="8" text-anchor="middle">→ Discord 설치 링크</text>
+
+        <!-- (3) notification -->
+        <rect x="760" y="478" width="210" height="54" rx="6" fill="rgba(251, 146, 60, 0.3)" stroke="#fb923c" stroke-width="1.5"/>
+        <text x="865" y="502" fill="white" font-size="10" font-weight="600" text-anchor="middle">🚀 Play production 트랙</text>
+        <text x="865" y="519" fill="#fb923c" font-size="8" text-anchor="middle">→ Discord 심사 대기중</text>
+
+        <!-- =====================  LEGEND (outside all boxes)  ===================== -->
+        <rect x="40" y="715" width="16" height="10" rx="2" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1"/>
+        <text x="62" y="724" fill="#94a3b8" font-size="8">CI 빌드 워크플로</text>
+
+        <rect x="200" y="715" width="16" height="10" rx="2" fill="rgba(251, 146, 60, 0.3)" stroke="#fb923c" stroke-width="1"/>
+        <text x="222" y="724" fill="#94a3b8" font-size="8">산출물 · Discord 알림</text>
+
+        <line x1="410" y1="720" x2="426" y2="720" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="3,3"/>
+        <text x="432" y="724" fill="#94a3b8" font-size="8">수동 게이트 (사람 판단)</text>
+
+        <rect x="620" y="715" width="16" height="10" rx="2" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3,3"/>
+        <text x="642" y="724" fill="#94a3b8" font-size="8">출시 기록 (배포 아님)</text>
+
+        <rect x="820" y="715" width="16" height="10" rx="2" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1"/>
+        <text x="842" y="724" fill="#94a3b8" font-size="8">release 브랜치</text>
+      </svg>
+    </div>
+
+    <!-- Info Cards -->
+    <div class="cards">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot emerald"></div>
+          <h3>파이프라인 3단계</h3>
+        </div>
+        <ul>
+          <li>• ① cd-qa.yml — push release/** 자동</li>
+          <li>• ② cd-internal.yml — 수동 dispatch</li>
+          <li>• ③ cd-promote.yml — 수동 dispatch</li>
+          <li>• 게이트는 사람 판단(QA·내부테스트)</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot amber"></div>
+          <h3>배포 모델</h3>
+        </div>
+        <ul>
+          <li>• Play 앱은 team.mino 단일 앱</li>
+          <li>• 내부테스트 빌드를 그대로 production 승급</li>
+          <li>• 재빌드 X → 검증 = 출시 바이너리</li>
+          <li>• qaRelease(team.mino.qa)는 Play 미게시</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot violet"></div>
+          <h3>versionCode / versionName</h3>
+        </div>
+        <ul>
+          <li>• versionCode = github.run_number 주입</li>
+          <li>• ① versionName = release 브랜치명 파생</li>
+          <li>• ②③ versionName = dispatch 입력값</li>
+          <li>• ③ version_code 비우면 internal 최신 승급</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <p class="footer">
+      MinoAndroid · CD Pipeline · GitHub Actions + Fastlane → Google Play · docs/cd-pipeline.md 기반
+    </p>
+  </div>
+
+  <script>
+    async function copyAsImage(btn) {
+      const orig = btn.textContent;
+      try {
+        const el = document.getElementById('report-container');
+        const r = el.getBoundingClientRect();
+        const pad = 32;
+        const canvas = await html2canvas(document.body, { backgroundColor: '#020617', scale: 2, useCORS: true, ignoreElements: (e) => e.classList && e.classList.contains('toolbar'), x: r.left + window.scrollX - pad, y: r.top + window.scrollY - pad, width: r.width + pad * 2, height: r.height + pad * 2 });
+        const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+        btn.textContent = '✓ Copied!';
+      } catch (e) {
+        btn.textContent = '✗ Failed';
+      }
+      setTimeout(() => btn.textContent = orig, 2000);
+    }
+
+    async function downloadPNG(btn) {
+      const orig = btn.textContent;
+      btn.textContent = '⏳ ...';
+      try {
+        const el = document.getElementById('report-container');
+        const r = el.getBoundingClientRect();
+        const pad = 32;
+        const canvas = await html2canvas(document.body, { backgroundColor: '#020617', scale: 2, useCORS: true, ignoreElements: (e) => e.classList && e.classList.contains('toolbar'), x: r.left + window.scrollX - pad, y: r.top + window.scrollY - pad, width: r.width + pad * 2, height: r.height + pad * 2 });
+        const link = document.createElement('a');
+        link.download = 'minoandroid-cd-pipeline.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        btn.textContent = '✓ Done!';
+      } catch (e) {
+        btn.textContent = '✗ Failed';
+      }
+      setTimeout(() => btn.textContent = orig, 2000);
+    }
+
+    async function downloadPDF(btn) {
+      const orig = btn.textContent;
+      btn.textContent = '⏳ ...';
+      try {
+        const el = document.getElementById('report-container');
+        const r = el.getBoundingClientRect();
+        const pad = 32;
+        const canvas = await html2canvas(document.body, { backgroundColor: '#020617', scale: 2, useCORS: true, ignoreElements: (e) => e.classList && e.classList.contains('toolbar'), x: r.left + window.scrollX - pad, y: r.top + window.scrollY - pad, width: r.width + pad * 2, height: r.height + pad * 2 });
+        const imgData = canvas.toDataURL('image/png');
+        const { jsPDF } = window.jspdf;
+        const orientation = canvas.width > canvas.height ? 'landscape' : 'portrait';
+        const pdf = new jsPDF({ orientation, unit: 'px', format: [canvas.width, canvas.height], hotfixes: ['px_scaling'] });
+        pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+        pdf.save('minoandroid-cd-pipeline.pdf');
+        btn.textContent = '✓ Done!';
+      } catch (e) {
+        btn.textContent = '✗ Failed';
+      }
+      setTimeout(() => btn.textContent = orig, 2000);
+    }
+  </script>
+</body>
+</html>

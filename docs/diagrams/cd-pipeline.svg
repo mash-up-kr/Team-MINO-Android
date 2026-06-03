@@ -1,0 +1,126 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1000 745" font-family="'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">
+        <!-- Definitions -->
+        <defs>
+          <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#64748b" />
+          </marker>
+          <marker id="arrowhead-rose" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#fb7185" />
+          </marker>
+          <marker id="arrowhead-orange" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#fb923c" />
+          </marker>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+          </pattern>
+        </defs>
+
+        <!-- Page Background (standalone) -->
+        <rect width="100%" height="100%" fill="#020617"/>
+
+        <!-- Background Grid -->
+        <rect width="100%" height="100%" fill="url(#grid)" />
+
+        <!-- =====================  ARROWS (drawn first, behind boxes)  ===================== -->
+
+        <!-- develop -> release -->
+        <line x1="360" y1="60" x2="423" y2="60" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="392" y="54" fill="#94a3b8" font-size="8" text-anchor="middle">분기</text>
+
+        <!-- release -> 1 (push auto) -->
+        <line x1="500" y1="84" x2="500" y2="128" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="512" y="110" fill="#22d3ee" font-size="8">push · 자동</text>
+
+        <!-- gate 1 -> 2 (manual, human) -->
+        <line x1="500" y1="216" x2="500" y2="294" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="5,5" marker-end="url(#arrowhead-rose)"/>
+        <text x="514" y="250" fill="#fb7185" font-size="9">QA 검수 통과 (사람 판단)</text>
+        <text x="514" y="264" fill="#94a3b8" font-size="8">→ 수동 dispatch</text>
+
+        <!-- gate 2 -> 3 (manual, human) -->
+        <line x1="500" y1="382" x2="500" y2="460" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="5,5" marker-end="url(#arrowhead-rose)"/>
+        <text x="514" y="416" fill="#fb7185" font-size="9">내부테스트 통과 (사람 판단)</text>
+        <text x="514" y="430" fill="#94a3b8" font-size="8">→ 수동 dispatch</text>
+
+        <!-- 3 -> 4 -->
+        <line x1="500" y1="548" x2="500" y2="626" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="514" y="590" fill="#34d399" font-size="9">제출 성공 = 배포 완료</text>
+
+        <!-- workflow -> notification arrows (orange) -->
+        <line x1="700" y1="173" x2="758" y2="173" stroke="#fb923c" stroke-width="1.5" marker-end="url(#arrowhead-orange)"/>
+        <line x1="700" y1="339" x2="758" y2="339" stroke="#fb923c" stroke-width="1.5" marker-end="url(#arrowhead-orange)"/>
+        <line x1="700" y1="505" x2="758" y2="505" stroke="#fb923c" stroke-width="1.5" marker-end="url(#arrowhead-orange)"/>
+
+        <!-- =====================  SOURCE BRANCHES  ===================== -->
+
+        <!-- develop -->
+        <rect x="210" y="40" width="150" height="40" rx="6" fill="#0f172a"/>
+        <rect x="210" y="40" width="150" height="40" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="285" y="64" fill="white" font-size="11" font-weight="600" text-anchor="middle">develop</text>
+
+        <!-- release/x.y.z -->
+        <rect x="425" y="40" width="150" height="40" rx="6" fill="#0f172a"/>
+        <rect x="425" y="40" width="150" height="40" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="500" y="64" fill="white" font-size="11" font-weight="600" text-anchor="middle">release/x.y.z</text>
+
+        <!-- =====================  WORKFLOW STAGES  ===================== -->
+
+        <!-- (1) cd-qa.yml -->
+        <rect x="300" y="130" width="400" height="86" rx="6" fill="#0f172a"/>
+        <rect x="300" y="130" width="400" height="86" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="500" y="157" fill="white" font-size="13" font-weight="600" text-anchor="middle">① cd-qa.yml — QA 배포</text>
+        <text x="500" y="179" fill="#94a3b8" font-size="9" text-anchor="middle">qaRelease APK 빌드 → GitHub Release(qa-x.y.z) 첨부</text>
+        <text x="500" y="197" fill="#34d399" font-size="8" text-anchor="middle">트리거: push release/** · 자동 · team.mino.qa</text>
+
+        <!-- (2) cd-internal.yml -->
+        <rect x="300" y="296" width="400" height="86" rx="6" fill="#0f172a"/>
+        <rect x="300" y="296" width="400" height="86" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="500" y="323" fill="white" font-size="13" font-weight="600" text-anchor="middle">② cd-internal.yml — 내부테스트</text>
+        <text x="500" y="345" fill="#94a3b8" font-size="9" text-anchor="middle">prodRelease AAB 빌드 → Play 내부테스트 트랙 업로드</text>
+        <text x="500" y="363" fill="#34d399" font-size="8" text-anchor="middle">트리거: 수동 workflow_dispatch · team.mino</text>
+
+        <!-- (3) cd-promote.yml -->
+        <rect x="300" y="462" width="400" height="86" rx="6" fill="#0f172a"/>
+        <rect x="300" y="462" width="400" height="86" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="500" y="489" fill="white" font-size="13" font-weight="600" text-anchor="middle">③ cd-promote.yml — production 승급</text>
+        <text x="500" y="511" fill="#94a3b8" font-size="9" text-anchor="middle">②가 올린 내부테스트 빌드를 그대로 production 승급</text>
+        <text x="500" y="529" fill="#fbbf24" font-size="8" text-anchor="middle">재빌드 없음 — 검증한 바이너리 = 출시 바이너리</text>
+
+        <!-- (4) release record (not a deploy) -->
+        <rect x="300" y="628" width="400" height="64" rx="6" fill="#0f172a"/>
+        <rect x="300" y="628" width="400" height="64" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="8,4"/>
+        <text x="500" y="654" fill="white" font-size="12" font-weight="600" text-anchor="middle">④ release → main 병합 · vX.Y.Z 태그</text>
+        <text x="500" y="675" fill="#94a3b8" font-size="9" text-anchor="middle">develop 역병합 · 출시 기록 (배포 아님)</text>
+
+        <!-- =====================  ARTIFACTS / NOTIFICATIONS  ===================== -->
+
+        <!-- (1) notification -->
+        <rect x="760" y="146" width="210" height="54" rx="6" fill="rgba(251, 146, 60, 0.3)" stroke="#fb923c" stroke-width="1.5"/>
+        <text x="865" y="170" fill="white" font-size="10" font-weight="600" text-anchor="middle">📦 GitHub Release APK</text>
+        <text x="865" y="187" fill="#fb923c" font-size="8" text-anchor="middle">→ Discord 다운로드 링크</text>
+
+        <!-- (2) notification -->
+        <rect x="760" y="312" width="210" height="54" rx="6" fill="rgba(251, 146, 60, 0.3)" stroke="#fb923c" stroke-width="1.5"/>
+        <text x="865" y="336" fill="white" font-size="10" font-weight="600" text-anchor="middle">🧪 Play 내부테스트 트랙</text>
+        <text x="865" y="353" fill="#fb923c" font-size="8" text-anchor="middle">→ Discord 설치 링크</text>
+
+        <!-- (3) notification -->
+        <rect x="760" y="478" width="210" height="54" rx="6" fill="rgba(251, 146, 60, 0.3)" stroke="#fb923c" stroke-width="1.5"/>
+        <text x="865" y="502" fill="white" font-size="10" font-weight="600" text-anchor="middle">🚀 Play production 트랙</text>
+        <text x="865" y="519" fill="#fb923c" font-size="8" text-anchor="middle">→ Discord 심사 대기중</text>
+
+        <!-- =====================  LEGEND (outside all boxes)  ===================== -->
+        <rect x="40" y="715" width="16" height="10" rx="2" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1"/>
+        <text x="62" y="724" fill="#94a3b8" font-size="8">CI 빌드 워크플로</text>
+
+        <rect x="200" y="715" width="16" height="10" rx="2" fill="rgba(251, 146, 60, 0.3)" stroke="#fb923c" stroke-width="1"/>
+        <text x="222" y="724" fill="#94a3b8" font-size="8">산출물 · Discord 알림</text>
+
+        <line x1="410" y1="720" x2="426" y2="720" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="3,3"/>
+        <text x="432" y="724" fill="#94a3b8" font-size="8">수동 게이트 (사람 판단)</text>
+
+        <rect x="620" y="715" width="16" height="10" rx="2" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3,3"/>
+        <text x="642" y="724" fill="#94a3b8" font-size="8">출시 기록 (배포 아님)</text>
+
+        <rect x="820" y="715" width="16" height="10" rx="2" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1"/>
+        <text x="842" y="724" fill="#94a3b8" font-size="8">release 브랜치</text>
+      </svg>

@@ -4,31 +4,9 @@ GitHub Actions + Fastlane 기반 Play Store 배포 자동화. 배포는 `release
 
 ## 아키텍처
 
-```
- develop ──분기──▶ release/x.y.z
-                       │
-                       │  push (자동)
-                       ▼
-   ┌──────────────────────────────────────────────────────┐
-   │ ①  cd-qa.yml                                          │
-   │    qaRelease APK 빌드 → GitHub Release(qa-x.y.z) 첨부 │  ──▶ 📦 Discord (다운로드 링크)
-   └──────────────────────────────────────────────────────┘
-                       │  QA 검수 통과 (사람 판단)
-                       ▼  수동 dispatch
-   ┌──────────────────────────────────────────────────────┐
-   │ ②  cd-internal.yml                                    │
-   │    prodRelease AAB 빌드 → Play 내부테스트 업로드      │  ──▶ 🧪 Discord (설치 링크)
-   └──────────────────────────────────────────────────────┘
-                       │  내부테스트 통과 (사람 판단)
-                       ▼  수동 dispatch
-   ┌──────────────────────────────────────────────────────┐
-   │ ③  cd-promote.yml                                     │
-   │    내부테스트 빌드 → production 승급 (재빌드 X)       │  ──▶ 🚀 Discord (심사 대기중)
-   └──────────────────────────────────────────────────────┘
-                       │  제출 성공 = 배포 완료
-                       ▼
-   ④  release → main 병합 + vX.Y.Z 태그 + develop 역병합   (배포 아님 · 출시 기록)
-```
+![MinoAndroid CD 파이프라인](diagrams/cd-pipeline.svg)
+
+> 인터랙티브 버전(PNG·PDF 내보내기 지원): [diagrams/cd-pipeline.html](diagrams/cd-pipeline.html). [`architecture-diagram` 스킬](../.claude/skills/architecture-diagram/SKILL.md)로 생성하며, 흐름이 바뀌면 같은 스킬로 다시 생성한다.
 
 ## 배포 모델
 
