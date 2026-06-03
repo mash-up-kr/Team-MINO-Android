@@ -25,32 +25,18 @@ class SampleViewModel
 
         private fun loadTeamMembers() {
             viewModelScope.launch {
-                updateState { copy(isIdle = false, isLoading = true, isError = false) }
+                updateState { copy(status = SampleStatus.Loading) }
                 delay(2000)
-
-                updateState {
-                    copy(
-                        isLoading = false,
-                        teamMembers = listOf("재성리", "은석심", "윤지"),
-                    )
-                }
-
+                updateState { copy(status = SampleStatus.Success(listOf("재성리", "은석심", "윤지"))) }
                 postSideEffect(SampleSideEffect.ShowToast("팀원 안내 끝."))
             }
         }
 
         private fun makeError() {
             viewModelScope.launch {
-                updateState { copy(isIdle = false, isLoading = true, isError = false) }
+                updateState { copy(status = SampleStatus.Loading) }
                 delay(1500)
-
-                updateState {
-                    copy(
-                        isLoading = false,
-                        isError = true,
-                        errorMessage = "실제로는 에러가 없기를...",
-                    )
-                }
+                updateState { copy(status = SampleStatus.Error("실제로는 에러가 없기를...")) }
             }
         }
     }
