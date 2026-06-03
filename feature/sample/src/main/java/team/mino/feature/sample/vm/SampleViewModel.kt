@@ -7,9 +7,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import team.mino.core.common.android.architecture.MviContainer
 import team.mino.core.common.android.architecture.mviContainer
-import team.mino.feature.sample.model.SampleIntent
-import team.mino.feature.sample.model.SampleSideEffect
-import team.mino.feature.sample.model.SampleState
 import javax.inject.Inject
 
 @HiltViewModel

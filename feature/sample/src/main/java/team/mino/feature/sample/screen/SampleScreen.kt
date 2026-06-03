@@ -14,9 +14,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import kotlinx.coroutines.flow.collectLatest
-import team.mino.feature.sample.model.SampleIntent
-import team.mino.feature.sample.model.SampleSideEffect
+import team.mino.feature.sample.vm.SampleIntent
+import team.mino.feature.sample.vm.SampleSideEffect
 import team.mino.feature.sample.vm.SampleViewModel
 
 @Composable
