@@ -17,7 +17,7 @@ class MviContainerImpl<S : UiState, E : UiSideEffect>(
 
     override val state: StateFlow<S> = _state.asStateFlow()
 
-    private val _sideEffect = Channel<E>()
+    private val _sideEffect = Channel<E>(capacity = Channel.BUFFERED)
 
     override val sideEffect = _sideEffect.receiveAsFlow()
 
