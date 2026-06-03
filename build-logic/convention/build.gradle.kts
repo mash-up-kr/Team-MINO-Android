@@ -54,9 +54,9 @@ gradlePlugin {
             id = "team.mino.kotlin.jvm"
             implementationClass = "KotlinJvmConventionPlugin"
         }
-        register("androidApplicationFirebase") {
+        register("androidFirebase") {
             id = "team.mino.android.firebase" // 앱 모듈에서 불러다 쓸 이름
-            implementationClass = "AndroidApplicationFirebaseConventionPlugin"
+            implementationClass = "AndroidFirebaseConventionPlugin"
         }
     }
 }
