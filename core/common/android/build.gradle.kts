@@ -10,6 +10,6 @@ dependencies {
     implementation(project(":core:common:kotlin"))
 
     implementation(libs.androidx.core.ktx)
-    api(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.coroutines.android)
     implementation(libs.timber)
 }
