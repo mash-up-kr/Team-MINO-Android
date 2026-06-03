@@ -22,13 +22,13 @@ import team.mino.feature.sample.vm.SampleViewModel
 @Composable
 fun SampleScreen(
     modifier: Modifier = Modifier,
-    viewModel: SampleViewModel = hiltViewModel()
+    viewModel: SampleViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
-    LaunchedEffect(viewModel.sideEffect) {
-        viewModel.sideEffect.collectLatest { effect ->
+    LaunchedEffect(Unit) {
+        viewModel.sideEffect.collect { effect ->
             when (effect) {
                 is SampleSideEffect.ShowToast -> {
                     Toast.makeText(context, effect.message, Toast.LENGTH_SHORT).show()
@@ -47,13 +47,13 @@ fun SampleScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            Button(onClick = { viewModel.processIntent(SampleIntent.RefreshTeam) }) {
+            Button(onClick = { viewModel.processIntent(SampleIntent.ClickRefreshTeam) }) {
                 Text(text = "팀원 소개 완료")
             }
-            Button(onClick = { viewModel.processIntent(SampleIntent.TriggerError) }) {
+            Button(onClick = { viewModel.processIntent(SampleIntent.ClickTriggerError) }) {
                 Text(text = "에러 강제 발생")
             }
-            Button(onClick = { viewModel.processIntent(SampleIntent.ResetState) }) {
+            Button(onClick = { viewModel.processIntent(SampleIntent.ClickResetState) }) {
                 Text(text = "대기 상태로 되돌리기")
             }
 
