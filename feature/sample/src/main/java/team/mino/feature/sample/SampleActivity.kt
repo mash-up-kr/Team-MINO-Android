@@ -23,7 +23,7 @@ class SampleActivity : ComponentActivity() {
                     SampleScreen(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(innerPadding)
+                            .padding(innerPadding),
                     )
                 }
             }
