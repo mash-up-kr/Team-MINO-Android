@@ -4,7 +4,7 @@ GitHub Actions + Fastlane 기반 Play Store 배포 자동화. 배포는 `release
 
 ## 아키텍처
 
-![MinoAndroid CD 파이프라인](diagrams/cd-pipeline.svg)
+![MinoAndroid CD 파이프라인](diagrams/cd-pipeline.png)
 
 > 인터랙티브 버전(PNG·PDF 내보내기 지원): [diagrams/cd-pipeline.html](diagrams/cd-pipeline.html). [`architecture-diagram` 스킬](../.claude/skills/architecture-diagram/SKILL.md)로 생성하며, 흐름이 바뀌면 같은 스킬로 다시 생성한다.
 
