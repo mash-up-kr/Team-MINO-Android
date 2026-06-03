@@ -20,6 +20,10 @@ composeBom = "2026.04.01"
 navigationCompose = "2.9.5"
 hiltNavigationCompose = "1.3.0"
 
+# Firebase
+firebaseBom = "34.14.0"
+google-services = "4.4.4"
+
 # Hilt
 hilt = "2.59.2"
 
@@ -69,6 +73,10 @@ androidx-compose-material3 = { group = "androidx.compose.material3", name = "mat
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 androidx-hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "hiltNavigationCompose" }
 
+# Firebase
+firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
+firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
+
 # Hilt
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
 hilt-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "hilt" }
@@ -115,6 +123,7 @@ compose-gradle-plugin = { group = "org.jetbrains.kotlin", name = "compose-compil
 # 외부 플러그인
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
+google-services = { id = "com.google.gms.google-services", version.ref = "google-services" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
@@ -133,3 +142,4 @@ mino-android-feature = { id = "team.mino.android.feature", version = "unspecifie
 mino-android-hilt = { id = "team.mino.android.hilt", version = "unspecified" }
 mino-android-flavor = { id = "team.mino.android.flavor", version = "unspecified" }
 mino-kotlin-jvm = { id = "team.mino.kotlin.jvm", version = "unspecified" }
+mino-android-firebase = { id = "team.mino.android.firebase", version = "unspecified" }
