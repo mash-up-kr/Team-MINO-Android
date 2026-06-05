@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import dagger.hilt.android.AndroidEntryPoint
-import team.mino.core.designsystem.theme.MinoAndroidTheme
+import team.mino.core.designsystem.theme.MinoAndroidAppTheme
 import team.mino.feature.sample.screen.SampleRoute
 
 @AndroidEntryPoint
@@ -18,7 +18,7 @@ class SampleActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            MinoAndroidTheme {
+            MinoAndroidAppTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     SampleRoute(
                         modifier = Modifier
