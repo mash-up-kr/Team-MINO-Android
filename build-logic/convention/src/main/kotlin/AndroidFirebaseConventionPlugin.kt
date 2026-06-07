@@ -8,7 +8,6 @@ class AndroidFirebaseConventionPlugin : Plugin<Project> {
                 apply("com.google.gms.google-services")
                 apply("com.google.firebase.crashlytics")
             }
-
         }
     }
 }
