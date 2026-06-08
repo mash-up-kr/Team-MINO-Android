@@ -54,5 +54,9 @@ gradlePlugin {
             id = "team.mino.kotlin.jvm"
             implementationClass = "KotlinJvmConventionPlugin"
         }
+        register("androidFirebase") {
+            id = "team.mino.android.firebase"
+            implementationClass = "AndroidFirebaseConventionPlugin"
+        }
     }
 }
