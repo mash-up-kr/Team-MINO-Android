@@ -31,7 +31,10 @@ dependencies {
     implementation(project(":core:data"))
     implementation(project(":core:design-system"))
     implementation(project(":core:common:ui"))
-    implementation(project(":feature:sample"))
+    implementation(project(":feature:sample:impl"))
+    implementation(project(":feature:sample:api"))
+    implementation(project(":feature:home:impl"))
+    implementation(project(":feature:home:api"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
