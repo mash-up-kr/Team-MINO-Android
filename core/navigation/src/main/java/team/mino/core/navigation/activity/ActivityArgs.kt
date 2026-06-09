@@ -14,5 +14,5 @@ internal val activityArgsJson = Json { ignoreUnknownKeys = true }
  * 대상 Activity(`:impl`)가 자신의 `:api`에 정의된 인자 타입과 serializer로 호출한다.
  * 인자가 없으면 `null`을 반환한다.
  */
-fun <ARGS> Intent.activityArgsOrNull(serializer: KSerializer<ARGS>): ARGS? =
+fun <ARGS> Intent.getArgsOrNull(serializer: KSerializer<ARGS>): ARGS? =
     getStringExtra(EXTRA_ACTIVITY_ARGS)?.let { activityArgsJson.decodeFromString(serializer, it) }

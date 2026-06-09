@@ -10,7 +10,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import dagger.hilt.android.AndroidEntryPoint
 import team.mino.core.designsystem.theme.MinoAndroidAppTheme
-import team.mino.core.navigation.activity.activityArgsOrNull
+import team.mino.core.navigation.activity.getArgsOrNull
 import team.mino.core.navigation.activity.setActivityResult
 import team.mino.feature.home.api.HomeArgs
 import team.mino.feature.home.api.HomeResult
@@ -27,7 +27,7 @@ class HomeActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        val greeting = intent.activityArgsOrNull(HomeArgs.serializer())?.greeting.orEmpty()
+        val greeting = intent.getArgsOrNull(HomeArgs.serializer())?.greeting.orEmpty()
 
         setContent {
             MinoAndroidAppTheme {

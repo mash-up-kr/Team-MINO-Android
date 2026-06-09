@@ -12,8 +12,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import dagger.hilt.android.AndroidEntryPoint
 import team.mino.core.designsystem.theme.MinoAndroidAppTheme
-import team.mino.core.navigation.activity.activityArgsOrNull
-import team.mino.core.navigation.activity.resultOrNull
+import team.mino.core.navigation.activity.getArgsOrNull
+import team.mino.core.navigation.activity.getResultOrNull
 import team.mino.feature.home.api.HomeArgs
 import team.mino.feature.home.api.HomeLauncher
 import team.mino.feature.home.api.HomeResult
@@ -28,14 +28,14 @@ class SampleActivity : ComponentActivity() {
 
     private val homeResultLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            val output = result.resultOrNull(HomeResult.serializer())
+            val output = result.getResultOrNull(HomeResult.serializer())
             Toast.makeText(this, "Home 결과: confirmed=${output?.confirmed}", Toast.LENGTH_SHORT).show()
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        if (intent.activityArgsOrNull(SampleArgs.serializer())?.fromHome == true) {
+        if (intent.getArgsOrNull(SampleArgs.serializer())?.fromHome == true) {
             Toast.makeText(this, "Home에서 돌아왔어요", Toast.LENGTH_SHORT).show()
         }
 
