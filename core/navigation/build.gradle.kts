@@ -1,7 +1,6 @@
 plugins {
     alias(libs.plugins.mino.android.library)
     alias(libs.plugins.mino.android.compose)
-    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -12,5 +11,4 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.core.ktx)
-    implementation(libs.kotlinx.serialization.json)
 }
