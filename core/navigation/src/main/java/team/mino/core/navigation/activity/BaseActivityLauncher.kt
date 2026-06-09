@@ -10,7 +10,7 @@ import kotlinx.serialization.KSerializer
  *
  * feature `:impl`의 Launcher 구현체가 대상 Activity 클래스와 인자 타입을 지정해 상속한다.
  * 인자는 JSON 문자열로 [Intent] extra에 실려, 모듈 간 모델 공유 없이 type-safe 하게 전달된다.
- * 대상 Activity는 [activityArgsOrNull]로 같은 인자 타입을 복원한다.
+ * 대상 Activity는 [getArgsOrNull]로 같은 인자 타입을 복원한다.
  */
 abstract class BaseActivityLauncher<ARGS>(
     private val argsSerializer: KSerializer<ARGS>,

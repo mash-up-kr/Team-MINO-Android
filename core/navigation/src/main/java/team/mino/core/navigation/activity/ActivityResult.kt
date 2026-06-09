@@ -8,7 +8,7 @@ import kotlinx.serialization.KSerializer
 internal const val EXTRA_ACTIVITY_RESULT = "team.mino.core.navigation.ACTIVITY_RESULT"
 
 /**
- * 대상 Activity가 호출부에 돌려줄 결과를 직렬화해 설정한다. 호출부는 [resultOrNull]로 복원한다.
+ * 대상 Activity가 호출부에 돌려줄 결과를 직렬화해 설정한다. 호출부는 [getResultOrNull]로 복원한다.
  */
 fun <RESULT> Activity.setActivityResult(
     serializer: KSerializer<RESULT>,
@@ -25,7 +25,7 @@ fun <RESULT> Activity.setActivityResult(
  *
  * `RESULT_OK`가 아니거나 결과가 없으면 `null`을 반환한다.
  */
-fun <RESULT> ActivityResult.resultOrNull(serializer: KSerializer<RESULT>): RESULT? {
+fun <RESULT> ActivityResult.getResultOrNull(serializer: KSerializer<RESULT>): RESULT? {
     if (resultCode != Activity.RESULT_OK) return null
     return data
         ?.getStringExtra(EXTRA_ACTIVITY_RESULT)
