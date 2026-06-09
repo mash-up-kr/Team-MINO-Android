@@ -12,12 +12,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import dagger.hilt.android.AndroidEntryPoint
 import team.mino.core.designsystem.theme.MinoAndroidAppTheme
-import team.mino.core.navigation.activity.getArgsOrNull
-import team.mino.core.navigation.activity.getResultOrNull
-import team.mino.feature.home.api.HomeArgs
+import team.mino.feature.home.api.EXTRA_HOME_GREETING
+import team.mino.feature.home.api.EXTRA_HOME_RESULT_CONFIRMED
 import team.mino.feature.home.api.HomeLauncher
-import team.mino.feature.home.api.HomeResult
-import team.mino.feature.sample.api.SampleArgs
+import team.mino.feature.sample.api.EXTRA_FROM_HOME
 import team.mino.feature.sample.navigation.SampleNavHost
 import javax.inject.Inject
 
@@ -28,14 +26,14 @@ class SampleActivity : ComponentActivity() {
 
     private val homeResultLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            val output = result.getResultOrNull(HomeResult.serializer())
-            Toast.makeText(this, "Home 결과: confirmed=${output?.confirmed}", Toast.LENGTH_SHORT).show()
+            val confirmed = result.data?.getBooleanExtra(EXTRA_HOME_RESULT_CONFIRMED, false) ?: false
+            Toast.makeText(this, "Home 결과: confirmed=$confirmed", Toast.LENGTH_SHORT).show()
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        if (intent.getArgsOrNull(SampleArgs.serializer())?.fromHome == true) {
+        if (intent.getBooleanExtra(EXTRA_FROM_HOME, false)) {
             Toast.makeText(this, "Home에서 돌아왔어요", Toast.LENGTH_SHORT).show()
         }
 
@@ -45,15 +43,16 @@ class SampleActivity : ComponentActivity() {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     SampleNavHost(
                         onNavigateToHome = {
-                            homeLauncher.launch(this, HomeArgs(greeting = "Sample이 인사를 전합니다"))
+                            homeLauncher.launch(this) { putExtra(EXTRA_HOME_GREETING, "Sample이 인사를 전합니다") }
                         },
                         onRequestHomeResult = {
-                            homeLauncher.launch(this, HomeArgs(greeting = "결과를 부탁해요"), homeResultLauncher)
+                            homeLauncher.launch(this, resultLauncher = homeResultLauncher) {
+                                putExtra(EXTRA_HOME_GREETING, "결과를 부탁해요")
+                            }
                         },
-                        modifier =
-                            Modifier
-                                .fillMaxSize()
-                                .padding(innerPadding),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding),
                     )
                 }
             }

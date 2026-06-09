@@ -1,5 +1,6 @@
 package team.mino.feature.home
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -10,12 +11,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import dagger.hilt.android.AndroidEntryPoint
 import team.mino.core.designsystem.theme.MinoAndroidAppTheme
-import team.mino.core.navigation.activity.getArgsOrNull
-import team.mino.core.navigation.activity.setActivityResult
-import team.mino.feature.home.api.HomeArgs
-import team.mino.feature.home.api.HomeResult
+import team.mino.feature.home.api.EXTRA_HOME_GREETING
+import team.mino.feature.home.api.EXTRA_HOME_RESULT_CONFIRMED
 import team.mino.feature.home.navigation.HomeNavHost
-import team.mino.feature.sample.api.SampleArgs
+import team.mino.feature.sample.api.EXTRA_FROM_HOME
 import team.mino.feature.sample.api.SampleLauncher
 import javax.inject.Inject
 
@@ -27,7 +26,7 @@ class HomeActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        val greeting = intent.getArgsOrNull(HomeArgs.serializer())?.greeting.orEmpty()
+        val greeting = intent.getStringExtra(EXTRA_HOME_GREETING).orEmpty()
 
         setContent {
             MinoAndroidAppTheme {
@@ -38,11 +37,11 @@ class HomeActivity : ComponentActivity() {
                             .padding(innerPadding),
                         greeting = greeting,
                         onReturnResult = {
-                            setActivityResult(HomeResult.serializer(), HomeResult(confirmed = true))
+                            setResult(RESULT_OK, Intent().putExtra(EXTRA_HOME_RESULT_CONFIRMED, true))
                             finish()
                         },
                         onNavigateToSample = {
-                            sampleLauncher.launch(this, SampleArgs(fromHome = true))
+                            sampleLauncher.launch(this) { putExtra(EXTRA_FROM_HOME, true) }
                         },
                     )
                 }
