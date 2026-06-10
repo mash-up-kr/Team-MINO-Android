@@ -8,10 +8,6 @@ import team.mino.feature.home.HomeActivity
 import team.mino.feature.home.api.HomeLauncher
 import javax.inject.Inject
 
-internal class HomeLauncherImpl
-    @Inject
-    constructor() :
-    BaseActivityLauncher(),
-        HomeLauncher {
-        override fun createIntent(context: Context): Intent = context.intentOf<HomeActivity>()
-    }
+internal class HomeLauncherImpl @Inject constructor() : BaseActivityLauncher(), HomeLauncher {
+    override fun createIntent(context: Context): Intent = context.intentOf<HomeActivity>()
+}
