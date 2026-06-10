@@ -6,8 +6,10 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import kotlin.reflect.KType
 
 /**
  * 프로젝트 표준 [NavHost]. feature 내부 화면 그래프의 진입점으로 사용한다.
@@ -34,9 +36,12 @@ fun MinoNavHost(
  *
  * androidx Navigation의 type-safe `composable<T>`를 [Route]로 제약해, 모든 화면이
  * 동일한 라우트 계약을 따르도록 강제한다.
+ *
+ * 라우트가 custom `@Serializable` 인자를 들면 [serializableNavType]로 만든 [typeMap]을 넘긴다.
  */
 inline fun <reified T : Route> NavGraphBuilder.screen(
+    typeMap: Map<KType, NavType<*>> = emptyMap(),
     noinline content: @Composable AnimatedContentScope.(NavBackStackEntry) -> Unit,
 ) {
-    composable<T>(content = content)
+    composable<T>(typeMap = typeMap, content = content)
 }
