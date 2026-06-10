@@ -49,6 +49,10 @@ ktlint_standard_parameter-list-spacing = disabled
 
 # 클래스 시그니처 자동 정렬 끄기 (Hilt @Inject 및 긴 제네릭 상속 시 줄바꿈 강제 방지)
 ktlint_standard_class-signature = disabled
+ktlint_standard_annotation = disabled
+
+# 단일 선언 파일의 파일명 강제 끄기 (라우트 묶음 등 *Destinations.kt 컨테이너 명명 허용)
+ktlint_standard_filename = disabled
 
 # ── 기타 파일 포맷 ─────────────────────────────────────
 [*.{yml,yaml,json}]
