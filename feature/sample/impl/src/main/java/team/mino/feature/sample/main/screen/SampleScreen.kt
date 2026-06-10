@@ -1,4 +1,4 @@
-package team.mino.feature.sample.screen
+package team.mino.feature.sample.main.screen
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -8,9 +8,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import team.mino.feature.sample.vm.SampleIntent
-import team.mino.feature.sample.vm.SampleState
-import team.mino.feature.sample.vm.SampleStatus
+import team.mino.feature.sample.main.vm.SampleIntent
+import team.mino.feature.sample.main.vm.SampleState
+import team.mino.feature.sample.main.vm.SampleStatus
 
 @Composable
 fun SampleScreen(
@@ -18,6 +18,7 @@ fun SampleScreen(
     onIntent: (SampleIntent) -> Unit,
     onNavigateToHome: () -> Unit,
     onRequestHomeResult: () -> Unit,
+    onNavigateToDetail: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
@@ -32,6 +33,9 @@ fun SampleScreen(
         }
         Button(onClick = onRequestHomeResult) {
             Text(text = "Home에서 결과받기")
+        }
+        Button(onClick = onNavigateToDetail) {
+            Text(text = "Detail로 이동 (인자 전달)")
         }
 
         Spacer(modifier = Modifier.height(20.dp))

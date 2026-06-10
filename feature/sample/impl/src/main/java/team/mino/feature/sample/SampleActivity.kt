@@ -16,7 +16,6 @@ import team.mino.feature.home.api.EXTRA_HOME_GREETING
 import team.mino.feature.home.api.EXTRA_HOME_RESULT_CONFIRMED
 import team.mino.feature.home.api.HomeLauncher
 import team.mino.feature.sample.api.EXTRA_FROM_HOME
-import team.mino.feature.sample.navigation.SampleNavHost
 import javax.inject.Inject
 
 @AndroidEntryPoint

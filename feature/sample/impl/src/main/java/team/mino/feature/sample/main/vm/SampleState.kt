@@ -1,4 +1,4 @@
-package team.mino.feature.sample.vm
+package team.mino.feature.sample.main.vm
 
 import team.mino.core.common.android.architecture.UiState
 
