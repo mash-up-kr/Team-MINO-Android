@@ -1,9 +1,10 @@
-package team.mino.feature.home
+package team.mino.feature.home.di
 
 import android.content.Context
 import android.content.Intent
 import team.mino.core.navigation.activity.BaseActivityLauncher
 import team.mino.core.navigation.activity.intentOf
+import team.mino.feature.home.HomeActivity
 import team.mino.feature.home.api.HomeLauncher
 import javax.inject.Inject
 

@@ -1,4 +1,4 @@
-package team.mino.feature.home.screen
+package team.mino.feature.home.main.screen
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer

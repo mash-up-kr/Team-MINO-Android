@@ -1,16 +1,11 @@
-package team.mino.feature.home.navigation
+package team.mino.feature.home
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
-import kotlinx.serialization.Serializable
 import team.mino.core.navigation.screen.MinoNavHost
-import team.mino.core.navigation.screen.Route
 import team.mino.core.navigation.screen.screen
-import team.mino.feature.home.screen.HomeScreen
-
-@Serializable
-internal data object HomeMain : Route
+import team.mino.feature.home.main.screen.HomeScreen
 
 @Composable
 internal fun HomeNavHost(
