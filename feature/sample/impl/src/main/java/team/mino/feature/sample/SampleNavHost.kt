@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
 import team.mino.core.navigation.screen.MinoNavHost
+import team.mino.core.navigation.screen.popBackStackIfResumed
 import team.mino.core.navigation.screen.screen
 import team.mino.feature.sample.detail.model.SampleQuery
 import team.mino.feature.sample.detail.screen.SampleDetailRoute
@@ -31,8 +32,10 @@ internal fun SampleNavHost(
                 },
             )
         }
-        screen<SampleDetail>(typeMap = SampleDetail.typeMap) {
-            SampleDetailRoute(onBack = { navController.popBackStack() })
+        screen<SampleDetail>(typeMap = SampleDetail.typeMap) { entry ->
+            SampleDetailRoute(
+                onBack = { navController.popBackStackIfResumed(entry) },
+            )
         }
     }
 }
