@@ -12,6 +12,8 @@ dependencies {
     implementation(project(":core:common:android"))
     implementation(project(":core:design-system"))
 
+    implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.collections.immutable)
 }
