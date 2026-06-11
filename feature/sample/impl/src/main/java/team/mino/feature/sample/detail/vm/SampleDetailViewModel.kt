@@ -10,14 +10,11 @@ import team.mino.feature.sample.SampleDetail
 import javax.inject.Inject
 
 @HiltViewModel
-class SampleDetailViewModel
-    @Inject
-    constructor(
-        savedStateHandle: SavedStateHandle,
-    ) : ViewModel(),
-        MviContainer<SampleDetailState, SampleDetailSideEffect> by mviContainer(SampleDetailState()) {
-        init {
-            val route = savedStateHandle.toRoute<SampleDetail>(SampleDetail.typeMap)
-            updateState { copy(query = route.query) }
-        }
+class SampleDetailViewModel @Inject constructor(
+    savedStateHandle: SavedStateHandle,
+) : ViewModel(), MviContainer<SampleDetailState, SampleDetailSideEffect> by mviContainer(SampleDetailState()) {
+    init {
+        val route = savedStateHandle.toRoute<SampleDetail>(SampleDetail.typeMap)
+        updateState { copy(query = route.query) }
     }
+}
