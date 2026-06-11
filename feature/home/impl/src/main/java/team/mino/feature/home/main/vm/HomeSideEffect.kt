@@ -1,5 +1,5 @@
 package team.mino.feature.home.main.vm
 
-import team.mino.core.common.android.architecture.UiSideEffect
+import team.mino.core.common.android.architecture.SideEffect
 
-sealed interface HomeSideEffect : UiSideEffect
+sealed interface HomeSideEffect : SideEffect

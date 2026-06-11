@@ -10,11 +10,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import team.mino.feature.home.main.vm.HomeState
+import team.mino.feature.home.main.vm.HomeUiState
 
 @Composable
 internal fun HomeScreen(
-    state: HomeState,
+    state: HomeUiState,
     onReturnResult: () -> Unit,
     onNavigateToSample: () -> Unit,
     modifier: Modifier = Modifier,

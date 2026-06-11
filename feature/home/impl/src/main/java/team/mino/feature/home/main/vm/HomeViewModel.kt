@@ -12,7 +12,7 @@ import javax.inject.Inject
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
-) : ViewModel(), MviContainer<HomeState, HomeSideEffect> by mviContainer(HomeState()) {
+) : ViewModel(), MviContainer<HomeUiState, HomeSideEffect> by mviContainer(HomeUiState()) {
     init {
         val route = savedStateHandle.toRoute<HomeMain>()
         updateState { copy(greeting = route.greeting.orEmpty()) }

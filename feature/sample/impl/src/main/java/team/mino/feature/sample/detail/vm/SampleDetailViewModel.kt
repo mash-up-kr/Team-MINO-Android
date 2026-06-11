@@ -12,7 +12,7 @@ import javax.inject.Inject
 @HiltViewModel
 class SampleDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
-) : ViewModel(), MviContainer<SampleDetailState, SampleDetailSideEffect> by mviContainer(SampleDetailState()) {
+) : ViewModel(), MviContainer<SampleDetailUiState, SampleDetailSideEffect> by mviContainer(SampleDetailUiState()) {
     init {
         val route = savedStateHandle.toRoute<SampleDetail>(SampleDetail.typeMap)
         updateState { copy(query = route.query) }

@@ -5,6 +5,6 @@ package team.mino.core.common.android.architecture
  */
 interface UiState
 
-interface UiIntent
+interface Intent
 
-interface UiSideEffect
+interface SideEffect
