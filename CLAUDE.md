@@ -12,9 +12,10 @@ Android 프로젝트. Git Flow 브랜치 전략 사용.
 | 커밋 메시지 작성, 커밋 쪼개기 | `docs/conventions/commit-message.md` |
 | Pull Request 생성, 본문 작성, 제목·연결 키워드 | `docs/conventions/pull-request.md` + `.github/PULL_REQUEST_TEMPLATE.md` |
 | Compose Lint 룰·severity 조정, 위반 처리 | `docs/conventions/compose-lint.md` + `lint.xml` |
+| 모듈 구성·의존성 규칙, 레이어 경계, 새 모듈 추가 절차 | `docs/architecture/modularization.md` |
 | feature 모듈 추가, api/impl 구조, 패키지·역할, Route↔Screen 작성 | `docs/architecture/feature-module.md` |
 | feature 화면 전환 — feature 간 Activity(Launcher), feature 내부 Route(NavHost·인자 전달) | `docs/architecture/feature-navigation.md` |
 | 디자인 시스템 사용·토큰 추가, `core:design-system` 모듈 작업 | `core/design-system/README.md` |
 | CD 배포, Play Store 자동화, 시크릿·트리거 | `docs/operations/cd-pipeline.md` |
 
-> 새로운 규약이 추가되면 `docs/conventions/` 하위에 파일을 만들고 위 표에 줄을 추가할 것.
+> 새 문서가 추가되면 성격에 맞는 `docs/` 하위 디렉터리(`conventions/` 규약, `architecture/` 구조, `operations/` 배포)에 파일을 만들고 위 표에 줄을 추가할 것.
