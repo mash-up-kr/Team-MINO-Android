@@ -7,8 +7,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import dagger.hilt.android.AndroidEntryPoint
 import team.mino.core.designsystem.theme.MinoAndroidAppTheme
@@ -39,21 +37,17 @@ class SampleActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MinoAndroidAppTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    SampleNavHost(
-                        onNavigateToHome = {
-                            homeLauncher.launch(this) { putExtra(EXTRA_HOME_GREETING, "Sample이 인사를 전합니다") }
-                        },
-                        onRequestHomeResult = {
-                            homeLauncher.launch(this, resultLauncher = homeResultLauncher) {
-                                putExtra(EXTRA_HOME_GREETING, "결과를 부탁해요")
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding),
-                    )
-                }
+                SampleNavHost(
+                    onNavigateToHome = {
+                        homeLauncher.launch(this) { putExtra(EXTRA_HOME_GREETING, "Sample이 인사를 전합니다") }
+                    },
+                    onRequestHomeResult = {
+                        homeLauncher.launch(this, resultLauncher = homeResultLauncher) {
+                            putExtra(EXTRA_HOME_GREETING, "결과를 부탁해요")
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize(),
+                )
             }
         }
     }
