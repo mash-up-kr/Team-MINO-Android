@@ -4,15 +4,15 @@ GitHub Actions + Fastlane 기반 Play Store 배포 자동화. 배포는 `release
 
 ## 아키텍처
 
-![MinoAndroid CD 파이프라인](diagrams/cd-pipeline.png)
+![MinoAndroid CD 파이프라인](../diagrams/cd-pipeline.png)
 
-> 인터랙티브 버전(PNG·PDF 내보내기 지원): [diagrams/cd-pipeline.html](diagrams/cd-pipeline.html). [`architecture-diagram` 스킬](../.claude/skills/architecture-diagram/SKILL.md)로 생성하며, 흐름이 바뀌면 같은 스킬로 다시 생성한다.
+> 인터랙티브 버전(PNG·PDF 내보내기 지원): [diagrams/cd-pipeline.html](../diagrams/cd-pipeline.html). [`architecture-diagram` 스킬](../../.claude/skills/architecture-diagram/SKILL.md)로 생성하며, 흐름이 바뀌면 같은 스킬로 다시 생성한다.
 
 ## 배포 모델
 
 - **Play 앱은 `team.mino` 단일 앱.** `prodRelease` 빌드를 내부테스트 트랙에 올려 검증하고, **같은 빌드를 production으로 승급(promote)** 한다. 재빌드하지 않으므로 *검증한 바이너리 = 출시 바이너리*.
 - **`qaRelease`(`team.mino.qa`, qa-api)는 Play에 올리지 않는다.** APK를 GitHub Release(prerelease)에 첨부해 QA가 직접 받는다.
-- 브랜치 전략은 [conventions/branch-naming.md](conventions/branch-naming.md) 참조.
+- 브랜치 전략은 [conventions/branch-naming.md](../conventions/branch-naming.md) 참조.
 
 ## 단계 요약
 
