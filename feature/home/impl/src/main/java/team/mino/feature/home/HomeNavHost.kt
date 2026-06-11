@@ -4,12 +4,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
 import team.mino.core.navigation.screen.MinoNavHost
+import team.mino.core.navigation.screen.Route
 import team.mino.core.navigation.screen.screen
-import team.mino.feature.home.main.screen.HomeScreen
+import team.mino.feature.home.main.screen.HomeRoute
 
 @Composable
 internal fun HomeNavHost(
-    greeting: String,
+    startDestination: Route,
     onReturnResult: () -> Unit,
     onNavigateToSample: () -> Unit,
     modifier: Modifier = Modifier,
@@ -17,12 +18,11 @@ internal fun HomeNavHost(
     val navController = rememberNavController()
     MinoNavHost(
         navController = navController,
-        startDestination = HomeMain,
+        startDestination = startDestination,
         modifier = modifier,
     ) {
         screen<HomeMain> {
-            HomeScreen(
-                greeting = greeting,
+            HomeRoute(
                 onReturnResult = onReturnResult,
                 onNavigateToSample = onNavigateToSample,
             )

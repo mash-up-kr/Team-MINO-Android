@@ -6,8 +6,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import dagger.hilt.android.AndroidEntryPoint
 import team.mino.core.designsystem.theme.MinoAndroidAppTheme
@@ -29,21 +27,17 @@ class HomeActivity : ComponentActivity() {
 
         setContent {
             MinoAndroidAppTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    HomeNavHost(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding),
-                        greeting = greeting,
-                        onReturnResult = {
-                            setResult(RESULT_OK, Intent().putExtra(EXTRA_HOME_RESULT_CONFIRMED, true))
-                            finish()
-                        },
-                        onNavigateToSample = {
-                            sampleLauncher.launch(this) { putExtra(EXTRA_FROM_HOME, true) }
-                        },
-                    )
-                }
+                HomeNavHost(
+                    modifier = Modifier.fillMaxSize(),
+                    startDestination = HomeMain(greeting),
+                    onReturnResult = {
+                        setResult(RESULT_OK, Intent().putExtra(EXTRA_HOME_RESULT_CONFIRMED, true))
+                        finish()
+                    },
+                    onNavigateToSample = {
+                        sampleLauncher.launch(this) { putExtra(EXTRA_FROM_HOME, true) }
+                    },
+                )
             }
         }
     }

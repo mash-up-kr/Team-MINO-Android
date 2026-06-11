@@ -4,4 +4,6 @@ import kotlinx.serialization.Serializable
 import team.mino.core.navigation.screen.Route
 
 @Serializable
-internal data object HomeMain : Route
+internal data class HomeMain(
+    val greeting: String? = null,
+) : Route
