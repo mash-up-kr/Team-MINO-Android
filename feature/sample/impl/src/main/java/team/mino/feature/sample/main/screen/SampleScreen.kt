@@ -11,12 +11,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import team.mino.feature.sample.main.vm.SampleIntent
-import team.mino.feature.sample.main.vm.SampleState
 import team.mino.feature.sample.main.vm.SampleStatus
+import team.mino.feature.sample.main.vm.SampleUiState
 
 @Composable
 fun SampleScreen(
-    state: SampleState,
+    state: SampleUiState,
     onIntent: (SampleIntent) -> Unit,
     onNavigateToHome: () -> Unit,
     onRequestHomeResult: () -> Unit,

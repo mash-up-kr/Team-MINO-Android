@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.update
 /**
  * [MviContainer]의 실제 동작을 담당하는 구현체입니다.
  */
-class MviContainerImpl<S : UiState, E : UiSideEffect>(
+class MviContainerImpl<S : UiState, E : SideEffect>(
     initialState: S,
 ) : MviContainer<S, E> {
     private val _state = MutableStateFlow(initialState)

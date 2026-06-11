@@ -10,11 +10,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import team.mino.feature.sample.detail.vm.SampleDetailState
+import team.mino.feature.sample.detail.vm.SampleDetailUiState
 
 @Composable
 fun SampleDetailScreen(
-    state: SampleDetailState,
+    state: SampleDetailUiState,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {

@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.StateFlow
 /**
  * ViewModel이 상속받아 사용할 MVI 인터페이스
  */
-interface MviContainer<S : UiState, E : UiSideEffect> {
+interface MviContainer<S : UiState, E : SideEffect> {
     val state: StateFlow<S>
     val sideEffect: Flow<E>
 
@@ -20,4 +20,4 @@ interface MviContainer<S : UiState, E : UiSideEffect> {
  *
  * @param initialState 화면의 초기 [UiState]
  */
-fun <S : UiState, E : UiSideEffect> mviContainer(initialState: S): MviContainer<S, E> = MviContainerImpl(initialState)
+fun <S : UiState, E : SideEffect> mviContainer(initialState: S): MviContainer<S, E> = MviContainerImpl(initialState)

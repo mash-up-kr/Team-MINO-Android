@@ -14,12 +14,12 @@ class SampleViewModel
     @Inject
     constructor() :
     ViewModel(),
-        MviContainer<SampleState, SampleSideEffect> by mviContainer(SampleState()) {
+        MviContainer<SampleUiState, SampleSideEffect> by mviContainer(SampleUiState()) {
         fun processIntent(intent: SampleIntent) {
             when (intent) {
                 is SampleIntent.ClickRefreshTeam -> loadTeamMembers()
                 is SampleIntent.ClickTriggerError -> makeError()
-                is SampleIntent.ClickResetState -> updateState { SampleState() }
+                is SampleIntent.ClickResetState -> updateState { SampleUiState() }
             }
         }
 
