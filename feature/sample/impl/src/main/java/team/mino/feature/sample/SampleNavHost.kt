@@ -9,6 +9,7 @@ import team.mino.core.navigation.screen.screen
 import team.mino.feature.sample.detail.model.SampleQuery
 import team.mino.feature.sample.detail.screen.SampleDetailRoute
 import team.mino.feature.sample.main.screen.SampleRoute
+import team.mino.feature.sample.map.screen.SampleMapRoute
 
 @Composable
 internal fun SampleNavHost(
@@ -27,10 +28,14 @@ internal fun SampleNavHost(
             SampleRoute(
                 onNavigateToHome = onNavigateToHome,
                 onRequestHomeResult = onRequestHomeResult,
+                onNavigateToMap = { navController.navigate(SampleMap) },
                 onNavigateToDetail = {
                     navController.navigate(SampleDetail(SampleQuery(keyword = "민호", page = 1)))
                 },
             )
+        }
+        screen<SampleMap> {
+            SampleMapRoute()
         }
         screen<SampleDetail>(typeMap = SampleDetail.typeMap) { entry ->
             SampleDetailRoute(

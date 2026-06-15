@@ -12,6 +12,9 @@ import kotlin.reflect.typeOf
 internal data object SampleMain : Route
 
 @Serializable
+internal data object SampleMap : Route
+
+@Serializable
 internal data class SampleDetail(
     val query: SampleQuery,
 ) : Route {

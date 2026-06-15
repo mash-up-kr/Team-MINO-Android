@@ -7,16 +7,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import team.mino.core.common.ui.architecture.CollectSideEffect
 import team.mino.feature.sample.main.vm.SampleSideEffect
 import team.mino.feature.sample.main.vm.SampleViewModel
-import team.mino.core.common.ui.architecture.CollectSideEffect
-import team.mino.feature.sample.vm.SampleSideEffect
-import team.mino.feature.sample.vm.SampleViewModel
 
 @Composable
 fun SampleRoute(
     onNavigateToHome: () -> Unit,
     onRequestHomeResult: () -> Unit,
+    onNavigateToMap: () -> Unit,
     onNavigateToDetail: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SampleViewModel = hiltViewModel(),
@@ -37,6 +36,7 @@ fun SampleRoute(
         onIntent = { intent -> viewModel.processIntent(intent) },
         onNavigateToHome = onNavigateToHome,
         onRequestHomeResult = onRequestHomeResult,
+        onNavigateToMap = onNavigateToMap,
         onNavigateToDetail = onNavigateToDetail,
         modifier = modifier,
     )
