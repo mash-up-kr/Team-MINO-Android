@@ -9,4 +9,7 @@ android {
 dependencies {
     implementation(project(":feature:sample:api"))
     implementation(project(":feature:home:api"))
+    implementation(project(":core:map"))
+
+    implementation(libs.maps.compose)
 }

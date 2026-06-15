@@ -20,6 +20,7 @@ fun SampleScreen(
     onIntent: (SampleIntent) -> Unit,
     onNavigateToHome: () -> Unit,
     onRequestHomeResult: () -> Unit,
+    onNavigateToMap: () -> Unit,
     onNavigateToDetail: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -39,6 +40,9 @@ fun SampleScreen(
             }
             Button(onClick = onNavigateToDetail) {
                 Text(text = "Detail로 이동 (인자 전달)")
+            }
+            Button(onClick = onNavigateToMap) {
+                Text(text = "지도 열기")
             }
 
             Spacer(modifier = Modifier.height(20.dp))

@@ -1,9 +1,21 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.mino.android.application.compose)
     alias(libs.plugins.mino.android.hilt)
     alias(libs.plugins.mino.android.flavor)
     alias(libs.plugins.mino.android.firebase)
 }
+
+// Maps SDK 키는 VCS에 올리지 않는 local.properties(MAPS_API_KEY)에서 읽어 Manifest placeholder로 주입한다.
+val mapsApiKey: String =
+    Properties()
+        .apply {
+            val localPropertiesFile = rootProject.file("local.properties")
+            if (localPropertiesFile.exists()) {
+                localPropertiesFile.inputStream().use { load(it) }
+            }
+        }.getProperty("MAPS_API_KEY", "")
 
 android {
     namespace = "team.mino"
@@ -12,6 +24,8 @@ android {
         applicationId = "team.mino"
         versionCode = (project.findProperty("versionCode") as? String)?.toIntOrNull() ?: 1
         versionName = (project.findProperty("versionName") as? String) ?: "1.0"
+
+        manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
     }
 
     buildTypes {
