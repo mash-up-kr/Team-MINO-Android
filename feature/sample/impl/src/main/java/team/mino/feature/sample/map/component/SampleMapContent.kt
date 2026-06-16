@@ -8,6 +8,7 @@ import androidx.compose.ui.graphics.Color
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.Polygon
 import com.google.maps.android.compose.rememberUpdatedMarkerState
+import kotlinx.collections.immutable.ImmutableList
 import team.mino.core.common.kotlin.geo.GeoPoint
 import team.mino.core.map.MinoMap
 import team.mino.core.map.geometry.sortedIntoPolygonOrder
@@ -22,7 +23,7 @@ private const val AREA_STROKE_WIDTH = 6f
 internal fun SampleMapContent(
     cameraCenter: GeoPoint,
     zoom: Float,
-    areaPoints: List<GeoPoint>,
+    areaPoints: ImmutableList<GeoPoint>,
     modifier: Modifier = Modifier,
 ) {
     val cameraPositionState = rememberMinoCameraState(center = cameraCenter, zoom = zoom)
