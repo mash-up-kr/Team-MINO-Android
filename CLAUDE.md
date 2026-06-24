@@ -16,6 +16,7 @@ Android 프로젝트. Git Flow 브랜치 전략 사용.
 | feature 모듈 추가, api/impl 구조, 패키지·역할, Route↔Screen 작성 | `docs/architecture/feature-module.md` |
 | feature 화면 전환 — feature 간 Activity(Launcher), feature 내부 Route(NavHost·인자 전달) | `docs/architecture/feature-navigation.md` |
 | 디자인 시스템 사용·토큰 추가, `core:design-system` 모듈 작업 | `core/design-system/README.md` |
+| `core:common` 공용 기반 모듈 사용·확장 (Kotlin 유틸·MVI·공통 UI) | `core/common/kotlin/README.md` · `core/common/android/README.md` · `core/common/ui/README.md` |
 | CD 배포, Play Store 자동화, 시크릿·트리거 | `docs/operations/cd-pipeline.md` |
 
 > 새 문서가 추가되면 성격에 맞는 `docs/` 하위 디렉터리(`conventions/` 규약, `architecture/` 구조, `operations/` 배포)에 파일을 만들고 위 표에 줄을 추가할 것.
