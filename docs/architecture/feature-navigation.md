@@ -2,7 +2,7 @@
 
 feature의 **화면 전환** 규약. 전환은 범위에 따라 둘로 갈린다 — feature **간**은 Activity, feature **내부**는 Route(Compose Navigation). 모듈 구조·패키지·Composable 구성(Route↔Screen)은 → `feature-module.md`.
 
-> placeholder: `X`/`Y`(feature 이름), `XMain`/`XDetail`(화면). 인프라(`ActivityLauncher`/`BaseActivityLauncher`/`intentOf`/`MinoNavHost`/`screen`/`serializableNavType`/`popBackStackIfResumed`)는 `:core:navigation`을 단일 출처로 한다 — 여기서 재정의하지 않는다.
+> placeholder: `X`/`Y`(feature 이름), `XMain`/`XDetail`(화면). 인프라(`ActivityLauncher`/`BaseActivityLauncher`/`intentOf`/`MinoNavHost`/`screen`/`serializableNavType`/`popBackStackIfResumed`)의 **API는 [`core:navigation` README](../../core/navigation/README.md)를 단일 출처**로 한다 — 여기서 재정의하지 않고, 그 API를 feature가 **어떻게 쓰는지(규약)** 만 다룬다.
 
 ---
 
