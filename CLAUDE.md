@@ -13,6 +13,7 @@ Android 프로젝트. Git Flow 브랜치 전략 사용.
 | Pull Request 생성, 본문 작성, 제목·연결 키워드 | `docs/conventions/pull-request.md` + `.github/PULL_REQUEST_TEMPLATE.md` |
 | Compose Lint 룰·severity 조정, 위반 처리 | `docs/conventions/compose-lint.md` + `lint.xml` |
 | 모듈 구성·의존성 규칙, 레이어 경계, 새 모듈 추가 절차 | `docs/architecture/modularization.md` |
+| Domain Repository 인터페이스, UseCase 사용 기준, ViewModel 책임 분리 | `docs/architecture/domain-module.md` |
 | feature 모듈 추가, api/impl 구조, 패키지·역할, Route↔Screen 작성 | `docs/architecture/feature-module.md` |
 | feature 화면 전환 — feature 간 Activity(Launcher), feature 내부 Route(NavHost·인자 전달) | `docs/architecture/feature-navigation.md` |
 | 디자인 시스템 사용·토큰 추가, `core:design-system` 모듈 작업 | `core/design-system/README.md` |
