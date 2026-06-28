@@ -1,6 +1,6 @@
 # Domain 모듈 컨벤션
 
-`core:domain`은 비즈니스 로직의 중심이다. Repository 인터페이스와 UseCase를 여기 두고, ViewModel과 데이터 계층 사이의 경계를 명확히 한다.
+`core:domain`은 비즈니스 로직의 중심이다. Repository 인터페이스와 필요한 UseCase를 여기 두고, ViewModel과 데이터 계층 사이의 경계를 명확히 한다.
 
 ---
 
@@ -79,7 +79,7 @@ flowchart TD
     Impl --> DS
 ```
 
-ViewModel은 UseCase 또는 Repository 인터페이스만 알고, 구현체(`RepositoryImpl`)는 알지 못한다. 구현 바인딩은 `:app`의 Hilt DI가 담당한다.
+ViewModel은 UseCase 또는 Repository 인터페이스만 알고, 구현체(`RepositoryImpl`)는 알지 못한다. RepositoryImpl과 Hilt 바인딩은 `:core:data`에 두고, `:app`은 최종 DI 그래프를 조립한다.
 
 ---
 
@@ -92,6 +92,7 @@ ViewModel은 UseCase 또는 Repository 인터페이스만 알고, 구현체(`Rep
 - 단일 API 하나로 화면에 필요한 데이터를 모두 받는다
 - 응답 데이터를 그대로(또는 단순 변환만) 화면에 보여준다
 - 여러 화면에서 재사용할 행위가 아니다
+- 정렬, 필터링, 권한 판단, 상태 전이 같은 비즈니스 규칙이 없다
 
 ```kotlin
 @HiltViewModel
@@ -102,7 +103,7 @@ class ProfileViewModel @Inject constructor(
     fun loadProfile(userId: String) {
         viewModelScope.launch {
             val profile = profileRepository.getProfile(userId)
-            updateState { copy(profile = profile) }
+            updateState { copy(profile = profile.toUiModel()) }
         }
     }
 }
@@ -121,6 +122,12 @@ class ProfileViewModel @Inject constructor(
 | 비즈니스 규칙 — 권한 판단 | 로그인 상태·역할에 따라 메뉴 노출 여부 결정 |
 | 비즈니스 규칙 — 상태 전이 | 주문 상태가 특정 단계일 때만 취소 가능 판단 |
 | 여러 화면에서 재사용하는 행위 | 알림 읽음 처리를 피드·마이페이지·상세 세 곳에서 공통 사용 |
+
+UseCase 작성 규칙:
+
+- UseCase는 다른 UseCase보다 Repository 인터페이스에 직접 의존하는 것을 우선한다.
+- public 함수는 기본적으로 `operator fun invoke(...)` 하나로 둔다.
+- UI 상태, navigation, Android `Context`를 알지 않는다.
 
 ```kotlin
 // core:domain/usecase/GetDashboardUseCase.kt
@@ -145,7 +152,7 @@ class DashboardViewModel @Inject constructor(
     fun load(userId: String) {
         viewModelScope.launch {
             val dashboard = getDashboard(userId)
-            updateState { copy(dashboard = dashboard) }
+            updateState { copy(dashboard = dashboard.toUiModel()) }
         }
     }
 }
