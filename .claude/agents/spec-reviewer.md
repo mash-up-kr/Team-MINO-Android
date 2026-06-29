@@ -23,7 +23,7 @@ tools: Read, Grep, Glob, Bash
 | # | 확인 | 기대 | 분류 |
 |---|------|------|:--:|
 | S1 | 첫 줄 슬러그 주석 | `<!-- feature: {kebab-slug} -->` 존재·형식 유효 | A |
-| S2 | 필수 H2 8개 | 한눈에 보기 / 화면 상태별 읽기 / 핵심 UX 규칙 / 사용자 흐름 / 상세 기능 명세 / 비목표 / Open Questions / 변경 이력 (순서·제목 일치) | A |
+| S2 | 필수 H2 8개 | `spec-format.md`의 `필수 섹션`(H2 8개)과 순서·제목 일치 | A |
 | S3 | section 2 이미지 | `2. 화면 상태별 읽기`에 `![](assets/*.png)` ≥ 1 | A |
 | S4 | enum 유효성 | 5.x `interactionType`(6종)·`확정`(3종) 컬럼 값이 통제 어휘만, 빈 값 없음 | A |
 | S5 | 이미지 파일 정합 | 본문 참조 `assets/x.png`가 실제 export 파일과 1:1 (깨진 링크 0) | A |
@@ -32,7 +32,7 @@ tools: Read, Grep, Glob, Bash
 | S8 | 사실 기반 | **Figma·기획서에 없는 추측 채움 없음.** 화면 상태·텍스트·동작이 실제 Figma와 일치. 미정은 `partial`/`needs_policy`·Open Questions로 처리 | H |
 | S9 | 이미지 정확성 | 삽입된 PNG가 해당 상태/화면을 실제로 나타냄. 파일명 규칙(소문자/숫자/하이픈) 준수 | H |
 
-> 통제 어휘: `interactionType` = `display_state`/`user_action`/`navigation`/`async_process`/`validation`/`modal_dialog` · `확정` = `confirmed`/`partial`/`needs_policy`.
+> 통제 어휘·필수 섹션·출력 템플릿은 [`../skills/spec-gen/spec-format.md`](../skills/spec-gen/spec-format.md)를 **단일 출처**로 한다 — 검수 시 Read해 그 값과 대조한다.
 
 ## 검수 방법
 
