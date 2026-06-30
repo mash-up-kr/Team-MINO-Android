@@ -12,15 +12,17 @@ import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
+import team.mino.core.data.BuildConfig
 import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-object NetworkModule {
+internal object NetworkModule {
     @Provides
     @Singleton
     fun provideHttpClient(): HttpClient =
         HttpClient(OkHttp) {
+            expectSuccess = true
             defaultRequest {
                 url("https://api.github.com/")
             }
@@ -28,7 +30,7 @@ object NetworkModule {
                 json(Json { ignoreUnknownKeys = true })
             }
             install(Logging) {
-                level = LogLevel.BODY
+                level = if (BuildConfig.FLAVOR == "qa") LogLevel.BODY else LogLevel.NONE
             }
         }
 }
