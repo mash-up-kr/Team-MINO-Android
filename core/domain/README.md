@@ -1,74 +1,24 @@
 # core:domain
 
-MinoAndroid의 **비즈니스 로직 중심** 모듈. Repository 인터페이스와 필요한 UseCase를 여기 두고, ViewModel과 데이터 계층 사이의 경계를 명확히 한다.
+MinoAndroid의 **비즈니스 로직 중심** 모듈. 도메인 모델·Repository 인터페이스·UseCase를 여기 두고, ViewModel과 데이터 계층 사이의 경계를 명확히 한다.
 
 > 모듈 책임·경계·의존 방향(레이어 그래프)은 [`docs/architecture/modularization.md`](../../docs/architecture/modularization.md)를 단일 출처로 한다. 이 문서는 이 모듈의 **API·사용법·확장 규칙**만 다룬다.
 
 ---
 
-## 1. 모듈 개요
+## 1. 개요
 
-| 항목 | 내용 |
+| | |
 |---|---|
-| Gradle 모듈 | `:core:domain` |
-| 모듈 종류 | Kotlin JVM (Android SDK 의존 없음) |
-| 의존 | `:core:common:kotlin`만 허용 — `core:domain`이 `implementation`으로 직접 의존할 수 있는 모듈 |
-| 역할 | 도메인 모델 · Repository 인터페이스 · UseCase |
+| **무엇을** | 도메인 모델(Entity·VO)·Repository 인터페이스·UseCase를 제공한다. |
+| **빌드 타입** | Kotlin JVM (`mino.kotlin.jvm`) |
 
-Android SDK 의존이 없으므로 JVM 단위 테스트를 Android 환경 없이 실행할 수 있다. UseCase나 Repository 인터페이스는 가짜 구현(fake)으로 교체해 테스트한다.
-
-```kotlin
-// test/.../GetDashboardUseCaseTest.kt
-class GetDashboardUseCaseTest {
-
-    private val fakeProfileRepository = FakeProfileRepository()
-    private val fakePostRepository = FakePostRepository()
-    private val useCase = GetDashboardUseCase(fakeProfileRepository, fakePostRepository)
-
-    @Test
-    fun `프로필과 게시물 수를 합쳐 대시보드를 반환한다`() = runTest {
-        val result = useCase("user-1")
-        assertEquals("홍길동", result.profile.name)
-        assertEquals(5, result.postCount)
-    }
-}
-```
-
-```kotlin
-// build.gradle.kts
-plugins {
-    alias(libs.plugins.mino.kotlin.jvm)
-}
-
-dependencies {
-    implementation(project(":core:common:kotlin"))
-    implementation(libs.kotlinx.coroutines.core) // Flow, suspend
-    implementation(libs.javax.inject)             // @Inject constructor
-
-    testImplementation(libs.kotlinx.coroutines.test) // runTest
-}
-```
+> [!IMPORTANT]
+> 이 모듈은 Kotlin JVM이라 **Android SDK에 의존할 수 없다.** Android 타입(`Context`·`Uri`·Compose 등)을 둘 수 없으며, 덕분에 JVM 단위 테스트를 Android 환경 없이 실행할 수 있다. 모듈 경계 판단은 [`modularization.md`](../../docs/architecture/modularization.md) 참조.
 
 ---
 
-## 2. 패키지 구조
-
-```
-:core:domain — team/mino/core/domain/
-├── model/          # 도메인 모델 (Entity, VO)
-├── repository/     # Repository 인터페이스
-└── usecase/        # UseCase (필요한 경우에만)
-```
-
-| 디렉터리 | 배치 기준 |
-|---|---|
-| `model/` | 비즈니스 개념을 표현하는 순수 Kotlin 데이터 타입. DTO·Room Entity 아님. `enum`, `sealed class`(상태 표현 등)도 비즈니스 개념이면 함께 둔다. 파일이 늘어나면 `model/enum`, `model/state` 등으로 하위 분리 가능 |
-| `repository/` | 데이터 접근의 계약(인터페이스). 구현체는 `:core:data`에 위치 |
-| `usecase/` | 여러 Repository 조합, 비즈니스 규칙, 재사용 행위만 위치. 기준은 4장 참조 |
-
----
-
-## 3. 레이어 흐름
+## 2. 레이어 흐름
 
 ```mermaid
 flowchart TD
@@ -76,7 +26,7 @@ flowchart TD
     UC["UseCase\n(core:domain/usecase)"]
     RI["Repository 인터페이스\n(core:domain/repository)"]
     Impl["RepositoryImpl\n(core:data)"]
-    DS["DataSource · DTO · mapper\n(core:data)"]
+    DS["DataSource · DTO · Mapper\n(core:data)"]
 
     VM -->|"비즈니스 규칙 있을 때"| UC
     VM -->|"단순 조회 시 직접"| RI
@@ -86,6 +36,23 @@ flowchart TD
 ```
 
 ViewModel은 UseCase 또는 Repository 인터페이스만 알고, 구현체(`RepositoryImpl`)는 알지 못한다. RepositoryImpl과 Hilt 바인딩은 `:core:data`에 두고, `:app`은 최종 DI 그래프를 조립한다.
+
+---
+
+## 3. 디렉토리 구조
+
+```
+core/domain/src/main/kotlin/team/mino/core/domain/
+├── model/          # 도메인 모델 (Entity, VO)
+├── repository/     # Repository 인터페이스
+└── usecase/        # UseCase (필요한 경우에만)
+```
+
+| 디렉터리 | 배치 기준 |
+|---|---|
+| `model/` | 비즈니스 개념을 표현하는 순수 Kotlin 데이터 타입. DTO·Room Entity 아님. `enum`·`sealed class`도 비즈니스 개념이면 함께 둔다. 파일이 늘어나면 `model/enum`·`model/state` 등으로 하위 분리 가능 |
+| `repository/` | 데이터 접근의 계약(인터페이스). 구현체는 `:core:data`에 위치 |
+| `usecase/` | 여러 Repository 조합·비즈니스 규칙·재사용 행위만 위치. 기준은 4장 참조 |
 
 ---
 
@@ -104,25 +71,9 @@ ViewModel은 UseCase 또는 Repository 인터페이스만 알고, 구현체(`Rep
 
 > `MviContainer` · `UiState` · `SideEffect` 등 MVI 기반 타입은 [`core/common/android/README.md — 2. 핵심 API`](../../core/common/android/README.md)가 단일 출처다.
 
-```kotlin
-// ✅ 예외 케이스 — 단순 조회, 비즈니스 규칙 없음
-@HiltViewModel
-class ProfileViewModel @Inject constructor(
-    private val profileRepository: ProfileRepository,  // Repository 인터페이스 직접 주입
-) : ViewModel(), MviContainer<ProfileUiState, ProfileSideEffect> by mviContainer(ProfileUiState()) {
-
-    fun loadProfile(userId: String) {
-        viewModelScope.launch {
-            val profile = profileRepository.getProfile(userId)
-            updateState { copy(profile = profile.toUiModel()) }
-        }
-    }
-}
-```
-
 ### UseCase를 작성하는 경우
 
-위 예외 조건을 하나라도 만족하지 않으면 UseCase를 `core:domain/usecase`에 작성한다. 비즈니스 규칙의 종류와 무관하게 ViewModel에 두지 않는다.
+위 조건을 하나라도 만족하지 않으면 UseCase를 `core:domain/usecase`에 작성한다. 비즈니스 규칙의 종류와 무관하게 ViewModel에 두지 않는다.
 
 > UseCase가 주입받는 Repository는 `core:domain/repository`의 인터페이스이며, 실제 구현체(`RepositoryImpl`)는 `core:data`에 있고 Hilt가 런타임에 바인딩한다.
 
@@ -136,106 +87,25 @@ class ProfileViewModel @Inject constructor(
 | 상태 전이 | 주문 상태가 특정 단계일 때만 취소 가능 판단 |
 | 여러 화면에서 재사용하는 행위 | 알림 읽음 처리를 피드·마이페이지·상세 세 곳에서 공통 사용 |
 
-UseCase 작성 규칙:
-
-- UseCase는 다른 UseCase보다 Repository 인터페이스에 직접 의존하는 것을 우선한다.
-- public 함수는 기본적으로 `operator fun invoke(...)` 하나로 둔다.
-- UI 상태, navigation, Android `Context`를 알지 않는다.
-
-```kotlin
-// core:domain/usecase/GetDashboardUseCase.kt
-class GetDashboardUseCase @Inject constructor(
-    private val profileRepository: ProfileRepository,
-    private val postRepository: PostRepository,
-) {
-    suspend operator fun invoke(userId: String): Dashboard {
-        val profile = profileRepository.getProfile(userId)
-        val postCount = postRepository.getPostCount(userId)
-        return Dashboard(profile = profile, postCount = postCount)
-    }
-}
-```
-
-```kotlin
-@HiltViewModel
-class DashboardViewModel @Inject constructor(
-    private val getDashboard: GetDashboardUseCase,  // UseCase 주입
-) : ViewModel(), MviContainer<DashboardUiState, DashboardSideEffect> by mviContainer(DashboardUiState()) {
-
-    fun load(userId: String) {
-        viewModelScope.launch {
-            val dashboard = getDashboard(userId)
-            updateState { copy(dashboard = dashboard.toUiModel()) }
-        }
-    }
-}
-```
-
 ### 판단 흐름
 
 ```
-위 예외 조건 4가지를 모두 만족하는가?
+위 조건 4가지를 모두 만족하는가?
     YES → ViewModel이 Repository 직접 호출
     NO  → UseCase 작성 (core:domain/usecase)
 ```
 
 ---
 
-## 5. Repository 인터페이스 규칙
+## 5. 확장 규칙 — 어디에 둘지 결정
 
-### 위치
+| 패키지 | 두는 것 | 작성 규칙 |
+|---|---|---|
+| `model/` | 비즈니스 개념을 표현하는 순수 Kotlin 타입. `data class`·`enum`·`sealed class` | 파일명은 비즈니스 개념 이름 그대로 (`Profile.kt`, `PostStatus.kt`) |
+| `repository/` | 데이터 접근 계약 인터페이스. 반환 타입은 도메인 모델만, `suspend`·`Flow` 기반 | 이름은 `XxxRepository`. 구현체(`RepositoryImpl`)·DTO·Mapper는 `core:data`에 위치 |
+| `usecase/` | 비즈니스 규칙·Repository 조합·재사용 행위 | 이름은 `XxxUseCase`. public 함수는 `operator fun invoke(...)` 하나. 행위 동사로 시작 (`GetDashboardUseCase`, `MarkNotificationReadUseCase`) |
 
-| 항목 | 위치 |
-|---|---|
-| 인터페이스 | `core:domain/repository/` |
-| 구현체(`RepositoryImpl`) | `core:data` |
-| DataSource · DTO · mapper | `core:data` |
-
-### 작성 규칙
-
-- 반환 타입은 도메인 모델(`core:domain/model/`)만 사용한다. DTO·Room Entity 반환 금지.
-- 코루틴 기반(`suspend` 함수 또는 `Flow`)으로 작성한다.
-- 인터페이스 이름: `XxxRepository`
-
-```kotlin
-// core:domain/repository/ProfileRepository.kt
-interface ProfileRepository {
-    suspend fun getProfile(userId: String): Profile
-    fun observeProfile(userId: String): Flow<Profile>
-}
-```
-
-```kotlin
-// core:domain/model/Profile.kt
-data class Profile(
-    val id: String,
-    val name: String,
-    val imageUrl: String,
-)
-```
-
-```kotlin
-// core:data — RepositoryImpl은 여기에
-class ProfileRepositoryImpl @Inject constructor(
-    private val remoteDataSource: ProfileRemoteDataSource,
-) : ProfileRepository {
-
-    override suspend fun getProfile(userId: String): Profile {
-        return remoteDataSource.getProfile(userId).toDomain()  // DTO → 도메인 모델 변환
-    }
-
-    // Flow를 반환하는 경우도 DTO → 도메인 모델 변환은 RepositoryImpl 내부에서 끝낸다
-    override fun observeProfile(userId: String): Flow<Profile> {
-        return remoteDataSource.observeProfile(userId).map { it.toDomain() }
-    }
-}
-```
-
----
-
-## 6. Mapper (DTO → 도메인 모델 변환)
-
-### 위치 원칙
+### Mapper (DTO → 도메인 모델 변환)
 
 Mapper는 **`core:data`에만 위치**한다. `core:domain`은 자신의 모델이 어디서 오는지 알지 못한다.
 
@@ -245,59 +115,27 @@ Mapper는 **`core:data`에만 위치**한다. `core:domain`은 자신의 모델�
 | DTO (서버·DB 스펙) | `core:data` |
 | Mapper 함수 (`toDomain()`) | `core:data` — DTO의 확장 함수로 작성 |
 
-### 작성 규칙
-
 - DTO의 확장 함수(`fun XxxResponse.toDomain()`)로 작성한다.
 - 파일명은 `XxxMapper.kt`, DTO와 같은 패키지에 둔다.
-- 서버 스펙에만 존재하는 필드(예: `created_at`)는 도메인 모델에 포함하지 않는다.
+- 서버 스펙에만 존재하는 필드는 도메인 모델에 포함하지 않는다.
 - 변환 책임은 `RepositoryImpl` 내부에서 끝내고, ViewModel·UseCase까지 DTO가 노출되지 않게 한다.
 
-```kotlin
-// [core:domain] 외부를 전혀 모르는 순수한 비즈니스 모델
-// core:domain/model/Profile.kt
-data class Profile(
-    val id: String,
-    val name: String,
-    val imageUrl: String,
-)
-```
+---
+
+## 6. 의존성 추가 가이드
+
+`build.gradle.kts`에 추가:
 
 ```kotlin
-// [core:data] 서버 스펙에 맞춘 DTO
-// core:data/remote/dto/ProfileResponse.kt
-data class ProfileResponse(
-    val user_id: String,
-    val user_name: String,
-    val profile_image_url: String,
-    val created_at: String, // 도메인에 필요 없는 서버 전용 필드
-)
-```
-
-```kotlin
-// [core:data] DTO → 도메인 모델 변환 (Mapper)
-// core:data/remote/dto/ProfileMapper.kt
-fun ProfileResponse.toDomain(): Profile {
-    return Profile(
-        id = this.user_id,
-        name = this.user_name,
-        imageUrl = this.profile_image_url,
-        // created_at은 도메인 모델에 포함하지 않음
-    )
+dependencies {
+    implementation(project(":core:domain"))
 }
 ```
 
-```kotlin
-// [core:data] RepositoryImpl에서 변환 완료 후 도메인 모델 반환
-// core:data/repository/ProfileRepositoryImpl.kt
-class ProfileRepositoryImpl @Inject constructor(
-    private val remoteDataSource: ProfileRemoteDataSource,
-) : ProfileRepository {
+이 모듈이 끌어오는 주요 라이브러리: `kotlinx-coroutines-core`·`javax-inject` (`implementation`이라 전이되지 않음).
 
-    override suspend fun getProfile(userId: String): Profile {
-        return remoteDataSource.getProfile(userId).toDomain() // ✅ RepositoryImpl 경계에서 변환 완료
-    }
-}
-```
+> [!NOTE]
+> `core:domain`은 Kotlin JVM 모듈이다. Android Library 모듈에서도 의존할 수 있으나, 반대(domain → Android)는 금지다.
 
 ---
 
@@ -309,8 +147,6 @@ class ProfileRepositoryImpl @Inject constructor(
 
 ### domain 고유 계약 위반
 
-레이어 경계는 인터페이스·도메인 모델을 통해서만 넘어야 한다. `core:domain` 고유 금지 규칙은 아래와 같다.
-
 | 금지 | 이유 |
 |---|---|
 | Repository 인터페이스가 DTO·Room Entity 반환 | 데이터 계층 구현 상세가 도메인으로 노출됨 |
@@ -320,7 +156,7 @@ class ProfileRepositoryImpl @Inject constructor(
 
 ---
 
-## 8. 컨벤션 요약
+## 8. 컨벤션
 
 | 항목 | 규칙 |
 |---|---|
