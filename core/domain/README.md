@@ -91,18 +91,21 @@ ViewModel은 UseCase 또는 Repository 인터페이스만 알고, 구현체(`Rep
 
 ## 4. UseCase 생성·생략 기준
 
-### 생략해도 되는 경우 — ViewModel이 Repository를 직접 호출
+비즈니스 규칙이 존재한다면 UseCase로 분리한다. ViewModel이 Repository를 직접 호출하는 것은 아래 조건을 **모두** 만족하는 단순 조회로 한정한다.
 
-아래 조건을 **모두** 만족하면 UseCase 없이 ViewModel이 Repository 인터페이스를 직접 호출한다.
+### ViewModel의 Repository 직접 호출 예시
 
-- 단일 API 하나로 화면에 필요한 데이터를 모두 받는다
-- 응답 데이터를 그대로(또는 단순 변환만) 화면에 보여준다
-- 여러 화면에서 재사용할 행위가 아니다
-- 정렬, 필터링, 권한 판단, 상태 전이 같은 비즈니스 규칙이 없다
+| 조건 | 설명 |
+|---|---|
+| 단일 API | 화면에 필요한 데이터를 API 하나로 모두 받는다 |
+| 단순 표시 | 응답 데이터를 그대로(또는 단순 변환만) 화면에 보여준다 |
+| 재사용 없음 | 여러 화면에서 공통으로 재사용할 행위가 아니다 |
+| 비즈니스 규칙 없음 | 정렬·필터링·권한 판단·상태 전이 등 어떤 비즈니스 판단도 없다 |
 
 > `MviContainer` · `UiState` · `SideEffect` 등 MVI 기반 타입은 [`core/common/android/README.md — 2. 핵심 API`](../../core/common/android/README.md)가 단일 출처다.
 
 ```kotlin
+// ✅ 예외 케이스 — 단순 조회, 비즈니스 규칙 없음
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val profileRepository: ProfileRepository,  // Repository 인터페이스 직접 주입
@@ -117,18 +120,20 @@ class ProfileViewModel @Inject constructor(
 }
 ```
 
-### UseCase가 필요한 경우
+### UseCase를 작성하는 경우
 
-다음 중 하나라도 해당되면 UseCase를 `core:domain/usecase`에 작성한다.
+위 예외 조건을 하나라도 만족하지 않으면 UseCase를 `core:domain/usecase`에 작성한다. 비즈니스 규칙의 종류와 무관하게 ViewModel에 두지 않는다.
 
 > UseCase가 주입받는 Repository는 `core:domain/repository`의 인터페이스이며, 실제 구현체(`RepositoryImpl`)는 `core:data`에 있고 Hilt가 런타임에 바인딩한다.
 
-| 상황 | 예시 |
+아래는 참고용 예시다. 이 목록에 없는 비즈니스 규칙도 UseCase로 분리한다.
+
+| 예시 유형 | 구체적 예 |
 |---|---|
-| 여러 Repository/API를 조합 | 프로필 + 팔로워 수 + 게시물 수를 합쳐 대시보드 구성 |
-| 비즈니스 규칙 — 정렬·필터링 | 공지사항을 고정 → 최신순으로 정렬 |
-| 비즈니스 규칙 — 권한 판단 | 로그인 상태·역할에 따라 메뉴 노출 여부 결정 |
-| 비즈니스 규칙 — 상태 전이 | 주문 상태가 특정 단계일 때만 취소 가능 판단 |
+| 여러 Repository/API 조합 | 프로필 + 팔로워 수 + 게시물 수를 합쳐 대시보드 구성 |
+| 정렬·필터링 | 공지사항을 고정 → 최신순으로 정렬 |
+| 권한 판단 | 로그인 상태·역할에 따라 메뉴 노출 여부 결정 |
+| 상태 전이 | 주문 상태가 특정 단계일 때만 취소 가능 판단 |
 | 여러 화면에서 재사용하는 행위 | 알림 읽음 처리를 피드·마이페이지·상세 세 곳에서 공통 사용 |
 
 UseCase 작성 규칙:
@@ -169,11 +174,9 @@ class DashboardViewModel @Inject constructor(
 ### 판단 흐름
 
 ```
-단일 API이고 비즈니스 판단/조합 없음?
+위 예외 조건 4가지를 모두 만족하는가?
     YES → ViewModel이 Repository 직접 호출
-    NO  → 여러 Repository 조합 or 비즈니스 규칙 or 재사용?
-              YES → UseCase 작성 (core:domain/usecase)
-              NO  → ViewModel이 Repository 직접 호출
+    NO  → UseCase 작성 (core:domain/usecase)
 ```
 
 ---
