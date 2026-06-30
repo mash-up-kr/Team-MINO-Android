@@ -228,41 +228,68 @@ class ProfileRepositoryImpl @Inject constructor(
 
 ---
 
-## 6. ViewModel 책임 범위
+## 6. Mapper (DTO → 도메인 모델 변환)
 
-ViewModel은 **UI 상태 연결 + Domain 호출**만 담당한다. 비즈니스 판단·규칙은 ViewModel 안에 작성하지 않는다.
+### 위치 원칙
 
-### 해야 할 것
+Mapper는 **`core:data`에만 위치**한다. `core:domain`은 자신의 모델이 어디서 오는지 알지 못한다.
 
-- `MviContainer`로 UI 상태(`UiState`)·사이드 이펙트(`SideEffect`) 관리
-- UseCase 또는 Repository 인터페이스 호출
-- `SavedStateHandle`로 라우트 인자 복원
-
-### 하지 말아야 할 것
-
-| 안티패턴 | 대안 |
+| 항목 | 위치 |
 |---|---|
-| ViewModel 안에서 정렬·필터링 판단 | UseCase로 이동 |
-| 여러 Repository를 ViewModel에서 직접 조합 | UseCase로 이동 |
-| DTO·Room Entity를 ViewModel이 직접 다룸 | Repository 인터페이스가 도메인 모델로 변환 후 반환 |
-| ViewModel이 `RepositoryImpl`을 직접 의존 | 인터페이스에만 의존, 구현 바인딩은 Hilt |
+| 도메인 모델 | `core:domain/model/` |
+| DTO (서버·DB 스펙) | `core:data` |
+| Mapper 함수 (`toDomain()`) | `core:data` — DTO의 확장 함수로 작성 |
+
+### 작성 규칙
+
+- DTO의 확장 함수(`fun XxxResponse.toDomain()`)로 작성한다.
+- 파일명은 `XxxMapper.kt`, DTO와 같은 패키지에 둔다.
+- 서버 스펙에만 존재하는 필드(예: `created_at`)는 도메인 모델에 포함하지 않는다.
+- 변환 책임은 `RepositoryImpl` 내부에서 끝내고, ViewModel·UseCase까지 DTO가 노출되지 않게 한다.
 
 ```kotlin
-// ✅ 올바른 예 — 정렬 로직은 UseCase 안에
-fun loadFeed() {
-    viewModelScope.launch {
-        val feed = getSortedFeed()       // UseCase 호출
-        updateState { copy(items = feed) }
-    }
-}
+// [core:domain] 외부를 전혀 모르는 순수한 비즈니스 모델
+// core:domain/model/Profile.kt
+data class Profile(
+    val id: String,
+    val name: String,
+    val imageUrl: String,
+)
+```
 
-// ❌ 잘못된 예 — 비즈니스 규칙이 ViewModel에
-fun loadFeed() {
-    viewModelScope.launch {
-        val feed = feedRepository.getFeed()
-            .sortedByDescending { it.isPinned }  // ❌ 정렬 로직
-            .take(20)                            // ❌ 페이징 기준
-        updateState { copy(items = feed) }
+```kotlin
+// [core:data] 서버 스펙에 맞춘 DTO
+// core:data/remote/dto/ProfileResponse.kt
+data class ProfileResponse(
+    val user_id: String,
+    val user_name: String,
+    val profile_image_url: String,
+    val created_at: String, // 도메인에 필요 없는 서버 전용 필드
+)
+```
+
+```kotlin
+// [core:data] DTO → 도메인 모델 변환 (Mapper)
+// core:data/remote/dto/ProfileMapper.kt
+fun ProfileResponse.toDomain(): Profile {
+    return Profile(
+        id = this.user_id,
+        name = this.user_name,
+        imageUrl = this.profile_image_url,
+        // created_at은 도메인 모델에 포함하지 않음
+    )
+}
+```
+
+```kotlin
+// [core:data] RepositoryImpl에서 변환 완료 후 도메인 모델 반환
+// core:data/repository/ProfileRepositoryImpl.kt
+class ProfileRepositoryImpl @Inject constructor(
+    private val remoteDataSource: ProfileRemoteDataSource,
+) : ProfileRepository {
+
+    override suspend fun getProfile(userId: String): Profile {
+        return remoteDataSource.getProfile(userId).toDomain() // ✅ RepositoryImpl 경계에서 변환 완료
     }
 }
 ```
