@@ -100,6 +100,8 @@ ViewModel은 UseCase 또는 Repository 인터페이스만 알고, 구현체(`Rep
 - 여러 화면에서 재사용할 행위가 아니다
 - 정렬, 필터링, 권한 판단, 상태 전이 같은 비즈니스 규칙이 없다
 
+> `MviContainer` · `UiState` · `SideEffect` 등 MVI 기반 타입은 [`core/common/android/README.md — 2. 핵심 API`](../../core/common/android/README.md)가 단일 출처다.
+
 ```kotlin
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
