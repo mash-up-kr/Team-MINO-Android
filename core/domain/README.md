@@ -1,6 +1,8 @@
-# Domain 모듈 컨벤션
+# core:domain
 
-`core:domain`은 비즈니스 로직의 중심이다. Repository 인터페이스와 필요한 UseCase를 여기 두고, ViewModel과 데이터 계층 사이의 경계를 명확히 한다.
+MinoAndroid의 **비즈니스 로직 중심** 모듈. Repository 인터페이스와 필요한 UseCase를 여기 두고, ViewModel과 데이터 계층 사이의 경계를 명확히 한다.
+
+> 모듈 책임·경계·의존 방향(레이어 그래프)은 [`docs/architecture/modularization.md`](../../docs/architecture/modularization.md)를 단일 출처로 한다. 이 문서는 이 모듈의 **API·사용법·확장 규칙**만 다룬다.
 
 ---
 
