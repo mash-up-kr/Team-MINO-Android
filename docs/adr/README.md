@@ -13,7 +13,7 @@
 
 ## 작성 규칙
 
-- 파일명: `NNNN-kebab-제목.md` (4자리 일련번호, 예: `0001-network-ktorfit-to-ktor.md`)
+- 파일명: `NNNN-kebab-제목.md` (4자리 일련번호, 예: `0001-serialization-optin-ide-warning.md`)
 - 번호는 **한 번 부여하면 재사용하지 않는다**. 결정이 뒤집히면 새 ADR을 쓰고, 기존 ADR의 상태를 `Superseded by NNNN`으로 바꾼다.
 - 형식은 Nygard 스타일: **상태 · 맥락 · 결정 · 결과**
 - 언어는 한국어
@@ -32,4 +32,4 @@
 
 | # | 제목 | 상태 | 날짜 |
 |---|---|---|---|
-| [0001](0001-network-ktorfit-to-ktor.md) | Github 네트워크 레이어를 Ktorfit에서 Ktor로 전환 | Accepted | 2026-06-29 |
+| [0001](0001-serialization-optin-ide-warning.md) | 직렬화 DTO의 IDE opt-in 경고에 `@OptIn` 우회를 쓰지 않는다 | Accepted | 2026-06-29 |
