@@ -7,7 +7,7 @@ import io.ktor.client.request.parameter
 import team.mino.core.data.network.dto.response.GithubRepoResponse
 import javax.inject.Inject
 
-class GithubApiService @Inject constructor(
+internal class GithubApiService @Inject constructor(
     private val client: HttpClient,
 ) {
     suspend fun getUserRepos(
