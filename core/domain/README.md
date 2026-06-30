@@ -303,19 +303,31 @@ class ProfileRepositoryImpl @Inject constructor(
 
 ## 7. 금지 규칙 (안티패턴)
 
-### 의존 방향 원칙
+### 의존 방향
 
-`core:domain`은 레이어 계층의 안쪽에 위치하며 바깥 레이어를 알아서는 안 된다.
+모듈 간 의존 방향 금지 규칙은 [`docs/architecture/modularization.md — 금지 규칙`](../../docs/architecture/modularization.md)이 단일 출처다.
 
-| 금지 | 이유 |
-|---|---|
-| `core:domain`이 Android SDK에 의존 | JVM 단위 테스트 불가 |
-| `core:domain`이 `core:data`에 의존 | 역방향 의존 — `core:data`가 `core:domain`을 의존해야 함 |
+### domain 고유 계약 위반
 
-### 레이어 계약 위반
-
-레이어 경계는 구현 상세가 아닌 인터페이스·도메인 모델을 통해서만 넘어야 한다.
+레이어 경계는 인터페이스·도메인 모델을 통해서만 넘어야 한다. `core:domain` 고유 금지 규칙은 아래와 같다.
 
 | 금지 | 이유 |
 |---|---|
 | Repository 인터페이스가 DTO·Room Entity 반환 | 데이터 계층 구현 상세가 도메인으로 노출됨 |
+| UseCase·Repository가 UI 상태·`Context`·navigation을 의존 | domain은 Android·UI 레이어를 알아서는 안 됨 |
+| ViewModel이 `RepositoryImpl`을 직접 의존 | 인터페이스에만 의존, 구현 바인딩은 Hilt |
+| ViewModel 안에 비즈니스 규칙 작성 | 재사용·테스트 불가, UseCase로 분리 |
+
+---
+
+## 8. 컨벤션 요약
+
+| 항목 | 규칙 |
+|---|---|
+| **의존** | `:core:common:kotlin`만 허용. Android SDK·`:core:data` 의존 금지 |
+| **Repository 반환 타입** | 도메인 모델(`core:domain/model/`)만 반환. DTO·Room Entity 반환 금지 |
+| **Mapper 위치** | `core:data`에만 위치. `fun XxxResponse.toDomain()` 확장 함수로 작성 |
+| **비즈니스 규칙** | ViewModel에 두지 않는다. UseCase(`core:domain/usecase/`)로 분리 |
+| **ViewModel 직접 호출** | 단일 API·단순 표시·재사용 없음·비즈니스 규칙 없음 4가지를 모두 만족할 때만 허용 |
+| **UseCase 함수** | `operator fun invoke(...)` 하나. UI 상태·navigation·`Context` 의존 금지 |
+| **테스트** | Fake 구현체로 JVM 단위 테스트. Android 환경 불필요 |
