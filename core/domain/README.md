@@ -42,6 +42,10 @@ plugins {
 
 dependencies {
     implementation(project(":core:common:kotlin"))
+    implementation(libs.kotlinx.coroutines.core) // Flow, suspend
+    implementation(libs.javax.inject)             // @Inject constructor
+
+    testImplementation(libs.kotlinx.coroutines.test) // runTest
 }
 ```
 
