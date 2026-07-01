@@ -21,6 +21,7 @@ Android 프로젝트. Git Flow 브랜치 전략 사용.
 | `core:navigation` 화면 전환 인프라 API 사용·확장 (Activity Launcher / type-safe Route) | `core/navigation/README.md` |
 | `core:map` 지도 모듈 사용·확장 (`MinoMap`·`GeoPoint` 좌표 변환·폴리곤) | `core/map/README.md` |
 | CD 배포, Play Store 자동화, 시크릿·트리거 | `docs/operations/cd-pipeline.md` |
+| `core:data` 데이터 레이어 작업 (DataSource·Repository·Mapper·네트워크 추가) | `core/data/README.md` |
 | 과거 설계 결정의 배경·이유 확인, 새 설계 결정 기록 (ADR) | `docs/adr/README.md` + `docs/adr/*.md` |
 
 > 새 문서가 추가되면 성격에 맞는 `docs/` 하위 디렉터리(`conventions/` 규약, `architecture/` 구조, `operations/` 배포, `adr/` 결정 기록)에 파일을 만들고 위 표에 줄을 추가할 것.
