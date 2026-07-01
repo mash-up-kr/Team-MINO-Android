@@ -1,6 +1,6 @@
 ---
 description: 대화형으로 GitHub 이슈를 생성하고 develop에서 작업 브랜치를 분기한다
-argument-hint: "[선택: 이슈에 대한 간단한 설명]"
+argument-hint: "[--worktree|-w] [선택: 이슈에 대한 간단한 설명]"
 allowed-tools: Bash, AskUserQuestion, Write, Read
 ---
 
@@ -9,6 +9,14 @@ allowed-tools: Bash, AskUserQuestion, Write, Read
 너는 사용자와 **단계별 대화**로 GitHub 이슈를 생성하고, Git Flow 전략에 따라 `develop`에서 작업 브랜치까지 분기하는 Claude다. 아래 플로우를 **순서대로** 따른다. 한 단계라도 실패·취소되면 즉시 중단한다.
 
 > **선행 로드**: 이 커맨드는 `docs/conventions/branch-naming.md`의 규칙을 따른다. 브랜치 구성 단계(8)에 들어가기 전에 **반드시** 해당 파일을 Read해 최신 포맷·prefix·slug 규칙을 확보한다. 커맨드 안에서 해당 규칙을 재정의하지 않는다.
+
+## 실행 모드 판별 (가장 먼저)
+
+`$ARGUMENTS`에 `--worktree` 또는 `-w` 토큰이 있으면 **worktree 모드**, 없으면 **기본(제자리) 모드**다.
+
+- 해당 토큰을 `$ARGUMENTS`에서 제거한 나머지를 이슈 설명(자유 입력)으로 쓴다.
+- 두 모드는 **이슈 생성(1~7단계)까지 완전히 동일**하고, 브랜치 분기(8단계)와 그 전제인 clean 검증(0-2)만 다르다.
+- worktree 모드의 워크트리 생성 절차는 [`docs/conventions/worktree.md`](../../docs/conventions/worktree.md)의 `/issue --worktree 절차`를 단일 출처로 따른다. 8단계 진입 전 해당 문서를 Read한다.
 
 ---
 
@@ -30,6 +38,10 @@ git show-ref --verify --quiet refs/heads/develop \
 > 예: `git checkout -b develop main && git push -u origin develop`
 
 ### 0-2. 워킹 트리 clean 확인
+
+> **worktree 모드에서는 이 검증을 생략한다** — 새 워크트리는 현재 작업 트리를 건드리지 않아 미커밋 변경이 있어도 안전하다.
+
+기본(제자리) 모드에서만 수행:
 
 ```sh
 git status --porcelain
@@ -223,9 +235,11 @@ rm -f "$TMP"
 - 이슈 제목을 영어 kebab-case slug로 변환 (한국어면 의미 번역 후)
 - 최종 포맷: `<prefix>/<issue-number>-<slug>`
 
-### 8-2. 체크아웃 실행 (승인 절차 없이 바로 진행)
+### 8-2. 분기 실행 (승인 절차 없이 바로 진행)
 
-별도의 사용자 확인 없이 아래 순서로 실행:
+실행 모드에 따라 분기한다. 별도의 사용자 확인 없이 진행.
+
+#### 기본(제자리) 모드
 
 ```sh
 # 1) 현재 브랜치가 develop이 아니면 develop으로 이동
@@ -248,6 +262,29 @@ git checkout -b "<prefix>/<issue-number>-<slug>"
 ✅ 브랜치 <prefix>/<번호>-<slug> 체크아웃 완료 (develop 기준)
 ```
 
+#### worktree 모드
+
+현재 작업 트리는 건드리지 않고, `origin/develop`에서 분기한 새 워크트리를 만든다. 절차·근거는 [`docs/conventions/worktree.md`](../../docs/conventions/worktree.md)의 `/issue --worktree 절차`를 따른다.
+
+```sh
+git fetch origin
+git worktree add ".claude/worktrees/<issue-number>-<slug>" -b "<prefix>/<issue-number>-<slug>" origin/develop
+git config "branch.<prefix>/<issue-number>-<slug>.merge" "refs/heads/<prefix>/<issue-number>-<slug>"
+for f in local.properties keystore.properties; do
+  [ -f "$f" ] && cp "$f" ".claude/worktrees/<issue-number>-<slug>/"
+done
+```
+
+> `git config` 라인은 `worktree add`가 `origin/develop`으로 잡은 upstream을 새 브랜치로 교정하기 위한 것이다(생략 시 첫 push에 `-u` 필요). 이유·상세는 [`docs/conventions/worktree.md`](../../docs/conventions/worktree.md) 참조.
+
+완료 후 최종 요약 출력:
+
+```
+✅ 이슈 #<번호> 생성 완료 — <URL>
+✅ 워크트리 생성 완료: .claude/worktrees/<번호>-<slug> (<prefix>/<번호>-<slug>, develop 기준)
+▶ 다음: cd .claude/worktrees/<번호>-<slug> && claude
+```
+
 ---
 
 ## 취소 처리
@@ -264,3 +301,4 @@ git checkout -b "<prefix>/<issue-number>-<slug>"
 - Bug 경로는 제보성이므로 기존 6개 항목 모두 사용자 입력 (제목/요약/히스토리/예상/환경/추가).
 - 브랜치 네이밍·prefix·slug 규칙 및 Git Flow 전략은 **[`docs/conventions/branch-naming.md`](../../docs/conventions/branch-naming.md)** 를 단일 출처로 한다. 커맨드 실행 초기에 해당 파일을 Read하고, 커맨드 안에서 규칙을 재정의하지 않는다.
 - 브랜치 이름은 **별도 승인 없이** Claude가 규칙에 맞게 구성하여 바로 체크아웃한다.
+- `--worktree`/`-w` 플래그가 있으면 **worktree 모드**: 이슈 생성(1~7)은 동일하고, 0-2 clean 검증은 생략, 8단계는 제자리 checkout 대신 워크트리 생성으로 분기한다. 워크트리 생성 절차는 **[`docs/conventions/worktree.md`](../../docs/conventions/worktree.md)** 를 단일 출처로 하며 커맨드 안에서 재정의하지 않는다.
