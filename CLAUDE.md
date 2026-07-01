@@ -9,6 +9,7 @@ Android 프로젝트. Git Flow 브랜치 전략 사용.
 | 상황 | 참조할 문서 |
 |---|---|
 | Git 브랜치 생성, 이름 짓기, Git Flow 관련 작업 | `docs/conventions/branch-naming.md` |
+| Git Worktree 병렬 작업 환경, 워크트리 생성/정리, `claude -w` 사용 | `docs/conventions/worktree.md` |
 | 커밋 메시지 작성, 커밋 쪼개기 | `docs/conventions/commit-message.md` |
 | Pull Request 생성, 본문 작성, 제목·연결 키워드 | `docs/conventions/pull-request.md` + `.github/PULL_REQUEST_TEMPLATE.md` |
 | Compose Lint 룰·severity 조정, 위반 처리 | `docs/conventions/compose-lint.md` + `lint.xml` |
