@@ -7,3 +7,6 @@
 # - 모듈/경로별로 오너를 세분화해야 할 경우 아래 `*` 라인 밑에 규칙을 추가.
 
 *       @JaesungLeee @simeunseok @KateteDeveloper
+
+# SDD 스펙 문서 — MASC 대시보드가 자동 생성하는 PR (docs/specs/{slug}/spec.md·plan.md)
+docs/specs/**   @JaesungLeee @simeunseok @KateteDeveloper
