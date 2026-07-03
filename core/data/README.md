@@ -56,11 +56,11 @@ core/data/src/main/java/team/mino/core/data/
 │       └── GithubDataSourceModule.kt      # @Binds 모듈 (internal)
 ├── network/
 │   ├── di/
-│   │   ├── NetworkModule.kt               # HttpClient 제공 (internal)
-│   │   └── GithubNetworkModule.kt         # (제거됨 — Ktor 전환 후 불필요)
+│   │   └── NetworkModule.kt               # HttpClient 제공 (internal)
 │   ├── dto/
 │   │   └── response/
-│   │       └── GithubRepoResponse.kt      # 서버 응답 DTO (@Serializable)
+│   │       ├── GithubRepoResponse.kt      # 서버 응답 DTO (@Serializable)
+│   │       └── GithubMapper.kt            # DTO → 도메인 모델 Mapper (internal)
 │   └── service/
 │       └── GithubApiService.kt            # Ktor 직접 호출 서비스 (internal)
 └── repository/
@@ -267,7 +267,6 @@ internal fun GithubRepoResponse.toDomain(): GithubRepo =
 `feature` 모듈은 `core:data`를 직접 의존하지 않는다. `core:domain`만 의존한다.
 
 ```kotlin
-// feature:x:impl build.gradle.kts — core:domain은 컨벤션 플러그인이 자동 추가
 // core:data는 추가하지 않는다
 ```
 
