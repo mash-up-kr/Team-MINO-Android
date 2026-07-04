@@ -46,12 +46,12 @@ description: 머지된 코드가 이후에 잘못된 설계·구현으로 판명
    ```
    지금 고치는 파일·모듈의 히스토리를 살펴 이 코드가 언제, 어떤 의도로 만들어졌는지 확인한다. 커밋 메시지에서 관련 이슈 번호·ADR 언급을 찾는다.
 2. **`docs/adr/README.md` 인덱스를 Read**해, 지금 되돌리는 코드와 연관된 `Accepted` ADR이 있는지 확인한다. 있으면 그 ADR 번호를 근거로 쓴다. 없으면 "문서화되지 않은 결정"으로 진행한다 — ADR이 없었다는 사실 자체도 실패 기록에 남긴다.
-3. **`docs/failures/README.md`를 먼저 Read**해 최신 작성 규칙·상태 값·번호 규칙을 확인한다. 이 Skill 안에서 규칙을 재정의하지 않는다.
+3. **[`failure-format.md`](failure-format.md)를 먼저 Read**해 최신 작성 규칙·상태 값·번호 규칙을 확인한다. 이 Skill 안에서 규칙을 재정의하지 않는다.
 4. 다음 번호를 정한다: `docs/failures/` 내 가장 큰 `NNN`에 +1 (3자리, 0-padding).
-5. `docs/failures/README.md`의 문서 템플릿에 맞춰 아래 내용을 채워 `docs/failures/NNN-kebab-제목.md`를 작성한다.
+5. [`failure-format.md`](failure-format.md)의 문서 템플릿에 맞춰 아래 내용을 채워 `docs/failures/NNN-kebab-제목.md`를 작성한다.
    - **상태**: 대체 방법까지 적용됐으면 `Resolved`, 원인만 기록된 상태면 `Open`
    - **발생일자**: 문제를 발견/수정한 날짜
-   - **작성자**: `docs/failures/README.md`에 정의된 대로, 이 기록이 누구의 작업과 관련되면 좋을지
+   - **작성자**: [`failure-format.md`](failure-format.md)에 정의된 대로, 이 기록이 누구의 작업과 관련되면 좋을지
    - **관련 ADR**: 2번에서 찾은 ADR 번호, 없으면 "없음 — 문서화되지 않은 결정"
    - **관련 커밋/PR**: 1번에서 확인한 원본 커밋, 이번 수정 커밋/PR
    - **무엇을 시도했는가**: 원래 결정/구현
@@ -65,7 +65,7 @@ description: 머지된 코드가 이후에 잘못된 설계·구현으로 판명
 
 - 단순 오타·사소한 버그 수정에는 트리거하지 않는다. "의도적인 과거 결정을 뒤집는가"가 기준이다.
 - git 로그에서 증거를 못 찾겠으면 억지로 추측하지 않고, 사용자에게 "이 코드가 왜 이렇게 짜여 있었는지 아는 게 있나요?"로 확인한다.
-- 통제 어휘: 상태는 `docs/failures/README.md`에 정의된 값(`Open`/`Resolved`)만 사용한다.
+- 통제 어휘: 상태는 [`failure-format.md`](failure-format.md)에 정의된 값(`Open`/`Resolved`)만 사용한다.
 - 실패 기록과 새 ADR은 짝을 이루는 경우가 많다: 실패 원인을 `docs/failures/`에, 새로운 방향을 `docs/adr/`에 남기고 서로 링크한다.
 
 ## 산출물 핸드오프
