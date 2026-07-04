@@ -34,3 +34,4 @@
 
 | # | 제목 | 상태 | 날짜 |
 |---|---|---|---|
+| [0001](0001-serialization-optin-ide-warning.md) | 직렬화 DTO의 IDE opt-in 경고에 `@OptIn` 우회를 쓰지 않는다 | Accepted | 2026-06-29 |
