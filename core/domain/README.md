@@ -112,11 +112,11 @@ Mapper는 **`core:data`에만 위치**한다. `core:domain`은 자신의 모델�
 | 항목 | 위치 |
 |---|---|
 | 도메인 모델 | `core:domain/model/` |
-| DTO (서버·DB 스펙) | `core:data` |
-| Mapper 함수 (`toDomain()`) | `core:data` — DTO의 확장 함수로 작성 |
+| DTO (서버·DB 스펙) | `core:data/network/dto/` |
+| Mapper 함수 (`toDomain()`) | `core:data/repository/` — DTO의 확장 함수로 작성 |
 
 - DTO의 확장 함수(`fun XxxResponse.toDomain()`)로 작성한다.
-- 파일명은 `XxxMapper.kt`, DTO와 같은 패키지에 둔다.
+- 파일명은 `XxxMapper.kt`, 변환 책임의 소유자인 `RepositoryImpl`과 같은 패키지(`repository/`)에 둔다. DTO 패키지(`network/dto/`)는 서버 계약만 표현하며 도메인 모델을 의존하지 않는다.
 - 서버 스펙에만 존재하는 필드는 도메인 모델에 포함하지 않는다.
 - 변환 책임은 `RepositoryImpl` 내부에서 끝내고, ViewModel·UseCase까지 DTO가 노출되지 않게 한다.
 
