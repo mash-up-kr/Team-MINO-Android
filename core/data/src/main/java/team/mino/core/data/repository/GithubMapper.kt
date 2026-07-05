@@ -1,5 +1,6 @@
-package team.mino.core.data.network.dto.response
+package team.mino.core.data.repository
 
+import team.mino.core.data.network.dto.response.GithubRepoResponse
 import team.mino.core.domain.model.GithubRepo
 
 internal fun GithubRepoResponse.toDomain(): GithubRepo =
