@@ -24,5 +24,6 @@ Android 프로젝트. Git Flow 브랜치 전략 사용.
 | CD 배포, Play Store 자동화, 시크릿·트리거 | `docs/operations/cd-pipeline.md` |
 | `core:data` 데이터 레이어 작업 (DataSource·Repository·Mapper·네트워크 추가) | `core/data/README.md` |
 | 과거 설계 결정의 배경·이유 확인, 새 설계 결정 기록 (ADR) | `docs/adr/README.md` + `docs/adr/*.md` |
+| 머지 후 잘못된 것으로 판명된 결정·구현 확인, 새 실패 기록 작성 | `docs/failures/README.md` + `docs/failures/*.md` |
 
-> 새 문서가 추가되면 성격에 맞는 `docs/` 하위 디렉터리(`conventions/` 규약, `architecture/` 구조, `operations/` 배포, `adr/` 결정 기록)에 파일을 만들고 위 표에 줄을 추가할 것.
+> 새 문서가 추가되면 성격에 맞는 `docs/` 하위 디렉터리(`conventions/` 규약, `architecture/` 구조, `operations/` 배포, `adr/` 결정 기록, `failures/` 실패 기록)에 파일을 만들고 위 표에 줄을 추가할 것.
