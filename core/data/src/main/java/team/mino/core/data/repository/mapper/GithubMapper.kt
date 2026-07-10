@@ -1,4 +1,4 @@
-package team.mino.core.data.repository
+package team.mino.core.data.repository.mapper
 
 import team.mino.core.data.network.dto.response.GithubRepoResponse
 import team.mino.core.domain.model.GithubRepo

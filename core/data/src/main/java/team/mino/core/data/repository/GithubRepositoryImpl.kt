@@ -1,6 +1,7 @@
 package team.mino.core.data.repository
 
 import team.mino.core.data.datasource.GithubRemoteDataSource
+import team.mino.core.data.repository.mapper.toDomain
 import team.mino.core.domain.model.GithubRepo
 import team.mino.core.domain.repository.GithubRepository
 import javax.inject.Inject
