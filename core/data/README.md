@@ -64,7 +64,8 @@ core/data/src/main/java/team/mino/core/data/
 │       └── GithubApiService.kt            # Ktor 직접 호출 서비스 (internal)
 └── repository/
     ├── GithubRepositoryImpl.kt            # Repository 구현체 (internal)
-    ├── GithubMapper.kt                    # DTO → 도메인 모델 Mapper (internal)
+    ├── mapper/
+    │   └── GithubMapper.kt                # DTO → 도메인 모델 Mapper (internal)
     └── di/
         └── GithubRepositoryModule.kt      # @Binds 모듈 (internal)
 ```
@@ -75,7 +76,8 @@ core/data/src/main/java/team/mino/core/data/
 | `network/di/` | HttpClient·네트워크 인프라 DI 제공 |
 | `network/dto/` | 서버 응답 스펙을 표현하는 DTO. `@Serializable` 필수. 도메인 모델 의존 금지 |
 | `network/service/` | Ktor HttpClient로 엔드포인트를 직접 호출하는 클래스 |
-| `repository/` | `core:domain` Repository 인터페이스 구현 및 Mapper 적용 |
+| `repository/` | `core:domain` Repository 인터페이스 구현 |
+| `repository/mapper/` | DTO → 도메인 모델 Mapper. Repository가 늘어나도 `repository/`가 파일로 뒤섞이지 않도록 분리 |
 
 ---
 
@@ -207,10 +209,10 @@ internal abstract class XxxRepositoryModule {
 
 ## 7. Mapper (DTO → 도메인 모델)
 
-Mapper는 **DTO의 확장 함수**로 작성하고, 변환 책임의 소유자인 `RepositoryImpl`과 같은 패키지(`repository/`)에 `XxxMapper.kt`로 둔다. `network/dto/`는 서버 계약(DTO)만 표현하며 도메인 모델을 알지 못한다.
+Mapper는 **DTO의 확장 함수**로 작성하고, 변환 책임의 소유자인 `RepositoryImpl`이 속한 `repository/` 하위의 `mapper/` 서브패키지에 `XxxMapper.kt`로 둔다. `network/dto/`는 서버 계약(DTO)만 표현하며 도메인 모델을 알지 못한다. Repository·Mapper 쌍이 늘어날 것을 감안해 `repository/` 최상위에 바로 두지 않고 `mapper/`로 분리한다.
 
 ```kotlin
-// core/data/repository/GithubMapper.kt
+// core/data/repository/mapper/GithubMapper.kt
 internal fun GithubRepoResponse.toDomain(): GithubRepo =
     GithubRepo(
         id = id,
@@ -226,7 +228,7 @@ internal fun GithubRepoResponse.toDomain(): GithubRepo =
 
 | 항목 | 규칙 |
 |---|---|
-| **위치** | `core:data/repository/` — `RepositoryImpl`과 같은 패키지 |
+| **위치** | `core:data/repository/mapper/` |
 | **가시성** | `internal` |
 | **nullable 처리** | `.orEmpty()` / `?: defaultValue` — 도메인 모델에 nullable 전파 금지 |
 | **서버 전용 필드** | 도메인 모델에 포함하지 않는다 |
@@ -243,7 +245,7 @@ internal fun GithubRepoResponse.toDomain(): GithubRepo =
 6. **도메인 모델** — `core:domain/model/Xxx.kt`
 7. **Repository 인터페이스** — `core:domain/repository/XxxRepository.kt`
 8. **RepositoryImpl** — `repository/XxxRepositoryImpl.kt`
-9. **Mapper** — `repository/XxxMapper.kt` 작성 (`internal fun XxxResponse.toDomain()`)
+9. **Mapper** — `repository/mapper/XxxMapper.kt` 작성 (`internal fun XxxResponse.toDomain()`)
 10. **Repository DI** — `repository/di/XxxRepositoryModule.kt` (`@Binds`)
 
 > 도메인 모델·Repository 인터페이스(6·7번)는 **`core:domain`에 추가**한다. `core:domain` 컨벤션은 [`core/domain/README.md`](../domain/README.md) 참조.
