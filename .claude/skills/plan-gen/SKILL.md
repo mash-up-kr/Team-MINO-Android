@@ -1,6 +1,6 @@
 ---
 name: plan-gen
-description: Mino-Android SDD plan.md 생성. 컨펌된 spec.md를 안드로이드 MVI 설계(plan.md)로 번역한다. Mino-Android 레포 체크아웃 안에서 docs·모듈 구조를 직접 읽어 작성한다. 컨펌된 spec 본문이 주어졌을 때 사용.
+description: Mino-Android SDD plan.md 생성. 컨펌된 spec.md를 안드로이드 MVI 설계(plan.md)로 번역한다. Mino-Android 레포 체크아웃 안에서 docs·모듈 구조를 직접 읽어 작성하고, plan-reviewer 서브에이전트로 자가검수까지 수행한다. 컨펌된 spec 본문이 주어졌을 때 사용.
 ---
 
 # plan-gen — Mino-Android SDD plan.md 생성
@@ -8,6 +8,8 @@ description: Mino-Android SDD plan.md 생성. 컨펌된 spec.md를 안드로이�
 Mino-Android의 SDD **plan.md**를 생성하는 스킬이다. plan.md는 "어떻게 만들까"로,
 **컨펌된 spec.md를 안드로이드 MVI 설계로 번역**한 문서다.
 이 작업은 **Mino-Android 레포 체크아웃 안에서** 실행한다 — docs·모듈 구조를 직접 읽어 참조하라.
+출력 규약([`plan-format.md`](plan-format.md))을 **정확히 그대로** 따라 작성한 뒤, **반드시 자가검수 단계까지 수행**한다.
+실행 구조(오케스트레이터 + 서브에이전트)의 결정 배경은 `docs/adr/0002-plan-gen-subagent-orchestration.md` 참조.
 
 ## 입력 (스킬 실행 시 받는다)
 
@@ -17,109 +19,94 @@ Mino-Android의 SDD **plan.md**를 생성하는 스킬이다. plan.md는 "어떻
 
 ## 작업 순서
 
-1. spec을 읽고 다룰 기능·화면·데이터를 파악한다. spec 첫 줄 `<!-- feature: {슬러그} -->`에서 슬러그를 읽어 **작업 디렉터리** `docs/specs/{NNN}-{슬러그}/`(컨펌된 spec.md가 들어 있는 그 디렉터리)를 찾는다. 같은 슬러그의 디렉터리가 없으면 사용자에게 위치를 확인한다.
-2. **레포 docs를 직접 읽어 컨벤션을 확인**한다:
-   - **항상 참조**: `docs/architecture/feature-module.md`, `feature-navigation.md`, `modularization.md`
-   - **선별 참조**: spec이 건드리는 관련 **`core/{module}/README.md`만**. 다른 feature 내부는 참조하지 않는다.
-   - **무시**: `docs/diagrams/`, `docs/operations/` (CD 파이프라인)
-   - 필요 시 `core/common/android`의 MVI 베이스(`UiState`/`Intent`/`SideEffect`/`MviContainer`)를 확인.
-3. spec의 각 기능 행을 `interactionType` 기준으로 MVI에 번역한다(아래 매핑 강제).
-4. 출력 템플릿 그대로 `{작업 디렉터리}/plan.md`를 작성한다(1번에서 찾은 디렉터리, 컨펌된 spec.md와 형제). **참고한 docs를 `## 2. 참고 문서`에 빠짐없이 명시**한다. (로컬 산출용일 뿐, 레포에 직접 커밋하지 않는다 — 대시보드 업로드 후 PR 단계에서 커밋된다.)
+> **산출물 위치**: `{작업 디렉터리}/plan.md` (컨펌된 spec.md가 들어 있는 `docs/specs/{NNN}-{슬러그}/`, spec.md와 형제).
+>
+> **실행 구조**: 메인이 **Phase 1(번역 계약)** 을 직렬로 끝낸 뒤, **Phase 2** 에서 컨텍스트 수집을 병렬로, **Phase 3** 에서 설계 생성을 조건부 팬아웃으로 실행한다. 갈래 간 유일한 공유 지점은 *네이밍*(화면 설계가 쓰는 UseCase 이름 = 데이터 설계가 정의하는 UseCase 이름)이며, 이를 Phase 1의 **번역 계약**으로 고정해 갈래들이 서로 대기하지 않게 한다.
 
-## interactionType → MVI 매핑 (강제)
+### Phase 1 — 번역 계약 확정 (메인, 직렬·1회)
 
-| interactionType | MVI 구현 |
-|---|---|
-| `display_state` | `UiState` 필드 (+ 파생/정렬 로직) |
-| `user_action` | `XIntent`(sealed) → `processIntent` when → `updateState` |
-| `async_process` | `XIntent` → `viewModelScope`+UseCase → `UiState.status`(sealed Idle/Loading/Success/Error) |
-| `validation` | `XIntent` → `updateState`로 검증 상태 |
-| `navigation` | 내부: `Route` 콜백 `onNavigateToX` / feature 간: `XLauncher`(api 모듈) |
-| `modal_dialog` | `UiState` dialog 상태 (1회성이면 `SideEffect`) |
+1. **입력 확인**: 컨펌된 spec 본문. 비어 있으면 사용자에게 요청한다.
+2. **슬러그·작업 디렉터리·spec 버전 확정**: spec 첫 줄 `<!-- feature: {슬러그} -->`에서 슬러그를 읽어 `docs/specs/{NNN}-{슬러그}/`를 찾는다(없으면 사용자에게 위치 확인). spec `변경 이력` 최신 행에서 버전을 파싱한다.
+3. **기능 행 인벤토리 작성**: spec 5.x의 **모든** 기능 행을 1:1로 옮긴 표. 이 표가 섹션 6 기계 생성과 결정적 체크 C1의 기준 집합이다.
 
-## 아키텍처 규칙 (반드시 준수)
+   | spec ID | interactionType | 확정 | 담당 화면 | 데이터 관여 | 구현 매핑 요약 |
+   |---|---|---|---|---|---|
 
-- MVI: ViewModel은 `MviContainer<S,E> by mviContainer(초기State)` 위임. **Reducer 클래스 없음.** `updateState { copy() }` / `postSideEffect()` / `processIntent()`.
-- **Intent는 사용자 액션이 있을 때만** 정의(없으면 화면에 Intent 없음).
-- 비동기 상태는 `UiState` 안 **sealed `Status`(Idle/Loading/Success/Error)** 패턴.
-- **feature `impl`은 `core:data`를 직접 의존하지 않는다** — `core:domain` 인터페이스만 알고, 구현 바인딩은 `:app` DI.
-- 화면 패키지: `<screen>/{screen, vm, model, args, component}`. feature는 `{api, impl}`.
-- 네비게이션: 내부 전환은 `Route` 콜백, feature 간 전환은 `Launcher`(api 모듈).
+   - `담당 화면` — Phase 3 팬아웃 시 각 `plan-screen-designer`의 행 배정 키.
+   - `데이터 관여` — 관련 UseCase 이름. `plan-data-designer`에 넘길 부분집합 필터.
+   - `확정` — spec 값을 이월해 `needs_policy`/`partial` 행의 섹션 7 이월을 계약 단계에서 고정.
+4. **네이밍 계약 확정**: 모든 갈래가 공유할 이름을 표 2개로 사전 확정한다. **서브에이전트는 여기에 없는 이름을 만들 수 없다.**
 
-## 작성 규칙
+   | 화면 | Route | 패키지 | UiState | Intent | SideEffect |
+   |---|---|---|---|---|---|
 
-- **추측 금지.** spec의 `Open Questions(TBD)`·`needs_policy` 항목은 `## 7. 미해결 / 외부 의존`으로 이어받아 명시한다.
-- 통제 어휘: 모듈 구분 `new`/`modify`, 데이터 레이어 `domain`/`data`.
-- **`6. 기능 명세 ↔ 구현 매핑`에는 spec의 모든 기능 행(5.x ID)을 전수 포함**한다 (1:1 추적성 — 누락 시 검증에서 즉시 드러나도록).
-- **버전은 spec과 연동**한다(예: spec v0.1.0 번역 → plan `v0.1.0`). 날짜는 오늘 날짜 자동 기입.
-- **맨 첫 줄 슬러그 주석**(`<!-- feature: {slug} -->`)은 입력 spec과 동일하게 유지한다.
+   | 구성요소 | 이름 | 레이어 | 모듈 | 구분 |
+   |---|---|---|---|---|
+
+   - 구성요소: 모델 / UseCase / Repository 인터페이스 / RepositoryImpl / DataSource·DTO.
+   - `구분`(new/modify)은 이 시점엔 미정 — Phase 2 코드 인벤토리로 확정한다.
+5. **팬아웃 분기 결정**: 화면 수 **N ≥ 3이면 Phase 3-A(팬아웃), N < 3이면 Phase 3-B(메인 직접 작성)**. 분기는 계약 확정 시점인 여기서 결정한다 — Phase 2 수집 범위 지시가 흔들리지 않게.
+
+### Phase 2 — 컨텍스트 수집 (내장 Explore 에이전트 2개, 병렬)
+
+메인이 `Agent` 툴 **2개를 한 메시지에서 동시 호출**한다(`subagent_type: Explore` — 읽기 전용 수집이므로 커스텀 에이전트 정의 없이 내장 Explore를 쓴다, spec-gen과의 의도적 차이). 주입 프롬프트에 다음을 반드시 포함한다:
+
+- **Explore A (docs 컨벤션 수집)**:
+  - 읽기 화이트리스트: `docs/architecture/feature-module.md`·`feature-navigation.md`·`modularization.md` + spec이 건드리는 **`core/{module}/README.md`만** (메인이 Phase 1에서 모듈 목록을 정해 주입). 필요 시 `core/common/android`의 MVI 베이스(`UiState`/`Intent`/`SideEffect`/`MviContainer`) 확인 포함.
+  - 무시 목록: `docs/diagrams/`, `docs/operations/`, 다른 feature 내부.
+  - 반환 형식: designer 주입용 컨벤션 요약 bullet + 참고한 파일 경로 목록(섹션 2 작성 재료).
+- **Explore B (코드 인벤토리)**:
+  - 네이밍 계약의 이름 목록 자체를 주입하고 **각 이름의 레포 실존 여부만** 조사한다(계약 밖 탐색으로 범위가 표류하지 않게 폐쇄).
+  - 반환 형식: `| 이름 | 존재 여부 | 경로 | new/modify 판정 |` 표.
+
+**배리어**: 두 결과를 받은 뒤 네이밍 계약의 `구분` 컬럼을 확정한다. 수집 결과 계약에 없는 이름이 필요하다고 드러나면 **메인이 계약을 갱신**한 뒤 진행한다(피어 협상 없음 — ADR 0002 예외 처리 원칙).
+
+### Phase 3 — 설계 생성 (조건부 팬아웃 + 메인 조립)
+
+#### 3-A. 팬아웃 (화면 ≥ 3)
+
+[`plan-screen-designer`](../../agents/plan/plan-screen-designer.md) **× N**(섹션 4.x 화면당 1개) + [`plan-data-designer`](../../agents/plan/plan-data-designer.md) **1개**를 한 메시지에서 동시 호출한다. Phase 1 네이밍 계약 덕에 서로 대기하지 않는다. 각 에이전트에 주입할 계약 항목은 각 정의의 `## 입력` 참조.
+
+> 각 에이전트는 파일을 쓰지 않고 **섹션 마크다운 블록을 텍스트로 반환**한다 — plan.md는 단일 파일인데 작성자가 N+1개라, Write 지점을 메인 1곳으로 고정해 조립 충돌·순서 비결정성을 막는다(spec-generator가 파일을 직접 쓰는 것과의 의도적 차이).
+
+#### 3-B. 메인 직접 작성 (화면 < 3)
+
+팬아웃 오버헤드가 이득이 없으므로 메인이 [`plan-format.md`](plan-format.md)를 따라 섹션 4·5를 직접 작성한다.
+
+#### 조립 (메인, 공통)
+
+- 섹션 1·2·3·7: 계약 + Phase 2 수집 결과로 메인이 직접 작성 (섹션 3의 new/modify는 확정된 계약·designer 반환 재사용).
+- 섹션 4: 화면 designer 반환 블록을 계약의 화면 순서대로 결합.
+- 섹션 5: data designer 반환 블록.
+- 섹션 6: **기능 행 인벤토리에서 기계 생성** (행 = 인벤토리 행 1:1).
+- 변경 이력: spec 버전 연동 + 오늘 날짜.
+- → `{작업 디렉터리}/plan.md`를 **한 번에 Write**한다.
+
+### Phase 4 — 이중 검증 (메인 결정적 체크 + plan-reviewer, 필수)
+
+**4-1. 메인 결정적 체크** — 집합 비교·문자열 매칭으로 기계 검증한다:
+
+- **C1 (전수 매핑)**: spec 5.x ID 집합 vs plan 섹션 6 `spec ID` 컬럼 집합 — **양방향 차집합 = 0** (spec에만 있으면 누락, plan에만 있으면 유령 — 둘 다 결함).
+- **C2 (슬러그)**: plan 첫 줄 `<!-- feature: {slug} -->` = spec 첫 줄과 문자열 동일.
+- **C3 (버전 연동)**: plan `변경 이력` 최신 행 버전 = Phase 1에서 파싱한 spec 버전, 날짜 = 오늘(YYYY-MM-DD).
+- **C4 (필수 섹션)**: H2 8개가 `plan-format.md`의 `필수 섹션`과 순서·제목 일치.
+- **C5 (계약-본문 정합)**: 섹션 4가 참조하는 UseCase·모델 이름 집합 ⊆ 섹션 5 정의 집합 ⊆ 네이밍 계약 (designer 반환의 "참조 이름 목록"으로 대조).
+
+실패 처리: C1·C5 → 해당 화면/데이터 블록만 수정(3-A였다면 해당 designer만 재디스패치), C2~C4 → 메인이 직접 수정. 수정 후 C1~C5 재실행.
+
+**4-2. plan-reviewer 자가검수** — [`plan-reviewer`](../../agents/plan/plan-reviewer.md) 서브에이전트를 호출한다.
+
+- 입력: ① `{작업 디렉터리}/plan.md` 경로 ② spec.md 경로 ③ 기능 행 인벤토리 ④ 네이밍 계약.
+- **치명 결함(매핑·아키텍처 규칙 위반, 추측 삽입, TBD/needs_policy 이월 누락, 전수 매핑 누락)** 이 보고되면 plan.md를 수정하고 재검수한다.
+
+### Phase 5 — 핸드오프 (메인)
+
+검수 통과 요약을 사용자에게 보고한다. 산출물 구성은 `## 산출물 핸드오프` 참조.
+
+## 작성 규약
+
+plan.md의 **출력 템플릿·통제 어휘·interactionType→MVI 매핑·아키텍처 규칙·작성 규칙**은 [`plan-format.md`](plan-format.md)를 **단일 출처**로 한다. `plan-screen-designer`·`plan-data-designer`(작성)·`plan-reviewer`(검수)도 이 문서를 따른다. 규칙을 여기서 다시 풀어쓰지 않는다.
 
 ## 산출물 핸드오프
 
-- 산출물은 `{작업 디렉터리}/plan.md`다 (컨펌된 spec.md와 형제, 예: `docs/specs/001-mypage/plan.md`). 사용자는 이를 **spec-center 대시보드에 업로드**한다 (spec_approved 이후). plan은 별도 컨펌 게이트 없이 PR 리뷰(얼라인)에서 검증된다.
-
-## 출력 템플릿 (이 구조를 그대로 따른다)
-
-```markdown
-<!-- feature: {feature-슬러그} -->
-# {기능명} — 구현 계획 (plan)
-
-## 1. 한눈에 보기
-| 항목 | 내용 |
-|---|---|
-| 연결 spec | docs/specs/{NNN}-{슬러그}/spec.md (v0.1.0) |
-| feature 모듈 | feature/{name}:api, feature/{name}:impl |
-| 영향 core 모듈 | core:domain, core:data, … |
-| 화면 | N개 ({화면 목록}) |
-| 한 줄 요약 | … |
-
-## 2. 참고 문서
-- architecture/feature-module.md
-- architecture/feature-navigation.md
-- architecture/modularization.md
-- core/{module}/README.md
-
-## 3. 모듈 구성 & 의존
-| 모듈 | 역할 | 구분 |
-|---|---|---|
-| feature/{name}/api  | XLauncher + EXTRA_*              | new |
-| feature/{name}/impl | XActivity·XNavHost·화면(screen/vm) | new |
-| core:domain | 모델·UseCase·Repository 인터페이스 | new/modify |
-| core:data   | RepositoryImpl·DataSource·DTO      | new/modify |
-
-> 의존 규칙: impl→자신 api(+상대 api), impl→core:domain(인터페이스), core:data 바인딩은 :app DI
-
-## 4. 화면 설계
-### 4.1 {화면명}   (Route: XMain · 패키지: feature/{name}/main)
-- **UiState**
-  | 필드 | 타입 | 설명 |
-  |---|---|---|
-- **Intent** (없으면 "없음")
-  | Intent | 사용자 액션 | 처리 |
-  |---|---|---|
-- **SideEffect** (없으면 "없음")
-  | Effect | 설명 |
-  |---|---|
-- **네비게이션**: 진입 인자(args) / 이탈(콜백·Launcher)
-
-## 5. 데이터 설계
-| 레이어 | 구성요소 | 모듈 | 출처 |
-|---|---|---|---|
-| domain | XModel, GetXUseCase, XRepository(interface) | core:domain | - |
-| data   | XRepositoryImpl, XRemoteDataSource, XDto      | core:data   | server API / local |
-
-## 6. 기능 명세 ↔ 구현 매핑
-| spec ID | interactionType | 구현 매핑 | 화면 |
-|---|---|---|---|
-| GROUP_ACTION | async_process | Intent.X → GetXUseCase → status(Loading/Success/Error) | main |
-
-## 7. 미해결 / 외부 의존
-| ID | 내용 | 의존 | spec 연결 |
-|---|---|---|---|
-| OPEN-1 | … | 서버 | TBD-2 |
-
-## 변경 이력
-| 버전 | 날짜 | 변경 | 근거 |
-|---|---|---|---|
-| v0.1.0 | {오늘 YYYY-MM-DD} | 최초 작성 | spec v0.1.0 번역 |
-```
+- 산출물은 `{작업 디렉터리}/plan.md`다 (컨펌된 spec.md와 형제, 예: `docs/specs/001-mypage/plan.md`). 로컬 산출용일 뿐 레포에 직접 커밋하지 않는다 — 사용자가 **spec-center 대시보드에 업로드**하고 (spec_approved 이후), PR 단계에서 커밋된다. plan은 별도 컨펌 게이트 없이 PR 리뷰(얼라인)에서 검증된다.
