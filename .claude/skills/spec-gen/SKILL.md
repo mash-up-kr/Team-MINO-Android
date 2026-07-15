@@ -40,7 +40,7 @@ spec.md는 "무엇을 만들까"(화면 동작 정의)를 기술하는 **기준 
 - **`spec-generator`** — `{작업 디렉터리}` · 매핑표 · 사실 요약본 · 슬러그 · 원본 Figma URL을 주입한다. 에이전트는 출력 규약([`spec-format.md`](spec-format.md))대로 `{작업 디렉터리}/spec.md`를 작성하고, 이미지 링크는 매핑표 파일명으로 경로만 박는다(PNG 실물 불필요).
 - **`figma-asset-exporter`** — `{작업 디렉터리}` · 매핑표 · Figma fileKey/URL을 주입한다. 에이전트는 각 노드를 PNG export해 `{작업 디렉터리}/assets/{파일명}`에 저장하고, 접근 권한이 없으면 수동 export 안내로 폴백한다.
 
-> 두 에이전트의 역할·입출력 상세는 각 정의([`spec-generator`](../../agents/spec-generator.md) · [`figma-asset-exporter`](../../agents/figma-asset-exporter.md)) 참조.
+> 두 에이전트의 역할·입출력 상세는 각 정의([`spec-generator`](../../agents/spec/spec-generator.md) · [`figma-asset-exporter`](../../agents/spec/figma-asset-exporter.md)) 참조.
 
 ### Phase 3 — 배리어 + 정합성 체크 (메인)
 

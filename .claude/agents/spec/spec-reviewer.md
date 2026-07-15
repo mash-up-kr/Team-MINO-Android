@@ -32,7 +32,7 @@ tools: Read, Grep, Glob, Bash
 | S8 | 사실 기반 | **Figma·기획서에 없는 추측 채움 없음.** 화면 상태·텍스트·동작이 실제 Figma와 일치. 미정은 `partial`/`needs_policy`·Open Questions로 처리 | H |
 | S9 | 이미지 정확성 | 삽입된 PNG가 해당 상태/화면을 실제로 나타냄. 파일명 규칙(소문자/숫자/하이픈) 준수 | H |
 
-> 통제 어휘·필수 섹션·출력 템플릿은 [`../skills/spec-gen/spec-format.md`](../skills/spec-gen/spec-format.md)를 **단일 출처**로 한다 — 검수 시 Read해 그 값과 대조한다.
+> 통제 어휘·필수 섹션·출력 템플릿은 [`../../skills/spec-gen/spec-format.md`](../../skills/spec-gen/spec-format.md)를 **단일 출처**로 한다 — 검수 시 Read해 그 값과 대조한다.
 
 ## 검수 방법
 
