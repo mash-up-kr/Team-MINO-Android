@@ -20,3 +20,4 @@ ADR은 [`adr-writer` 스킬](../../.claude/skills/adr-writer/SKILL.md)이 자동
 | # | 제목 | 상태 | 작성일 | 작성자 |
 |---|---|---|---|---|
 | [0001](0001-serialization-optin-ide-warning.md) | 직렬화 DTO의 IDE opt-in 경고에 `@OptIn` 우회를 쓰지 않는다 | Accepted | 2026-06-29 | full_avocado |
+| [0002](0002-plan-gen-subagent-orchestration.md) | plan-gen 고도화는 에이전트 팀이 아닌 서브에이전트 오케스트레이션으로 한다 | Accepted | 2026-07-15 | Jaesung Lee |
