@@ -10,6 +10,8 @@ plan.md의 **출력 템플릿·통제 어휘·interactionType→MVI 매핑·아�
 
 ## interactionType → MVI 매핑 (강제)
 
+> 이 절과 `아키텍처 규칙` 절의 원출처: [`docs/architecture/feature-module.md`](../../../docs/architecture/feature-module.md) · [`modularization.md`](../../../docs/architecture/modularization.md) · [`core/common/android/README.md`](../../../core/common/android/README.md). plan.md 출력에 강제할 항목만 발췌한 검수 기준이다 — 원본 변경 시 함께 갱신한다.
+
 | interactionType | MVI 구현 |
 |---|---|
 | `display_state` | `UiState` 필드 (+ 파생/정렬 로직) |
