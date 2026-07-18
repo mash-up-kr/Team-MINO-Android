@@ -25,6 +25,7 @@ class AndroidFeatureImplConventionPlugin : Plugin<Project> {
 
             dependencies {
                 add("implementation", project(":core:navigation"))
+                add("implementation", project(":core:analytics"))
                 add("implementation", project(":core:common:kotlin"))
                 add("implementation", project(":core:common:android"))
                 add("implementation", project(":core:common:ui"))
