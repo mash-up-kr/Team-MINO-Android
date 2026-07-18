@@ -3,6 +3,7 @@ package team.mino.feature.sample
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
+import team.mino.core.analytics.screen.TrackScreenViews
 import team.mino.core.navigation.screen.MinoNavHost
 import team.mino.core.navigation.screen.popBackStackIfResumed
 import team.mino.core.navigation.screen.screen
@@ -18,6 +19,7 @@ internal fun SampleNavHost(
     modifier: Modifier = Modifier,
 ) {
     val navController = rememberNavController()
+    TrackScreenViews(navController)
 
     MinoNavHost(
         navController = navController,
