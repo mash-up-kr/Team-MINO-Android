@@ -95,7 +95,7 @@ Box(
 ```
 team/mino/core/designsystem/
 ├── foundation/   # 디자인 토큰. foundation별로 color/ typography/ shape/ shadow/ 하위 패키지를 둔다.
-│   └── <kind>/   #   각 foundation = token/ 패키지(Atomic·Semantic·AccessKey) + Holder 파일.
+│   └── <kind>/   #   각 foundation = token/ 패키지(Atomic·Semantic·AccessKey) + Holder 파일 + 토큰 카탈로그 프리뷰(*Preview.kt).
 ├── component/    # 토큰으로 조립한 공용 Composable 컴포넌트 (버튼·칩 등). 현재 비어 있음(예약).
 ├── theme/        # 테마 진입점·접근자 (MinoAndroidAppTheme / MinoAndroidTheme).
 └── util/         # 재사용 UI 유틸.
