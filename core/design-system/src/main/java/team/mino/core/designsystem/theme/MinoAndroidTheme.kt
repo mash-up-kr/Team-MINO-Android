@@ -14,6 +14,8 @@ import team.mino.core.designsystem.foundation.color.LocalColorScheme
 import team.mino.core.designsystem.foundation.color.provideColorScheme
 import team.mino.core.designsystem.foundation.color.token.ColorAccessKeyToken
 import team.mino.core.designsystem.foundation.color.token.value
+import team.mino.core.designsystem.foundation.shadow.LocalShadows
+import team.mino.core.designsystem.foundation.shadow.Shadows
 import team.mino.core.designsystem.foundation.shape.LocalShapes
 import team.mino.core.designsystem.foundation.shape.Shapes
 import team.mino.core.designsystem.foundation.shape.token.ShapeAccessKeyToken
@@ -38,14 +40,16 @@ private fun MinoAndroidTheme(
     colors: ColorScheme = MinoAndroidTheme.colors,
     typography: Typography = MinoAndroidTheme.typography,
     shapes: Shapes = MinoAndroidTheme.shapes,
+    shadows: Shadows = MinoAndroidTheme.shadows,
     content: @Composable () -> Unit,
 ) {
     CompositionLocalProvider(
         LocalColorScheme provides colors,
         LocalTypography provides typography,
         LocalShapes provides shapes,
+        LocalShadows provides shadows,
     ) {
-        ProvideTextStyle(value = typography.bodyLarge, content = content)
+        ProvideTextStyle(value = typography.body1NormalRegular, content = content)
     }
 }
 
@@ -64,6 +68,11 @@ object MinoAndroidTheme {
         @Composable
         @ReadOnlyComposable
         get() = LocalShapes.current
+
+    val shadows: Shadows
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalShadows.current
 }
 
 @UiModePreviews
@@ -74,11 +83,11 @@ private fun MinoAndroidAppThemePreview() {
             modifier = Modifier
                 .background(
                     shape = ShapeAccessKeyToken.Small.value,
-                    color = ColorAccessKeyToken.PurpleGrey40.value,
+                    color = ColorAccessKeyToken.BackgroundNormalNormal.value,
                 ).padding(4.dp),
             text = "Mino-Android",
-            style = TypographyAccessKeyToken.BodyLarge.value.copy(
-                color = ColorAccessKeyToken.Purple80.value,
+            style = TypographyAccessKeyToken.Body1NormalBold.value.copy(
+                color = ColorAccessKeyToken.LabelNormal.value,
             ),
         )
     }
