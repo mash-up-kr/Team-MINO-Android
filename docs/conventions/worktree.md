@@ -78,3 +78,4 @@ git worktree prune                      # 삭제된 워크트리 레코드 정�
 
 - 워크트리는 **파일만 격리**한다. Bash 명령·Gradle 데몬·에뮬레이터 등은 시스템 전역에 영향을 준다.
 - 같은 브랜치를 두 워크트리에서 동시에 체크아웃할 수 없다.
+- **Android Studio는 창당 Gradle 루트 하나만 연다.** 메인 트리와 워크트리를 한 창에 함께 링크하면 같은 FQN 클래스가 이중 해석되어 K2가 `Cannot access 'X' which is a supertype of 'X' ... conflicting dependencies` 오류를 낸다. 워크트리는 `File > Open`으로 워크트리 디렉터리를 **별도 창**에서 열고, 이미 섞였다면 Gradle 도구 창에서 남는 루트를 Unlink 후 Sync한다.
