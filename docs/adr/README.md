@@ -24,3 +24,4 @@ ADR은 [`adr-writer` 스킬](../../.claude/skills/adr-writer/SKILL.md)이 자동
 | [0003](0003-screen-tracking-composition.md)     | 화면 트래킹은 호출부 조립 방식을 유지하고 TrackNavHost 래퍼는 강제화 시점까지 보류한다 | Accepted | 2026-07-18 | full_avocado |
 | [0004](0004-analytics-event-params-typing.md)   | AnalyticsTracker.logEvent 파라미터는 Map<String, Any>를 유지하고 타입 세이프 빌더는 커스텀 이벤트 도입 시점까지 보류한다 | Accepted | 2026-07-21 | full_avocado |
 | [0005](0005-fixed-font-scale.md)                | 시스템 폰트 배율을 무시하고 텍스트 크기를 고정한다 (1sp = 1dp) | Accepted | 2026-07-24 | Jaesung Lee |
+| [0006](0006-design-system-component-m3-pattern.md) | 디자인시스템 컴포넌트 API는 Material3 컴포넌트 패턴(Defaults·Colors·컴포넌트 토큰)을 따른다 | Accepted | 2026-07-25 | Jaesung Lee |
