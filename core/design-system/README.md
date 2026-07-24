@@ -39,7 +39,7 @@ dependencies {
 }
 ```
 
-**② 진입점을 테마로 감싸기** — Activity `setContent`(또는 화면 최상위)를 `MinoAndroidAppTheme`로 감싼다. 라이트/다크는 시스템 모드에 따라 자동 적용된다.
+**② 진입점을 테마로 감싸기** — Activity `setContent`(또는 화면 최상위)를 `MinoAndroidAppTheme`로 감싼다. 라이트/다크는 시스템 모드에 따라 자동 적용되고, 폰트 배율은 시스템 설정과 무관하게 고정된다([4.5 토큰 규칙](#45-토큰-규칙) 참조).
 
 ```kotlin
 setContent {
@@ -239,6 +239,7 @@ typography·shape·shadow도 **`Atomic → Tokens → AccessKeyToken(enum + when
 | **불변성** | 모든 홀더는 `@Immutable` — Compose가 재구성을 안전하게 스킵하도록 보장. |
 | **equals/hashCode** | 홀더는 모든 토큰 프로퍼티 기준으로 동등성 정의, `hashCode`는 `arrayOf(...).contentHashCode()`. 토큰 추가 시 함께 갱신한다. |
 | **다크 모드** | `ColorDarkTokens`는 Figma 다크 시맨틱 매핑을 반영한다. 새 시맨틱 슬롯은 라이트/다크 매핑을 항상 쌍으로 추가한다. |
+| **폰트 배율 고정** | 테마가 `LocalDensity`의 `fontScale`을 `1f`로 고정해 **테마 하위에서는 항상 1sp = 1dp**다. 시스템 폰트 크기 설정은 앱 텍스트에 반영되지 않는다. 폰트 크기·행간은 그대로 `.sp`로 표기한다(`TextStyle.fontSize`는 `TextUnit`이라 dp를 넣을 수 없다). 배경은 ADR 참조. |
 
 > [!IMPORTANT]
 > 토큰의 SSOT는 디자이너의 Figma 디자인 시스템이다. Figma 토큰이 바뀌면 [4.4 토큰 추가하기](#44-토큰-추가하기) 절차로 코드를 따라 맞춘다.
