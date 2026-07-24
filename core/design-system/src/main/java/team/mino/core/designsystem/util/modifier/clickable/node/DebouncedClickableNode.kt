@@ -123,7 +123,9 @@ internal class DebouncedClickableNode(
 
     // 접근성/테스트가 읽는 시맨틱. TalkBack 등 보조도구의 클릭도 동일하게 cutter로 디바운스한다.
     override fun SemanticsPropertyReceiver.applySemantics() {
-        role?.let { this.role = it }
+        // 한정자 없는 role은 SemanticsPropertyReceiver.role getter(직접 읽기 금지, 예외 발생)로
+        // 해석되므로, 노드 필드는 반드시 this@ 한정으로 읽는다.
+        this@DebouncedClickableNode.role?.let { role = it }
         onClick(label = onClickLabel) {
             if (enabled && cutter.processEvent()) onClick()
             true
