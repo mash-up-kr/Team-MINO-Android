@@ -270,8 +270,8 @@ git checkout -b "<prefix>/<issue-number>-<slug>"
 git fetch origin
 git worktree add ".claude/worktrees/<issue-number>-<slug>" -b "<prefix>/<issue-number>-<slug>" origin/develop
 git config "branch.<prefix>/<issue-number>-<slug>.merge" "refs/heads/<prefix>/<issue-number>-<slug>"
-for f in local.properties keystore.properties; do
-  [ -f "$f" ] && cp "$f" ".claude/worktrees/<issue-number>-<slug>/"
+for f in local.properties keystore.properties app/google-services.json; do
+  [ -f "$f" ] && cp "$f" ".claude/worktrees/<issue-number>-<slug>/$f"
 done
 ```
 

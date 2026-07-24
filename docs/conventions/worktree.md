@@ -27,7 +27,7 @@
 ## 워크트리 위치와 로컬 파일
 
 - 네이티브 워크트리는 저장소 루트 하위 `.claude/worktrees/<name>/`에 생성된다. 이 경로는 `.gitignore`에 등록되어 있다.
-- `local.properties`·`keystore.properties`는 gitignore 대상이라 새 워크트리에 복사되지 않으면 첫 Gradle Sync가 깨진다. 루트의 [`.worktreeinclude`](../../.worktreeinclude)가 네이티브 워크트리 생성 시 이 파일들을 자동 복사한다.
+- `local.properties`·`keystore.properties`·`app/google-services.json`은 gitignore 대상이라 새 워크트리에 복사되지 않으면 첫 Gradle Sync가 깨진다. 루트의 [`.worktreeinclude`](../../.worktreeinclude)가 네이티브 워크트리 생성 시 이 파일들을 자동 복사한다.
   - **주의**: `.worktreeinclude`는 네이티브 `claude -w`(및 서브에이전트 워크트리)에만 적용된다. 수동 `git worktree add`에는 적용되지 않으므로 직접 복사해야 한다.
 
 ## `/issue --worktree` 절차
@@ -36,15 +36,15 @@
 
 - **워킹 트리 clean 검증 생략**: 새 워크트리는 현재 작업 트리를 건드리지 않으므로, 미커밋 변경이 있어도 진행한다.
 - **base는 `origin/develop`**: 네이티브 `claude -w`와 달리 수동 `git worktree add`로 만들어 컨벤션 브랜치명(`feature/<issue#>-<slug>`)을 지킨다.
-- **로컬 파일 직접 복사**: 수동 생성이라 `.worktreeinclude`가 적용되지 않으므로, 존재하는 `local.properties`·`keystore.properties`를 새 워크트리로 복사한다.
+- **로컬 파일 직접 복사**: 수동 생성이라 `.worktreeinclude`가 적용되지 않으므로, [`.worktreeinclude`](../../.worktreeinclude)에 등록된 로컬 파일들(`local.properties`·`keystore.properties`·`app/google-services.json`)을 새 워크트리의 같은 경로로 복사한다.
 - **upstream을 자기 브랜치로 교정**: `worktree add -b ... origin/develop`은 새 브랜치의 upstream을 `origin/develop`으로 잡는다. 이대로면 `push.default=simple`에서 브랜치 이름이 달라 `git push`가 거부되고 매번 `-u`가 필요하다(`upstream`/`tracking` 모드였다면 develop에 직접 push될 수도 있다). merge ref를 자기 브랜치로 덮어쓰면 첫 `git push`가 별도 플래그 없이 `origin/feature/<issue#>-<slug>`를 생성한다.
 
 ```sh
 git fetch origin
 git worktree add ".claude/worktrees/<issue#>-<slug>" -b "feature/<issue#>-<slug>" origin/develop
 git config "branch.feature/<issue#>-<slug>.merge" "refs/heads/feature/<issue#>-<slug>"
-for f in local.properties keystore.properties; do
-  [ -f "$f" ] && cp "$f" ".claude/worktrees/<issue#>-<slug>/"
+for f in local.properties keystore.properties app/google-services.json; do
+  [ -f "$f" ] && cp "$f" ".claude/worktrees/<issue#>-<slug>/$f"
 done
 ```
 
