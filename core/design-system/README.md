@@ -23,9 +23,9 @@ MinoAndroid의 디자인 시스템 모듈. Material3를 기반으로 하되, Mat
 |---|---|---|
 | 디자인 토큰 | 색상·타이포·셰이프·그림자를 3계층(원시→시맨틱→홀더)으로 관리 | [4. 토큰 시스템](#4-토큰-시스템) |
 | 테마 진입점 | `MinoAndroidAppTheme` — 토큰을 주입하고 라이트/다크를 자동 전환 | [2. 빠른 시작](#2-빠른-시작) |
-| Modifier 유틸 | 클릭(연타 차단·리플 표준화)·그림자 토큰 적용 `Modifier` 확장 | [5.2 클릭 Modifier 유틸](#52-클릭-modifier-유틸) |
-| 프리뷰 어노테이션 | 라이트/다크 동시 프리뷰 `@UiModePreviews` | [5.3 프리뷰](#53-프리뷰) |
-| 공용 컴포넌트 *(예정)* | 토큰으로 조립한 버튼·칩 등 재사용 Composable. `component/` 패키지에 추가될 예정 | [3. 디렉토리 구조](#3-디렉토리-구조) |
+| Modifier 유틸 | 클릭(연타 차단·리플 표준화)·그림자 토큰 적용 `Modifier` 확장 | [5.3 클릭 Modifier 유틸](#53-클릭-modifier-유틸) |
+| 프리뷰 어노테이션 | 라이트/다크 동시 프리뷰 `@UiModePreviews` | [5.4 프리뷰](#54-프리뷰) |
+| 공용 컴포넌트 | 토큰으로 조립한 재사용 Composable. `component/` 패키지에서 제공 | [5.1 컴포넌트 구현 패턴](#51-컴포넌트-구현-패턴--material3-관례) |
 
 ---
 
@@ -84,7 +84,7 @@ Box(
 > [!IMPORTANT]
 > `MinoAndroidTheme.*`는 반드시 **`MinoAndroidAppTheme { ... }` 내부**에서 읽어야 한다. 테마 바깥에서 접근하면 `CompositionLocal`의 정적 기본값(라이트)이 잡힌다.
 
-클릭 유틸 선택 기준은 [5.2 클릭 Modifier 유틸](#52-클릭-modifier-유틸)을 참조.
+클릭 유틸 선택 기준은 [5.3 클릭 Modifier 유틸](#53-클릭-modifier-유틸)을 참조.
 
 ---
 
@@ -96,7 +96,7 @@ Box(
 team/mino/core/designsystem/
 ├── foundation/   # 디자인 토큰. foundation별로 color/ typography/ shape/ shadow/ 하위 패키지를 둔다.
 │   └── <kind>/   #   각 foundation = token/ 패키지(Atomic·Semantic·AccessKey) + Holder 파일 + 토큰 카탈로그 프리뷰(*Preview.kt).
-├── component/    # 토큰으로 조립한 공용 Composable 컴포넌트 (버튼·칩 등). 현재 비어 있음(예약).
+├── component/    # 토큰으로 조립한 공용 Composable 컴포넌트. 컴포넌트별 하위 패키지로 구성.
 ├── theme/        # 테마 진입점·접근자 (MinoAndroidAppTheme / MinoAndroidTheme).
 └── util/         # 재사용 UI 유틸.
     ├── modifier/ #   Modifier 확장 (예: clickable/ — 클릭·디바운스, shadow/ — 그림자 토큰 적용). 종류별로 하위 패키지.
@@ -107,7 +107,7 @@ team/mino/core/designsystem/
 |---|---|
 | 새 토큰 값/슬롯 | 해당 `foundation/<kind>/` — 절차는 [4.4 토큰 추가하기](#44-토큰-추가하기) |
 | 새 foundation 종류 (예: spacing) | `foundation/` 아래 새 패키지를 기존 3계층 패턴으로 |
-| 공용 Composable 컴포넌트 (버튼·칩 등) | `component/` — 토큰은 `*AccessKeyToken.value`로 소비 ([4.3 사용 패턴](#43-사용-패턴--모듈-안팎의-두-갈래)) |
+| 공용 Composable 컴포넌트 (버튼·칩 등) | `component/<name>/` — 구조는 [5.1 컴포넌트 구현 패턴](#51-컴포넌트-구현-패턴--material3-관례) |
 | `Modifier` 확장 | `util/modifier/<종류>/` (공개 확장만 노출, 내부 구현은 `internal`) |
 | 프리뷰·기타 UI 유틸 | `util/` 아래 성격에 맞는 패키지 |
 
@@ -250,7 +250,24 @@ typography·shape·shadow도 **`Atomic → Tokens → AccessKeyToken(enum + when
 
 재사용하는 Composable·`Modifier` 자산. 외부 모듈은 여기의 public API를 그대로 가져다 쓴다.
 
-### 5.1 Modifier 확장 구현 규칙
+### 5.1 컴포넌트 구현 패턴 — Material3 관례
+
+`component/` 하위 컴포넌트는 **Material3 컴포넌트 구조(Defaults object · Colors 클래스 · 컴포넌트 토큰 층)** 를 따른다. 채택 배경·근거·레퍼런스 원문 링크는 [ADR 0006](../../docs/adr/0006-design-system-component-m3-pattern.md)을 참조.
+
+`component/<name>/` 아래에 다음 구성으로 만든다.
+
+| 구성 요소 | 역할 | M3 대응 |
+|---|---|---|
+| `Mino<Name>` Composable | 공개 API. 셰이프·색·패딩 등 커스터마이징 파라미터의 디폴트는 전부 `Mino<Name>Defaults`에서 공급 | `Button` |
+| `Mino<Name>Defaults` object | 기본값 프로퍼티·상수와 `...colors()` 팩토리. 파일이 커지면 별도 파일로 분리 | `ButtonDefaults` |
+| `Mino<Name>Colors` 클래스 | 상태(enabled 등)별 색 슬롯. `@Immutable`, `Color.Unspecified`를 "원본 유지"로 해석하는 `copy`, `@Stable internal` 상태 해석 함수, equals/hashCode. 기본 인스턴스는 `ColorScheme`의 `internal var default<Name>ColorsCached`에 캐시 | `ButtonColors` |
+| `token/<Name>Tokens` object | `internal`. 컴포넌트 슬롯 → 디자인 토큰 키(`*AccessKeyToken`) 매핑만 담고, 값 해석은 `*AccessKeyToken.value`가 담당 | `tokens/FilledButtonTokens` |
+
+- 상태 없는 컴포넌트는 Colors 클래스 없이 Defaults의 단일 값 프로퍼티로 둔다(M3 `BadgeDefaults.containerColor` 방식).
+- **클릭은 M3처럼 `Surface(onClick)`을 쓰지 않고** [5.3 클릭 Modifier 유틸](#53-클릭-modifier-유틸)로 처리한다.
+- 아직 동작하지 않는 기능의 파라미터는 미리 만들지 않는다 — 이후 기능은 디폴트 파라미터로 소스 호환 추가한다.
+
+### 5.2 Modifier 확장 구현 규칙
 
 새 `Modifier` 확장을 추가할 때 따르는 규칙이다. (참조 구현: `util/modifier/clickable`)
 
@@ -258,7 +275,7 @@ typography·shape·shadow도 **`Atomic → Tokens → AccessKeyToken(enum + when
 - **공개 API는 `Modifier` 확장 함수뿐.** `ModifierNodeElement`·`Modifier.Node` 구현은 `internal`로 숨기고, 외부에는 확장 함수만 노출한다.
 - **위치**: `util/modifier/<종류>/`. `Modifier.Node`/`Element` 구현은 그 아래 `node/` 하위 패키지에 둔다.
 
-### 5.2 클릭 Modifier 유틸
+### 5.3 클릭 Modifier 유틸
 
 `util/modifier/clickable`은 **연타(중복 클릭) 차단**과 **리플(ripple) 표시**를 디자인 시스템 차원에서 표준화한 `Modifier` 확장이다. 외부 모듈은 아래 3개 공개 확장만 사용하고, 일반 클릭에 `Modifier.clickable`을 직접 쓰기보다 이 확장으로 연타·리플 정책을 일관되게 가져간다.
 
@@ -285,7 +302,7 @@ Box(
 )
 ```
 
-### 5.3 프리뷰
+### 5.4 프리뷰
 
 **프리뷰는 기본적으로 `@UiModePreviews`를 사용한다.** 단일 `@Preview` 대신 이 어노테이션을 붙여 라이트/다크를 항상 함께 확인한다.
 
