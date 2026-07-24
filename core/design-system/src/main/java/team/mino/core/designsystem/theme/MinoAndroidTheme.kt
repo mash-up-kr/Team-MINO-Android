@@ -8,6 +8,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import team.mino.core.designsystem.foundation.color.ColorScheme
 import team.mino.core.designsystem.foundation.color.LocalColorScheme
@@ -29,10 +31,15 @@ import team.mino.core.designsystem.util.preview.UiModePreviews
 @Composable
 fun MinoAndroidAppTheme(content: @Composable () -> Unit) {
     val colorScheme: ColorScheme = provideColorScheme()
-    MinoAndroidTheme(
-        colors = colorScheme,
-        content = content,
-    )
+    // 시스템 폰트 배율을 무시하고 1sp = 1dp로 고정한다 (ADR 0003)
+    CompositionLocalProvider(
+        LocalDensity provides Density(LocalDensity.current.density, fontScale = 1f),
+    ) {
+        MinoAndroidTheme(
+            colors = colorScheme,
+            content = content,
+        )
+    }
 }
 
 @Composable
