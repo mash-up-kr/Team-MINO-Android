@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import team.mino.core.designsystem.component.bottomnavigation.MinoBottomNavigationItemColors
 import team.mino.core.designsystem.component.menu.MinoMenuItemColors
 import team.mino.core.designsystem.foundation.color.token.ColorAccessKeyToken
 import team.mino.core.designsystem.foundation.color.token.ColorDarkTokens
@@ -68,6 +69,7 @@ class ColorScheme(
 ) {
     // 컴포넌트 기본 Colors 캐시. M3 ColorScheme의 default*ColorsCached와 같은 방식으로,
     // 스킴(라이트/다크)당 1회만 생성해 재사용한다 (docs/adr/2026-07-25-design-system-component-m3-pattern.md).
+    internal var defaultBottomNavigationItemColorsCached: MinoBottomNavigationItemColors? = null
     internal var defaultMenuItemColorsCached: MinoMenuItemColors? = null
 
     fun copy(
