@@ -31,6 +31,7 @@ class AndroidFeatureImplConventionPlugin : Plugin<Project> {
                 add("implementation", project(":core:common:ui"))
                 add("implementation", project(":core:design-system"))
                 add("implementation", project(":core:domain"))
+                add("implementation", project(":core:error-handling"))
 
                 add("implementation", catalog.lib("androidx-core-ktx"))
                 add("implementation", catalog.lib("androidx-activity-compose"))

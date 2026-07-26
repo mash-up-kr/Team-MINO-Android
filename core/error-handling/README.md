@@ -115,7 +115,7 @@ core/error-handling/src/main/kotlin/team/mino/core/errorhandling/
 
 ## 5. 의존성 추가 가이드
 
-`build.gradle.kts`에 추가:
+feature `:impl`은 **컨벤션 플러그인(`mino.android.feature.impl`)이 이 모듈을 이미 의존**하므로 별도 추가가 필요 없다. 그 밖의 모듈은 `build.gradle.kts`에 추가:
 
 ```kotlin
 dependencies {

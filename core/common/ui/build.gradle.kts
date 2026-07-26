@@ -11,7 +11,7 @@ dependencies {
     implementation(project(":core:common:kotlin"))
     implementation(project(":core:common:android"))
     implementation(project(":core:design-system"))
-    implementation(project(":core:error-handling"))
+    api(project(":core:error-handling"))
 
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)
