@@ -59,7 +59,7 @@ class CounterViewModel(
 
     fun onIncrease() {
         updateState { copy(count = count + 1) }            // 상태 갱신
-        viewModelScope.launch {
+        launchSafely {
             if (state.value.count >= 10) {
                 postSideEffect(CounterSideEffect.ShowMaxReached)  // 일회성 이벤트
             }
@@ -74,6 +74,18 @@ class CounterViewModel(
 > [!NOTE]
 > `SideEffect`는 **포그라운드 UI 이벤트 전용**이다. 백그라운드에서도 처리돼야 하거나 프로세스 사망을 넘어 살아남아야 하는 신호는 `SideEffect`가 아니라 상태(`StateFlow`)나 OS 알림으로 모델링한다. 수집 동작 상세는 [`core:common:ui`](../ui/README.md)의 `CollectSideEffect` 참고.
 
+### `launchSafely` — CEH 결합 코루틴 시작점
+
+```kotlin
+fun ViewModel.launchSafely(block: suspend CoroutineScope.() -> Unit): Job
+```
+
+ViewModel에서 코루틴은 항상 이걸로 시작한다 — `viewModelScope.launch` 직접 호출 금지 (리뷰 규약, [에러 처리 규약](../../../docs/conventions/error_handling.md) §4).
+
+- 결합된 CEH가 잡히지 않은 예외(버그)를 리포터(기본 `Timber.e`, Crashlytics 도입 시 교체)와 전역 버스 `UncaughtErrorHandler`로 전달한다.
+- CEH는 `launch`에만 동작한다 — `async` / `withContext`에는 적용되지 않는다.
+- 도메인 예외의 소비(`runCatchingDomain`·`onDomainFailure`)는 [`core:error-handling`](../../error-handling/README.md) 참고.
+
 ---
 
 ## 3. 디렉토리 구조
@@ -84,11 +96,12 @@ core/common/android/src/main/java/team/mino/core/common/android/
 │   ├── MviComponent.kt        # UiState / Intent / SideEffect 마커 인터페이스
 │   ├── MviContainer.kt        # MVI 인터페이스 + mviContainer() 팩토리
 │   └── MviContainerImpl.kt    # StateFlow + Channel 기반 구현체
-├── extension/                 # (예약 — Context/Intent 등 Android 확장)
+├── extension/
+│   └── ViewModel.kt           # launchSafely — CEH 결합 코루틴 시작점
 └── util/                      # (예약 — Android 유틸)
 ```
 
-`extension`·`util`은 현재 비어 있는 **예약 패키지**다.
+`util`은 현재 비어 있는 **예약 패키지**다.
 
 ---
 
@@ -102,7 +115,7 @@ core/common/android/src/main/java/team/mino/core/common/android/
 
 ### 예약 패키지에 무엇을 넣나
 
-`extension`·`util`은 현재 비어 있다. 둘의 구분은 **"기존 타입에 붙는가, 독립적으로 호출하는가"**:
+둘의 구분은 **"기존 타입에 붙는가, 독립적으로 호출하는가"**:
 
 - **`extension`** — 수신자(receiver)가 있는 확장. `fun X.doSomething()` 형태로 기존 Android 타입을 꾸민다.
   - `Context`/`Activity`/`Fragment` 확장 — `Context.dp()`, `Context.getColorCompat()`, `Activity.hideKeyboard()`
@@ -167,4 +180,5 @@ MVI 타입(`UiState`/`Intent`/`SideEffect`/`MviContainer`)이 모두 이 모듈�
 |---|---|
 | **의존성** | Android SDK까지만. **Compose/UI는 의존 금지** (그건 `core:common:ui`). |
 | **MVI 합성** | ViewModel은 `mviContainer()`를 `by`로 위임받아 사용. 직접 `MviContainerImpl`을 new 하지 않는다. |
+| **코루틴 시작** | ViewModel에서는 `launchSafely`만 사용. `viewModelScope.launch` 직접 호출 금지. |
 | **SideEffect 범위** | 포그라운드 UI 일회성 이벤트 전용. 영속/백그라운드 신호는 상태로 모델링. |
