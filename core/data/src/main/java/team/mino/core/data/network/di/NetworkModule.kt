@@ -13,6 +13,7 @@ import io.ktor.client.plugins.logging.Logging
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import team.mino.core.data.BuildConfig
+import team.mino.core.data.network.extension.convertDomainException
 import javax.inject.Singleton
 
 @Module
@@ -23,6 +24,7 @@ internal object NetworkModule {
     fun provideHttpClient(): HttpClient =
         HttpClient(OkHttp) {
             expectSuccess = true
+            convertDomainException()
             defaultRequest {
                 url("https://api.github.com/")
             }
