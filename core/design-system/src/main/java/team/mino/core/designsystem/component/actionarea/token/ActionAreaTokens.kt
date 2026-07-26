@@ -27,7 +27,10 @@ internal object ActionAreaTokens {
     val SubButtonFont = TypographyAccessKeyToken.Body1NormalMedium
 
     val MainContainerColor = ColorAccessKeyToken.PrimaryNormal
-    val MainContentColor = ColorAccessKeyToken.StaticWhite
+
+    // InverseLabel은 MainContainerColor(다크모드에 흰색으로 뒤집힘)와 함께 반전되어 항상 대비를 유지한다.
+    // StaticWhite는 모드와 무관하게 항상 흰색이라 다크모드에서 흰 배경 위 흰 글자가 되므로 쓰지 않는다.
+    val MainContentColor = ColorAccessKeyToken.InverseLabel
 
     val SubContentColor = ColorAccessKeyToken.LabelNormal
     val SubBorderColor = ColorAccessKeyToken.LineNormalNeutral
