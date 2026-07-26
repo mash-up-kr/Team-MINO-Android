@@ -10,7 +10,7 @@ MinoAndroid의 **feature 간 재사용 공통 UI** 모듈. 공용 Composable 컴
 
 | | |
 |---|---|
-| **무엇을** | 여러 feature가 공유하는 Composable과 Compose 헬퍼를 제공한다. 현재는 MVI `SideEffect`를 lifecycle에 맞춰 수집하는 `CollectSideEffect`. |
+| **무엇을** | 여러 feature가 공유하는 Composable과 Compose 헬퍼를 제공한다. MVI `SideEffect` 수집(`CollectSideEffect`)과 에러 소비(`CollectDomainError`·`CollectUncaughtError`). |
 | **빌드 타입** | Android Library + Compose (`mino.android.library` + `mino.android.compose`) |
 
 > [!IMPORTANT]
@@ -61,14 +61,34 @@ fun CounterRoute(viewModel: CounterViewModel = hiltViewModel()) {
 > [!NOTE]
 > 여기서 다루는 건 **수집(소비) 동작**이다. `SideEffect`를 무엇에 쓰고 무엇에 쓰지 말지(포그라운드 전용·영속 신호는 상태로 모델링)는 생산자 쪽 규칙이라 [`core:common:android`](../android/README.md) §2가 단일 출처다.
 
+### 에러 소비 — `CollectDomainError` · `CollectUncaughtError`
+
+에러 처리 규약의 UI 소비 담당이다. State/이벤트 분류 기준·수집 위치 정책은 [`docs/conventions/error_handling.md`](../../../docs/conventions/error_handling.md) §5·§6이 단일 출처다.
+
+```kotlin
+@Composable
+fun CollectDomainError(emitter: DomainErrorEmitter, onError: (MinoDomainException) -> Unit)
+
+@Composable
+fun CollectUncaughtError(onError: (Throwable) -> Unit)
+```
+
+- `CollectDomainError` — `DomainErrorEmitter`를 위임한 ViewModel의 **Route**가 선언한다. 리프 → 사용자 문구 매핑은 Route가 수행한다 (문구 정책이 미정이라 공통 매퍼는 두지 않는다 — 규약 §8).
+- `CollectUncaughtError` — **각 Activity가 `setContent` 바로 아래(NavHost 밖)** 에서 선언한다 (리뷰 규약). 버그 안내 문구는 `R.string.error_unknown`.
+- 두 컴포저블 모두 `RESUMED`에서만 수집하고, 수집 공백 중 이벤트는 채널 버퍼가 보존한다.
+
 ---
 
 ## 3. 디렉토리 구조
 
 ```
 core/common/ui/src/main/java/team/mino/core/common/ui/
-└── architecture/
-    └── CollectSideEffect.kt   # SideEffect를 lifecycle 기준으로 수집하는 Composable
+├── architecture/
+│   └── CollectSideEffect.kt            # SideEffect를 lifecycle 기준으로 수집하는 Composable
+└── error/
+    ├── CollectDomainError.kt           # DomainErrorEmitter 수집 (Route 선언)
+    ├── CollectUncaughtError.kt         # UncaughtErrorHandler 수집 (Activity 루트 선언)
+    └── CollectOnResumed.kt             # 두 수집 컴포저블의 공통 골격 (internal)
 ```
 
 공용 Composable 컴포넌트나 Modifier 확장이 늘어나면 성격별 패키지(`component`, `modifier` 등)를 추가한다.
