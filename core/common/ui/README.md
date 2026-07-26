@@ -84,11 +84,11 @@ fun CollectUncaughtError(onError: (Throwable) -> Unit)
 ```
 core/common/ui/src/main/java/team/mino/core/common/ui/
 ├── architecture/
+│   ├── CollectFlowWithLifecycle.kt     # 수집 컴포저블 3종의 공통 골격 (internal)
 │   └── CollectSideEffect.kt            # SideEffect를 lifecycle 기준으로 수집하는 Composable
 └── error/
     ├── CollectDomainError.kt           # DomainErrorEmitter 수집 (Route 선언)
-    ├── CollectUncaughtError.kt         # UncaughtErrorHandler 수집 (Activity 루트 선언)
-    └── CollectOnResumed.kt             # 두 수집 컴포저블의 공통 골격 (internal)
+    └── CollectUncaughtError.kt         # UncaughtErrorHandler 수집 (Activity 루트 선언)
 ```
 
 공용 Composable 컴포넌트나 Modifier 확장이 늘어나면 성격별 패키지(`component`, `modifier` 등)를 추가한다.

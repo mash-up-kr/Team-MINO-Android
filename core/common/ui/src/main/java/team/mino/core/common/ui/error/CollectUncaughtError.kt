@@ -1,6 +1,8 @@
 package team.mino.core.common.ui.error
 
 import androidx.compose.runtime.Composable
+import androidx.lifecycle.Lifecycle
+import team.mino.core.common.ui.architecture.CollectFlowWithLifecycle
 import team.mino.core.errorhandling.UncaughtErrorHandler
 
 /**
@@ -11,5 +13,5 @@ import team.mino.core.errorhandling.UncaughtErrorHandler
  */
 @Composable
 fun CollectUncaughtError(onError: (Throwable) -> Unit) {
-    CollectOnResumed(UncaughtErrorHandler.errors, onError)
+    CollectFlowWithLifecycle(UncaughtErrorHandler.errors, Lifecycle.State.RESUMED, onError)
 }

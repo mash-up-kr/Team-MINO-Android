@@ -1,6 +1,8 @@
 package team.mino.core.common.ui.error
 
 import androidx.compose.runtime.Composable
+import androidx.lifecycle.Lifecycle
+import team.mino.core.common.ui.architecture.CollectFlowWithLifecycle
 import team.mino.core.errorhandling.DomainErrorEmitter
 import team.mino.core.errorhandling.MinoDomainException
 
@@ -15,5 +17,5 @@ fun CollectDomainError(
     emitter: DomainErrorEmitter,
     onError: (MinoDomainException) -> Unit,
 ) {
-    CollectOnResumed(emitter.domainErrors, onError)
+    CollectFlowWithLifecycle(emitter.domainErrors, Lifecycle.State.RESUMED, onError)
 }
