@@ -1,4 +1,4 @@
-package team.mino.core.designsystem.component.actionarea.token
+package team.mino.core.designsystem.component.button.token
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.unit.dp
@@ -8,10 +8,10 @@ import team.mino.core.designsystem.foundation.shape.token.ShapeAccessKeyToken
 import team.mino.core.designsystem.foundation.typography.token.TypographyAccessKeyToken
 
 /**
- * Action Area 컴포넌트 슬롯 → 디자인 토큰 키 매핑.
+ * Button(Action Area) 컴포넌트 슬롯 → 디자인 토큰 키 매핑.
  * Figma `Action Area/Action Area` 실측값 기준.
  */
-internal object ActionAreaTokens {
+internal object ButtonTokens {
     val ContainerColor = ColorAccessKeyToken.BackgroundNormalNormal
     val ContainerPadding = PaddingValues(20.dp)
     val ActionRowSpacing = 12.dp

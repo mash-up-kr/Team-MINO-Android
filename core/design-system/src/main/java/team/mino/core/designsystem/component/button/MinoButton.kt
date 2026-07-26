@@ -1,4 +1,4 @@
-package team.mino.core.designsystem.component.actionarea
+package team.mino.core.designsystem.component.button
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -17,18 +17,18 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
-import team.mino.core.designsystem.component.actionarea.token.ActionAreaTokens
+import team.mino.core.designsystem.component.button.token.ButtonTokens
 import team.mino.core.designsystem.foundation.shape.token.value
 import team.mino.core.designsystem.foundation.typography.token.value
 import team.mino.core.designsystem.util.modifier.clickable.rippleSingleClickable
 import team.mino.core.designsystem.util.modifier.surface.surface
 
 /**
- * 화면 하단에 고정하는 액션 영역. 메인 액션은 필수이고, [secondaryAction]으로 보조 액션을 하나
- * 더할 수 있다(Figma Variant=Neutral·Strong에 대응).
+ * 화면 하단에 고정하는 액션 영역(Figma `Action Area/Action Area`). 메인 액션은 필수이고,
+ * [secondaryAction]으로 보조 액션을 하나 더할 수 있다(Figma Variant=Neutral·Strong에 대응).
  *
- * - [ActionAreaSecondaryAction.Sub]: 메인 액션 옆에 가로로 배치되는 저강조 보조 액션.
- * - [ActionAreaSecondaryAction.Alternative]: 메인 액션 아래 세로로 배치되는 대체 액션.
+ * - [ButtonSecondaryAction.Sub]: 메인 액션 옆에 가로로 배치되는 저강조 보조 액션.
+ * - [ButtonSecondaryAction.Alternative]: 메인 액션 아래 세로로 배치되는 대체 액션.
  *
  * 하단 시스템 인셋(제스처 내비게이션 바 등) 대응은 컴포넌트가 강제하지 않는다. 호출부가
  * 화면 구조(Scaffold의 `contentWindowInsets` 처리 여부 등)에 맞춰 [modifier]에
@@ -38,14 +38,14 @@ import team.mino.core.designsystem.util.modifier.surface.surface
  *   (Figma `Divider` 속성 — 실선이 아니라 배경색으로 사라지는 그라데이션 마스크다).
  */
 @Composable
-fun MinoActionArea(
+fun MinoButton(
     mainActionText: String,
     onMainActionClick: () -> Unit,
     modifier: Modifier = Modifier,
     mainActionEnabled: Boolean = true,
-    secondaryAction: ActionAreaSecondaryAction? = null,
+    secondaryAction: ButtonSecondaryAction? = null,
     divider: Boolean = true,
-    colors: MinoActionAreaColors = MinoActionAreaDefaults.colors(),
+    colors: MinoButtonColors = MinoButtonDefaults.colors(),
 ) {
     val containerColor = colors.containerColor
     val dividerBrush = remember(containerColor) {
@@ -57,7 +57,7 @@ fun MinoActionArea(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(ActionAreaTokens.GradientHeight)
+                    .height(ButtonTokens.GradientHeight)
                     .background(dividerBrush),
             )
         }
@@ -65,60 +65,60 @@ fun MinoActionArea(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(containerColor)
-                .padding(ActionAreaTokens.ContainerPadding),
-            verticalArrangement = Arrangement.spacedBy(ActionAreaTokens.ActionColumnSpacing),
+                .padding(ButtonTokens.ContainerPadding),
+            verticalArrangement = Arrangement.spacedBy(ButtonTokens.ActionColumnSpacing),
         ) {
             when (secondaryAction) {
-                is ActionAreaSecondaryAction.Sub -> {
-                    Row(horizontalArrangement = Arrangement.spacedBy(ActionAreaTokens.ActionRowSpacing)) {
-                        ActionAreaButton(
+                is ButtonSecondaryAction.Sub -> {
+                    Row(horizontalArrangement = Arrangement.spacedBy(ButtonTokens.ActionRowSpacing)) {
+                        ButtonSurface(
                             text = secondaryAction.action.text,
                             onClick = secondaryAction.action.onClick,
                             enabled = secondaryAction.action.enabled,
                             contentColor = colors.subContentColor,
                             borderColor = colors.subBorderColor,
-                            textStyle = ActionAreaTokens.SubButtonFont.value,
+                            textStyle = ButtonTokens.SubButtonFont.value,
                         )
-                        ActionAreaButton(
+                        ButtonSurface(
                             modifier = Modifier.weight(1f),
                             text = mainActionText,
                             onClick = onMainActionClick,
                             enabled = mainActionEnabled,
                             containerColor = colors.mainContainerColor,
                             contentColor = colors.mainContentColor,
-                            textStyle = ActionAreaTokens.ButtonFont.value,
+                            textStyle = ButtonTokens.ButtonFont.value,
                         )
                     }
                 }
-                is ActionAreaSecondaryAction.Alternative -> {
-                    ActionAreaButton(
+                is ButtonSecondaryAction.Alternative -> {
+                    ButtonSurface(
                         modifier = Modifier.fillMaxWidth(),
                         text = mainActionText,
                         onClick = onMainActionClick,
                         enabled = mainActionEnabled,
                         containerColor = colors.mainContainerColor,
                         contentColor = colors.mainContentColor,
-                        textStyle = ActionAreaTokens.ButtonFont.value,
+                        textStyle = ButtonTokens.ButtonFont.value,
                     )
-                    ActionAreaButton(
+                    ButtonSurface(
                         modifier = Modifier.fillMaxWidth(),
                         text = secondaryAction.action.text,
                         onClick = secondaryAction.action.onClick,
                         enabled = secondaryAction.action.enabled,
                         contentColor = colors.alternativeContentColor,
                         borderColor = colors.alternativeBorderColor,
-                        textStyle = ActionAreaTokens.ButtonFont.value,
+                        textStyle = ButtonTokens.ButtonFont.value,
                     )
                 }
                 null -> {
-                    ActionAreaButton(
+                    ButtonSurface(
                         modifier = Modifier.fillMaxWidth(),
                         text = mainActionText,
                         onClick = onMainActionClick,
                         enabled = mainActionEnabled,
                         containerColor = colors.mainContainerColor,
                         contentColor = colors.mainContentColor,
-                        textStyle = ActionAreaTokens.ButtonFont.value,
+                        textStyle = ButtonTokens.ButtonFont.value,
                     )
                 }
             }
@@ -127,28 +127,28 @@ fun MinoActionArea(
 }
 
 /**
- * [MinoActionArea]의 `secondaryAction`에 전달하는 보조 액션 종류. [Sub]와 [Alternative]는
+ * [MinoButton]의 `secondaryAction`에 전달하는 보조 액션 종류. [Sub]와 [Alternative]는
  * 서로 다른 레이아웃(가로/세로)이라 동시에 지정할 수 없으므로 하나의 슬롯으로 표현한다.
  */
-sealed class ActionAreaSecondaryAction {
+sealed class ButtonSecondaryAction {
     /** 메인 액션 옆에 가로로 배치되는 저강조 보조 액션(Figma Sub Action). */
-    class Sub(val action: ActionAreaAction) : ActionAreaSecondaryAction()
+    class Sub(val action: ButtonAction) : ButtonSecondaryAction()
 
     /** 메인 액션 아래 세로로 배치되는 대체 액션(Figma Alternative Action). */
-    class Alternative(val action: ActionAreaAction) : ActionAreaSecondaryAction()
+    class Alternative(val action: ButtonAction) : ButtonSecondaryAction()
 }
 
 /**
- * [ActionAreaSecondaryAction]에 담기는 보조 액션 정보.
+ * [ButtonSecondaryAction]에 담기는 보조 액션 정보.
  */
-class ActionAreaAction(
+class ButtonAction(
     val text: String,
     val onClick: () -> Unit,
     val enabled: Boolean = true,
 )
 
 @Composable
-private fun ActionAreaButton(
+private fun ButtonSurface(
     text: String,
     onClick: () -> Unit,
     enabled: Boolean,
@@ -160,14 +160,14 @@ private fun ActionAreaButton(
 ) {
     Box(
         modifier = modifier
-            .alpha(if (enabled) 1f else ActionAreaTokens.DisabledOpacity)
+            .alpha(if (enabled) 1f else ButtonTokens.DisabledOpacity)
             .surface(
-                shape = ActionAreaTokens.ButtonShape.value,
+                shape = ButtonTokens.ButtonShape.value,
                 containerColor = containerColor,
                 borderColor = borderColor,
-                borderWidth = ActionAreaTokens.ButtonBorderWidth,
+                borderWidth = ButtonTokens.ButtonBorderWidth,
             ).rippleSingleClickable(enabled = enabled, onClick = onClick)
-            .padding(ActionAreaTokens.ButtonPadding),
+            .padding(ButtonTokens.ButtonPadding),
         contentAlignment = Alignment.Center,
     ) {
         Text(text = text, color = contentColor, style = textStyle)

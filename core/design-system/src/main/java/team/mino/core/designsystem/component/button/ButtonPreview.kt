@@ -1,4 +1,4 @@
-package team.mino.core.designsystem.component.actionarea
+package team.mino.core.designsystem.component.button
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -16,7 +16,7 @@ import team.mino.core.designsystem.util.preview.UiModePreviews
 
 @UiModePreviews
 @Composable
-private fun ActionAreaPreview() {
+private fun ButtonPreview() {
     MinoAndroidAppTheme {
         Column(
             modifier = Modifier
@@ -26,39 +26,39 @@ private fun ActionAreaPreview() {
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
             // 메인 액션 단일형
-            MinoActionArea(
+            MinoButton(
                 modifier = Modifier.fillMaxWidth(),
                 mainActionText = "메인 액션",
                 onMainActionClick = {},
             )
             // 메인 + 보조 액션형 (가로)
-            MinoActionArea(
+            MinoButton(
                 modifier = Modifier.fillMaxWidth(),
                 mainActionText = "메인",
                 onMainActionClick = {},
-                secondaryAction = ActionAreaSecondaryAction.Sub(ActionAreaAction(text = "보조", onClick = {})),
+                secondaryAction = ButtonSecondaryAction.Sub(ButtonAction(text = "보조", onClick = {})),
             )
             // 메인 + 대체 액션형 (세로)
-            MinoActionArea(
+            MinoButton(
                 modifier = Modifier.fillMaxWidth(),
                 mainActionText = "메인 액션",
                 onMainActionClick = {},
-                secondaryAction = ActionAreaSecondaryAction.Alternative(
-                    ActionAreaAction(text = "대체 액션", onClick = {}),
+                secondaryAction = ButtonSecondaryAction.Alternative(
+                    ButtonAction(text = "대체 액션", onClick = {}),
                 ),
             )
             // 비활성 상태
-            MinoActionArea(
+            MinoButton(
                 modifier = Modifier.fillMaxWidth(),
                 mainActionText = "메인",
                 onMainActionClick = {},
                 mainActionEnabled = false,
-                secondaryAction = ActionAreaSecondaryAction.Sub(
-                    ActionAreaAction(text = "보조", onClick = {}, enabled = false),
+                secondaryAction = ButtonSecondaryAction.Sub(
+                    ButtonAction(text = "보조", onClick = {}, enabled = false),
                 ),
             )
             // Divider(상단 그라데이션) 없이
-            MinoActionArea(
+            MinoButton(
                 modifier = Modifier.fillMaxWidth(),
                 mainActionText = "메인 액션",
                 onMainActionClick = {},
