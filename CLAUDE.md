@@ -13,6 +13,7 @@ Android 프로젝트. Git Flow 브랜치 전략 사용.
 | 커밋 메시지 작성, 커밋 쪼개기 | `docs/conventions/commit-message.md` |
 | Pull Request 생성, 본문 작성, 제목·연결 키워드 | `docs/conventions/pull-request.md` + `.github/PULL_REQUEST_TEMPLATE.md` |
 | Compose Lint 룰·severity 조정, 위반 처리 | `docs/conventions/compose-lint.md` + `lint.xml` |
+| 에러 처리 — 도메인 예외(`MinoDomainException`) 매핑, `launchSafely`·`runCatchingDomain` 소비, CEH 안전망 | `docs/conventions/error_handling.md` |
 | 모듈 구성·의존성 규칙, 레이어 경계, 새 모듈 추가 절차 | `docs/architecture/modularization.md` |
 | Domain Repository 인터페이스, UseCase 사용 기준, ViewModel 책임 분리 | `core/domain/README.md` |
 | feature 모듈 추가, api/impl 구조, 패키지·역할, Route↔Screen 작성 | `docs/architecture/feature-module.md` |
@@ -24,6 +25,7 @@ Android 프로젝트. Git Flow 브랜치 전략 사용.
 | `core:analytics` 분석 모듈 사용·확장 (`AnalyticsTracker` 이벤트 로깅·`TrackScreenViews` 화면 자동 로깅) | `core/analytics/README.md` |
 | CD 배포, Play Store 자동화, 시크릿·트리거 | `docs/operations/cd-pipeline.md` |
 | `core:data` 데이터 레이어 작업 (DataSource·Repository·Mapper·네트워크 추가) | `core/data/README.md` |
+| `core:error-handling` 에러 인프라 사용·확장 (`MinoDomainException` 리프 추가·`runCatchingDomain`·`DomainErrorEmitter`) | `core/error-handling/README.md` |
 | 과거 설계 결정의 배경·이유 확인, 새 설계 결정 기록 (ADR) | `docs/adr/README.md` + `docs/adr/*.md` |
 | 머지 후 잘못된 것으로 판명된 결정·구현 확인, 새 실패 기록 작성 | `docs/failures/README.md` + `docs/failures/*.md` |
 

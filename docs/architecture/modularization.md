@@ -37,6 +37,10 @@ Android SDK 기반 공용 유틸리티 (Context 확장, Intent 헬퍼 등).
 비즈니스 로직 — UseCase, 도메인 모델, Repository 인터페이스.
 → Kotlin JVM
 
+### `:core:error-handling`
+에러 처리 인프라 — 도메인 에러 모델(`MinoDomainException`)과 에러 소비 규약 헬퍼. 규약은 `docs/conventions/error_handling.md`.
+→ Kotlin JVM
+
 ### `:core:data`
 데이터 계층 — Repository 구현, DataSource, DTO 매핑.
 → Android Library
