@@ -23,7 +23,10 @@ internal class DebouncedClickableNode(
     private var enabled: Boolean,
     debounceIntervalMillis: Long,
     private var onClickLabel: String?,
-    private var role: Role?,
+    // SemanticsPropertyReceiver도 동명의 확장 프로퍼티 role(쓰기 전용, 읽으면 예외)을 가지고 있어,
+    // applySemantics() 안에서 한정자 없이 role을 읽으면 그쪽으로 오해석된다. 필드명을 다르게 둬
+    // 그 충돌 자체가 애초에 발생하지 않게 한다.
+    private var nodeRole: Role?,
     indication: IndicationNodeFactory?,
     private var onClick: () -> Unit,
 ) : DelegatingNode(), SemanticsModifierNode {
@@ -107,9 +110,9 @@ internal class DebouncedClickableNode(
         }
 
         // 접근성 정보가 바뀌면 시맨틱 트리를 무효화해 다시 읽게 한다.
-        if (this.onClickLabel != onClickLabel || this.role != role) {
+        if (this.onClickLabel != onClickLabel || this.nodeRole != role) {
             this.onClickLabel = onClickLabel
-            this.role = role
+            this.nodeRole = role
             invalidateSemantics()
         }
 
@@ -123,9 +126,7 @@ internal class DebouncedClickableNode(
 
     // 접근성/테스트가 읽는 시맨틱. TalkBack 등 보조도구의 클릭도 동일하게 cutter로 디바운스한다.
     override fun SemanticsPropertyReceiver.applySemantics() {
-        // 한정자 없는 role은 SemanticsPropertyReceiver.role getter(직접 읽기 금지, 예외 발생)로
-        // 해석되므로, 노드 필드는 반드시 this@ 한정으로 읽는다.
-        this@DebouncedClickableNode.role?.let { role = it }
+        nodeRole?.let { role = it }
         onClick(label = onClickLabel) {
             if (enabled && cutter.processEvent()) onClick()
             true

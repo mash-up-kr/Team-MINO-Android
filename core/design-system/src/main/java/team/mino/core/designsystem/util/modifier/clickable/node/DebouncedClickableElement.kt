@@ -21,7 +21,7 @@ internal class DebouncedClickableElement(
             enabled = enabled,
             debounceIntervalMillis = debounceIntervalMillis,
             onClickLabel = onClickLabel,
-            role = role,
+            nodeRole = role,
             indication = indication,
             onClick = onClick,
         )
