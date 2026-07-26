@@ -61,6 +61,8 @@ core/data/src/main/java/team/mino/core/data/
 │   ├── di/                                # @Binds 모듈
 │   └── ...                                # 기기 정보 원천(시스템 설정 등) 접근자 인터페이스·구현체
 ├── network/
+│   ├── extension/
+│   │   └── HttpClientConfig.kt            # convertDomainException — Ktor 예외 → 도메인 예외 전역 매핑 (internal)
 │   ├── di/
 │   │   └── NetworkModule.kt               # HttpClient 제공 (internal)
 │   ├── dto/
@@ -86,6 +88,7 @@ core/data/src/main/java/team/mino/core/data/
 | `storage/` | DataStore 인프라 DI 제공 |
 | `network/di/` | HttpClient·네트워크 인프라 DI 제공 |
 | `network/dto/` | 서버 응답 스펙을 표현하는 DTO. `@Serializable` 필수. 도메인 모델 의존 금지 |
+| `network/extension/` | `HttpClientConfig` 등 네트워크 타입 확장 (`convertDomainException`) |
 | `network/service/` | Ktor HttpClient로 엔드포인트를 직접 호출하는 클래스 |
 | `repository/` | `core:domain` Repository 인터페이스 구현 |
 | `repository/mapper/` | DTO → 도메인 모델 Mapper. Repository가 늘어나도 `repository/`가 파일로 뒤섞이지 않도록 분리 |
@@ -100,6 +103,7 @@ core/data/src/main/java/team/mino/core/data/
 // core/data/network/di/NetworkModule.kt
 HttpClient(OkHttp) {
     expectSuccess = true          // 비2xx 응답 시 ClientRequestException / ServerResponseException
+    convertDomainException()
     defaultRequest {
         url("https://api.github.com/")   // 현재는 임시 baseUrl — 실서버 연결 시 ProductFlavors로 이동
     }
@@ -115,12 +119,21 @@ HttpClient(OkHttp) {
 | 설정 | 이유 |
 |---|---|
 | `expectSuccess = true` | 비2xx 응답 시 `SerializationException` 대신 명확한 HTTP 예외를 던짐 |
+| `convertDomainException()` | Ktor 예외 → `MinoDomainException` 전역 매핑 — 새 API 추가 시 매핑 누락이 구조적으로 불가능 |
 | `ignoreUnknownKeys = true` | 서버 응답에 신규 필드가 추가돼도 파싱 실패 없음 |
 | `LogLevel.BODY` (qa 한정) | prod 빌드에서 토큰·PII가 로그캣에 노출되는 것을 차단 |
 | `baseUrl` (임시) | 현재는 GitHub 임시 API. 실서버 연결 시 `ProductFlavors.apiBaseUrl`로 교체 |
 
 > [!NOTE]
 > `baseUrl`은 `ProductFlavors.kt`의 `apiBaseUrl`로 flavor별 관리하는 것이 목표다. 실서버 배포 전에 `NetworkModule`의 하드코딩된 URL을 `BuildConfig.API_BASE_URL`로 교체한다.
+
+### 예외 → 도메인 예외 매핑 (`convertDomainException`)
+
+Ktor 예외를 `MinoDomainException`으로 바꾸는 유일한 지점이다. 분류 기준·화이트리스트 정책은 [`docs/conventions/error_handling.md`](../../docs/conventions/error_handling.md) §3을 단일 출처로 한다.
+
+- `Service`·`DataSource`·`RepositoryImpl`은 예외를 잡지 않는다 — 매핑은 validator가 전역 수행하고, 실패는 throw로 전파된다.
+- `MinoDomainException`에 새 리프를 추가하면 이 파일의 `when` 분기를 **짝으로** 추가한다.
+- 엔드포인트별 특수 정책(예: 특정 API의 404를 빈 결과로 취급)이 필요한 지점만 해당 DataSource에서 지역 catch를 병용한다.
 
 ### ApiService 작성 규칙
 
@@ -143,7 +156,7 @@ internal class XxxApiService @Inject constructor(
 - 클래스·생성자에 `internal` 필수.
 - `@Inject constructor`로 Hilt 주입 대상으로 선언. 별도 `@Provides` 불필요.
 - 엔드포인트 경로는 `defaultRequest.url` 기준 상대 경로로 작성.
-- 에러 처리(예외 → 도메인 에러 매핑)는 DataSource 또는 RepositoryImpl에서 담당.
+- 예외를 잡지 않는다 — 도메인 예외 매핑은 `HttpClient`의 validator가 전역 수행한다 (`network/extension/HttpClientConfig.kt`의 `convertDomainException`).
 
 ---
 
@@ -216,7 +229,7 @@ internal class XxxRepositoryImpl @Inject constructor(
 | **가시성** | `internal` 필수 |
 | **의존** | DataSource 인터페이스만 주입. `DataSourceImpl` 직접 의존 금지 |
 | **Mapper** | `RepositoryImpl` 안에서 DTO → 도메인 모델 변환 완료. UseCase·ViewModel에 DTO 노출 금지 |
-| **에러 처리** | `HttpClient`의 `expectSuccess = true`로 HTTP 예외가 올라오므로, 필요 시 `RepositoryImpl`에서 도메인 에러로 래핑 |
+| **에러 처리** | 예외를 잡지 않는다 — 매핑은 validator가 전역 수행하며, 실패는 `MinoDomainException` throw로 전파 |
 
 DI 바인딩은 별도 `@Module`로 분리한다.
 

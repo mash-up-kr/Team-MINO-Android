@@ -13,6 +13,7 @@ dependencies {
     implementation(project(":core:common:kotlin"))
     implementation(project(":core:common:android"))
     implementation(project(":core:domain"))
+    implementation(project(":core:error-handling"))
 
     implementation(libs.androidx.datastore.preferences)
 
@@ -27,4 +28,5 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.ktor.client.mock)
 }
