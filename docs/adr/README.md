@@ -25,5 +25,7 @@ ADR은 [`adr-writer` 스킬](../../.claude/skills/adr-writer/SKILL.md)이 자동
 | 2026-07-21 | [AnalyticsTracker.logEvent 파라미터는 Map<String, Any>를 유지하고 타입 세이프 빌더는 커스텀 이벤트 도입 시점까지 보류한다](2026-07-21-analytics-event-params-typing.md) | Accepted | full_avocado |
 | 2026-07-24 | [시스템 폰트 배율을 무시하고 텍스트 크기를 고정한다 (1sp = 1dp)](2026-07-24-fixed-font-scale.md) | Accepted | Jaesung Lee |
 | 2026-07-25 | [디자인시스템 컴포넌트 API는 Material3 컴포넌트 패턴(Defaults·Colors·컴포넌트 토큰)을 따른다](2026-07-25-design-system-component-m3-pattern.md) | Accepted | Jaesung Lee |
+| 2026-07-25 | [UiState는 sealed 화면 상태 대신 isLoading 분리형으로 설계한다](2026-07-25-uistate-isloading-over-sealed-status.md) | Proposed | Jaesung Lee |
+| 2026-07-25 | [에러 처리는 도메인 예외 매핑 + CEH 안전망의 2단 구조로 한다](2026-07-25-error-handling-two-tier-convention.md) | Accepted | Jaesung Lee |
 | 2026-07-27 | [로컬 키-값 저장소로 Preferences DataStore를 채택한다](2026-07-27-preferences-datastore-local-storage.md) | Accepted | Jaesung Lee |
 | 2026-07-27 | [ADR·실패 기록 파일명은 일련번호 대신 날짜 접두어를 쓴다](2026-07-27-record-filename-date-prefix.md) | Accepted | Jaesung Lee |
