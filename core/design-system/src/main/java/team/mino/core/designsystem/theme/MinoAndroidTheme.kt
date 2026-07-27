@@ -31,7 +31,7 @@ import team.mino.core.designsystem.util.preview.UiModePreviews
 @Composable
 fun MinoAndroidAppTheme(content: @Composable () -> Unit) {
     val colorScheme: ColorScheme = provideColorScheme()
-    // 시스템 폰트 배율을 무시하고 1sp = 1dp로 고정한다 (ADR 0003)
+    // 시스템 폰트 배율을 무시하고 1sp = 1dp로 고정한다 (docs/adr/2026-07-24-fixed-font-scale.md)
     CompositionLocalProvider(
         LocalDensity provides Density(LocalDensity.current.density, fontScale = 1f),
     ) {
