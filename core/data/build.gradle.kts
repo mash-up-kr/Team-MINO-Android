@@ -14,6 +14,8 @@ dependencies {
     implementation(project(":core:common:android"))
     implementation(project(":core:domain"))
 
+    implementation(libs.androidx.datastore.preferences)
+
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
 
@@ -22,4 +24,7 @@ dependencies {
     implementation(libs.ktor.client.content.negotiation)
     implementation(libs.ktor.client.logging)
     implementation(libs.ktor.serialization.kotlinx.json)
+
+    testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
 }
