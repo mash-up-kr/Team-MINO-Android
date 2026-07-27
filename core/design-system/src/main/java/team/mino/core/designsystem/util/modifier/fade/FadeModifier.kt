@@ -2,6 +2,7 @@ package team.mino.core.designsystem.util.modifier.fade
 
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.CacheDrawScope
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.BlendMode
@@ -23,28 +24,18 @@ fun Modifier.horizontalFadingEdge(edgeWidth: Dp = 24.dp): Modifier =
     this
         .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
         .drawWithCache {
-            val edgeWidthPx = minOf(edgeWidth.toPx(), size.width / 2f)
-            val leadingBrush = Brush.horizontalGradient(
-                colors = listOf(Color.Transparent, Color.Black),
-                startX = 0f,
-                endX = edgeWidthPx,
-            )
-            val trailingBrush = Brush.horizontalGradient(
-                colors = listOf(Color.Black, Color.Transparent),
-                startX = size.width - edgeWidthPx,
-                endX = size.width,
-            )
+            val brushes = fadingEdgeBrushes(edgeWidth)
             onDrawWithContent {
                 drawContent()
                 drawRect(
-                    brush = leadingBrush,
-                    size = size.copy(width = edgeWidthPx),
+                    brush = brushes.leading,
+                    size = size.copy(width = brushes.edgeWidthPx),
                     blendMode = BlendMode.DstIn,
                 )
                 drawRect(
-                    brush = trailingBrush,
-                    topLeft = Offset(size.width - edgeWidthPx, 0f),
-                    size = size.copy(width = edgeWidthPx),
+                    brush = brushes.trailing,
+                    topLeft = Offset(size.width - brushes.edgeWidthPx, 0f),
+                    size = size.copy(width = brushes.edgeWidthPx),
                     blendMode = BlendMode.DstIn,
                 )
             }
@@ -63,33 +54,43 @@ fun Modifier.horizontalFadingEdge(
     this
         .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
         .drawWithCache {
-            val edgeWidthPx = minOf(edgeWidth.toPx(), size.width / 2f)
-            val leadingBrush = Brush.horizontalGradient(
-                colors = listOf(Color.Transparent, Color.Black),
-                startX = 0f,
-                endX = edgeWidthPx,
-            )
-            val trailingBrush = Brush.horizontalGradient(
-                colors = listOf(Color.Black, Color.Transparent),
-                startX = size.width - edgeWidthPx,
-                endX = size.width,
-            )
+            val brushes = fadingEdgeBrushes(edgeWidth)
             onDrawWithContent {
                 drawContent()
                 if (scrollState.canScrollBackward) {
                     drawRect(
-                        brush = leadingBrush,
-                        size = size.copy(width = edgeWidthPx),
+                        brush = brushes.leading,
+                        size = size.copy(width = brushes.edgeWidthPx),
                         blendMode = BlendMode.DstIn,
                     )
                 }
                 if (scrollState.canScrollForward) {
                     drawRect(
-                        brush = trailingBrush,
-                        topLeft = Offset(size.width - edgeWidthPx, 0f),
-                        size = size.copy(width = edgeWidthPx),
+                        brush = brushes.trailing,
+                        topLeft = Offset(size.width - brushes.edgeWidthPx, 0f),
+                        size = size.copy(width = brushes.edgeWidthPx),
                         blendMode = BlendMode.DstIn,
                     )
                 }
             }
         }
+
+/** [drawWithCache] 캐시 블록에서 [edgeWidth]로부터 좌우 페이드 그라데이션을 한 번만 만든다. */
+private fun CacheDrawScope.fadingEdgeBrushes(edgeWidth: Dp): FadingEdgeBrushes {
+    val edgeWidthPx = minOf(edgeWidth.toPx(), size.width / 2f)
+    return FadingEdgeBrushes(
+        edgeWidthPx = edgeWidthPx,
+        leading = Brush.horizontalGradient(
+            colors = listOf(Color.Transparent, Color.Black),
+            startX = 0f,
+            endX = edgeWidthPx,
+        ),
+        trailing = Brush.horizontalGradient(
+            colors = listOf(Color.Black, Color.Transparent),
+            startX = size.width - edgeWidthPx,
+            endX = size.width,
+        ),
+    )
+}
+
+private class FadingEdgeBrushes(val edgeWidthPx: Float, val leading: Brush, val trailing: Brush)
