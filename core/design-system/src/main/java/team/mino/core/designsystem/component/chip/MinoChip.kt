@@ -6,7 +6,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import team.mino.core.designsystem.component.chip.token.ChipTokens
 import team.mino.core.designsystem.component.chip.token.contentPadding
 import team.mino.core.designsystem.component.chip.token.shape
@@ -31,42 +30,9 @@ fun MinoChip(
     enabled: Boolean = true,
     colors: MinoChipColors = MinoChipDefaults.colors(),
 ) {
-    val containerColor: Color
-    val contentColor: Color
-    val borderColor: Color?
-
-    when {
-        !enabled && variant == ChipVariant.Solid -> {
-            containerColor = colors.disabledContainerColor
-            contentColor = colors.disabledContentColor
-            borderColor = null
-        }
-        !enabled -> {
-            containerColor = Color.Transparent
-            contentColor = colors.disabledContentColor
-            borderColor = colors.outlinedBorderColor
-        }
-        variant == ChipVariant.Solid && active -> {
-            containerColor = colors.solidActiveContainerColor
-            contentColor = colors.solidActiveContentColor
-            borderColor = null
-        }
-        variant == ChipVariant.Solid -> {
-            containerColor = colors.solidInactiveContainerColor
-            contentColor = colors.inactiveContentColor
-            borderColor = null
-        }
-        variant == ChipVariant.Outlined && active -> {
-            containerColor = colors.outlinedActiveTintColor
-            contentColor = colors.outlinedActiveContentColor
-            borderColor = colors.outlinedActiveBorderColor
-        }
-        else -> {
-            containerColor = Color.Transparent
-            contentColor = colors.inactiveContentColor
-            borderColor = colors.outlinedBorderColor
-        }
-    }
+    val containerColor = MinoChipDefaults.containerColor(colors, variant, active, enabled)
+    val contentColor = MinoChipDefaults.contentColor(colors, variant, active, enabled)
+    val borderColor = MinoChipDefaults.borderColor(colors, variant, active, enabled)
 
     Box(
         modifier = modifier

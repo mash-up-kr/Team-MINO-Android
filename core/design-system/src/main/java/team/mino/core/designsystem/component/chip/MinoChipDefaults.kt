@@ -3,6 +3,7 @@ package team.mino.core.designsystem.component.chip
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.Stable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.takeOrElse
 import team.mino.core.designsystem.component.chip.token.ChipTokens
@@ -14,6 +15,53 @@ import team.mino.core.designsystem.theme.MinoAndroidTheme
  * [MinoChip]의 기본값 모음.
  */
 object MinoChipDefaults {
+    /** [variant]·[active]·[enabled] 조합에 대응하는 배경색. */
+    @Stable
+    internal fun containerColor(
+        colors: MinoChipColors,
+        variant: ChipVariant,
+        active: Boolean,
+        enabled: Boolean,
+    ): Color =
+        when {
+            !enabled && variant == ChipVariant.Solid -> colors.disabledContainerColor
+            !enabled -> Color.Transparent
+            variant == ChipVariant.Solid && active -> colors.solidActiveContainerColor
+            variant == ChipVariant.Solid -> colors.solidInactiveContainerColor
+            active -> colors.outlinedActiveTintColor
+            else -> Color.Transparent
+        }
+
+    /** [variant]·[active]·[enabled] 조합에 대응하는 글자색. */
+    @Stable
+    internal fun contentColor(
+        colors: MinoChipColors,
+        variant: ChipVariant,
+        active: Boolean,
+        enabled: Boolean,
+    ): Color =
+        when {
+            !enabled -> colors.disabledContentColor
+            variant == ChipVariant.Solid && active -> colors.solidActiveContentColor
+            variant == ChipVariant.Outlined && active -> colors.outlinedActiveContentColor
+            else -> colors.inactiveContentColor
+        }
+
+    /** [variant]·[active]·[enabled] 조합에 대응하는 테두리색. Solid는 테두리가 없다. */
+    @Stable
+    internal fun borderColor(
+        colors: MinoChipColors,
+        variant: ChipVariant,
+        active: Boolean,
+        enabled: Boolean,
+    ): Color? =
+        when {
+            variant == ChipVariant.Solid -> null
+            !enabled -> colors.outlinedBorderColor
+            active -> colors.outlinedActiveBorderColor
+            else -> colors.outlinedBorderColor
+        }
+
     /** [MinoChip]의 기본 [MinoChipColors]. */
     @Composable
     @ReadOnlyComposable
