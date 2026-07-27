@@ -1,7 +1,6 @@
 package team.mino.core.designsystem.component.category.token
 
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 import team.mino.core.designsystem.foundation.color.token.ColorAccessKeyToken
@@ -11,7 +10,6 @@ import team.mino.core.designsystem.foundation.typography.token.TypographyAccessK
  * Category 컴포넌트 슬롯 → 디자인 토큰 키 매핑.
  */
 internal object CategoryTokens {
-    val ContentGap = 20.dp
     val ChipSpacing = 10.dp
     val GradientEdgeWidth = 48.dp
 
@@ -25,11 +23,4 @@ internal object CategoryTokens {
     val ChipInactiveContainerColor = ColorAccessKeyToken.BackgroundNormalNormal
     val ChipInactiveContentColor = ColorAccessKeyToken.LabelAlternative
     val ChipInactiveBorderColor = ColorAccessKeyToken.LineNormalNeutral
-
-    val IconButtonSize = 24.dp
-    val IconButtonTouchSize = 40.dp
-    val IconButtonShape = CircleShape
-
-    val PushBadgeSize = 4.dp
-    val PushBadgeColor = ColorAccessKeyToken.PrimaryNormal
 }

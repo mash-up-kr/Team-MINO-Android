@@ -31,7 +31,6 @@ object MinoCategoryDefaults {
         chipInactiveContainerColor: Color = Color.Unspecified,
         chipInactiveContentColor: Color = Color.Unspecified,
         chipInactiveBorderColor: Color = Color.Unspecified,
-        pushBadgeColor: Color = Color.Unspecified,
     ): MinoCategoryColors =
         MinoAndroidTheme.colors.defaultCategoryColors.copy(
             chipActiveContainerColor = chipActiveContainerColor,
@@ -39,7 +38,6 @@ object MinoCategoryDefaults {
             chipInactiveContainerColor = chipInactiveContainerColor,
             chipInactiveContentColor = chipInactiveContentColor,
             chipInactiveBorderColor = chipInactiveBorderColor,
-            pushBadgeColor = pushBadgeColor,
         )
 
     internal val ColorScheme.defaultCategoryColors: MinoCategoryColors
@@ -51,7 +49,6 @@ object MinoCategoryDefaults {
                     chipInactiveContainerColor = fromToken(CategoryTokens.ChipInactiveContainerColor),
                     chipInactiveContentColor = fromToken(CategoryTokens.ChipInactiveContentColor),
                     chipInactiveBorderColor = fromToken(CategoryTokens.ChipInactiveBorderColor),
-                    pushBadgeColor = fromToken(CategoryTokens.PushBadgeColor),
                 ).also { defaultCategoryColorsCached = it }
 }
 
@@ -65,7 +62,6 @@ class MinoCategoryColors(
     val chipInactiveContainerColor: Color,
     val chipInactiveContentColor: Color,
     val chipInactiveBorderColor: Color,
-    val pushBadgeColor: Color,
 ) {
     fun copy(
         chipActiveContainerColor: Color = this.chipActiveContainerColor,
@@ -73,7 +69,6 @@ class MinoCategoryColors(
         chipInactiveContainerColor: Color = this.chipInactiveContainerColor,
         chipInactiveContentColor: Color = this.chipInactiveContentColor,
         chipInactiveBorderColor: Color = this.chipInactiveBorderColor,
-        pushBadgeColor: Color = this.pushBadgeColor,
     ): MinoCategoryColors =
         MinoCategoryColors(
             chipActiveContainerColor = chipActiveContainerColor.takeOrElse { this.chipActiveContainerColor },
@@ -81,7 +76,6 @@ class MinoCategoryColors(
             chipInactiveContainerColor = chipInactiveContainerColor.takeOrElse { this.chipInactiveContainerColor },
             chipInactiveContentColor = chipInactiveContentColor.takeOrElse { this.chipInactiveContentColor },
             chipInactiveBorderColor = chipInactiveBorderColor.takeOrElse { this.chipInactiveBorderColor },
-            pushBadgeColor = pushBadgeColor.takeOrElse { this.pushBadgeColor },
         )
 
     override fun equals(other: Any?): Boolean {
@@ -93,7 +87,6 @@ class MinoCategoryColors(
         if (chipInactiveContainerColor != other.chipInactiveContainerColor) return false
         if (chipInactiveContentColor != other.chipInactiveContentColor) return false
         if (chipInactiveBorderColor != other.chipInactiveBorderColor) return false
-        if (pushBadgeColor != other.pushBadgeColor) return false
 
         return true
     }
@@ -105,6 +98,5 @@ class MinoCategoryColors(
             chipInactiveContainerColor,
             chipInactiveContentColor,
             chipInactiveBorderColor,
-            pushBadgeColor,
         ).contentHashCode()
 }
