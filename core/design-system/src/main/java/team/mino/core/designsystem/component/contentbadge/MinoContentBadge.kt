@@ -24,8 +24,8 @@ import team.mino.core.designsystem.util.modifier.surface.surface
  * 정보를 항목별로 분류할 때 쓰는 낮은 시각 위계의 정적 라벨(Figma `Content Badge/Content Badge`).
  * 클릭 동작이 없는 순수 표시용 컴포넌트다.
  *
- * @param color `null`이면 [colors]의 중립(Neutral) 색을 쓴다. 색을 지정하면(Accent) 그 한 색에서
- *   배경(Solid 8%)·테두리(Outlined 43%)를 자동으로 파생한 [MinoContentBadgeColors]로 대체된다.
+ * @param color Figma `Color` 속성(Neutral·Accent)에 대응. [ContentBadgeColor.Accent]면 그 안에 담긴
+ *   색 한 색에서 배경(Solid 8%)·테두리(Outlined 43%)를 자동으로 파생한 [MinoContentBadgeColors]로 대체된다.
  */
 @Composable
 fun MinoContentBadge(
@@ -33,11 +33,14 @@ fun MinoContentBadge(
     modifier: Modifier = Modifier,
     size: ContentBadgeSize = ContentBadgeSize.Small,
     variant: ContentBadgeVariant = ContentBadgeVariant.Solid,
-    color: Color? = null,
+    color: ContentBadgeColor = ContentBadgeColor.Neutral,
     leadingIcon: (@Composable () -> Unit)? = null,
     trailingIcon: (@Composable () -> Unit)? = null,
     colors: MinoContentBadgeColors =
-        if (color != null) MinoContentBadgeDefaults.accentColors(color) else MinoContentBadgeDefaults.colors(),
+        when (color) {
+            is ContentBadgeColor.Neutral -> MinoContentBadgeDefaults.colors()
+            is ContentBadgeColor.Accent -> MinoContentBadgeDefaults.accentColors(color.color)
+        },
 ) {
     val containerColor = if (variant == ContentBadgeVariant.Solid) colors.containerColor else Color.Transparent
     val borderColor = if (variant == ContentBadgeVariant.Outlined) colors.borderColor else null
@@ -80,4 +83,18 @@ enum class ContentBadgeSize {
 enum class ContentBadgeVariant {
     Solid,
     Outlined,
+}
+
+/**
+ * [MinoContentBadge]의 색 스타일. Figma `Color` 속성(Neutral·Accent)에 대응.
+ *
+ * [Accent]만 색을 담는 이유: Figma 컴포넌트셋은 Accent 색상별 variant를 따로 두지 않고 인스턴스마다
+ * 색을 바꿔 쓴다. `MinoContentBadgeDefaults.defaultAccentColor`가 Figma 예시 색(Cyan)이다.
+ */
+sealed class ContentBadgeColor {
+    /** 중립. [MinoContentBadgeDefaults.colors]의 기본색을 쓴다. */
+    data object Neutral : ContentBadgeColor()
+
+    /** 강조. [color] 한 색에서 배경·테두리를 자동으로 파생한다. */
+    class Accent(val color: Color) : ContentBadgeColor()
 }

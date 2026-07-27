@@ -39,15 +39,16 @@ private fun ContentBadgePreview() {
             }
             // Accent — Solid / Outlined (Figma 예시 색상: Cyan)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                val accentColor = MinoContentBadgeDefaults.defaultAccentColor
                 MinoContentBadge(
                     text = "Accent Solid",
                     variant = ContentBadgeVariant.Solid,
-                    color = ColorAccessKeyToken.AccentForegroundCyan.value,
+                    color = ContentBadgeColor.Accent(accentColor),
                 )
                 MinoContentBadge(
                     text = "Accent Outlined",
                     variant = ContentBadgeVariant.Outlined,
-                    color = ColorAccessKeyToken.AccentForegroundCyan.value,
+                    color = ContentBadgeColor.Accent(accentColor),
                 )
             }
         }

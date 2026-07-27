@@ -25,6 +25,10 @@ internal object ContentBadgeTokens {
     // (Figma 실측: Solid 배경 8%, Outlined 테두리 43%).
     val AccentTintOpacity = AtomicOpacityToken.Opacity8
     val AccentBorderOpacity = AtomicOpacityToken.Opacity43
+
+    // Figma 컴포넌트셋은 Accent 색상별 variant를 따로 두지 않고 인스턴스마다 색을 바꿔 쓴다.
+    // 예시로 보여준 색(Cyan)을 기본값으로 둔다.
+    val DefaultAccentColor = ColorAccessKeyToken.AccentForegroundCyan
 }
 
 // 사이즈당 한 번만 만들어 재사용한다. when으로 매 호출마다 새로 만들지 않는다.

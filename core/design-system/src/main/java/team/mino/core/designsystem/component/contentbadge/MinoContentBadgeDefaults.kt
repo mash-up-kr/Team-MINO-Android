@@ -8,6 +8,7 @@ import androidx.compose.ui.graphics.takeOrElse
 import team.mino.core.designsystem.component.contentbadge.token.ContentBadgeTokens
 import team.mino.core.designsystem.foundation.color.ColorScheme
 import team.mino.core.designsystem.foundation.color.fromToken
+import team.mino.core.designsystem.foundation.color.token.value
 import team.mino.core.designsystem.theme.MinoAndroidTheme
 
 /**
@@ -35,6 +36,10 @@ object MinoContentBadgeDefaults {
             contentColor = contentColor,
             borderColor = borderColor,
         )
+
+    /** [MinoContentBadge]의 `color`가 [ContentBadgeColor.Accent]일 때 쓰는 기본 강조색(Figma 예시: Cyan). */
+    val defaultAccentColor: Color
+        @Composable @ReadOnlyComposable get() = ContentBadgeTokens.DefaultAccentColor.value
 
     /**
      * [baseColor] 하나에서 배경(Solid 8%)·테두리(Outlined 43%)를 파생한 [MinoContentBadgeColors]를 만든다.
