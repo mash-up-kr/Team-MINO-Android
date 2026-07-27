@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -28,8 +29,11 @@ fun MinoCategory(
     modifier: Modifier = Modifier,
     colors: MinoCategoryColors = MinoCategoryDefaults.colors(),
 ) {
+    val listState = rememberLazyListState()
+
     LazyRow(
-        modifier = modifier.horizontalFadingEdge(edgeWidth = CategoryTokens.GradientEdgeWidth),
+        state = listState,
+        modifier = modifier.horizontalFadingEdge(listState, edgeWidth = CategoryTokens.GradientEdgeWidth),
         horizontalArrangement = Arrangement.spacedBy(CategoryTokens.ChipSpacing),
     ) {
         itemsIndexed(items) { index, text ->
