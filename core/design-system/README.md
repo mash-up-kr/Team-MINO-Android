@@ -22,10 +22,11 @@ MinoAndroid의 디자인 시스템 모듈. Material3를 기반으로 하되, Mat
 | 자산 | 설명 | 참조 |
 |---|---|---|
 | 디자인 토큰 | 색상·타이포·셰이프·그림자를 3계층(원시→시맨틱→홀더)으로 관리 | [4. 토큰 시스템](#4-토큰-시스템) |
+| 아이콘 | Figma 아이콘 세트를 `ImageVector`로 제공하는 `MinoIcons` 네임스페이스 | [5. 아이콘](#5-아이콘) |
 | 테마 진입점 | `MinoAndroidAppTheme` — 토큰을 주입하고 라이트/다크를 자동 전환 | [2. 빠른 시작](#2-빠른-시작) |
-| Modifier 유틸 | 클릭(연타 차단·리플 표준화)·그림자 토큰 적용 `Modifier` 확장 | [5.3 클릭 Modifier 유틸](#53-클릭-modifier-유틸) |
-| 프리뷰 어노테이션 | 라이트/다크 동시 프리뷰 `@UiModePreviews` | [5.4 프리뷰](#54-프리뷰) |
-| 공용 컴포넌트 | 토큰으로 조립한 재사용 Composable. `component/` 패키지에서 제공 | [5.1 컴포넌트 구현 패턴](#51-컴포넌트-구현-패턴--material3-관례) |
+| Modifier 유틸 | 클릭(연타 차단·리플 표준화)·그림자 토큰 적용 `Modifier` 확장 | [6.3 클릭 Modifier 유틸](#63-클릭-modifier-유틸) |
+| 프리뷰 어노테이션 | 라이트/다크 동시 프리뷰 `@UiModePreviews` | [6.4 프리뷰](#64-프리뷰) |
+| 공용 컴포넌트 | 토큰으로 조립한 재사용 Composable. `component/` 패키지에서 제공 | [6.1 컴포넌트 구현 패턴](#61-컴포넌트-구현-패턴--material3-관례) |
 
 ---
 
@@ -84,7 +85,7 @@ Box(
 > [!IMPORTANT]
 > `MinoAndroidTheme.*`는 반드시 **`MinoAndroidAppTheme { ... }` 내부**에서 읽어야 한다. 테마 바깥에서 접근하면 `CompositionLocal`의 정적 기본값(라이트)이 잡힌다.
 
-클릭 유틸 선택 기준은 [5.3 클릭 Modifier 유틸](#53-클릭-modifier-유틸)을 참조.
+클릭 유틸 선택 기준은 [6.3 클릭 Modifier 유틸](#63-클릭-modifier-유틸)을 참조.
 
 ---
 
@@ -94,8 +95,9 @@ Box(
 
 ```
 team/mino/core/designsystem/
-├── foundation/   # 디자인 토큰. foundation별로 color/ typography/ shape/ shadow/ 하위 패키지를 둔다.
-│   └── <kind>/   #   각 foundation = token/ 패키지(Atomic·Semantic·AccessKey) + Holder 파일 + 토큰 카탈로그 프리뷰(*Preview.kt).
+├── foundation/   # 디자인 기초 자산. foundation별로 color/ typography/ shape/ shadow/ icons/ 하위 패키지를 둔다.
+│   ├── <kind>/   #   토큰 foundation = token/ 패키지(Atomic·Semantic·AccessKey) + Holder 파일 + 토큰 카탈로그 프리뷰(*Preview.kt).
+│   └── icons/    #   예외: 아이콘은 토큰 3계층 없이 MinoIcons 네임스페이스 + 카탈로그 프리뷰. 아이콘별 ImageVector 파일은 icons/ 하위 패키지.
 ├── component/    # 토큰으로 조립한 공용 Composable 컴포넌트. 컴포넌트별 하위 패키지로 구성.
 ├── theme/        # 테마 진입점·접근자 (MinoAndroidAppTheme / MinoAndroidTheme).
 └── util/         # 재사용 UI 유틸.
@@ -107,7 +109,8 @@ team/mino/core/designsystem/
 |---|---|
 | 새 토큰 값/슬롯 | 해당 `foundation/<kind>/` — 절차는 [4.4 토큰 추가하기](#44-토큰-추가하기) |
 | 새 foundation 종류 (예: spacing) | `foundation/` 아래 새 패키지를 기존 3계층 패턴으로 |
-| 공용 Composable 컴포넌트 (버튼·칩 등) | `component/<name>/` — 구조는 [5.1 컴포넌트 구현 패턴](#51-컴포넌트-구현-패턴--material3-관례) |
+| 새 아이콘 | `foundation/icons/` — 절차는 [5.2 아이콘 추가하기](#52-아이콘-추가하기) |
+| 공용 Composable 컴포넌트 (버튼·칩 등) | `component/<name>/` — 구조는 [6.1 컴포넌트 구현 패턴](#61-컴포넌트-구현-패턴--material3-관례) |
 | `Modifier` 확장 | `util/modifier/<종류>/` (공개 확장만 노출, 내부 구현은 `internal`) |
 | 프리뷰·기타 UI 유틸 | `util/` 아래 성격에 맞는 패키지 |
 
@@ -246,13 +249,47 @@ typography·shape·shadow도 **`Atomic → Tokens → AccessKeyToken(enum + when
 
 ---
 
-## 5. 컴포넌트 & UI 유틸
+## 5. 아이콘
+
+디자이너의 Figma 아이콘 세트를 Compose `ImageVector`로 변환해 제공한다. 각 아이콘은 `MinoIcons` 오브젝트의 확장 프로퍼티(지연 생성 + 캐싱)이며, 파일 하나가 아이콘 하나다.
+
+### 5.1 사용
+
+```kotlin
+Icon(
+    imageVector = MinoIcons.CaretDown,
+    contentDescription = null,
+    tint = MinoAndroidTheme.colors.labelNormal,
+)
+```
+
+| 규칙 | 내용 |
+|---|---|
+| **색상** | 벡터에 색을 굽지 않는다. 기본 fill(#171719)은 자리값일 뿐, 실제 색은 항상 `Icon`의 `tint`로 입힌다. |
+| **변형** | Fill·Thick·Tight 변형은 이름 접미사가 붙은 **별도 프로퍼티**다. 상태(선택/비선택)에 따라 에셋을 갈아끼우지 말고, 단일 에셋 + 틴트가 기본이다. |
+| **크기** | 24×24 기준. Figma 원본이 비정방형인 아이콘만 원본 비율을 따른다. 표시 크기는 `Modifier.size`로 제어한다. |
+
+전체 목록은 `MinoIconsPreview`의 카탈로그 프리뷰로 확인한다.
+
+### 5.2 아이콘 추가하기
+
+아이콘의 SSOT도 Figma 디자인 시스템이다. 새 아이콘은 Figma 심볼을 SVG로 export한 뒤 변환한다.
+
+1. Figma에서 심볼(24×24)을 SVG로 export
+2. 모듈의 `scripts/svg2imagevector.py`로 변환 — `python3 core/design-system/scripts/svg2imagevector.py <input.svg> <iconNameCamelCase> <foundation/icons/icons 경로>`
+3. `MinoIconsPreview`의 카탈로그 목록에 항목 추가
+
+변환 가능한 SVG 조건: 단색 fill(stroke·transform·그라데이션 불가), viewBox 원점 0,0. 조건을 벗어나면 스크립트가 에러로 알려주며, 그 경우 Figma에서 패스를 병합(flatten)해 다시 export한다.
+
+---
+
+## 6. 컴포넌트 & UI 유틸
 
 재사용하는 Composable·`Modifier` 자산. 외부 모듈은 여기의 public API를 그대로 가져다 쓴다.
 
-### 5.1 컴포넌트 구현 패턴 — Material3 관례
+### 6.1 컴포넌트 구현 패턴 — Material3 관례
 
-`component/` 하위 컴포넌트는 **Material3 컴포넌트 구조(Defaults object · Colors 클래스 · 컴포넌트 토큰 층)** 를 따른다. 채택 배경·근거·레퍼런스 원문 링크는 [ADR 0006](../../docs/adr/0006-design-system-component-m3-pattern.md)을 참조.
+`component/` 하위 컴포넌트는 **Material3 컴포넌트 구조(Defaults object · Colors 클래스 · 컴포넌트 토큰 층)** 를 따른다. 채택 배경·근거·레퍼런스 원문 링크는 [M3 컴포넌트 패턴 ADR](../../docs/adr/2026-07-25-design-system-component-m3-pattern.md)을 참조.
 
 `component/<name>/` 아래에 다음 구성으로 만든다.
 
@@ -264,10 +301,10 @@ typography·shape·shadow도 **`Atomic → Tokens → AccessKeyToken(enum + when
 | `token/<Name>Tokens` object | `internal`. 컴포넌트 슬롯 → 디자인 토큰 키(`*AccessKeyToken`) 매핑만 담고, 값 해석은 `*AccessKeyToken.value`가 담당 | `tokens/FilledButtonTokens` |
 
 - 상태 없는 컴포넌트는 Colors 클래스 없이 Defaults의 단일 값 프로퍼티로 둔다(M3 `BadgeDefaults.containerColor` 방식).
-- **클릭은 M3처럼 `Surface(onClick)`을 쓰지 않고** [5.3 클릭 Modifier 유틸](#53-클릭-modifier-유틸)로 처리한다.
+- **클릭은 M3처럼 `Surface(onClick)`을 쓰지 않고** [6.3 클릭 Modifier 유틸](#63-클릭-modifier-유틸)로 처리한다.
 - 아직 동작하지 않는 기능의 파라미터는 미리 만들지 않는다 — 이후 기능은 디폴트 파라미터로 소스 호환 추가한다.
 
-### 5.2 Modifier 확장 구현 규칙
+### 6.2 Modifier 확장 구현 규칙
 
 새 `Modifier` 확장을 추가할 때 따르는 규칙이다. (참조 구현: `util/modifier/clickable`)
 
@@ -275,7 +312,7 @@ typography·shape·shadow도 **`Atomic → Tokens → AccessKeyToken(enum + when
 - **공개 API는 `Modifier` 확장 함수뿐.** `ModifierNodeElement`·`Modifier.Node` 구현은 `internal`로 숨기고, 외부에는 확장 함수만 노출한다.
 - **위치**: `util/modifier/<종류>/`. `Modifier.Node`/`Element` 구현은 그 아래 `node/` 하위 패키지에 둔다.
 
-### 5.3 클릭 Modifier 유틸
+### 6.3 클릭 Modifier 유틸
 
 `util/modifier/clickable`은 **연타(중복 클릭) 차단**과 **리플(ripple) 표시**를 디자인 시스템 차원에서 표준화한 `Modifier` 확장이다. 외부 모듈은 아래 3개 공개 확장만 사용하고, 일반 클릭에 `Modifier.clickable`을 직접 쓰기보다 이 확장으로 연타·리플 정책을 일관되게 가져간다.
 
@@ -302,7 +339,7 @@ Box(
 )
 ```
 
-### 5.4 프리뷰
+### 6.4 프리뷰
 
 **프리뷰는 기본적으로 `@UiModePreviews`를 사용한다.** 단일 `@Preview` 대신 이 어노테이션을 붙여 라이트/다크를 항상 함께 확인한다.
 

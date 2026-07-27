@@ -17,11 +17,13 @@ ADR은 [`adr-writer` 스킬](../../.claude/skills/adr-writer/SKILL.md)이 자동
 
 ## 인덱스
 
-| #                                               | 제목 | 상태 | 작성일 | 작성자 |
-|-------------------------------------------------|---|---|---|---|
-| [0001](0001-serialization-optin-ide-warning.md) | 직렬화 DTO의 IDE opt-in 경고에 `@OptIn` 우회를 쓰지 않는다 | Accepted | 2026-06-29 | full_avocado |
-| [0002](0002-plan-gen-subagent-orchestration.md) | plan-gen 고도화는 에이전트 팀이 아닌 서브에이전트 오케스트레이션으로 한다 | Accepted | 2026-07-15 | Jaesung Lee |
-| [0003](0003-screen-tracking-composition.md)     | 화면 트래킹은 호출부 조립 방식을 유지하고 TrackNavHost 래퍼는 강제화 시점까지 보류한다 | Accepted | 2026-07-18 | full_avocado |
-| [0004](0004-analytics-event-params-typing.md)   | AnalyticsTracker.logEvent 파라미터는 Map<String, Any>를 유지하고 타입 세이프 빌더는 커스텀 이벤트 도입 시점까지 보류한다 | Accepted | 2026-07-21 | full_avocado |
-| [0005](0005-fixed-font-scale.md)                | 시스템 폰트 배율을 무시하고 텍스트 크기를 고정한다 (1sp = 1dp) | Accepted | 2026-07-24 | Jaesung Lee |
-| [0006](0006-design-system-component-m3-pattern.md) | 디자인시스템 컴포넌트 API는 Material3 컴포넌트 패턴(Defaults·Colors·컴포넌트 토큰)을 따른다 | Accepted | 2026-07-25 | Jaesung Lee |
+| 작성일 | 제목 | 상태 | 작성자 |
+|---|---|---|---|
+| 2026-06-29 | [직렬화 DTO의 IDE opt-in 경고에 `@OptIn` 우회를 쓰지 않는다](2026-06-29-serialization-optin-ide-warning.md) | Accepted | full_avocado |
+| 2026-07-15 | [plan-gen 고도화는 에이전트 팀이 아닌 서브에이전트 오케스트레이션으로 한다](2026-07-15-plan-gen-subagent-orchestration.md) | Accepted | Jaesung Lee |
+| 2026-07-18 | [화면 트래킹은 호출부 조립 방식을 유지하고 TrackNavHost 래퍼는 강제화 시점까지 보류한다](2026-07-18-screen-tracking-composition.md) | Accepted | full_avocado |
+| 2026-07-21 | [AnalyticsTracker.logEvent 파라미터는 Map<String, Any>를 유지하고 타입 세이프 빌더는 커스텀 이벤트 도입 시점까지 보류한다](2026-07-21-analytics-event-params-typing.md) | Accepted | full_avocado |
+| 2026-07-24 | [시스템 폰트 배율을 무시하고 텍스트 크기를 고정한다 (1sp = 1dp)](2026-07-24-fixed-font-scale.md) | Accepted | Jaesung Lee |
+| 2026-07-25 | [디자인시스템 컴포넌트 API는 Material3 컴포넌트 패턴(Defaults·Colors·컴포넌트 토큰)을 따른다](2026-07-25-design-system-component-m3-pattern.md) | Accepted | Jaesung Lee |
+| 2026-07-27 | [로컬 키-값 저장소로 Preferences DataStore를 채택한다](2026-07-27-preferences-datastore-local-storage.md) | Accepted | Jaesung Lee |
+| 2026-07-27 | [ADR·실패 기록 파일명은 일련번호 대신 날짜 접두어를 쓴다](2026-07-27-record-filename-date-prefix.md) | Accepted | Jaesung Lee |

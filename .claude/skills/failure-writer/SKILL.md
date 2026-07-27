@@ -27,7 +27,7 @@ description: 머지된 코드가 이후에 잘못된 설계·구현으로 판명
 
 - 버그·실패의 근본 원인이 틀린 가정/멘탈 모델이었을 때 (단순 오타가 아니라)
 - "아 이게 원인이었네", "그렇게 동작하는 게 아니었구나" — 코드만 봐선 안 드러나는 함정
-- 0001처럼 "정상인데 실패처럼 보이는" false-positive를 규명한 경우
+- [직렬화 opt-in 경고 ADR](../../../docs/adr/2026-06-29-serialization-optin-ide-warning.md)처럼 "정상인데 실패처럼 보이는" false-positive를 규명한 경우
 
 ### 4. 안티-트리거 — 반드시 제외 (노이즈 방지)
 
@@ -45,21 +45,20 @@ description: 머지된 코드가 이후에 잘못된 설계·구현으로 판명
    git log --oneline -- <이번에 고치는 파일 경로>
    ```
    지금 고치는 파일·모듈의 히스토리를 살펴 이 코드가 언제, 어떤 의도로 만들어졌는지 확인한다. 커밋 메시지에서 관련 이슈 번호·ADR 언급을 찾는다.
-2. **`docs/adr/README.md` 인덱스를 Read**해, 지금 되돌리는 코드와 연관된 `Accepted` ADR이 있는지 확인한다. 있으면 그 ADR 번호를 근거로 쓴다. 없으면 "문서화되지 않은 결정"으로 진행한다 — ADR이 없었다는 사실 자체도 실패 기록에 남긴다.
+2. **`docs/adr/README.md` 인덱스를 Read**해, 지금 되돌리는 코드와 연관된 `Accepted` ADR이 있는지 확인한다. 있으면 그 ADR 파일을 근거로 쓴다. 없으면 "문서화되지 않은 결정"으로 진행한다 — ADR이 없었다는 사실 자체도 실패 기록에 남긴다.
 3. **[`failure-format.md`](failure-format.md)를 먼저 Read**해 파일명·상태 값·템플릿 형식을 확인한다. 이 Skill 안에서 형식을 재정의하지 않는다.
-4. 다음 번호를 정한다: `docs/failures/` 내 가장 큰 번호에 +1.
-5. `failure-format.md`의 템플릿에 맞춰 아래 내용을 채워 새 실패 기록 파일을 작성한다.
+4. `failure-format.md`의 템플릿에 맞춰 아래 내용을 채워 새 실패 기록 파일을 작성한다.
    - **상태**: 대체 방법까지 적용됐으면 `Resolved`, 원인만 기록된 상태면 `Open`
    - **발생일자**: 문제를 발견/수정한 날짜
    - **작성자**: 대화에서 알 수 없으므로 `git config user.name` 값으로 채운다
-   - **관련 ADR**: 2번에서 찾은 ADR 번호, 없으면 "없음 — 문서화되지 않은 결정"
+   - **관련 ADR**: 2번에서 찾은 ADR 링크, 없으면 "없음 — 문서화되지 않은 결정"
    - **관련 커밋/PR**: 1번에서 확인한 원본 커밋, 이번 수정 커밋/PR
    - **무엇을 시도했는가**: 원래 결정/구현
    - **무엇이 잘못됐는가**: 실제로 어떤 문제가 발생했는가
    - **어떻게 발견했는가**: 이번 대화·이슈·버그 리포트 등
    - **무엇으로 대체했는가**: 지금 적용하는 수정
-6. 관련 ADR이 있었다면 [`adr-format.md`](../adr-writer/adr-format.md)의 상태 규칙에 따라 해당 ADR의 상태를 갱신한다(`docs/adr/README.md` 인덱스의 상태 셀 포함, 새 ADR이 필요하면 [`adr-writer`](../adr-writer/SKILL.md)를 이어서 사용).
-7. `docs/failures/README.md` 인덱스 표에 새 줄을 추가한다.
+5. 관련 ADR이 있었다면 [`adr-format.md`](../adr-writer/adr-format.md)의 상태 규칙에 따라 해당 ADR의 상태를 갱신한다(`docs/adr/README.md` 인덱스의 상태 셀 포함, 새 ADR이 필요하면 [`adr-writer`](../adr-writer/SKILL.md)를 이어서 사용).
+6. `docs/failures/README.md` 인덱스 표에 새 줄을 추가한다.
 
 ## 작성 규칙
 

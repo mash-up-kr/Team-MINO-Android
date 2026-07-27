@@ -49,11 +49,17 @@ flowchart TD
 
 ```
 core/data/src/main/java/team/mino/core/data/
+├── database/
+│   ├── di/                                # (예정) 데이터베이스 인프라 DI
+│   └── entity/                            # (예정) DB Entity — 도메인 모델 의존 금지
 ├── datasource/
 │   ├── GithubRemoteDataSource.kt          # DataSource 인터페이스 (internal)
 │   ├── GithubRemoteDataSourceImpl.kt      # DataSource 구현체 (internal)
 │   └── di/
 │       └── GithubDataSourceModule.kt      # @Binds 모듈 (internal)
+├── device/
+│   ├── di/                                # @Binds 모듈
+│   └── ...                                # 기기 정보 원천(시스템 설정 등) 접근자 인터페이스·구현체
 ├── network/
 │   ├── di/
 │   │   └── NetworkModule.kt               # HttpClient 제공 (internal)
@@ -62,17 +68,22 @@ core/data/src/main/java/team/mino/core/data/
 │   │       └── GithubRepoResponse.kt      # 서버 응답 DTO (@Serializable)
 │   └── service/
 │       └── GithubApiService.kt            # Ktor 직접 호출 서비스 (internal)
-└── repository/
-    ├── GithubRepositoryImpl.kt            # Repository 구현체 (internal)
-    ├── mapper/
-    │   └── GithubMapper.kt                # DTO → 도메인 모델 Mapper (internal)
-    └── di/
-        └── GithubRepositoryModule.kt      # @Binds 모듈 (internal)
+├── repository/
+│   ├── GithubRepositoryImpl.kt            # Repository 구현체 (internal)
+│   ├── mapper/
+│   │   └── GithubMapper.kt                # DTO → 도메인 모델 Mapper (internal)
+│   └── di/
+│       └── GithubRepositoryModule.kt      # @Binds 모듈 (internal)
+└── storage/
+    └── DataStoreModule.kt                 # DataStore<Preferences> 단일 인스턴스 제공 (internal)
 ```
 
 | 패키지 | 역할 |
 |---|---|
+| `database/` | (예정) 데이터베이스 인프라 DI·Entity |
 | `datasource/` | 데이터 출처 추상화. 원격·로컬을 구분하는 경계 |
+| `device/` | 기기 정보 원천(시스템 설정 등) 접근자 |
+| `storage/` | DataStore 인프라 DI 제공 |
 | `network/di/` | HttpClient·네트워크 인프라 DI 제공 |
 | `network/dto/` | 서버 응답 스펙을 표현하는 DTO. `@Serializable` 필수. 도메인 모델 의존 금지 |
 | `network/service/` | Ktor HttpClient로 엔드포인트를 직접 호출하는 클래스 |
@@ -172,6 +183,19 @@ internal abstract class XxxDataSourceModule {
 }
 ```
 
+### 로컬 DataSource (DataStore)
+
+로컬 키-값 저장은 Preferences DataStore를 사용한다. 채택 배경·평문 저장 결정은 [Preferences DataStore 채택 ADR](../../docs/adr/2026-07-27-preferences-datastore-local-storage.md) 참조.
+
+| 항목 | 규칙 |
+|---|---|
+| **위치** | DataStore 인스턴스 제공(DI)은 `storage/`에, 이를 사용하는 로컬 DataSource는 원격과 같은 `datasource/`에 둔다 |
+| **인스턴스** | `storage/DataStoreModule`이 제공하는 단일 `DataStore<Preferences>`를 주입받아 공유한다. 새 파일·인스턴스를 만들지 않는다 (제약 배경은 `DataStoreModule` 주석 참조) |
+| **키 관리** | 저장 항목은 Preferences 키로 구분하며, 키 상수는 해당 DataSource 구현체 안에 둔다 |
+| **DataSource 분리** | 수명주기·변경 이유가 다른 데이터는 키만 나누지 말고 DataSource 자체를 분리한다 (예: 불변 캐시 vs 발급·만료되는 값) |
+| **작성 규칙** | 원격과 동일 — 인터페이스·구현체 쌍, `internal`, 데이터 출처 접근만 담당 (명명: `XxxLocalDataSource`) |
+| **기기 정보 원천** | DataStore 밖의 기기 원천(시스템 설정 등)은 `device/` 패키지 참조. 작성 규칙은 위와 동일 |
+
 ---
 
 ## 6. RepositoryImpl 작성 규칙
@@ -259,7 +283,7 @@ internal fun GithubRepoResponse.toDomain(): GithubRepo =
 | 구현 클래스(`Impl`·`ApiService`·`Module`)를 `public`으로 선언 | 의존 방향 역전, 계층 경계 파괴 |
 | RepositoryImpl·DataSourceImpl이 도메인 모델을 반환하기 전에 DTO를 노출 | UseCase·ViewModel에 데이터 계층 구현 상세가 노출됨 |
 | Mapper를 `core:domain`에 위치 | domain이 data에 역의존하게 됨 |
-| `@OptIn(InternalSerializationApi::class)` 코드 추가 | IDE false-positive([KTIJ-31549](https://youtrack.jetbrains.com/issue/KTIJ-31549))에 대한 잘못된 해결. 실제 컴파일·런타임은 정상이며, 진짜 원인은 IDE 인덱싱 문제다. 해소 방법·배경은 [ADR 0001](../../docs/adr/0001-serialization-optin-ide-warning.md) 참조 |
+| `@OptIn(InternalSerializationApi::class)` 코드 추가 | IDE false-positive([KTIJ-31549](https://youtrack.jetbrains.com/issue/KTIJ-31549))에 대한 잘못된 해결. 실제 컴파일·런타임은 정상이며, 진짜 원인은 IDE 인덱싱 문제다. 해소 방법·배경은 [직렬화 opt-in 경고 ADR](../../docs/adr/2026-06-29-serialization-optin-ide-warning.md) 참조 |
 | 단일 `HttpClient`에 여러 baseUrl 혼용 | `defaultRequest.url`이 덮어써짐. 별도 클라이언트 또는 절대 URL 사용 |
 
 ---
