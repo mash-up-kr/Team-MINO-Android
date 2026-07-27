@@ -16,7 +16,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.TextStyle
 import team.mino.core.designsystem.component.button.token.ButtonTokens
 import team.mino.core.designsystem.foundation.shape.token.value
 import team.mino.core.designsystem.foundation.typography.token.value
@@ -71,54 +70,37 @@ fun MinoButton(
             when (secondaryAction) {
                 is ButtonSecondaryAction.Sub -> {
                     Row(horizontalArrangement = Arrangement.spacedBy(ButtonTokens.ActionRowSpacing)) {
-                        ButtonSurface(
-                            text = secondaryAction.action.text,
-                            onClick = secondaryAction.action.onClick,
-                            enabled = secondaryAction.action.enabled,
-                            contentColor = colors.subContentColor,
-                            borderColor = colors.subBorderColor,
-                            textStyle = ButtonTokens.SubButtonFont.value,
-                        )
-                        ButtonSurface(
+                        SubActionButton(action = secondaryAction.action, colors = colors)
+                        MainActionButton(
                             modifier = Modifier.weight(1f),
                             text = mainActionText,
                             onClick = onMainActionClick,
                             enabled = mainActionEnabled,
-                            containerColor = colors.mainContainerColor,
-                            contentColor = colors.mainContentColor,
-                            textStyle = ButtonTokens.ButtonFont.value,
+                            colors = colors,
                         )
                     }
                 }
                 is ButtonSecondaryAction.Alternative -> {
-                    ButtonSurface(
+                    MainActionButton(
                         modifier = Modifier.fillMaxWidth(),
                         text = mainActionText,
                         onClick = onMainActionClick,
                         enabled = mainActionEnabled,
-                        containerColor = colors.mainContainerColor,
-                        contentColor = colors.mainContentColor,
-                        textStyle = ButtonTokens.ButtonFont.value,
+                        colors = colors,
                     )
-                    ButtonSurface(
+                    AlternativeActionButton(
                         modifier = Modifier.fillMaxWidth(),
-                        text = secondaryAction.action.text,
-                        onClick = secondaryAction.action.onClick,
-                        enabled = secondaryAction.action.enabled,
-                        contentColor = colors.alternativeContentColor,
-                        borderColor = colors.alternativeBorderColor,
-                        textStyle = ButtonTokens.ButtonFont.value,
+                        action = secondaryAction.action,
+                        colors = colors,
                     )
                 }
                 null -> {
-                    ButtonSurface(
+                    MainActionButton(
                         modifier = Modifier.fillMaxWidth(),
                         text = mainActionText,
                         onClick = onMainActionClick,
                         enabled = mainActionEnabled,
-                        containerColor = colors.mainContainerColor,
-                        contentColor = colors.mainContentColor,
-                        textStyle = ButtonTokens.ButtonFont.value,
+                        colors = colors,
                     )
                 }
             }
@@ -147,29 +129,72 @@ class ButtonAction(
     val enabled: Boolean = true,
 )
 
+/** 필수 메인 액션(Figma Main Action). 있는 그대로 채워진 배경의 강조 버튼. */
 @Composable
-private fun ButtonSurface(
+private fun MainActionButton(
     text: String,
     onClick: () -> Unit,
     enabled: Boolean,
-    contentColor: Color,
-    textStyle: TextStyle,
+    colors: MinoButtonColors,
     modifier: Modifier = Modifier,
-    containerColor: Color = Color.Transparent,
-    borderColor: Color? = null,
 ) {
     Box(
         modifier = modifier
             .alpha(if (enabled) 1f else ButtonTokens.DisabledOpacity)
             .surface(
                 shape = ButtonTokens.ButtonShape.value,
-                containerColor = containerColor,
-                borderColor = borderColor,
+                containerColor = colors.mainContainerColor,
                 borderWidth = ButtonTokens.ButtonBorderWidth,
             ).rippleSingleClickable(enabled = enabled, onClick = onClick)
             .padding(ButtonTokens.ButtonPadding),
         contentAlignment = Alignment.Center,
     ) {
-        Text(text = text, color = contentColor, style = textStyle)
+        Text(text = text, color = colors.mainContentColor, style = ButtonTokens.ButtonFont.value)
+    }
+}
+
+/** 메인 액션 옆에 가로로 배치되는 저강조 보조 액션(Figma Sub Action). 테두리만 있는 버튼. */
+@Composable
+private fun SubActionButton(
+    action: ButtonAction,
+    colors: MinoButtonColors,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .alpha(if (action.enabled) 1f else ButtonTokens.DisabledOpacity)
+            .surface(
+                shape = ButtonTokens.ButtonShape.value,
+                containerColor = Color.Transparent,
+                borderColor = colors.subBorderColor,
+                borderWidth = ButtonTokens.ButtonBorderWidth,
+            ).rippleSingleClickable(enabled = action.enabled, onClick = action.onClick)
+            .padding(ButtonTokens.ButtonPadding),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(text = action.text, color = colors.subContentColor, style = ButtonTokens.SubButtonFont.value)
+    }
+}
+
+/** 메인 액션 아래 세로로 배치되는 대체 액션(Figma Alternative Action). 테두리만 있는 버튼. */
+@Composable
+private fun AlternativeActionButton(
+    action: ButtonAction,
+    colors: MinoButtonColors,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .alpha(if (action.enabled) 1f else ButtonTokens.DisabledOpacity)
+            .surface(
+                shape = ButtonTokens.ButtonShape.value,
+                containerColor = Color.Transparent,
+                borderColor = colors.alternativeBorderColor,
+                borderWidth = ButtonTokens.ButtonBorderWidth,
+            ).rippleSingleClickable(enabled = action.enabled, onClick = action.onClick)
+            .padding(ButtonTokens.ButtonPadding),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(text = action.text, color = colors.alternativeContentColor, style = ButtonTokens.ButtonFont.value)
     }
 }
