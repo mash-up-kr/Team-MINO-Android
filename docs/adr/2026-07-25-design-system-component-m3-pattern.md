@@ -1,4 +1,4 @@
-# 0006. 디자인시스템 컴포넌트 API는 Material3 컴포넌트 패턴(Defaults·Colors·컴포넌트 토큰)을 따른다
+# 디자인시스템 컴포넌트 API는 Material3 컴포넌트 패턴(Defaults·Colors·컴포넌트 토큰)을 따른다
 
 - **상태**: Accepted
 - **작성일**: 2026-07-25

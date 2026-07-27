@@ -1,4 +1,4 @@
-# 0004. AnalyticsTracker.logEvent 파라미터는 Map<String, Any>를 유지하고 타입 세이프 빌더는 커스텀 이벤트 도입 시점까지 보류한다
+# AnalyticsTracker.logEvent 파라미터는 Map<String, Any>를 유지하고 타입 세이프 빌더는 커스텀 이벤트 도입 시점까지 보류한다
 
 - **상태**: Accepted
 - **작성일**: 2026-07-21

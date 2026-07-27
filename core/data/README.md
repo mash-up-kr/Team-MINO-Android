@@ -185,7 +185,7 @@ internal abstract class XxxDataSourceModule {
 
 ### 로컬 DataSource (DataStore)
 
-로컬 키-값 저장은 Preferences DataStore를 사용한다. 채택 배경·평문 저장 결정은 [ADR 0007](../../docs/adr/0007-preferences-datastore-local-storage.md) 참조.
+로컬 키-값 저장은 Preferences DataStore를 사용한다. 채택 배경·평문 저장 결정은 [Preferences DataStore 채택 ADR](../../docs/adr/2026-07-27-preferences-datastore-local-storage.md) 참조.
 
 | 항목 | 규칙 |
 |---|---|
@@ -283,7 +283,7 @@ internal fun GithubRepoResponse.toDomain(): GithubRepo =
 | 구현 클래스(`Impl`·`ApiService`·`Module`)를 `public`으로 선언 | 의존 방향 역전, 계층 경계 파괴 |
 | RepositoryImpl·DataSourceImpl이 도메인 모델을 반환하기 전에 DTO를 노출 | UseCase·ViewModel에 데이터 계층 구현 상세가 노출됨 |
 | Mapper를 `core:domain`에 위치 | domain이 data에 역의존하게 됨 |
-| `@OptIn(InternalSerializationApi::class)` 코드 추가 | IDE false-positive([KTIJ-31549](https://youtrack.jetbrains.com/issue/KTIJ-31549))에 대한 잘못된 해결. 실제 컴파일·런타임은 정상이며, 진짜 원인은 IDE 인덱싱 문제다. 해소 방법·배경은 [ADR 0001](../../docs/adr/0001-serialization-optin-ide-warning.md) 참조 |
+| `@OptIn(InternalSerializationApi::class)` 코드 추가 | IDE false-positive([KTIJ-31549](https://youtrack.jetbrains.com/issue/KTIJ-31549))에 대한 잘못된 해결. 실제 컴파일·런타임은 정상이며, 진짜 원인은 IDE 인덱싱 문제다. 해소 방법·배경은 [직렬화 opt-in 경고 ADR](../../docs/adr/2026-06-29-serialization-optin-ide-warning.md) 참조 |
 | 단일 `HttpClient`에 여러 baseUrl 혼용 | `defaultRequest.url`이 덮어써짐. 별도 클라이언트 또는 절대 URL 사용 |
 
 ---

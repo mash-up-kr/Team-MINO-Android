@@ -1,11 +1,8 @@
-# 0007. 로컬 키-값 저장소로 Preferences DataStore를 채택한다
+# 로컬 키-값 저장소로 Preferences DataStore를 채택한다
 
 - **상태**: Accepted
 - **작성일**: 2026-07-27
 - **작성자**: Jaesung Lee
-
-> [!NOTE]
-> 번호 충돌 주의: 미머지 브랜치 `feature/72-error-handling-convention`에 별도의 ADR 0006·0007이 존재한다. 두 브랜치 중 나중에 develop에 머지되는 쪽이 번호를 재조정해야 한다.
 
 ## 컨텍스트
 
