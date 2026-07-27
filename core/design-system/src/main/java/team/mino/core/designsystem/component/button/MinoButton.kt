@@ -144,7 +144,6 @@ private fun MainActionButton(
             .surface(
                 shape = ButtonTokens.ButtonShape.value,
                 containerColor = colors.mainContainerColor,
-                borderWidth = ButtonTokens.ButtonBorderWidth,
             ).rippleSingleClickable(enabled = enabled, onClick = onClick)
             .padding(ButtonTokens.ButtonPadding),
         contentAlignment = Alignment.Center,
