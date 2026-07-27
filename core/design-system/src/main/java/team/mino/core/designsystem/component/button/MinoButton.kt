@@ -8,19 +8,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import team.mino.core.designsystem.component.button.token.ButtonTokens
-import team.mino.core.designsystem.foundation.shape.token.value
-import team.mino.core.designsystem.foundation.typography.token.value
-import team.mino.core.designsystem.util.modifier.clickable.rippleSingleClickable
-import team.mino.core.designsystem.util.modifier.surface.surface
 
 /**
  * 화면 하단에 고정하는 액션 영역(Figma `Action Area/Action Area`). 메인 액션은 필수이고,
@@ -128,72 +121,3 @@ class ButtonAction(
     val onClick: () -> Unit,
     val enabled: Boolean = true,
 )
-
-/** 필수 메인 액션(Figma Main Action). 있는 그대로 채워진 배경의 강조 버튼. */
-@Composable
-private fun MainActionButton(
-    text: String,
-    onClick: () -> Unit,
-    enabled: Boolean,
-    colors: MinoButtonColors,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier = modifier
-            .alpha(if (enabled) 1f else ButtonTokens.DisabledOpacity)
-            .surface(
-                shape = ButtonTokens.ButtonShape.value,
-                containerColor = colors.mainContainerColor,
-            ).rippleSingleClickable(enabled = enabled, onClick = onClick)
-            .padding(ButtonTokens.ButtonPadding),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(text = text, color = colors.mainContentColor, style = ButtonTokens.ButtonFont.value)
-    }
-}
-
-/** 메인 액션 옆에 가로로 배치되는 저강조 보조 액션(Figma Sub Action). 테두리만 있는 버튼. */
-@Composable
-private fun SubActionButton(
-    action: ButtonAction,
-    colors: MinoButtonColors,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier = modifier
-            .alpha(if (action.enabled) 1f else ButtonTokens.DisabledOpacity)
-            .surface(
-                shape = ButtonTokens.ButtonShape.value,
-                containerColor = Color.Transparent,
-                borderColor = colors.subBorderColor,
-                borderWidth = ButtonTokens.ButtonBorderWidth,
-            ).rippleSingleClickable(enabled = action.enabled, onClick = action.onClick)
-            .padding(ButtonTokens.ButtonPadding),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(text = action.text, color = colors.subContentColor, style = ButtonTokens.SubButtonFont.value)
-    }
-}
-
-/** 메인 액션 아래 세로로 배치되는 대체 액션(Figma Alternative Action). 테두리만 있는 버튼. */
-@Composable
-private fun AlternativeActionButton(
-    action: ButtonAction,
-    colors: MinoButtonColors,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier = modifier
-            .alpha(if (action.enabled) 1f else ButtonTokens.DisabledOpacity)
-            .surface(
-                shape = ButtonTokens.ButtonShape.value,
-                containerColor = Color.Transparent,
-                borderColor = colors.alternativeBorderColor,
-                borderWidth = ButtonTokens.ButtonBorderWidth,
-            ).rippleSingleClickable(enabled = action.enabled, onClick = action.onClick)
-            .padding(ButtonTokens.ButtonPadding),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(text = action.text, color = colors.alternativeContentColor, style = ButtonTokens.ButtonFont.value)
-    }
-}
