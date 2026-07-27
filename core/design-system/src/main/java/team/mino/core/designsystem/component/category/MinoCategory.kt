@@ -50,7 +50,7 @@ fun MinoCategory(
                 .horizontalFadingEdge(edgeWidth = CategoryTokens.GradientEdgeWidth),
             horizontalArrangement = Arrangement.spacedBy(CategoryTokens.ChipSpacing),
         ) {
-            itemsIndexed(items, key = { _, text -> text }) { index, text ->
+            itemsIndexed(items) { index, text ->
                 CategoryChip(
                     text = text,
                     active = index == selectedIndex,
