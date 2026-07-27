@@ -289,7 +289,7 @@ Icon(
 
 ### 6.1 컴포넌트 구현 패턴 — Material3 관례
 
-`component/` 하위 컴포넌트는 **Material3 컴포넌트 구조(Defaults object · Colors 클래스 · 컴포넌트 토큰 층)** 를 따른다. 채택 배경·근거·레퍼런스 원문 링크는 [ADR 0006](../../docs/adr/0006-design-system-component-m3-pattern.md)을 참조.
+`component/` 하위 컴포넌트는 **Material3 컴포넌트 구조(Defaults object · Colors 클래스 · 컴포넌트 토큰 층)** 를 따른다. 채택 배경·근거·레퍼런스 원문 링크는 [M3 컴포넌트 패턴 ADR](../../docs/adr/2026-07-25-design-system-component-m3-pattern.md)을 참조.
 
 `component/<name>/` 아래에 다음 구성으로 만든다.
 

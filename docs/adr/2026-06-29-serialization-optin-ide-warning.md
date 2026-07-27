@@ -1,4 +1,4 @@
-# 0001. 직렬화 DTO의 IDE opt-in 경고에 `@OptIn` 우회를 쓰지 않는다
+# 직렬화 DTO의 IDE opt-in 경고에 `@OptIn` 우회를 쓰지 않는다
 
 - **상태**: Accepted
 - **작성일**: 2026-06-29
