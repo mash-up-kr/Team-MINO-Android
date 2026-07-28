@@ -41,6 +41,15 @@ object MinoContentBadgeDefaults {
     val defaultAccentColor: Color
         @Composable @ReadOnlyComposable get() = ContentBadgeTokens.DefaultAccentColor.value
 
+    /** [color]에 대응하는 [MinoContentBadgeColors]. Neutral은 기본값을, Accent는 [accentColors] 파생값을 쓴다. */
+    @Composable
+    @ReadOnlyComposable
+    fun colors(color: ContentBadgeColor): MinoContentBadgeColors =
+        when (color) {
+            is ContentBadgeColor.Neutral -> colors()
+            is ContentBadgeColor.Accent -> accentColors(color.color)
+        }
+
     /**
      * [baseColor] 하나에서 배경(Solid 8%)·테두리(Outlined 43%)를 파생한 [MinoContentBadgeColors]를 만든다.
      * Figma의 Accent 색(Color=Accent) variant에 대응.

@@ -25,7 +25,7 @@ import team.mino.core.designsystem.util.modifier.surface.surface
  * 클릭 동작이 없는 순수 표시용 컴포넌트다.
  *
  * @param color Figma `Color` 속성(Neutral·Accent)에 대응. [ContentBadgeColor.Accent]면 그 안에 담긴
- *   색 한 색에서 배경(Solid 8%)·테두리(Outlined 43%)를 자동으로 파생한 [MinoContentBadgeColors]로 대체된다.
+ *   색 한 색에서 배경(Solid 8%)·테두리(Outlined 43%)를 자동으로 파생해 쓴다.
  */
 @Composable
 fun MinoContentBadge(
@@ -36,12 +36,8 @@ fun MinoContentBadge(
     color: ContentBadgeColor = ContentBadgeColor.Neutral,
     leadingIcon: (@Composable () -> Unit)? = null,
     trailingIcon: (@Composable () -> Unit)? = null,
-    colors: MinoContentBadgeColors =
-        when (color) {
-            is ContentBadgeColor.Neutral -> MinoContentBadgeDefaults.colors()
-            is ContentBadgeColor.Accent -> MinoContentBadgeDefaults.accentColors(color.color)
-        },
 ) {
+    val colors = MinoContentBadgeDefaults.colors(color)
     val containerColor = if (variant == ContentBadgeVariant.Solid) colors.containerColor else Color.Transparent
     val borderColor = if (variant == ContentBadgeVariant.Outlined) colors.borderColor else null
 
