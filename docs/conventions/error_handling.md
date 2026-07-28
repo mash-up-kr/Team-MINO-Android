@@ -78,6 +78,7 @@ Ktor 예외 타입 등 구현 디테일은 data 레이어 밖으로 새어 나�
 1. ViewModel에서 `viewModelScope.launch` 직접 호출 금지 — 항상 `launchSafely`.
 2. 모든 Activity는 `setContent` 루트에서 `CollectUncaughtError`를 선언한다.
 3. `Result`에 표준 `onFailure` 사용 금지 — 항상 `onDomainFailure`.
+4. 모든 `runCatchingDomain` 결과는 실패 분기를 반드시 소비한다(§5에 따라 State 반영 또는 `emitDomainError`). `Result`는 실패를 던지지 않으므로, 생략하면 도메인 예외가 조용히 유실된다.
 
 ## 8. 미해결·이연 항목
 
