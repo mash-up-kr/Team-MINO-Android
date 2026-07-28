@@ -27,7 +27,6 @@ MinoAndroid의 **에러 처리 기반 모듈**. 도메인 예외 계층(`MinoDom
 | `Result.onDomainFailure(action)` | 표준 `onFailure` 대신 쓰는 소비 확장. failure에 `MinoDomainException`만 담긴다는 사실을 타입으로 복원해 sealed `when` 분기를 가능하게 한다. |
 | `DomainErrorEmitter` / `domainErrorEmitter()` | **ViewModel 인스턴스별** 도메인 에러 채널(`Channel(BUFFERED)`). `mviContainer`처럼 `by` 위임으로 합성하고, 액션 일회성 실패를 `emitDomainError`로 방출한다. |
 | `UncaughtErrorHandler` | CEH 도달 예외(버그) 전용 **전역** 이벤트 버스(`object`). 도메인 예외는 여기로 오지 않는다. |
-| `UncaughtErrorReporter` | 크래시 리포터 훅(interface, fatal 경로만). 구현·주입은 Android 측(`core:common:android`·앱 모듈) 책임이다. |
 
 ### `MinoDomainException` 정의
 
@@ -75,7 +74,7 @@ class SampleViewModel @Inject constructor(
 }
 ```
 
-버그성 예외는 별도 코드가 없다 — `runCatchingDomain`을 통과해 `launchSafely`의 CEH에 도달하고, CEH가 `UncaughtErrorReporter` 리포팅 후 `UncaughtErrorHandler.dispatch`로 전역 안내를 보낸다. 예시의 `launchSafely`는 이 모듈이 아니라 [`core:common:android`](../common/android/README.md)의 확장이다.
+버그성 예외는 별도 코드가 없다 — `runCatchingDomain`을 통과해 `launchSafely`의 CEH에 도달하고, CEH가 `Timber.e` 리포팅 후 `UncaughtErrorHandler.dispatch`로 전역 안내를 보낸다. 예시의 `launchSafely`는 이 모듈이 아니라 [`core:common:android`](../common/android/README.md)의 확장이다.
 
 ### 사용 예시 (B) — 수집 측
 
@@ -90,8 +89,7 @@ core/error-handling/src/main/kotlin/team/mino/core/errorhandling/
 ├── MinoDomainException.kt     # 도메인 예외 sealed 계층
 ├── RunCatchingDomain.kt       # runCatchingDomain + Result.onDomainFailure
 ├── DomainErrorEmitter.kt      # 인터페이스 + domainErrorEmitter() 팩토리 + private 구현
-├── UncaughtErrorHandler.kt    # 버그 전용 전역 이벤트 버스 (object)
-└── UncaughtErrorReporter.kt   # 리포터 훅 인터페이스 (구현은 Android 측)
+└── UncaughtErrorHandler.kt    # 버그 전용 전역 이벤트 버스 (object)
 ```
 
 ---

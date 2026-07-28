@@ -20,7 +20,7 @@
 
 | 모듈 | 책임 | API 상세 |
 |---|---|---|
-| `core:error-handling` | 도메인 예외 계층(`MinoDomainException`)·소비 헬퍼(`runCatchingDomain`·`onDomainFailure`)·에러 채널(`DomainErrorEmitter`·`UncaughtErrorHandler`·`UncaughtErrorReporter`) 정의 | [`core/error-handling/README.md`](../../core/error-handling/README.md) |
+| `core:error-handling` | 도메인 예외 계층(`MinoDomainException`)·소비 헬퍼(`runCatchingDomain`·`onDomainFailure`)·에러 채널(`DomainErrorEmitter`·`UncaughtErrorHandler`) 정의 | [`core/error-handling/README.md`](../../core/error-handling/README.md) |
 | `core:data` | Ktor 예외 → 도메인 예외 **전역 매핑** (`NetworkModule`의 `HttpResponseValidator`) | [`core/data/README.md`](../../core/data/README.md) |
 | `core:common:android` | CEH 결합 `launchSafely` | [`core/common/android/README.md`](../../core/common/android/README.md) |
 | `core:common:ui` | `CollectDomainError` · `CollectUncaughtError` | [`core/common/ui/README.md`](../../core/common/ui/README.md) |
@@ -66,7 +66,7 @@ Ktor 예외 타입 등 구현 디테일은 data 레이어 밖으로 새어 나�
 
 ## 6. CEH 안전망 정책
 
-- CEH 동작: `UncaughtErrorReporter` 훅(fatal 경로만 정의) 호출 후 사용자 안내. 리포팅 도구는 Crashlytics로 확정하되 도입은 별도 이슈로 이연 — 도입 전까지 기본 구현은 로그 출력(`Timber.e`, 빌드 타입 무관)이며, 도입 시 release 빌드만 Crashlytics 리포트로 교체한다.
+- CEH 동작: `Timber.e` 리포팅 후 사용자 안내. 빌드 타입별 출력은 앱 모듈의 Timber Tree 배선이 결정한다 — debug는 Logcat, release는 Crashlytics non-fatal 수집. 별도 리포터 훅은 두지 않는다(Tree가 교체 지점이므로 중복 간접층).
 - 사용자 안내는 빌드 타입과 무관하게 전역 이벤트 버스 `UncaughtErrorHandler`로 전달한다. **미처리 예외(버그) 전용 통로**이며 도메인 예외는 여기로 오지 않는다.
 - UI 수집은 **Activity 루트**에서 한다: 각 Activity가 `setContent` 바로 아래(NavHost 밖)에서 `CollectUncaughtError`를 선언하고, 스낵바 호스트도 같은 레벨에 둔다. 수집 기준은 `RESUMED` — resumed Activity는 최대 1개이므로 이중 수신이 없고, 수집 공백 중 이벤트는 Channel 버퍼가 보존한다.
 - **CEH 도달 시 화면 상태는 복구하지 않는다.** 버그 대응은 리포팅 → 수정이 정공법이며, 런타임에서 버그를 정상 흐름처럼 위장하지 않는다. 죽는 것은 해당 코루틴 하나이며 UI·네비게이션은 살아 있다.
