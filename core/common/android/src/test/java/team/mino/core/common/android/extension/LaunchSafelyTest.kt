@@ -15,25 +15,37 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import team.mino.core.errorhandling.UncaughtErrorHandler
-import team.mino.core.errorhandling.UncaughtErrorReporter
+import timber.log.Timber
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class LaunchSafelyTest {
     private val recorded = mutableListOf<Throwable>()
+    private val recordingTree =
+        object : Timber.Tree() {
+            override fun log(
+                priority: Int,
+                tag: String?,
+                message: String,
+                t: Throwable?,
+            ) {
+                t?.let { recorded += it }
+            }
+        }
 
     @Before
     fun setUp() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
-        uncaughtErrorReporter = UncaughtErrorReporter { recorded += it }
+        Timber.plant(recordingTree)
     }
 
     @After
     fun tearDown() {
+        Timber.uproot(recordingTree)
         Dispatchers.resetMain()
     }
 
     @Test
-    fun `잡히지 않은 예외를 리포터와 전역 버스로 전달한다`() =
+    fun `잡히지 않은 예외를 로그와 전역 버스로 전달한다`() =
         runTest {
             val bug = IllegalStateException("bug")
             val viewModel = object : ViewModel() {}
@@ -45,7 +57,7 @@ class LaunchSafelyTest {
         }
 
     @Test
-    fun `예외가 없으면 리포터를 호출하지 않는다`() =
+    fun `예외가 없으면 로그를 남기지 않는다`() =
         runTest {
             val viewModel = object : ViewModel() {}
             var executed = false
