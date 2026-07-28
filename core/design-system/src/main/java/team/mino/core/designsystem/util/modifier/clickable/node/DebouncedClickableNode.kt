@@ -19,7 +19,7 @@ import team.mino.core.designsystem.util.modifier.clickable.MultipleEventsCutter
 
 // 컴포지션이 아니라 레이아웃 트리에 한 번 붙어 재사용되는 Modifier.Node.
 // cutter / interactionSource 같은 상태가 이 인스턴스에 살기 때문에 리컴포지션 너머로 보존된다.
-internal class DebouncedClickableNode(
+internal open class DebouncedClickableNode(
     private var enabled: Boolean,
     debounceIntervalMillis: Long,
     private var onClickLabel: String?,
@@ -131,5 +131,10 @@ internal class DebouncedClickableNode(
             true
         }
         if (!enabled) disabled()
+        applyAdditionalSemantics()
     }
+
+    // 서브클래스가 시맨틱만 확장하는 훅 (foundation AbstractClickableNode와 같은 패턴).
+    // selectable처럼 클릭 동작은 그대로 두고 상태 프로퍼티를 얹는 노드가 오버라이드한다.
+    protected open fun SemanticsPropertyReceiver.applyAdditionalSemantics() {}
 }
