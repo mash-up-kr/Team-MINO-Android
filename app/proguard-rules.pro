@@ -12,10 +12,7 @@
 #   public *;
 #}
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
-
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# Crashlytics 스택 트레이스 복원용: 줄 번호는 유지하고 원본 파일명은 마스킹한다.
+# 실제 위치는 빌드 시 자동 업로드되는 매핑 파일로 Crashlytics 콘솔에서 복원된다.
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
