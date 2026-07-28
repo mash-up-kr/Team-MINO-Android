@@ -23,6 +23,9 @@ import team.mino.core.designsystem.util.modifier.surface.surface
 /**
  * 정보를 항목별로 분류할 때 쓰는 낮은 시각 위계의 정적 라벨(Figma `Content Badge/Content Badge`).
  * 클릭 동작이 없는 순수 표시용 컴포넌트다.
+ *
+ * 다른 컴포넌트와 달리 `colors` 파라미터를 열지 않는다. Figma 컴포넌트셋이 [ContentBadgeColor]의
+ * 두 값으로 색을 모두 정의하고 인스턴스마다 색을 바꿔 쓰지 않아, 외부에서 색을 주입할 필요가 없다.
  */
 @Composable
 fun MinoContentBadge(
