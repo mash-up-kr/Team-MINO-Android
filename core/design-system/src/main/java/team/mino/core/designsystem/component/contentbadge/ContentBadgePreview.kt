@@ -25,31 +25,20 @@ private fun ContentBadgePreview() {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            // Neutral — Solid, 크기별
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                ContentBadgeSize.entries.forEach { size ->
-                    MinoContentBadge(text = size.name, size = size, variant = ContentBadgeVariant.Solid)
+            // Figma 컴포넌트셋 전수(Color 2 × Variant 2 × Size 3)
+            ContentBadgeColor.entries.forEach { color ->
+                ContentBadgeVariant.entries.forEach { variant ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        ContentBadgeSize.entries.forEach { size ->
+                            MinoContentBadge(
+                                text = "${color.name} ${variant.name}",
+                                size = size,
+                                variant = variant,
+                                color = color,
+                            )
+                        }
+                    }
                 }
-            }
-            // Neutral — Outlined, 크기별
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                ContentBadgeSize.entries.forEach { size ->
-                    MinoContentBadge(text = size.name, size = size, variant = ContentBadgeVariant.Outlined)
-                }
-            }
-            // Accent — Solid / Outlined (Figma 예시 색상: Cyan)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                val accentColor = MinoContentBadgeDefaults.defaultAccentColor
-                MinoContentBadge(
-                    text = "Accent Solid",
-                    variant = ContentBadgeVariant.Solid,
-                    color = ContentBadgeColor.Accent(accentColor),
-                )
-                MinoContentBadge(
-                    text = "Accent Outlined",
-                    variant = ContentBadgeVariant.Outlined,
-                    color = ContentBadgeColor.Accent(accentColor),
-                )
             }
         }
     }

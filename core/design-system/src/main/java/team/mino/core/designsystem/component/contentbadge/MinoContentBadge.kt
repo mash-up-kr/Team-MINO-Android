@@ -9,7 +9,6 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -24,9 +23,6 @@ import team.mino.core.designsystem.util.modifier.surface.surface
 /**
  * 정보를 항목별로 분류할 때 쓰는 낮은 시각 위계의 정적 라벨(Figma `Content Badge/Content Badge`).
  * 클릭 동작이 없는 순수 표시용 컴포넌트다.
- *
- * @param color Figma `Color` 속성(Neutral·Accent)에 대응. [ContentBadgeColor.Accent]면 그 안에 담긴
- *   색 한 색에서 배경(Solid 8%)·테두리(Outlined 43%)를 자동으로 파생해 쓴다.
  */
 @Composable
 fun MinoContentBadge(
@@ -82,17 +78,11 @@ enum class ContentBadgeVariant {
     Outlined,
 }
 
-/**
- * [MinoContentBadge]의 색 스타일. Figma `Color` 속성(Neutral·Accent)에 대응.
- *
- * [Accent]만 색을 담는 이유: Figma 컴포넌트셋은 Accent 색상별 variant를 따로 두지 않고 인스턴스마다
- * 색을 바꿔 쓴다. `MinoContentBadgeDefaults.defaultAccentColor`가 Figma 예시 색(Cyan)이다.
- */
-@Immutable
-sealed class ContentBadgeColor {
-    /** 중립. [MinoContentBadgeDefaults.colors]의 기본색을 쓴다. */
-    data object Neutral : ContentBadgeColor()
+/** [MinoContentBadge]의 색 스타일. Figma `Color` 속성(Neutral·Accent)에 대응. */
+enum class ContentBadgeColor {
+    /** 중립. `Fill/Normal`·`Label/Alternative`·`Line/Normal/Neutral`을 쓴다. */
+    Neutral,
 
-    /** 강조. [color] 한 색에서 배경·테두리를 자동으로 파생한다. */
-    data class Accent(val color: Color) : ContentBadgeColor()
+    /** 강조. `Accent/Foreground/Cyan` 한 색에서 배경·테두리를 알파로 파생한다. */
+    Accent,
 }

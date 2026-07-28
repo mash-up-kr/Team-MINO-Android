@@ -21,14 +21,11 @@ internal object ContentBadgeTokens {
     val NeutralContentColor = ColorAccessKeyToken.LabelAlternative
     val NeutralBorderColor = ColorAccessKeyToken.LineNormalNeutral
 
-    // color 파라미터를 지정하면(Accent) 그 한 색에서 배경·테두리를 알파로 파생한다
-    // (Figma 실측: Solid 배경 8%, Outlined 테두리 43%).
+    // Accent는 Cyan 한 색에서 세 슬롯을 알파로 파생한다. 글자는 100%, 배경 8%, 테두리 43%
+    // (Figma 컴포넌트셋 16215:25365의 Color=Accent variant 6개가 모두 이 한 색을 쓴다).
+    val AccentColor = ColorAccessKeyToken.AccentForegroundCyan
     val AccentTintOpacity = AtomicOpacityToken.Opacity8
     val AccentBorderOpacity = AtomicOpacityToken.Opacity43
-
-    // Figma 컴포넌트셋은 Accent 색상별 variant를 따로 두지 않고 인스턴스마다 색을 바꿔 쓴다.
-    // 예시로 보여준 색(Cyan)을 기본값으로 둔다.
-    val DefaultAccentColor = ColorAccessKeyToken.AccentForegroundCyan
 }
 
 // 사이즈당 한 번만 만들어 재사용한다. when으로 매 호출마다 새로 만들지 않는다.

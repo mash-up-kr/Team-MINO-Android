@@ -78,6 +78,7 @@ class ColorScheme(
     internal var defaultCategoryColorsCached: MinoCategoryColors? = null
     internal var defaultChipColorsCached: MinoChipColors? = null
     internal var defaultContentBadgeColorsCached: MinoContentBadgeColors? = null
+    internal var accentContentBadgeColorsCached: MinoContentBadgeColors? = null
     internal var defaultMenuItemColorsCached: MinoMenuItemColors? = null
 
     fun copy(
