@@ -24,7 +24,7 @@ MinoAndroid의 디자인 시스템 모듈. Material3를 기반으로 하되, Mat
 | 디자인 토큰 | 색상·타이포·셰이프·그림자를 3계층(원시→시맨틱→홀더)으로 관리 | [4. 토큰 시스템](#4-토큰-시스템) |
 | 아이콘 | Figma 아이콘 세트를 `ImageVector`로 제공하는 `MinoIcons` 네임스페이스 | [5. 아이콘](#5-아이콘) |
 | 테마 진입점 | `MinoAndroidAppTheme` — 토큰을 주입하고 라이트/다크를 자동 전환 | [2. 빠른 시작](#2-빠른-시작) |
-| Modifier 유틸 | 클릭(연타 차단·리플 표준화)·그림자 토큰 적용 `Modifier` 확장 | [6.3 클릭 Modifier 유틸](#63-클릭-modifier-유틸) |
+| Modifier 유틸 | 클릭·선택(연타 차단·리플 표준화)·그림자 토큰 적용 `Modifier` 확장 | [6.3 클릭·선택 Modifier 유틸](#63-클릭선택-modifier-유틸) |
 | 프리뷰 어노테이션 | 라이트/다크 동시 프리뷰 `@UiModePreviews` | [6.4 프리뷰](#64-프리뷰) |
 | 공용 컴포넌트 | 토큰으로 조립한 재사용 Composable. `component/` 패키지에서 제공 | [6.1 컴포넌트 구현 패턴](#61-컴포넌트-구현-패턴--material3-관례) |
 
@@ -85,7 +85,7 @@ Box(
 > [!IMPORTANT]
 > `MinoAndroidTheme.*`는 반드시 **`MinoAndroidAppTheme { ... }` 내부**에서 읽어야 한다. 테마 바깥에서 접근하면 `CompositionLocal`의 정적 기본값(라이트)이 잡힌다.
 
-클릭 유틸 선택 기준은 [6.3 클릭 Modifier 유틸](#63-클릭-modifier-유틸)을 참조.
+클릭 유틸 선택 기준은 [6.3 클릭·선택 Modifier 유틸](#63-클릭선택-modifier-유틸)을 참조.
 
 ---
 
@@ -301,7 +301,7 @@ Icon(
 | `token/<Name>Tokens` object | `internal`. 컴포넌트 슬롯 → 디자인 토큰 키(`*AccessKeyToken`) 매핑만 담고, 값 해석은 `*AccessKeyToken.value`가 담당 | `tokens/FilledButtonTokens` |
 
 - 상태 없는 컴포넌트는 Colors 클래스 없이 Defaults의 단일 값 프로퍼티로 둔다(M3 `BadgeDefaults.containerColor` 방식).
-- **클릭은 M3처럼 `Surface(onClick)`을 쓰지 않고** [6.3 클릭 Modifier 유틸](#63-클릭-modifier-유틸)로 처리한다.
+- **클릭은 M3처럼 `Surface(onClick)`을 쓰지 않고** [6.3 클릭·선택 Modifier 유틸](#63-클릭선택-modifier-유틸)로 처리한다.
 - 아직 동작하지 않는 기능의 파라미터는 미리 만들지 않는다 — 이후 기능은 디폴트 파라미터로 소스 호환 추가한다.
 
 ### 6.2 Modifier 확장 구현 규칙
@@ -312,23 +312,29 @@ Icon(
 - **공개 API는 `Modifier` 확장 함수뿐.** `ModifierNodeElement`·`Modifier.Node` 구현은 `internal`로 숨기고, 외부에는 확장 함수만 노출한다.
 - **위치**: `util/modifier/<종류>/`. `Modifier.Node`/`Element` 구현은 그 아래 `node/` 하위 패키지에 둔다.
 
-### 6.3 클릭 Modifier 유틸
+### 6.3 클릭·선택 Modifier 유틸
 
-`util/modifier/clickable`은 **연타(중복 클릭) 차단**과 **리플(ripple) 표시**를 디자인 시스템 차원에서 표준화한 `Modifier` 확장이다. 외부 모듈은 아래 3개 공개 확장만 사용하고, 일반 클릭에 `Modifier.clickable`을 직접 쓰기보다 이 확장으로 연타·리플 정책을 일관되게 가져간다.
+`util/modifier/clickable`·`util/modifier/selectable`은 **연타(중복 클릭) 차단**과 **리플(ripple) 표시**를 디자인 시스템 차원에서 표준화한 `Modifier` 확장이다. 외부 모듈은 아래 6개 공개 확장만 사용하고, 일반 클릭에 `Modifier.clickable`을 직접 쓰기보다 이 확장으로 연타·리플 정책을 일관되게 가져간다.
 
 | 확장 | 리플 | 연타 차단 | 용도 |
 |---|---|---|---|
 | `Modifier.rippleClickable` | O | X | 일반 클릭 + 기본 리플 (Compose `clickable`의 얇은 래퍼) |
 | `Modifier.singleClickable` | X | O | 리플 없이 연타만 차단 |
 | `Modifier.rippleSingleClickable` | O | O | 리플 + 연타 차단 (가장 흔한 버튼 케이스) |
+| `Modifier.rippleSelectable` | O | X | `rippleClickable`의 선택 버전 (Compose `selectable`의 얇은 래퍼) |
+| `Modifier.singleSelectable` | X | O | `singleClickable`의 선택 버전 |
+| `Modifier.rippleSingleSelectable` | O | O | `rippleSingleClickable`의 선택 버전 (선택 상태를 갖는 요소의 기본) |
+
+`selectable` 계열은 clickable 계열과 같은 리플·연타 정책에 `selected` 시맨틱 노출이 더해진 것이다.
 
 **선택 기준**
 - **기본값은 `rippleSingleClickable`이다.** 클릭 가능한 요소는 별다른 이유가 없으면 이걸 쓴다.
-- 나머지 두 확장(`rippleClickable`·`singleClickable`)은 **기획 의도가 그것을 요구할 때만** 쓴다. 예: 리플 피드백을 빼야 한다(`singleClickable`), 연타를 허용해야 한다(`rippleClickable`).
+- **선택 상태를 갖는 요소(탭·칩·세그먼트 등)는 `rippleSingleSelectable`을 쓴다.** 접근성 시맨틱에 `selected`가 실려야 스크린 리더가 현재 선택을 읽을 수 있다.
+- 나머지 확장은 **기획 의도가 그것을 요구할 때만** 쓴다. 예: 리플 피드백을 빼야 한다(`single*`), 연타를 허용해야 한다(`ripple*`).
 - 기획 의도가 분명하지 않으면 **추측하지 말고 사용자(기획자)에게 확인**한 뒤 확장을 고른다.
 
 > [!WARNING]
-> Compose 기본 `Modifier.clickable`은 **직접 사용하지 않는다.** 연타·리플 정책을 우회하게 되므로, 클릭은 위 3개 확장으로만 처리한다.
+> Compose 기본 `Modifier.clickable`·`Modifier.selectable`은 **직접 사용하지 않는다.** 연타·리플 정책을 우회하게 되므로, 클릭·선택은 위 6개 확장으로만 처리한다.
 
 ```kotlin
 Box(
