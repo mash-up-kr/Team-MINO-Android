@@ -36,7 +36,7 @@ Ktor 예외 타입 등 구현 디테일은 data 레이어 밖으로 새어 나�
 
 | 예외 | 처리 |
 |---|---|
-| `CancellationException` | **절대 매핑 금지** — 최상단에서 그대로 rethrow (코루틴 취소 보존) |
+| `CancellationException` | **절대 매핑 금지** — 원본 그대로 rethrow (코루틴 취소 보존). 넓은 타입(`RuntimeException` 등) 분기를 추가해 이 예외가 매핑되게 하지 말 것 |
 | `ResponseException` (non-2xx) | `MinoDomainException.Http(code)` |
 | `IOException` 계열 | `MinoDomainException.Network` |
 | 그 외 전부 (직렬화 예외 포함) | rethrow → CEH (버그 취급) |

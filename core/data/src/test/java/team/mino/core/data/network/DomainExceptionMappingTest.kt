@@ -6,6 +6,7 @@ import io.ktor.client.engine.mock.respond
 import io.ktor.client.engine.mock.respondOk
 import io.ktor.client.request.get
 import io.ktor.http.HttpStatusCode
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.SerializationException
 import org.junit.Assert.assertEquals
@@ -60,6 +61,22 @@ class DomainExceptionMappingTest {
 
             assertNotNull(thrown)
             assertTrue(thrown?.cause is IOException)
+        }
+
+    @Test
+    fun `CancellationException은 매핑하지 않고 그대로 전파한다`() =
+        runTest {
+            val engine = MockEngine { throw CancellationException("cancelled") }
+            var thrown: Throwable? = null
+
+            try {
+                client(engine).get("https://test")
+            } catch (e: CancellationException) {
+                thrown = e
+            }
+
+            // 인스턴스 동일성은 코루틴 디버그 모드의 stack trace recovery가 사본을 만들어 단언 불가
+            assertEquals("cancelled", thrown?.message)
         }
 
     @Test
