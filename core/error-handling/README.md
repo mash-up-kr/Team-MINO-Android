@@ -129,7 +129,7 @@ dependencies {
 | 항목 | 규칙 |
 |---|---|
 | **예외 잡기** | `kotlin.runCatching` 금지 → `runCatchingDomain`. 버그·`CancellationException`을 삼키면 안 된다. |
-| **failure 소비** | 표준 `onFailure` 금지 → `onDomainFailure` (리뷰 규약). |
+| **failure 소비** | 표준 `onFailure` 금지 → `onDomainFailure`. 모든 `runCatchingDomain` 결과에 필수 (리뷰 규약). |
 | **`UncaughtErrorHandler`** | 버그 전용 통로. 도메인 예외를 `dispatch`하지 않는다. |
 | **`DomainErrorEmitter`** | 인스턴스별 채널. 전역 싱글턴으로 만들지 않는다 — 다른 화면으로의 이벤트 오배달 방지. |
 | **`when` 분기** | 리프 소비 `when`에서 `else` 허용. |
