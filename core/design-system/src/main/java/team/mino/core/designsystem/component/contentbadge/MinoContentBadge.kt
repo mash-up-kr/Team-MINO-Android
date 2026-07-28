@@ -9,6 +9,7 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -87,10 +88,11 @@ enum class ContentBadgeVariant {
  * [Accent]만 색을 담는 이유: Figma 컴포넌트셋은 Accent 색상별 variant를 따로 두지 않고 인스턴스마다
  * 색을 바꿔 쓴다. `MinoContentBadgeDefaults.defaultAccentColor`가 Figma 예시 색(Cyan)이다.
  */
+@Immutable
 sealed class ContentBadgeColor {
     /** 중립. [MinoContentBadgeDefaults.colors]의 기본색을 쓴다. */
     data object Neutral : ContentBadgeColor()
 
     /** 강조. [color] 한 색에서 배경·테두리를 자동으로 파생한다. */
-    class Accent(val color: Color) : ContentBadgeColor()
+    data class Accent(val color: Color) : ContentBadgeColor()
 }
