@@ -7,7 +7,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import team.mino.core.designsystem.util.modifier.clickable.node.DebouncedClickableElement
 
-private val DefaultRipple: IndicationNodeFactory = ripple()
+// clickable·selectable 계열이 같은 리플 정책을 쓰도록 공유하는 단일 인스턴스.
+internal val DefaultRipple: IndicationNodeFactory = ripple()
 
 fun Modifier.rippleClickable(
     enabled: Boolean = true,
