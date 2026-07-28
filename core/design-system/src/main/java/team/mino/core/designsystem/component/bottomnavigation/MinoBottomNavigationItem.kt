@@ -15,7 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import team.mino.core.designsystem.component.bottomnavigation.token.BottomNavigationTokens
 import team.mino.core.designsystem.foundation.typography.token.value
-import team.mino.core.designsystem.util.modifier.clickable.rippleSingleClickable
+import team.mino.core.designsystem.util.modifier.selectable.rippleSingleSelectable
 
 @Composable
 fun RowScope.MinoBottomNavigationItem(
@@ -31,7 +31,7 @@ fun RowScope.MinoBottomNavigationItem(
     Column(
         modifier = modifier
             .weight(1f)
-            .rippleSingleClickable(role = Role.Tab, onClick = onClick)
+            .rippleSingleSelectable(selected = selected, role = Role.Tab, onClick = onClick)
             .padding(vertical = BottomNavigationTokens.ItemVerticalPadding),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(BottomNavigationTokens.IconLabelSpacing),
