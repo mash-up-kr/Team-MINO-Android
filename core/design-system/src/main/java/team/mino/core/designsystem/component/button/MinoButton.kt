@@ -22,18 +22,12 @@ import team.mino.core.designsystem.foundation.typography.token.value
 import team.mino.core.designsystem.util.modifier.clickable.rippleSingleClickable
 import team.mino.core.designsystem.util.modifier.surface.surface
 
-// ComposableLambdaParameterNaming은 composable 람다 파라미터가 하나뿐이면 그것을 콘텐츠 슬롯으로
-// 보고 이름을 content로 요구한다. 이 버튼의 콘텐츠는 text이고 leadingIcon은 부속 슬롯이라 규칙의
-// 전제가 맞지 않는다. 팀 공용 lint.xml의 severity를 낮추면 진짜 슬롯의 오명명까지 못 잡게 되므로,
-// 전제가 어긋나는 이 자리에서만 끈다.
-
 /**
  * 하나의 행동을 실행하는 버튼(Figma `Button/Button`). 이 컴포넌트는 버튼 하나만 그리고,
  * 여러 버튼의 배치·배경은 `MinoActionArea` 같은 상위 컴포넌트가 조합해 만든다.
  *
- * 글자 뒤 아이콘(`Trailing Icon`)·로딩(`Loading`)·아이콘 전용(`Icon Only`) 속성은 아직 쓰는
- * 화면이 없어 파라미터를 두지 않았다. 필요해지면 디폴트 값을 가진 파라미터로 더해 기존 호출부를
- * 깨지 않고 확장한다.
+ * 로딩(`Loading`)·아이콘 전용(`Icon Only`) 속성은 아직 쓰는 화면이 없어 파라미터를 두지 않았다.
+ * 필요해지면 디폴트 값을 가진 파라미터로 더해 기존 호출부를 깨지 않고 확장한다.
  *
  * @param enabled `false`면 클릭이 막히고, 색 슬롯을 따로 두는 대신 알파를 낮춰 비활성을
  *   표현한다(Figma `Disable` 속성).
@@ -42,8 +36,8 @@ import team.mino.core.designsystem.util.modifier.surface.surface
  * @param leadingIcon 글자 앞 아이콘(Figma `Leading Icon`). `null`이면 자리를 차지하지 않는다.
  *   슬롯 안에서는 `LocalContentColor`가 [style]의 글자색으로 지정돼 있어, 색을 따로 넘기지 않은
  *   [androidx.compose.material3.Icon]은 글자와 같은 색으로 그려진다.
+ * @param trailingIcon 글자 뒤 아이콘(Figma `Trailing Icon`). 동작은 [leadingIcon]과 같다.
  */
-@Suppress("ComposableLambdaParameterNaming")
 @Composable
 fun MinoButton(
     text: String,
@@ -53,6 +47,7 @@ fun MinoButton(
     size: ButtonSize = ButtonSize.Large,
     style: ButtonStyle = ButtonStyle.SolidPrimary,
     leadingIcon: (@Composable () -> Unit)? = null,
+    trailingIcon: (@Composable () -> Unit)? = null,
 ) {
     val colors = MinoButtonDefaults.colors(style)
 
@@ -79,6 +74,11 @@ fun MinoButton(
                 }
             }
             Text(text = text, color = colors.contentColor, style = style.font(size).value)
+            if (trailingIcon != null) {
+                Box(modifier = Modifier.size(size.iconSize), contentAlignment = Alignment.Center) {
+                    trailingIcon()
+                }
+            }
         }
     }
 }

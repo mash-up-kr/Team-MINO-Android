@@ -39,6 +39,7 @@ fun MinoSubActionArea(
                 enabled = subAction.enabled,
                 style = ButtonStyle.OutlinedAssistive,
                 leadingIcon = subAction.leadingIcon,
+                trailingIcon = subAction.trailingIcon,
             )
             MinoButton(
                 modifier = Modifier.weight(1f),
@@ -47,6 +48,7 @@ fun MinoSubActionArea(
                 enabled = mainAction.enabled,
                 style = ButtonStyle.SolidPrimary,
                 leadingIcon = mainAction.leadingIcon,
+                trailingIcon = mainAction.trailingIcon,
             )
         }
     }

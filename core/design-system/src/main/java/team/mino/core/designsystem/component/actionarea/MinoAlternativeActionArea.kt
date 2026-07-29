@@ -38,6 +38,7 @@ fun MinoAlternativeActionArea(
             enabled = mainAction.enabled,
             style = ButtonStyle.SolidPrimary,
             leadingIcon = mainAction.leadingIcon,
+            trailingIcon = mainAction.trailingIcon,
         )
         MinoButton(
             modifier = Modifier.fillMaxWidth(),
@@ -46,6 +47,7 @@ fun MinoAlternativeActionArea(
             enabled = alternativeAction.enabled,
             style = ButtonStyle.OutlinedPrimary,
             leadingIcon = alternativeAction.leadingIcon,
+            trailingIcon = alternativeAction.trailingIcon,
         )
     }
 }

@@ -59,6 +59,7 @@ fun MinoActionArea(
             enabled = mainAction.enabled,
             style = ButtonStyle.SolidPrimary,
             leadingIcon = mainAction.leadingIcon,
+            trailingIcon = mainAction.trailingIcon,
         )
     }
 }
@@ -72,6 +73,7 @@ fun MinoActionArea(
  *
  * @param leadingIcon 글자 앞 아이콘(Figma `Leading Icon`). 색은 [MinoButton]이 스타일에 맞춰
  *   `LocalContentColor`로 깔아주므로 `tint`를 따로 넘기지 않아도 된다.
+ * @param trailingIcon 글자 뒤 아이콘(Figma `Trailing Icon`). 동작은 [leadingIcon]과 같다.
  */
 @Immutable
 data class ActionAreaAction(
@@ -79,4 +81,5 @@ data class ActionAreaAction(
     val onClick: () -> Unit,
     val enabled: Boolean = true,
     val leadingIcon: (@Composable () -> Unit)? = null,
+    val trailingIcon: (@Composable () -> Unit)? = null,
 )
