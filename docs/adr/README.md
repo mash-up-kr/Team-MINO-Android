@@ -29,3 +29,4 @@ ADR은 [`adr-writer` 스킬](../../.claude/skills/adr-writer/SKILL.md)이 자동
 | 2026-07-25 | [에러 처리는 도메인 예외 매핑 + CEH 안전망의 2단 구조로 한다](2026-07-25-error-handling-two-tier-convention.md) | Accepted | Jaesung Lee |
 | 2026-07-27 | [로컬 키-값 저장소로 Preferences DataStore를 채택한다](2026-07-27-preferences-datastore-local-storage.md) | Accepted | Jaesung Lee |
 | 2026-07-27 | [ADR·실패 기록 파일명은 일련번호 대신 날짜 접두어를 쓴다](2026-07-27-record-filename-date-prefix.md) | Accepted | Jaesung Lee |
+| 2026-07-30 | [SUITE 폰트의 빈 글리프를 cmap에서 제거해 OS 시스템 폰트 폴백으로 처리한다](2026-07-30-font-empty-glyph-strip-for-fallback.md) | Accepted | full_avocado |
