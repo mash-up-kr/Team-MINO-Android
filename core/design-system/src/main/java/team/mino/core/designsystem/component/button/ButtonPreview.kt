@@ -13,7 +13,6 @@ import androidx.compose.ui.unit.dp
 import team.mino.core.designsystem.foundation.color.token.ColorAccessKeyToken
 import team.mino.core.designsystem.foundation.color.token.value
 import team.mino.core.designsystem.foundation.icons.MinoIcons
-import team.mino.core.designsystem.foundation.icons.icons.ArrowRight
 import team.mino.core.designsystem.foundation.icons.icons.Bookmark
 import team.mino.core.designsystem.foundation.icons.icons.Pencil
 import team.mino.core.designsystem.theme.MinoAndroidAppTheme
@@ -65,7 +64,6 @@ private fun ButtonPreview() {
                 onClick = {},
                 style = ButtonStyle.OutlinedPrimary,
                 leadingIcon = { Icon(imageVector = MinoIcons.Pencil, contentDescription = null) },
-                trailingIcon = { Icon(imageVector = MinoIcons.ArrowRight, contentDescription = null) },
             )
         }
     }
