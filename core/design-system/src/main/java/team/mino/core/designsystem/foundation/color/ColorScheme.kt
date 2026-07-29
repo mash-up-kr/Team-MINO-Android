@@ -11,6 +11,7 @@ import team.mino.core.designsystem.component.category.MinoCategoryColors
 import team.mino.core.designsystem.component.chip.MinoChipColors
 import team.mino.core.designsystem.component.contentbadge.MinoContentBadgeColors
 import team.mino.core.designsystem.component.menu.MinoMenuItemColors
+import team.mino.core.designsystem.component.textfield.MinoTextFieldColors
 import team.mino.core.designsystem.foundation.color.token.ColorAccessKeyToken
 import team.mino.core.designsystem.foundation.color.token.ColorDarkTokens
 import team.mino.core.designsystem.foundation.color.token.ColorLightTokens
@@ -82,6 +83,7 @@ class ColorScheme(
     internal var defaultContentBadgeColorsCached: MinoContentBadgeColors? = null
     internal var accentContentBadgeColorsCached: MinoContentBadgeColors? = null
     internal var defaultMenuItemColorsCached: MinoMenuItemColors? = null
+    internal var defaultTextFieldColorsCached: MinoTextFieldColors? = null
 
     fun copy(
         staticWhite: Color = this.staticWhite,
