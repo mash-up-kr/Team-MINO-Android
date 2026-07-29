@@ -7,7 +7,7 @@ import team.mino.core.designsystem.component.actionarea.token.ActionAreaTokens
 import team.mino.core.designsystem.foundation.color.token.value
 
 /**
- * [MinoActionArea]의 기본값 모음.
+ * 액션 영역 3종([MinoActionArea]·[MinoSubActionArea]·[MinoAlternativeActionArea])의 기본값 모음.
  *
  * 상태에 따라 달라지는 색이 없어 `Colors` 클래스 없이 단일 값 프로퍼티만 둔다
  * (`MinoBottomNavigationDefaults.containerColor`와 같은 형태).
