@@ -6,11 +6,16 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import team.mino.core.designsystem.foundation.color.token.ColorAccessKeyToken
 import team.mino.core.designsystem.foundation.color.token.value
+import team.mino.core.designsystem.foundation.icons.MinoIcons
+import team.mino.core.designsystem.foundation.icons.icons.ArrowRight
+import team.mino.core.designsystem.foundation.icons.icons.Bookmark
+import team.mino.core.designsystem.foundation.icons.icons.Pencil
 import team.mino.core.designsystem.theme.MinoAndroidAppTheme
 import team.mino.core.designsystem.util.preview.UiModePreviews
 
@@ -21,48 +26,46 @@ private fun ButtonPreview() {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(ColorAccessKeyToken.BackgroundNormalAlternative.value)
-                .padding(vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp),
+                .background(ColorAccessKeyToken.BackgroundNormalNormal.value)
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            // 메인 액션 단일형
+            ButtonSize.entries.forEach { size ->
+                ButtonStyle.entries.forEach { style ->
+                    MinoButton(
+                        modifier = Modifier.fillMaxWidth(),
+                        text = "${size.name} ${style.name}",
+                        onClick = {},
+                        size = size,
+                        style = style,
+                    )
+                }
+            }
+            // 비활성 — 알파만 낮아진다
+            ButtonStyle.entries.forEach { style ->
+                MinoButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = "${style.name} disabled",
+                    onClick = {},
+                    enabled = false,
+                    style = style,
+                )
+            }
+            // 아이콘 슬롯 — LocalContentColor를 따라 글자와 같은 색으로 그려진다
             MinoButton(
                 modifier = Modifier.fillMaxWidth(),
-                mainActionText = "메인 액션",
-                onMainActionClick = {},
+                text = "첫 장소 저장하기",
+                onClick = {},
+                size = ButtonSize.Medium,
+                leadingIcon = { Icon(imageVector = MinoIcons.Bookmark, contentDescription = null) },
             )
-            // 메인 + 보조 액션형 (가로)
             MinoButton(
                 modifier = Modifier.fillMaxWidth(),
-                mainActionText = "메인",
-                onMainActionClick = {},
-                secondaryAction = ButtonSecondaryAction.Sub(ButtonAction(text = "보조", onClick = {})),
-            )
-            // 메인 + 대체 액션형 (세로)
-            MinoButton(
-                modifier = Modifier.fillMaxWidth(),
-                mainActionText = "메인 액션",
-                onMainActionClick = {},
-                secondaryAction = ButtonSecondaryAction.Alternative(
-                    ButtonAction(text = "대체 액션", onClick = {}),
-                ),
-            )
-            // 비활성 상태
-            MinoButton(
-                modifier = Modifier.fillMaxWidth(),
-                mainActionText = "메인",
-                onMainActionClick = {},
-                mainActionEnabled = false,
-                secondaryAction = ButtonSecondaryAction.Sub(
-                    ButtonAction(text = "보조", onClick = {}, enabled = false),
-                ),
-            )
-            // Divider(상단 그라데이션) 없이
-            MinoButton(
-                modifier = Modifier.fillMaxWidth(),
-                mainActionText = "메인 액션",
-                onMainActionClick = {},
-                divider = false,
+                text = "방 편집",
+                onClick = {},
+                style = ButtonStyle.OutlinedPrimary,
+                leadingIcon = { Icon(imageVector = MinoIcons.Pencil, contentDescription = null) },
+                trailingIcon = { Icon(imageVector = MinoIcons.ArrowRight, contentDescription = null) },
             )
         }
     }

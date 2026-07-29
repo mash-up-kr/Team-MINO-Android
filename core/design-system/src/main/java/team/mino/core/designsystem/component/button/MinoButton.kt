@@ -1,100 +1,82 @@
 package team.mino.core.designsystem.component.button
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.alpha
 import team.mino.core.designsystem.component.button.token.ButtonTokens
+import team.mino.core.designsystem.component.button.token.contentPadding
+import team.mino.core.designsystem.component.button.token.font
+import team.mino.core.designsystem.component.button.token.iconSize
+import team.mino.core.designsystem.component.button.token.iconTextSpacing
+import team.mino.core.designsystem.component.button.token.shape
+import team.mino.core.designsystem.foundation.typography.token.value
+import team.mino.core.designsystem.util.modifier.clickable.rippleSingleClickable
+import team.mino.core.designsystem.util.modifier.surface.surface
 
 /**
- * 화면 하단에 고정하는 액션 영역(Figma `Action Area/Action Area`). 메인 액션은 필수이고,
- * [secondaryAction]으로 보조 액션을 하나 더할 수 있다(Figma Variant=Neutral·Strong에 대응).
+ * 하나의 행동을 실행하는 버튼(Figma `Button/Button`). 이 컴포넌트는 버튼 하나만 그리고,
+ * 여러 버튼의 배치·배경은 `MinoActionArea` 같은 상위 컴포넌트가 조합해 만든다.
  *
- * - [ButtonSecondaryAction.Sub]: 메인 액션 옆에 가로로 배치되는 저강조 보조 액션.
- * - [ButtonSecondaryAction.Alternative]: 메인 액션 아래 세로로 배치되는 대체 액션.
+ * 로딩(`Loading`)·아이콘 전용(`Icon Only`) 속성은 아직 쓰는 화면이 없어 파라미터를 두지 않았다.
+ * 필요해지면 디폴트 값을 가진 파라미터로 더해 기존 호출부를 깨지 않고 확장한다.
  *
- * 하단 시스템 인셋(제스처 내비게이션 바 등) 대응은 컴포넌트가 강제하지 않는다. 호출부가
- * 화면 구조(Scaffold의 `contentWindowInsets` 처리 여부 등)에 맞춰 [modifier]에
- * `Modifier.navigationBarsPadding()`을 직접 얹어 적용한다.
- *
- * @param divider 컨텐츠와 경계가 자연스럽게 이어지도록 상단에 그라데이션 페이드를 그릴지 여부
- *   (Figma `Divider` 속성 — 실선이 아니라 배경색으로 사라지는 그라데이션 마스크다).
+ * @param enabled `false`면 클릭이 막히고, 색 슬롯을 따로 두는 대신 알파를 낮춰 비활성을
+ *   표현한다(Figma `Disable` 속성).
+ * @param size Figma `Size` 속성. 패딩·모서리·글자 크기·아이콘 크기가 함께 바뀐다.
+ * @param style Figma `Variant`·`Color` 조합에 대응. 자세한 매핑은 [ButtonStyle] 참고.
+ * @param leadingIcon 글자 앞 아이콘(Figma `Leading Icon`). `null`이면 자리를 차지하지 않는다.
+ *   슬롯 안에서는 `LocalContentColor`가 [style]의 글자색으로 지정돼 있어, 색을 따로 넘기지 않은
+ *   [androidx.compose.material3.Icon]은 글자와 같은 색으로 그려진다.
+ * @param trailingIcon 글자 뒤 아이콘(Figma `Trailing Icon`). 동작은 [leadingIcon]과 같다.
  */
 @Composable
 fun MinoButton(
-    mainActionText: String,
-    onMainActionClick: () -> Unit,
+    text: String,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    mainActionEnabled: Boolean = true,
-    secondaryAction: ButtonSecondaryAction? = null,
-    divider: Boolean = true,
-    colors: MinoButtonColors = MinoButtonDefaults.colors(),
+    enabled: Boolean = true,
+    size: ButtonSize = ButtonSize.Large,
+    style: ButtonStyle = ButtonStyle.SolidPrimary,
+    leadingIcon: (@Composable () -> Unit)? = null,
+    trailingIcon: (@Composable () -> Unit)? = null,
 ) {
-    val containerColor = colors.containerColor
-    val dividerBrush = remember(containerColor) {
-        Brush.verticalGradient(listOf(Color.Transparent, containerColor))
-    }
+    val colors = MinoButtonDefaults.colors(style)
 
-    Column(modifier = modifier) {
-        if (divider) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(ButtonTokens.GradientHeight)
-                    .background(dividerBrush),
-            )
-        }
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(containerColor)
-                .padding(ButtonTokens.ContainerPadding),
-            verticalArrangement = Arrangement.spacedBy(ButtonTokens.ActionColumnSpacing),
-        ) {
-            when (secondaryAction) {
-                is ButtonSecondaryAction.Sub -> {
-                    Row(horizontalArrangement = Arrangement.spacedBy(ButtonTokens.ActionRowSpacing)) {
-                        SubActionButton(action = secondaryAction.action, colors = colors)
-                        MainActionButton(
-                            modifier = Modifier.weight(1f),
-                            text = mainActionText,
-                            onClick = onMainActionClick,
-                            enabled = mainActionEnabled,
-                            colors = colors,
-                        )
-                    }
+    Row(
+        modifier = modifier
+            .alpha(if (enabled) 1f else ButtonTokens.DisabledOpacity)
+            .surface(
+                shape = size.shape(),
+                containerColor = colors.containerColor,
+                borderColor = colors.borderColor,
+                borderWidth = ButtonTokens.BorderWidth,
+            ).rippleSingleClickable(enabled = enabled, onClick = onClick)
+            .padding(size.contentPadding()),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(
+            space = size.iconTextSpacing,
+            alignment = Alignment.CenterHorizontally,
+        ),
+    ) {
+        CompositionLocalProvider(LocalContentColor provides colors.contentColor) {
+            if (leadingIcon != null) {
+                Box(modifier = Modifier.size(size.iconSize), contentAlignment = Alignment.Center) {
+                    leadingIcon()
                 }
-                is ButtonSecondaryAction.Alternative -> {
-                    MainActionButton(
-                        modifier = Modifier.fillMaxWidth(),
-                        text = mainActionText,
-                        onClick = onMainActionClick,
-                        enabled = mainActionEnabled,
-                        colors = colors,
-                    )
-                    AlternativeActionButton(
-                        modifier = Modifier.fillMaxWidth(),
-                        action = secondaryAction.action,
-                        colors = colors,
-                    )
-                }
-                null -> {
-                    MainActionButton(
-                        modifier = Modifier.fillMaxWidth(),
-                        text = mainActionText,
-                        onClick = onMainActionClick,
-                        enabled = mainActionEnabled,
-                        colors = colors,
-                    )
+            }
+            Text(text = text, color = colors.contentColor, style = style.font(size).value)
+            if (trailingIcon != null) {
+                Box(modifier = Modifier.size(size.iconSize), contentAlignment = Alignment.Center) {
+                    trailingIcon()
                 }
             }
         }
@@ -102,22 +84,32 @@ fun MinoButton(
 }
 
 /**
- * [MinoButton]의 `secondaryAction`에 전달하는 보조 액션 종류. [Sub]와 [Alternative]는
- * 서로 다른 레이아웃(가로/세로)이라 동시에 지정할 수 없으므로 하나의 슬롯으로 표현한다.
+ * [MinoButton]의 크기. Figma `Button/Button`의 `Size` 속성에 대응한다.
+ *
+ * Figma에는 Small도 있지만 쓰는 화면이 확인된 두 개만 담는다. 새 크기가 디자인에 등장하면 값을 추가한다.
  */
-sealed class ButtonSecondaryAction {
-    /** 메인 액션 옆에 가로로 배치되는 저강조 보조 액션(Figma Sub Action). */
-    class Sub(val action: ButtonAction) : ButtonSecondaryAction()
+enum class ButtonSize {
+    /** Figma `Size=Large`. 패딩 12/28, 모서리 12, Body1. 액션 영역의 기본 크기. */
+    Large,
 
-    /** 메인 액션 아래 세로로 배치되는 대체 액션(Figma Alternative Action). */
-    class Alternative(val action: ButtonAction) : ButtonSecondaryAction()
+    /** Figma `Size=Medium`. 패딩 9/20, 모서리 10, Body2. 콘텐츠 안에 놓이는 버튼. */
+    Medium,
 }
 
 /**
- * [ButtonSecondaryAction]에 담기는 보조 액션 정보.
+ * [MinoButton]의 시각 스타일. Figma `Button/Button`의 `Variant`·`Color` 두 속성 조합에 대응한다.
+ *
+ * 두 속성을 각각의 파라미터로 열지 않고 조합 하나를 값으로 두는 이유: Figma가 정의한 전체 조합 중
+ * 실제로 쓰이는 것만 담아 검증되지 않은 조합(예: Solid+Assistive)을 만들지 않기 위해서다.
+ * 새 조합이 디자인에 등장하면 값을 추가한다.
  */
-class ButtonAction(
-    val text: String,
-    val onClick: () -> Unit,
-    val enabled: Boolean = true,
-)
+enum class ButtonStyle {
+    /** Figma `Variant=Solid, Color=Primary`. 채워진 배경의 최상위 강조 버튼. */
+    SolidPrimary,
+
+    /** Figma `Variant=Outlined, Color=Primary`. 테두리 + 프라이머리 글자. */
+    OutlinedPrimary,
+
+    /** Figma `Variant=Outlined, Color=Assistive`. 테두리 + 일반 글자의 저강조 버튼. */
+    OutlinedAssistive,
+}
