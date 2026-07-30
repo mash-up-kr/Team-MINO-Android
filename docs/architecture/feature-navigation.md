@@ -146,3 +146,31 @@ class XViewModel @Inject constructor() :                 // SavedStateHandle 주
     ViewModel(), MviContainer<XUiState, XSideEffect> by mviContainer(XUiState())
 ```
 - 상태 로직조차 없는 정적 화면이면 ViewModel·Route를 만들지 않고 `screen<XMain> { XScreen(...) }`로 `XScreen`을 직접 등록해도 된다.
+
+### 탭(top-level) 전환
+
+하단 탭처럼 **서로 대등한 최상위 목적지** 사이를 오갈 때는 일반 `navigate`와 navOptions가 다르다. 탭은 이동 이력을 남기지 않아야 하고, 되돌아왔을 때 이전 상태가 남아 있어야 한다.
+
+```kotlin
+internal fun NavHostController.navigateToTab(tab: XTab) {
+    navigate(tab.route) {
+        popUpTo(graph.findStartDestination().id) { saveState = true }
+        launchSingleTop = true
+        restoreState = true
+    }
+}
+```
+
+| 옵션 | 역할 |
+|---|---|
+| `popUpTo(startDestination) { saveState = true }` | 탭 전환이 백스택에 쌓이지 않게 되감으면서, 떠나는 탭의 상태를 저장한다 |
+| `launchSingleTop` | 선택된 탭을 다시 눌러도 같은 목적지가 중복 생성되지 않는다 |
+| `restoreState` | 저장해 둔 탭 상태를 복원한다 — `saveState`와 **짝으로** 켜고 끈다 |
+
+선택 상태는 `currentBackStackEntryAsState()`로 관찰하고, 문자열 비교 대신 Route 타입으로 판별한다. 탭 하위에 중첩 그래프가 생겨도 상위 탭이 선택으로 남도록 `hierarchy`를 훑는다.
+
+```kotlin
+destination.hierarchy.any { it.hasRoute(tab.route::class) }
+```
+
+탭 목록(Route·아이콘·라벨)은 enum 하나에 모아 그래프와 하단 바가 같은 출처를 보게 한다. 탭 바를 어디에 두는지는 → `feature-module.md` 4장(셸이 `Scaffold` 소유).

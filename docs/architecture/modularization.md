@@ -49,9 +49,23 @@ Android SDK 기반 공용 유틸리티 (Context 확장, Intent 헬퍼 등).
 네비게이션 인프라 — feature 간 Activity 전환(`ActivityLauncher`)과 feature 내부 type-safe Route(`MinoNavHost`·`screen`·`serializableNavType`).
 → Android Library
 
-### `:feature:sample` — `:api` / `:impl`
-데모 feature(추후 제거 가능). `:api`는 전환 계약(`SampleLauncher` + `EXTRA_*`)만, `:impl`은 Activity·화면·ViewModel·Launcher 구현. 다른 feature는 `:api`에만 의존한다. 구조·전환 규약은 `docs/architecture/feature-module.md`·`feature-navigation.md`.
+### `:core:map`
+지도 — `MinoMap` 컴포저블, 좌표 모델(`GeoPoint`)과 SDK 타입 변환.
 → Android Library (Compose)
+
+### `:core:analytics`
+분석 — 이벤트 로깅(`AnalyticsTracker`)과 화면 조회 자동 로깅(`TrackScreenViews`).
+→ Android Library (Compose)
+
+### `:feature:main` — `:api` / `:impl`
+앱의 진입 feature. BottomNavigation 탭 셸을 소유한다.
+→ Android Library (Compose)
+
+### `:feature:sample`·`:feature:home` — 각각 `:api` / `:impl`
+데모 feature(추후 제거 가능).
+→ Android Library (Compose)
+
+> feature의 `api`/`impl` 역할과 패키지 구조는 `docs/architecture/feature-module.md`, 전환 규약은 `feature-navigation.md`.
 
 ---
 
