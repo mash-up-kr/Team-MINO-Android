@@ -100,15 +100,17 @@ internal fun XNavHost(
     modifier: Modifier = Modifier,
 ) {
     val navController = rememberNavController()
-    MinoNavHost(navController, startDestination, modifier) {
-        screen<XMain> {
-            XRoute(
-                onNavigateToY = onNavigateToY,
-                onNavigateToDetail = { navController.navigate(XDetail(XQuery(...))) },
-            )
-        }
-        screen<XDetail>(typeMap = XDetail.typeMap) { entry ->
-            XDetailRoute(onBack = { navController.popBackStackIfResumed(entry) })
+    Scaffold(modifier = modifier) { innerPadding ->            // Scaffold는 셸이 소유 → feature-module.md 4장
+        MinoNavHost(navController, startDestination, Modifier.padding(innerPadding)) {
+            screen<XMain> {
+                XRoute(
+                    onNavigateToY = onNavigateToY,
+                    onNavigateToDetail = { navController.navigate(XDetail(XQuery(...))) },
+                )
+            }
+            screen<XDetail>(typeMap = XDetail.typeMap) { entry ->
+                XDetailRoute(onBack = { navController.popBackStackIfResumed(entry) })
+            }
         }
     }
 }
