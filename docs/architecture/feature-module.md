@@ -89,7 +89,7 @@ flowchart LR
 |---|---|
 | `XActivity` | feature의 단일 진입 Activity. `setContent`로 `XNavHost` 호스팅. feature 간 전환·Intent 처리(→ `feature-navigation.md`) |
 | `XDestinations`(`XMain`/`XDetail`) | feature 내부 화면의 type-safe `@Serializable` Route (→ `feature-navigation.md`) |
-| `XNavHost` | `MinoNavHost` + `screen<T>`로 화면 그래프 구성, `navController` 보유 (→ `feature-navigation.md`) |
+| `XNavHost` | `MinoNavHost` + `screen<T>`로 화면 그래프 구성, `navController` 보유 (→ `feature-navigation.md`). **`Scaffold`·insets를 소유**한다(4장) |
 | `XLauncher`(api) / `XLauncherImpl`(impl) | 다른 feature가 이 feature로 전환하는 계약/구현 (→ `feature-navigation.md`) |
 | `XRoute` | **stateful** 컴포저블 — VM·state·sideEffect를 Screen에 연결 (4장) |
 | `XScreen` | **stateless** 컴포저블 — state·콜백만으로 그리는 순수 UI (4장) |
@@ -195,15 +195,29 @@ fun XScreen(
     onNavigateToDetail: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Scaffold(modifier = modifier) { innerPadding ->      // Scaffold를 화면이 소유
-        Column(Modifier.padding(innerPadding)) { /* state로 UI 구성 */ }
-    }
+    Column(modifier) { /* state로 UI 구성 */ }           // Scaffold를 열지 않는다
 }
 ```
 - `state`와 콜백**만** 받는다. ViewModel·navController를 모른다 → `@Preview` 단독 렌더 가능.
-- **Scaffold·insets를 화면별로 소유**해 topBar/bottomBar를 독립 제어한다.
+- `Scaffold`·insets는 화면이 아니라 **셸이 소유**한다(아래).
 
 > **왜 나누나**: 네비게이션·VM 결합(테스트 어려움)을 Route에 격리하고, Screen은 입력→출력이 명확한 순수 함수로 유지해 프리뷰·재사용·테스트가 쉬워진다.
+
+### Scaffold·insets 소유
+
+**`Scaffold`는 그래프당 하나, 셸(`XNavHost`)이 소유한다.** 화면은 `Scaffold`를 열지 않고 셸이 계산한 영역 안을 그린다.
+
+```kotlin
+Scaffold(modifier = modifier, bottomBar = { /* 그래프 전체에 걸리는 chrome */ }) { innerPadding ->
+    MinoNavHost(navController, startDestination, Modifier.padding(innerPadding)) { /* screen<T> 등록 */ }
+}
+```
+
+- 여러 화면에 걸치는 chrome(bottomBar·Snackbar host)은 **셸의 slot**에 둔다. 탭 전환 화면도 이 형태의 `XNavHost`일 뿐 별도 구조가 아니다.
+- 화면 고유 chrome(topBar 등)은 그 화면이 자기 컨테이너 최상단에 **직접 배치**한다.
+- **예외** — `TopAppBar` 스크롤 연동처럼 slot API가 꼭 필요하거나, 인셋을 무시하고 full-bleed로 그려야 하는 화면은 그 화면이 `Scaffold`를 열 수 있다. 이때 인셋 이중 적용을 막기 위해 안쪽은 `contentWindowInsets = WindowInsets(0)`으로 둔다.
+
+> 화면마다 `Scaffold`를 열면 인셋이 중복 적용되고, 여러 화면에 공통으로 걸리는 chrome을 둘 자리가 없다. 배경은 → [Scaffold·insets는 화면이 아니라 네비게이션 셸(`XNavHost`)이 소유한다](../adr/2026-07-29-scaffold-ownership-navhost.md).
 
 ---
 
