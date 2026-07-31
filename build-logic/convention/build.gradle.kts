@@ -38,13 +38,9 @@ gradlePlugin {
             id = "team.mino.android.compose"
             implementationClass = "AndroidComposeConventionPlugin"
         }
-        register("androidFeatureApi") {
-            id = "team.mino.android.feature.api"
-            implementationClass = "AndroidFeatureApiConventionPlugin"
-        }
-        register("androidFeatureImpl") {
-            id = "team.mino.android.feature.impl"
-            implementationClass = "AndroidFeatureImplConventionPlugin"
+        register("androidFeature") {
+            id = "team.mino.android.feature"
+            implementationClass = "AndroidFeatureConventionPlugin"
         }
         register("androidHilt") {
             id = "team.mino.android.hilt"

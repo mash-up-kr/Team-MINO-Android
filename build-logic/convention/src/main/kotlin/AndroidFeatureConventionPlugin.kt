@@ -5,12 +5,12 @@ import team.mino.buildlogic.lib
 import team.mino.buildlogic.libs
 
 /**
- * feature 구현(`:feature:x:impl`)을 위한 컨벤션.
+ * feature 모듈(`:feature:x`)을 위한 컨벤션.
  *
  * 화면·ViewModel·Launcher 구현체를 담으며 compose·hilt를 적용한다.
- * 자신의 `:api`는 각 모듈 빌드 스크립트에서 `api(project(...))`로 연결한다(모듈마다 경로가 다름).
+ * 진입형·탭 feature 모두 이 컨벤션 하나를 쓴다.
  */
-class AndroidFeatureImplConventionPlugin : Plugin<Project> {
+class AndroidFeatureConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
         with(target) {
             with(pluginManager) {
