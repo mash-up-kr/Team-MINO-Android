@@ -22,8 +22,7 @@ import team.mino.feature.sample.main.vm.SampleUiState
 fun SampleScreen(
     state: SampleUiState,
     onIntent: (SampleIntent) -> Unit,
-    onNavigateToHome: () -> Unit,
-    onRequestHomeResult: () -> Unit,
+    onReturnResult: () -> Unit,
     onNavigateToMap: () -> Unit,
     onNavigateToDetail: () -> Unit,
     modifier: Modifier = Modifier,
@@ -35,13 +34,15 @@ fun SampleScreen(
 
         Text(text = state.title)
 
+        if (state.greeting.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(text = state.greeting)
+        }
+
         Spacer(modifier = Modifier.height(20.dp))
 
-        Button(onClick = onNavigateToHome) {
-            Text(text = "Home으로 이동")
-        }
-        Button(onClick = onRequestHomeResult) {
-            Text(text = "Home에서 결과받기")
+        Button(onClick = onReturnResult) {
+            Text(text = "확인하고 돌아가기")
         }
         Button(onClick = onNavigateToDetail) {
             Text(text = "Detail로 이동 (인자 전달)")

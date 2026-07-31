@@ -1,20 +1,30 @@
 package team.mino.feature.sample.main.vm
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.toRoute
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import team.mino.core.common.android.architecture.MviContainer
 import team.mino.core.common.android.architecture.mviContainer
+import team.mino.feature.sample.SampleMain
 import javax.inject.Inject
 
 @HiltViewModel
 class SampleViewModel
     @Inject
-    constructor() :
+    constructor(
+        savedStateHandle: SavedStateHandle,
+    ) :
     ViewModel(),
         MviContainer<SampleUiState, SampleSideEffect> by mviContainer(SampleUiState()) {
+        init {
+            val route = savedStateHandle.toRoute<SampleMain>()
+            updateState { copy(greeting = route.greeting.orEmpty()) }
+        }
+
         fun processIntent(intent: SampleIntent) {
             when (intent) {
                 is SampleIntent.ClickRefreshTeam -> loadTeamMembers()

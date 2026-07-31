@@ -6,11 +6,12 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
 import team.mino.core.analytics.screen.TrackScreenViews
 import team.mino.core.common.ui.scaffold.MinoScaffold
+import team.mino.core.navigation.screen.Route
 
 @Composable
 internal fun SampleShell(
-    onNavigateToHome: () -> Unit,
-    onRequestHomeResult: () -> Unit,
+    startDestination: Route,
+    onReturnResult: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val navController = rememberNavController()
@@ -19,8 +20,8 @@ internal fun SampleShell(
     MinoScaffold(modifier = modifier) { innerPadding ->
         SampleNavHost(
             navController = navController,
-            onNavigateToHome = onNavigateToHome,
-            onRequestHomeResult = onRequestHomeResult,
+            startDestination = startDestination,
+            onReturnResult = onReturnResult,
             modifier = Modifier.padding(innerPadding),
         )
     }

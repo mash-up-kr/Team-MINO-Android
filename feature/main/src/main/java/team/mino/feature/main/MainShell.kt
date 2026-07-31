@@ -9,7 +9,11 @@ import team.mino.core.common.ui.scaffold.MinoScaffold
 import team.mino.feature.main.component.MainBottomBar
 
 @Composable
-internal fun MainShell(modifier: Modifier = Modifier) {
+internal fun MainShell(
+    onNavigateToSample: () -> Unit,
+    onRequestSampleResult: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val navController = rememberNavController()
     TrackScreenViews(navController)
 
@@ -25,6 +29,8 @@ internal fun MainShell(modifier: Modifier = Modifier) {
     ) { innerPadding ->
         MainNavHost(
             navController = navController,
+            onNavigateToSample = onNavigateToSample,
+            onRequestSampleResult = onRequestSampleResult,
             modifier = Modifier.padding(innerPadding),
         )
     }
