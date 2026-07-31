@@ -33,4 +33,5 @@ ADR은 [`adr-writer` 스킬](../../.claude/skills/adr-writer/SKILL.md)이 자동
 | 2026-07-30 | [feature 모듈은 `api`/`impl`로 나누지 않고 단일 모듈로 둔다](2026-07-30-single-feature-module.md) | Accepted | Jaesung Lee |
 | 2026-07-30 | [SUITE 폰트의 빈 글리프를 cmap에서 제거해 OS 시스템 폰트 폴백으로 처리한다](2026-07-30-font-empty-glyph-strip-for-fallback.md) | Accepted | full_avocado |
 | 2026-07-31 | [네비게이션 셸을 `MinoScaffold`로 승격하고 feature 셸(`XShell`)과 화면 그래프(`XNavHost`)를 분리한다](2026-07-31-common-shell-mino-scaffold.md) | Accepted | Jaesung Lee |
+| 2026-08-01 | [feature 간 전환 계약은 `:core:navigation`에 두고, 탭 feature는 등록 함수로 셸 그래프에 편입한다](2026-08-01-single-module-navigation-contract.md) | Accepted | Jaesung Lee |
 | 2026-08-01 | [래스터 이미지 리소스는 WebP 확장자를 사용한다](2026-08-01-webp-for-raster-images.md) | Accepted | full_avocado |
