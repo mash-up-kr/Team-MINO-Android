@@ -155,8 +155,7 @@ mino-android-application = { id = "team.mino.android.application", version = "un
 mino-android-application-compose = { id = "team.mino.android.application.compose", version = "unspecified" }
 mino-android-library = { id = "team.mino.android.library", version = "unspecified" }
 mino-android-compose = { id = "team.mino.android.compose", version = "unspecified" }
-mino-android-feature-api = { id = "team.mino.android.feature.api", version = "unspecified" }
-mino-android-feature-impl = { id = "team.mino.android.feature.impl", version = "unspecified" }
+mino-android-feature = { id = "team.mino.android.feature", version = "unspecified" }
 mino-android-hilt = { id = "team.mino.android.hilt", version = "unspecified" }
 mino-android-flavor = { id = "team.mino.android.flavor", version = "unspecified" }
 mino-kotlin-jvm = { id = "team.mino.kotlin.jvm", version = "unspecified" }
