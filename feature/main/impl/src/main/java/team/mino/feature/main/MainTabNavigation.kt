@@ -2,6 +2,7 @@ package team.mino.feature.main
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -25,9 +26,14 @@ internal fun NavHostController.navigateToTab(tab: MainTab) {
 @Composable
 internal fun NavHostController.currentTab(): MainTab? {
     val backStackEntry by currentBackStackEntryAsState()
-    return backStackEntry?.destination?.let { destination ->
-        MainTab.entries.firstOrNull { tab ->
-            destination.hierarchy.any { it.hasRoute(tab.route::class) }
+    val destination = backStackEntry?.destination
+    // hasRoute는 Route마다 직렬화 서술자를 조회한다. Scaffold가 bottomBar를 다시 서브컴포즈할 때마다
+    // 반복되지 않도록 목적지가 바뀔 때만 훑는다.
+    return remember(destination) {
+        destination?.let {
+            MainTab.entries.firstOrNull { tab ->
+                it.hierarchy.any { parent -> parent.hasRoute(tab.route::class) }
+            }
         }
     }
 }
