@@ -137,5 +137,5 @@ feature는 **`api` / `impl` 두 모듈**로 만든다. 여기서는 절차만 �
    - `impl`: `alias(libs.plugins.mino.android.feature.impl)` + `namespace` + 자신·상대 feature의 `api` 의존(`implementation(project(":feature:<name>:api"))`)
 2. `settings.gradle.kts`에 **둘 다** 등록: `include(":feature:<name>:api")`, `include(":feature:<name>:impl")`
 3. `:app`의 `build.gradle.kts`에 **둘 다** `implementation(project(...))` 추가 (`:api`, `:impl`)
-4. 코드 작성은 `feature-module.md` 골격을 본뜬다 — `api`에 `XLauncher`+`EXTRA_*`, `impl`에 `XActivity`·`XDestinations`·`XNavHost`·`di/`, 화면별 `screen·vm`(+필요 시 `args·model·component`)
+4. 코드 작성은 `feature-module.md` 골격을 본뜬다 — `api`에 `XLauncher`+`EXTRA_*`, `impl`에 `XActivity`·`XDestinations`·`XShell`·`XNavHost`·`di/`, 화면별 `screen·vm`(+필요 시 `args·model·component`)
 5. `./gradlew :app:assembleQaDebug`로 빌드 확인

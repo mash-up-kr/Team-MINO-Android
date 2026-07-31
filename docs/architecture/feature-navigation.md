@@ -2,7 +2,7 @@
 
 feature의 **화면 전환** 규약. 전환은 범위에 따라 둘로 갈린다 — feature **간**은 Activity, feature **내부**는 Route(Compose Navigation). 모듈 구조·패키지·Composable 구성(Route↔Screen)은 → `feature-module.md`.
 
-> placeholder: `X`/`Y`(feature 이름), `XMain`/`XDetail`(화면). 인프라(`ActivityLauncher`/`BaseActivityLauncher`/`intentOf`/`MinoNavHost`/`screen`/`serializableNavType`/`popBackStackIfResumed`)의 **API는 [`core:navigation` README](../../core/navigation/README.md)를 단일 출처**로 한다 — 여기서 재정의하지 않고, 그 API를 feature가 **어떻게 쓰는지(규약)** 만 다룬다.
+> placeholder: `X`/`Y`(feature 이름), `XMain`/`XDetail`(화면). feature의 진입 컴포저블은 셸 `XShell`이고, 화면 그래프는 `XNavHost`다(역할 구분 → `feature-module.md` 4장). 인프라(`ActivityLauncher`/`BaseActivityLauncher`/`intentOf`/`MinoNavHost`/`screen`/`serializableNavType`/`popBackStackIfResumed`)의 **API는 [`core:navigation` README](../../core/navigation/README.md)를 단일 출처**로 한다 — 여기서 재정의하지 않고, 그 API를 feature가 **어떻게 쓰는지(규약)** 만 다룬다.
 
 ---
 
@@ -91,26 +91,46 @@ internal data class XDetail(val query: XQuery) : Route {          // custom 인�
 }
 ```
 
-**그래프 (`XNavHost`)**
+**셸 (`XShell`)** — chrome·insets·`navController`·화면 로깅. Activity가 호출하는 진입점이다(→ `feature-module.md` 4장).
 ```kotlin
 @Composable
-internal fun XNavHost(
+internal fun XShell(
     startDestination: Route,
     onNavigateToY: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val navController = rememberNavController()
-    Scaffold(modifier = modifier) { innerPadding ->            // Scaffold는 셸이 소유 → feature-module.md 4장
-        MinoNavHost(navController, startDestination, Modifier.padding(innerPadding)) {
-            screen<XMain> {
-                XRoute(
-                    onNavigateToY = onNavigateToY,
-                    onNavigateToDetail = { navController.navigate(XDetail(XQuery(...))) },
-                )
-            }
-            screen<XDetail>(typeMap = XDetail.typeMap) { entry ->
-                XDetailRoute(onBack = { navController.popBackStackIfResumed(entry) })
-            }
+    TrackScreenViews(navController)
+
+    MinoScaffold(modifier = modifier) { innerPadding ->
+        XNavHost(
+            navController = navController,
+            startDestination = startDestination,
+            onNavigateToY = onNavigateToY,
+            modifier = Modifier.padding(innerPadding),
+        )
+    }
+}
+```
+
+**그래프 (`XNavHost`)** — `screen<T>` 등록만. `navController`는 셸에서 받는다.
+```kotlin
+@Composable
+internal fun XNavHost(
+    navController: NavHostController,
+    startDestination: Route,
+    onNavigateToY: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    MinoNavHost(navController, startDestination, modifier) {
+        screen<XMain> {
+            XRoute(
+                onNavigateToY = onNavigateToY,
+                onNavigateToDetail = { navController.navigate(XDetail(XQuery(...))) },
+            )
+        }
+        screen<XDetail>(typeMap = XDetail.typeMap) { entry ->
+            XDetailRoute(onBack = { navController.popBackStackIfResumed(entry) })
         }
     }
 }
@@ -122,7 +142,7 @@ internal fun XNavHost(
 
 진입 인자는 컴포저블로 드릴링하지 않는다. Activity는 진입 값을 **시작 라우트**에 싣고:
 ```kotlin
-XNavHost(startDestination = XMain(intent.getStringExtra(EXTRA_SOMETHING)), …)
+XShell(startDestination = XMain(intent.getStringExtra(EXTRA_SOMETHING)), …)
 ```
 ViewModel이 `savedStateHandle.toRoute<T>()`로 복원해 `UiState`에 반영한다:
 ```kotlin
@@ -167,10 +187,12 @@ internal fun NavHostController.navigateToTab(tab: XTab) {
 | `launchSingleTop` | 선택된 탭을 다시 눌러도 같은 목적지가 중복 생성되지 않는다 |
 | `restoreState` | 저장해 둔 탭 상태를 복원한다 — `saveState`와 **짝으로** 켜고 끈다 |
 
+탭 바는 `XShell`이 여는 `MinoScaffold`의 `bottomBar` 슬롯에 둔다. **현재 탭은 슬롯 람다 안에서 읽는다** — 바깥에서 읽으면 탭 전환마다 셸과 그래프까지 리컴포지션 범위에 들어온다.
+
 선택 상태는 `currentBackStackEntryAsState()`로 관찰하고, 문자열 비교 대신 Route 타입으로 판별한다. 탭 하위에 중첩 그래프가 생겨도 상위 탭이 선택으로 남도록 `hierarchy`를 훑는다.
 
 ```kotlin
 destination.hierarchy.any { it.hasRoute(tab.route::class) }
 ```
 
-탭 목록(Route·아이콘·라벨)은 enum 하나에 모아 그래프와 하단 바가 같은 출처를 보게 한다. 탭 바를 어디에 두는지는 → `feature-module.md` 4장(셸이 `Scaffold` 소유).
+탭 목록(Route·아이콘·라벨)은 enum 하나에 모아 그래프와 하단 바가 같은 출처를 보게 한다. 탭 바를 어디에 두는지는 → `feature-module.md` 4장(셸/그래프 분리).

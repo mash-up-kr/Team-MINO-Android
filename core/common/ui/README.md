@@ -10,7 +10,7 @@ MinoAndroid의 **feature 간 재사용 공통 UI** 모듈. 공용 Composable 컴
 
 | | |
 |---|---|
-| **무엇을** | 여러 feature가 공유하는 Composable과 Compose 헬퍼를 제공한다. MVI `SideEffect` 수집(`CollectSideEffect`)과 에러 소비(`CollectDomainError`·`CollectUncaughtError`). |
+| **무엇을** | 여러 feature가 공유하는 Composable과 Compose 헬퍼를 제공한다. MVI `SideEffect` 수집(`CollectSideEffect`), 에러 소비(`CollectDomainError`·`CollectUncaughtError`), 네비게이션 셸(`MinoScaffold`). |
 | **빌드 타입** | Android Library + Compose (`mino.android.library` + `mino.android.compose`) |
 
 > [!IMPORTANT]
@@ -74,8 +74,43 @@ fun CollectUncaughtError(onError: (Throwable) -> Unit)
 ```
 
 - `CollectDomainError` — `DomainErrorEmitter`를 위임한 ViewModel의 **Route**가 선언한다. 리프 → 사용자 문구 매핑은 Route가 수행한다 (문구 정책이 미정이라 공통 매퍼는 두지 않는다 — 규약 §8).
-- `CollectUncaughtError` — **각 Activity가 `setContent` 바로 아래(NavHost 밖)** 에서 선언한다 (리뷰 규약). 버그 안내 문구는 `R.string.error_unknown`.
+- `CollectUncaughtError` — 직접 선언할 일은 없다. **`MinoScaffold`가 이미 호출**하므로 셸을 쓰면 규약이 만족된다. 버그 안내 문구는 `R.string.error_unknown`.
 - 두 컴포저블 모두 `RESUMED`에서만 수집하고, 수집 공백 중 이벤트는 채널 버퍼가 보존한다.
+
+### 네비게이션 셸 — `MinoScaffold`
+
+feature의 셸(`XShell`)이 여는 프로젝트 표준 `Scaffold`. 셸이 무엇을 소유하는지(그래프당 하나·화면은 `Scaffold`를 열지 않음·셸과 그래프 분리)는 [`feature-module.md`](../../../docs/architecture/feature-module.md) 4장이 단일 출처다.
+
+```kotlin
+@Composable
+fun MinoScaffold(
+    modifier: Modifier = Modifier,
+    bottomBar: @Composable () -> Unit = {},
+    containerColor: Color = MinoScaffoldDefaults.containerColor,
+    content: @Composable (PaddingValues) -> Unit,
+)
+```
+
+M3 `Scaffold`를 그대로 노출하는 대신 **프로젝트 표준을 안에 넣은** 래퍼다:
+
+- **미처리 예외 안내** — `CollectUncaughtError` + `SnackbarHost`를 셸이 소유한다. `snackbarHost`를 파라미터로 뚫지 않는 이유이며, 이 때문에 **Activity당 하나만** 열어야 한다(둘이면 같은 예외로 스낵바가 두 번 뜬다).
+- **스낵바 호스트 제공** — `LocalSnackbarHostState`로 하위에 내려준다. Route가 도메인 에러를 표시할 때 쓰고, stateless한 `XScreen`에서는 읽지 않는다. 셸 밖에서 읽으면 즉시 `error`로 실패한다.
+- **배경 표준** — 기본값은 `MinoScaffoldDefaults`가 공급한다(design-system 토큰). 화면은 배경을 다시 칠하지 않는다.
+
+파라미터는 실제 호출부가 생길 때 디폴트 인자로 늘린다([M3 컴포넌트 패턴 ADR](../../../docs/adr/2026-07-25-design-system-component-m3-pattern.md)). 지금 `topBar`·`contentWindowInsets`가 없는 이유다 — 화면 고유 topBar는 화면이 직접 배치하고, 인셋을 무시해야 하는 화면은 M3 `Scaffold`를 직접 연다.
+
+```kotlin
+// 화면 전환이 있는 feature — content 안에서 그래프(XNavHost)를 연다
+MinoScaffold(modifier = modifier, bottomBar = { XBottomBar(...) }) { innerPadding ->
+    XNavHost(navController, startDestination, Modifier.padding(innerPadding))
+}
+
+// 단일 화면 — 화면 컴포저블을 직접 그린다
+MinoScaffold(modifier = modifier) { innerPadding -> XScreen(Modifier.padding(innerPadding)) }
+```
+
+> [!NOTE]
+> 슬롯은 `content` 하나다. NavHost용 슬롯을 따로 두지 않는 이유(배타성을 타입으로 강제할 수 없고 `navController` 소유가 흐려진다)는 [ADR](../../../docs/adr/2026-07-31-common-shell-mino-scaffold.md) 참조. 인셋 패딩은 셸이 적용하지 않고 `PaddingValues`로 넘긴다 — 리스트가 하단 바 뒤로 스크롤되는 화면이 `contentPadding`으로 받아야 하기 때문이다.
 
 ---
 
@@ -86,9 +121,13 @@ core/common/ui/src/main/java/team/mino/core/common/ui/
 ├── architecture/
 │   ├── CollectFlowWithLifecycle.kt     # 수집 컴포저블 3종의 공통 골격 (internal)
 │   └── CollectSideEffect.kt            # SideEffect를 lifecycle 기준으로 수집하는 Composable
-└── error/
-    ├── CollectDomainError.kt           # DomainErrorEmitter 수집 (Route 선언)
-    └── CollectUncaughtError.kt         # UncaughtErrorHandler 수집 (Activity 루트 선언)
+├── error/
+│   ├── CollectDomainError.kt           # DomainErrorEmitter 수집 (Route 선언)
+│   └── CollectUncaughtError.kt         # UncaughtErrorHandler 수집 (셸이 호출)
+└── scaffold/
+    ├── MinoScaffold.kt                 # 네비게이션 셸이 여는 표준 Scaffold
+    ├── MinoScaffoldDefaults.kt         # 배경·인셋 기본값
+    └── LocalSnackbarHostState.kt       # 셸이 소유한 스낵바 호스트 제공
 ```
 
 공용 Composable 컴포넌트나 Modifier 확장이 늘어나면 성격별 패키지(`component`, `modifier` 등)를 추가한다.

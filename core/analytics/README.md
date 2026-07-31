@@ -27,29 +27,26 @@ MinoAndroid의 **분석(Analytics) 공용 모듈**. Firebase Analytics를 감싸
 |---|---|
 | `AnalyticsTracker` | 트래킹 공통 계약(interface). feature는 이 타입만 주입받아 `logEvent`로 커스텀 이벤트를 기록한다. |
 | `AnalyticsTracker.logEvent(name, params)` | 커스텀 이벤트 기록. `params` 값은 `String`/`Int`/`Long`/`Double`/`Float`/`Boolean`만 그대로 전달되고, 그 외 타입은 `toString()`으로 떨어진다. |
-| `TrackScreenViews(navController)` | `navController`의 목적지 전환을 감지해 화면 조회 이벤트를 **자동** 기록하는 컴포저블. feature의 NavHost 진입점에서 한 번 호출한다. |
+| `TrackScreenViews(navController)` | `navController`의 목적지 전환을 감지해 화면 조회 이벤트를 **자동** 기록하는 컴포저블. `navController`를 소유하는 feature 셸(`XShell`)에서 한 번 호출한다. |
 
 > [!NOTE]
 > `AnalyticsTracker` 바인딩·`FirebaseAnalytics` 인스턴스 제공은 `di/AnalyticsModule`이 `SingletonComponent`에 등록한다. feature는 Hilt로 `AnalyticsTracker`를 주입받거나, 화면 로깅은 `TrackScreenViews`만 호출하면 된다(내부에서 `hiltViewModel`로 트래커를 끌어온다).
 
 ### 사용 예시 (A) — 화면 자동 로깅
 
-feature NavHost 진입점에서 `MinoNavHost`와 나란히 `TrackScreenViews`를 한 번 호출해두면, 이후 화면이 늘어나도 각 화면에서 로깅을 직접 부를 필요가 없다.
+`navController`를 만드는 곳에서 `TrackScreenViews`를 한 번 호출해두면, 이후 화면이 늘어나도 각 화면에서 로깅을 직접 부를 필요가 없다. 프로젝트 컨벤션상 `navController`는 feature 셸(`XShell`)이 소유하므로 호출 지점도 셸이다(→ [`feature-module.md`](../../docs/architecture/feature-module.md) 4장).
 
 ```kotlin
 @Composable
-internal fun XNavHost(
+internal fun XShell(
     startDestination: Route,
     modifier: Modifier = Modifier,
 ) {
     val navController = rememberNavController()
     TrackScreenViews(navController)
-    MinoNavHost(
-        navController = navController,
-        startDestination = startDestination,
-        modifier = modifier,
-    ) {
-        screen<XMain> { XRoute() }
+
+    MinoScaffold(modifier = modifier) { innerPadding ->
+        XNavHost(navController, startDestination, Modifier.padding(innerPadding))
     }
 }
 ```
@@ -121,6 +118,6 @@ dependencies {
 | 항목 | 규칙 |
 |---|---|
 | **SDK 은닉** | feature는 `AnalyticsTracker`만 안다. `FirebaseAnalytics` 등 SDK 타입은 이 모듈 `internal` 구현에서만 다룬다. |
-| **화면 로깅** | 화면 진입 로깅은 각 화면에서 개별 호출하지 않고, NavHost 진입점의 `TrackScreenViews` 한 곳으로 모은다. |
+| **화면 로깅** | 화면 진입 로깅은 각 화면에서 개별 호출하지 않고, `navController`를 소유한 셸(`XShell`)의 `TrackScreenViews` 한 곳으로 모은다. |
 | **이벤트 파라미터** | `params`는 Firebase가 지원하는 원시 타입(`String`/`Int`/`Long`/`Double`/`Float`/`Boolean`)만 그대로 전달된다. |
 | **DI** | 트래커 바인딩·`FirebaseAnalytics` 제공은 `di/AnalyticsModule`(`SingletonComponent`)에 둔다. |

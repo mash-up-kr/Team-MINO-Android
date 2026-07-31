@@ -96,7 +96,7 @@ team/mino/core/navigation/
 | `screen` | feature **내부** Route(Compose Navigation) 전환 인프라 | 공통 transition, NavType, 백스택 헬퍼 |
 
 - 두 전환 축 중 **어디에 공통으로 쓰이는 인프라인가**로 패키지를 고른다.
-- 특정 feature 고유의 `Route`·`XNavHost`·`XLauncherImpl`은 **이 모듈이 아니라 그 feature `:impl`** 에 둔다(→ [`feature-navigation.md`](../../docs/architecture/feature-navigation.md)). 이 모듈엔 여러 feature가 공유하는 기반만 올린다.
+- 특정 feature 고유의 `Route`·`XShell`·`XNavHost`·`XLauncherImpl`은 **이 모듈이 아니라 그 feature `:impl`** 에 둔다(→ [`feature-navigation.md`](../../docs/architecture/feature-navigation.md)). 이 모듈엔 여러 feature가 공유하는 기반만 올린다.
 
 ---
 

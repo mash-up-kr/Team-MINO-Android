@@ -78,7 +78,7 @@ class SampleViewModel @Inject constructor(
 
 ### 사용 예시 (B) — 수집 측
 
-방출된 에러의 수집은 [`core:common:ui`](../common/ui/README.md)의 컴포저블이 담당한다: `DomainErrorEmitter`는 해당 ViewModel의 Route가 `CollectDomainError`로, `UncaughtErrorHandler`는 각 Activity가 `setContent` 루트에서 `CollectUncaughtError`로 수집한다.
+방출된 에러의 수집은 [`core:common:ui`](../common/ui/README.md)의 컴포저블이 담당한다: `DomainErrorEmitter`는 해당 ViewModel의 Route가 `CollectDomainError`로, `UncaughtErrorHandler`는 네비게이션 셸 `MinoScaffold`가 `CollectUncaughtError`로 수집한다.
 
 ---
 
