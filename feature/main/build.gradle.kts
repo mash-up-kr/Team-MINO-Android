@@ -7,6 +7,6 @@ android {
 }
 
 dependencies {
-    // 탭 셸은 탭 feature 모듈을 직접 의존한다(→ docs/adr/2026-07-30-single-feature-module.md)
+    // 탭 셸은 탭 feature 모듈을 직접 의존한다(→ docs/adr/2026-08-01-single-module-navigation-contract.md)
     implementation(project(":feature:home"))
 }

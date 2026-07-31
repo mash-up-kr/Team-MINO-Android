@@ -18,7 +18,7 @@ plan.md의 **출력 템플릿·통제 어휘·interactionType→MVI 매핑·아�
 | `user_action` | `XIntent`(sealed) → `processIntent` when → `updateState` |
 | `async_process` | `XIntent` → `viewModelScope`+UseCase → `UiState.status`(sealed Idle/Loading/Success/Error) |
 | `validation` | `XIntent` → `updateState`로 검증 상태 |
-| `navigation` | 내부: `Route` 콜백 `onNavigateToX` / feature 간: `XLauncher`(api 모듈) |
+| `navigation` | 내부: `Route` 콜백 `onNavigateToX` / feature 간: `XLauncher`(`core:navigation`) / 탭: 셸이 `xGraph()` 호출 |
 | `modal_dialog` | `UiState` dialog 상태 (1회성이면 `SideEffect`) |
 
 ## 아키텍처 규칙 (반드시 준수)
@@ -26,9 +26,10 @@ plan.md의 **출력 템플릿·통제 어휘·interactionType→MVI 매핑·아�
 - MVI: ViewModel은 `MviContainer<S,E> by mviContainer(초기State)` 위임. **Reducer 클래스 없음.** `updateState { copy() }` / `postSideEffect()` / `processIntent()`.
 - **Intent는 사용자 액션이 있을 때만** 정의(없으면 화면에 Intent 없음).
 - 비동기 상태는 `UiState` 안 **sealed `Status`(Idle/Loading/Success/Error)** 패턴.
-- **feature `impl`은 `core:data`를 직접 의존하지 않는다** — `core:domain` 인터페이스만 알고, 구현 바인딩은 `:app` DI.
-- 화면 패키지: `<screen>/{screen, vm, model, args, component}`. feature는 `{api, impl}`.
-- 네비게이션: 내부 전환은 `Route` 콜백, feature 간 전환은 `Launcher`(api 모듈).
+- **feature 모듈은 `core:data`를 직접 의존하지 않는다** — `core:domain` 인터페이스만 알고, 구현 바인딩은 `:app` DI.
+- 화면 패키지: `<screen>/{screen, vm, model, args, component}`. **feature는 단일 모듈**이며 진입형(Activity 진입)/탭(셸 그래프 편입) 중 하나다.
+- 네비게이션: 내부 전환은 `Route` 콜백, feature 간 전환은 `Launcher`(계약은 `core:navigation`), 탭은 모듈이 `XNavigation.kt`로 등록 함수를 노출하고 셸이 호출.
+- **feature 모듈끼리 의존하지 않는다** — 예외는 탭 셸(`:feature:main`)→탭 feature뿐.
 
 ## 작성 규칙
 
@@ -60,7 +61,7 @@ plan.md의 **출력 템플릿·통제 어휘·interactionType→MVI 매핑·아�
 | 항목 | 내용 |
 |---|---|
 | 연결 spec | docs/specs/{NNN}-{슬러그}/spec.md (v0.1.0) |
-| feature 모듈 | feature/{name}:api, feature/{name}:impl |
+| feature 모듈 | feature/{name} (진입형 \| 탭) |
 | 영향 core 모듈 | core:domain, core:data, … |
 | 화면 | N개 ({화면 목록}) |
 | 한 줄 요약 | … |
@@ -74,12 +75,12 @@ plan.md의 **출력 템플릿·통제 어휘·interactionType→MVI 매핑·아�
 ## 3. 모듈 구성 & 의존
 | 모듈 | 역할 | 구분 |
 |---|---|---|
-| feature/{name}/api  | XLauncher + EXTRA_*              | new |
-| feature/{name}/impl | XActivity·XShell·XNavHost·화면(screen/vm) | new |
+| feature/{name} | 진입형: XActivity·XShell·XNavHost·화면 / 탭: XNavigation.kt·화면 | new |
+| core:navigation | XLauncher + EXTRA_* (진입형일 때만) | modify |
 | core:domain | 모델·UseCase·Repository 인터페이스 | new/modify |
 | core:data   | RepositoryImpl·DataSource·DTO      | new/modify |
 
-> 의존 규칙: impl→자신 api(+상대 api), impl→core:domain(인터페이스), core:data 바인딩은 :app DI
+> 의존 규칙: feature→core:navigation(전환 계약), feature→core:domain(인터페이스), core:data 바인딩은 :app DI. feature 간 의존은 탭 셸→탭 feature만 예외
 
 ## 4. 화면 설계
 ### 4.1 {화면명}   (Route: XMain · 패키지: feature/{name}/main)

@@ -170,7 +170,7 @@ dependencies {
 }
 ```
 
-MVI 타입(`UiState`/`Intent`/`SideEffect`/`MviContainer`)이 모두 이 모듈에 있으므로, ViewModel을 두는 feature `impl` 모듈이 이 모듈을 의존한다.
+MVI 타입(`UiState`/`Intent`/`SideEffect`/`MviContainer`)이 모두 이 모듈에 있으므로, ViewModel을 두는 feature 모듈이 이 모듈을 의존한다.
 
 ---
 

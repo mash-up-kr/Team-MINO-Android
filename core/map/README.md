@@ -125,7 +125,7 @@ dependencies {
 }
 ```
 
-이 모듈이 끌어오는 주요 라이브러리: `maps-compose`. 좌표 타입은 `core:common:kotlin`의 `GeoPoint`를 사용한다. 지도를 그리는 feature `:impl`이 의존한다.
+이 모듈이 끌어오는 주요 라이브러리: `maps-compose`. 좌표 타입은 `core:common:kotlin`의 `GeoPoint`를 사용한다. 지도를 그리는 feature 모듈이 의존한다.
 
 ---
 

@@ -29,7 +29,7 @@ tools: Read, Grep, Glob, Bash
 | P4 | 통제 어휘 | 섹션 3 `구분`·섹션 5 `레이어` 컬럼 값이 통제 어휘만, 빈 값 없음 | A |
 | P5 | 버전 연동 | `변경 이력` 최신 행 버전 = spec 버전, 날짜 `YYYY-MM-DD` | A |
 | P6 | 매핑 규칙 준수 | 섹션 4·6의 구현이 `interactionType → MVI 매핑` 표와 부합 (예: `async_process`인데 UseCase·sealed Status 부재, `navigation`인데 Route 콜백/Launcher 구분 오류 → 결함) | H |
-| P7 | 아키텍처 규칙 | Reducer 클래스 등장, impl→core:data 직접 의존, 사용자 액션 없는 화면에 Intent 정의, 화면 패키지·네비게이션 규칙 위반 없음 | H |
+| P7 | 아키텍처 규칙 | Reducer 클래스 등장, feature→core:data 직접 의존, 하나의 feature를 여러 모듈로 쪼개는 구조 제안, feature 간 직접 의존(탭 셸→탭 제외), 사용자 액션 없는 화면에 Intent 정의, 화면 패키지·네비게이션 규칙 위반 없음 | H |
 | P8 | 추측 삽입·이월 누락 | **spec에 근거 없는 API·필드·정책 서술 없음.** spec의 TBD·`needs_policy`·`partial` 항목이 섹션 7에 빠짐없이 이월 (spec Open Questions ID ↔ 섹션 7 `spec 연결` 컬럼 대조) | H |
 | P9 | 내부 정합 | 섹션 4가 참조하는 UseCase·모델이 섹션 5에 정의됨(모두 네이밍 계약 안), 섹션 1 화면 수 = 섹션 4 소절 수, 섹션 2 참고 문서가 레포에 실존 | H |
 
