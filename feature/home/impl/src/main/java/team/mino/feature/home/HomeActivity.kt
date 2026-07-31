@@ -27,7 +27,7 @@ class HomeActivity : ComponentActivity() {
 
         setContent {
             MinoAndroidAppTheme {
-                HomeNavHost(
+                HomeShell(
                     modifier = Modifier.fillMaxSize(),
                     startDestination = HomeMain(greeting),
                     onReturnResult = {

@@ -2,8 +2,7 @@ package team.mino.feature.sample
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.navigation.compose.rememberNavController
-import team.mino.core.analytics.screen.TrackScreenViews
+import androidx.navigation.NavHostController
 import team.mino.core.navigation.screen.MinoNavHost
 import team.mino.core.navigation.screen.popBackStackIfResumed
 import team.mino.core.navigation.screen.screen
@@ -14,13 +13,11 @@ import team.mino.feature.sample.map.screen.SampleMapRoute
 
 @Composable
 internal fun SampleNavHost(
+    navController: NavHostController,
     onNavigateToHome: () -> Unit,
     onRequestHomeResult: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val navController = rememberNavController()
-    TrackScreenViews(navController)
-
     MinoNavHost(
         navController = navController,
         startDestination = SampleMain,

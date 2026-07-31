@@ -37,7 +37,7 @@ class SampleActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MinoAndroidAppTheme {
-                SampleNavHost(
+                SampleShell(
                     onNavigateToHome = {
                         homeLauncher.launch(this) { putExtra(EXTRA_HOME_GREETING, "Sample이 인사를 전합니다") }
                     },

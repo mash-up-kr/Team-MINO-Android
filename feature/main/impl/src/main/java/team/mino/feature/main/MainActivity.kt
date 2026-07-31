@@ -17,7 +17,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             MinoAndroidAppTheme {
-                MainNavHost(modifier = Modifier.fillMaxSize())
+                MainShell(modifier = Modifier.fillMaxSize())
             }
         }
     }
