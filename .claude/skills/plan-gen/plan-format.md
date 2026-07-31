@@ -75,7 +75,7 @@ plan.md의 **출력 템플릿·통제 어휘·interactionType→MVI 매핑·아�
 | 모듈 | 역할 | 구분 |
 |---|---|---|
 | feature/{name}/api  | XLauncher + EXTRA_*              | new |
-| feature/{name}/impl | XActivity·XNavHost·화면(screen/vm) | new |
+| feature/{name}/impl | XActivity·XShell·XNavHost·화면(screen/vm) | new |
 | core:domain | 모델·UseCase·Repository 인터페이스 | new/modify |
 | core:data   | RepositoryImpl·DataSource·DTO      | new/modify |
 

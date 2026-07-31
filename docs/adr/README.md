@@ -32,3 +32,4 @@ ADR은 [`adr-writer` 스킬](../../.claude/skills/adr-writer/SKILL.md)이 자동
 | 2026-07-29 | [Scaffold·insets는 화면이 아니라 네비게이션 셸(`XNavHost`)이 소유한다](2026-07-29-scaffold-ownership-navhost.md) | Accepted | Jaesung Lee |
 | 2026-07-30 | [feature 모듈은 `api`/`impl`로 나누지 않고 단일 모듈로 둔다](2026-07-30-single-feature-module.md) | Accepted | Jaesung Lee |
 | 2026-07-30 | [SUITE 폰트의 빈 글리프를 cmap에서 제거해 OS 시스템 폰트 폴백으로 처리한다](2026-07-30-font-empty-glyph-strip-for-fallback.md) | Accepted | full_avocado |
+| 2026-07-31 | [네비게이션 셸을 `MinoScaffold`로 승격하고 feature 셸(`XShell`)과 화면 그래프(`XNavHost`)를 분리한다](2026-07-31-common-shell-mino-scaffold.md) | Accepted | Jaesung Lee |
