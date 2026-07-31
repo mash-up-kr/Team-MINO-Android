@@ -18,4 +18,4 @@
 
 | 발생일자 | 제목 | 관련 ADR | 상태 | 작성자 |
 |---|---|---|---|---|
-| 2026-07-30 | [feature를 `api`/`impl` 두 모듈로 분리한 규약이 탭 feature에서 성립하지 않았다](2026-07-30-feature-api-impl-split.md) | [단일 feature 모듈](../adr/2026-07-30-single-feature-module.md) | Open | Jaesung Lee |
+| 2026-07-30 | [feature를 `api`/`impl` 두 모듈로 분리한 규약이 탭 feature에서 성립하지 않았다](2026-07-30-feature-api-impl-split.md) | [단일 feature 모듈](../adr/2026-07-30-single-feature-module.md) | Resolved | Jaesung Lee |
