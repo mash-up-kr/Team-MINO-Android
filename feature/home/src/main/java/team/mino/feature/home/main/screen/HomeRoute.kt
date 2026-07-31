@@ -9,8 +9,8 @@ import team.mino.feature.home.main.vm.HomeViewModel
 
 @Composable
 internal fun HomeRoute(
-    onReturnResult: () -> Unit,
     onNavigateToSample: () -> Unit,
+    onRequestSampleResult: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
@@ -18,8 +18,8 @@ internal fun HomeRoute(
 
     HomeScreen(
         state = state,
-        onReturnResult = onReturnResult,
         onNavigateToSample = onNavigateToSample,
+        onRequestSampleResult = onRequestSampleResult,
         modifier = modifier,
     )
 }

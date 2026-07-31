@@ -13,8 +13,7 @@ import team.mino.feature.sample.main.vm.SampleViewModel
 
 @Composable
 fun SampleRoute(
-    onNavigateToHome: () -> Unit,
-    onRequestHomeResult: () -> Unit,
+    onReturnResult: () -> Unit,
     onNavigateToMap: () -> Unit,
     onNavigateToDetail: () -> Unit,
     modifier: Modifier = Modifier,
@@ -34,8 +33,7 @@ fun SampleRoute(
     SampleScreen(
         state = state,
         onIntent = { intent -> viewModel.processIntent(intent) },
-        onNavigateToHome = onNavigateToHome,
-        onRequestHomeResult = onRequestHomeResult,
+        onReturnResult = onReturnResult,
         onNavigateToMap = onNavigateToMap,
         onNavigateToDetail = onNavigateToDetail,
         modifier = modifier,

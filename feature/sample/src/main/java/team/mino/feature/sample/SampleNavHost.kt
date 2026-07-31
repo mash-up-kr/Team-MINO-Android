@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import team.mino.core.navigation.screen.MinoNavHost
+import team.mino.core.navigation.screen.Route
 import team.mino.core.navigation.screen.popBackStackIfResumed
 import team.mino.core.navigation.screen.screen
 import team.mino.feature.sample.detail.model.SampleQuery
@@ -14,19 +15,18 @@ import team.mino.feature.sample.map.screen.SampleMapRoute
 @Composable
 internal fun SampleNavHost(
     navController: NavHostController,
-    onNavigateToHome: () -> Unit,
-    onRequestHomeResult: () -> Unit,
+    startDestination: Route,
+    onReturnResult: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     MinoNavHost(
         navController = navController,
-        startDestination = SampleMain,
+        startDestination = startDestination,
         modifier = modifier,
     ) {
         screen<SampleMain> {
             SampleRoute(
-                onNavigateToHome = onNavigateToHome,
-                onRequestHomeResult = onRequestHomeResult,
+                onReturnResult = onReturnResult,
                 onNavigateToMap = { navController.navigate(SampleMap) },
                 onNavigateToDetail = {
                     navController.navigate(SampleDetail(SampleQuery(keyword = "민호", page = 1)))

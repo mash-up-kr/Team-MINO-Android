@@ -9,7 +9,9 @@ import kotlin.reflect.KType
 import kotlin.reflect.typeOf
 
 @Serializable
-internal data object SampleMain : Route
+internal data class SampleMain(
+    val greeting: String? = null,
+) : Route
 
 @Serializable
 internal data object SampleMap : Route
