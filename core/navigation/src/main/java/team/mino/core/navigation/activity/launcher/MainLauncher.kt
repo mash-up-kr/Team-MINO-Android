@@ -1,4 +1,4 @@
-package team.mino.feature.main.api
+package team.mino.core.navigation.activity.launcher
 
 import team.mino.core.navigation.activity.ActivityLauncher
 
