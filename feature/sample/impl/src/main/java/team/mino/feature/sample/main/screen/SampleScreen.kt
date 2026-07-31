@@ -3,11 +3,17 @@ package team.mino.feature.sample.main.screen
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import team.mino.feature.sample.main.component.SAMPLE_COMMENT_LONG
+import team.mino.feature.sample.main.component.SAMPLE_COMMENT_SHORT
+import team.mino.feature.sample.main.component.SampleComment
 import team.mino.feature.sample.main.vm.SampleIntent
 import team.mino.feature.sample.main.vm.SampleStatus
 import team.mino.feature.sample.main.vm.SampleUiState
@@ -22,7 +28,9 @@ fun SampleScreen(
     onNavigateToDetail: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier) {
+    Column(
+        modifier = modifier.verticalScroll(rememberScrollState()),
+    ) {
         Spacer(modifier = Modifier.height(50.dp))
 
         Text(text = state.title)
@@ -70,5 +78,15 @@ fun SampleScreen(
                 Text(text = "에러 발생: ${status.errorMessage} (${state.defaultErrorMessage})")
             }
         }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+            SampleComment(authorName = "이름", commentText = SAMPLE_COMMENT_SHORT)
+            Spacer(modifier = Modifier.height(16.dp))
+            SampleComment(authorName = "이름", commentText = SAMPLE_COMMENT_LONG)
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
     }
 }
