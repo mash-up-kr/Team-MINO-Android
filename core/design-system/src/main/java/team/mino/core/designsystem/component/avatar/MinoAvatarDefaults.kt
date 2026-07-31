@@ -6,8 +6,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.text.TextStyle
 import team.mino.core.designsystem.component.avatar.token.AvatarTokens
 import team.mino.core.designsystem.foundation.color.token.value
+import team.mino.core.designsystem.foundation.typography.token.value
 
 /**
  * [MinoAvatar]·[MinoAvatarGroup]의 기본값 모음.
@@ -27,6 +29,34 @@ object MinoAvatarDefaults {
     /** placeholder 글리프 tint. */
     val placeholderTint: Color
         @Composable @ReadOnlyComposable get() = AvatarTokens.PlaceholderTint.value
+
+    /** Avatar Group에서 아바타·[MinoAvatarGroupTrailing.Overflow] 뱃지를 감싸는 배경 링 색. */
+    val groupRingColor: Color
+        @Composable @ReadOnlyComposable get() = AvatarTokens.GroupRingColor.value
+
+    /** Avatar Group 전체를 감싸는 pill 컨테이너 배경색. */
+    val groupContainerColor: Color
+        @Composable @ReadOnlyComposable get() = AvatarTokens.GroupContainerBackground.value
+
+    /** [MinoAvatarGroupTrailing.Add] 버튼 배경색. */
+    val addButtonBackgroundColor: Color
+        @Composable @ReadOnlyComposable get() = AvatarTokens.AddButtonBackgroundColor.value
+
+    /** [MinoAvatarGroupTrailing.Add] 버튼 아이콘 색. */
+    val addButtonIconColor: Color
+        @Composable @ReadOnlyComposable get() = AvatarTokens.AddButtonIconColor.value
+
+    /** [MinoAvatarGroupTrailing.Overflow] 뱃지 배경색. */
+    val overflowBackgroundColor: Color
+        @Composable @ReadOnlyComposable get() = AvatarTokens.OverflowBackgroundColor.value
+
+    /** [MinoAvatarGroupTrailing.Overflow] 뱃지 라벨 색. */
+    val overflowLabelColor: Color
+        @Composable @ReadOnlyComposable get() = AvatarTokens.OverflowLabelColor.value
+
+    /** [MinoAvatarGroupTrailing.Overflow] 뱃지 라벨 폰트. */
+    val overflowLabelFont: TextStyle
+        @Composable @ReadOnlyComposable get() = AvatarTokens.OverflowLabelFont.value
 
     /** [variant]별 클리핑 셰이프(Person=원형, 그 외=둥근 사각형). */
     fun shape(variant: MinoAvatarVariant): Shape =
