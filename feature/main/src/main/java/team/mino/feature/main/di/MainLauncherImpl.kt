@@ -4,8 +4,8 @@ import android.content.Context
 import android.content.Intent
 import team.mino.core.navigation.activity.BaseActivityLauncher
 import team.mino.core.navigation.activity.intentOf
+import team.mino.core.navigation.activity.launcher.MainLauncher
 import team.mino.feature.main.MainActivity
-import team.mino.feature.main.api.MainLauncher
 import javax.inject.Inject
 
 internal class MainLauncherImpl @Inject constructor() : BaseActivityLauncher(), MainLauncher {

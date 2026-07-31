@@ -1,5 +1,5 @@
 plugins {
-    alias(libs.plugins.mino.android.feature.impl)
+    alias(libs.plugins.mino.android.feature)
 }
 
 android {
@@ -7,8 +7,6 @@ android {
 }
 
 dependencies {
-    implementation(project(":feature:sample:api"))
-    implementation(project(":feature:home:api"))
     implementation(project(":core:map"))
 
     implementation(libs.maps.compose)

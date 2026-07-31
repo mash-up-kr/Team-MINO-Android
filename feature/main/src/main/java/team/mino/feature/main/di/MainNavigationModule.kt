@@ -5,7 +5,7 @@ import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.android.components.ActivityRetainedComponent
 import dagger.hilt.android.scopes.ActivityRetainedScoped
-import team.mino.feature.main.api.MainLauncher
+import team.mino.core.navigation.activity.launcher.MainLauncher
 
 @Module
 @InstallIn(ActivityRetainedComponent::class)
