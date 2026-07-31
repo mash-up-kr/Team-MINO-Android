@@ -40,6 +40,8 @@ import team.mino.core.designsystem.util.preview.UiModePreviews
  * @param imageUrls 표시할 아바타들의 이미지 URL 목록(각각 null이면 placeholder).
  * @param variant 공통 형태.
  * @param size 공통 크기.
+ * @param containerColor pill 컨테이너 배경색. 다른 배경 위에 얹혀 pill이 필요 없는 맥락(예: 카드
+ *  내부)에서는 [androidx.compose.ui.graphics.Color.Transparent]로 덮어쓴다.
  * @param overflowSlot 아바타 스택 맨 끝에 다른 아바타와 같은 간격·링으로 겹쳐 붙는 슬롯(state=more류).
  *  아바타와 같은 [Shape]·[MinoAvatarSize]가 인자로 주어진다. null이면 표시하지 않는다.
  * @param trailingSlot 아바타 스택 밖에 별도 간격을 두고 붙는 슬롯(state=add류). null이면 표시하지 않는다.
@@ -50,6 +52,7 @@ fun MinoAvatarGroup(
     modifier: Modifier = Modifier,
     variant: MinoAvatarVariant = MinoAvatarVariant.Person,
     size: MinoAvatarSize = MinoAvatarSize.Small,
+    containerColor: Color = MinoAvatarDefaults.groupContainerColor,
     overflowSlot: (@Composable (shape: Shape, size: MinoAvatarSize) -> Unit)? = null,
     trailingSlot: (@Composable (shape: Shape, size: MinoAvatarSize) -> Unit)? = null,
 ) {
@@ -58,7 +61,7 @@ fun MinoAvatarGroup(
 
     Row(
         modifier = modifier
-            .surface(shape = AvatarTokens.GroupContainerShape, containerColor = MinoAvatarDefaults.groupContainerColor)
+            .surface(shape = AvatarTokens.GroupContainerShape, containerColor = containerColor)
             .padding(AvatarTokens.GroupContainerPadding),
         horizontalArrangement = Arrangement.spacedBy(AvatarTokens.GroupTrailingSpacing),
         verticalAlignment = Alignment.CenterVertically,
