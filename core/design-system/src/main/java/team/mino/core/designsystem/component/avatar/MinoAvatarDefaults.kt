@@ -30,7 +30,7 @@ object MinoAvatarDefaults {
     val placeholderTint: Color
         @Composable @ReadOnlyComposable get() = AvatarTokens.PlaceholderTint.value
 
-    /** Avatar Group에서 아바타·[MinoAvatarGroupTrailing.Overflow] 뱃지를 감싸는 배경 링 색. */
+    /** Avatar Group에서 아바타·overflow 뱃지 슬롯을 감싸는 배경 링 색. */
     val groupRingColor: Color
         @Composable @ReadOnlyComposable get() = AvatarTokens.GroupRingColor.value
 
@@ -38,23 +38,23 @@ object MinoAvatarDefaults {
     val groupContainerColor: Color
         @Composable @ReadOnlyComposable get() = AvatarTokens.GroupContainerBackground.value
 
-    /** [MinoAvatarGroupTrailing.Add] 버튼 배경색. */
+    /** [MinoAvatarGroupAddButton] 배경색. */
     val addButtonBackgroundColor: Color
         @Composable @ReadOnlyComposable get() = AvatarTokens.AddButtonBackgroundColor.value
 
-    /** [MinoAvatarGroupTrailing.Add] 버튼 아이콘 색. */
+    /** [MinoAvatarGroupAddButton] 아이콘 색. */
     val addButtonIconColor: Color
         @Composable @ReadOnlyComposable get() = AvatarTokens.AddButtonIconColor.value
 
-    /** [MinoAvatarGroupTrailing.Overflow] 뱃지 배경색. */
+    /** [MinoAvatarGroupOverflowBadge] 배경색. */
     val overflowBackgroundColor: Color
         @Composable @ReadOnlyComposable get() = AvatarTokens.OverflowBackgroundColor.value
 
-    /** [MinoAvatarGroupTrailing.Overflow] 뱃지 라벨 색. */
+    /** [MinoAvatarGroupOverflowBadge] 라벨 색. */
     val overflowLabelColor: Color
         @Composable @ReadOnlyComposable get() = AvatarTokens.OverflowLabelColor.value
 
-    /** [MinoAvatarGroupTrailing.Overflow] 뱃지 라벨 폰트. */
+    /** [MinoAvatarGroupOverflowBadge] 라벨 폰트. */
     val overflowLabelFont: TextStyle
         @Composable @ReadOnlyComposable get() = AvatarTokens.OverflowLabelFont.value
 

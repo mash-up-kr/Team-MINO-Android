@@ -30,15 +30,15 @@ internal object AvatarTokens {
     val GroupContainerPadding = 4.dp
     val GroupContainerShape: Shape = RoundedCornerShape(percent = 50)
 
-    /** 아바타 스택과 [team.mino.core.designsystem.component.avatar.MinoAvatarGroupTrailing.Add] 사이 간격. */
+    /** 아바타 스택과 `trailingSlot` 사이 간격. */
     val GroupTrailingSpacing = 8.dp
 
-    /** [team.mino.core.designsystem.component.avatar.MinoAvatarGroupTrailing.Add] 버튼(멤버 추가). */
+    /** [team.mino.core.designsystem.component.avatar.MinoAvatarGroupAddButton] (멤버 추가). */
     val AddButtonBackgroundColor = ColorAccessKeyToken.PrimaryNormal
     val AddButtonIconColor = ColorAccessKeyToken.InversePrimary
     val AddButtonIconSize = 18.dp
 
-    /** [team.mino.core.designsystem.component.avatar.MinoAvatarGroupTrailing.Overflow] 뱃지(초과 인원). */
+    /** [team.mino.core.designsystem.component.avatar.MinoAvatarGroupOverflowBadge] (초과 인원). */
     val OverflowBackgroundColor = ColorAccessKeyToken.BackgroundElevatedAlternative
     val OverflowLabelColor = ColorAccessKeyToken.LabelAlternative
     val OverflowLabelFont = TypographyAccessKeyToken.Label2Bold
