@@ -8,35 +8,54 @@
 
 ---
 
-## 1. 모듈 분리: `api` / `impl`
+## 1. feature의 두 종류: 진입형 / 탭
 
-각 feature는 **두 모듈**로 나뉜다.
+feature는 **단일 모듈**이다. 대신 화면에 어떻게 진입하는지에 따라 두 종류로 나뉘고, 골격과 의존 규칙이 여기서 갈린다.
 
-| 모듈 | 노출하는 것 | 의존 규칙 |
+| | 진입형 feature | 탭 feature |
 |---|---|---|
-| `:feature:x:api` | 전환 계약만 — `interface XLauncher : ActivityLauncher` + `EXTRA_*` 상수 | 다른 feature는 **이 `api`에만** 의존한다 |
-| `:feature:x:impl` | Activity·화면·ViewModel·Launcher 구현 | 자신의 `api`에 의존. **다른 feature의 `impl`에는 의존 금지** |
+| 무엇인가 | Activity를 진입점으로 갖는 독립 플로우 | 바텀 네비게이션 탭에 해당하며, 셸의 그래프에 중첩 편입되는 화면 묶음 |
+| 진입 방법 | 다른 feature가 `XLauncher`로 Activity를 연다 | 셸이 등록 함수를 호출해 자기 그래프에 넣는다 |
+| 공개 표면 | `XActivity` (+ `:core:navigation`의 `XLauncher` 계약) | `XNavigation.kt` |
+| 셸 소유 | 자기 `XShell`을 갖는다 | 셸이 없다 — `:feature:main`의 셸 안에서 그려진다 |
+| 누가 의존하나 | `:app` | `:feature:main` |
+
+구분 기준은 재사용 여부가 아니라 **Activity로 독립 진입하는지, 탭 셸의 그래프에 편입되는지**다. 온보딩·로그인은 호출자가 하나여도 탭 셸과 생애주기가 분리되고 자체 그래프를 가지므로 진입형이다.
 
 ```mermaid
 flowchart LR
-    subgraph x[":feature:x"]
-        xApi[":x:api<br/>XLauncher · EXTRA_*"]
-        xImpl[":x:impl<br/>Activity · Screen · ViewModel"]
+    app[":app"]
+    subgraph entry["진입형"]
+        x[":feature:x<br/>XActivity · XShell · XNavHost"]
+        y[":feature:y"]
     end
-    subgraph y[":feature:y"]
-        yApi[":y:api<br/>YLauncher · EXTRA_*"]
-        yImpl[":y:impl"]
+    subgraph tab["탭"]
+        h[":feature:h<br/>XNavigation.kt"]
     end
-    xImpl -- implementation --> xApi
-    yImpl -- implementation --> yApi
-    xImpl -- "전환은 상대 api에만" --> yApi
-    yImpl -- "전환은 상대 api에만" --> xApi
-    xApi --> nav[":core:navigation"]
-    yApi --> nav
-    xImpl -. "의존 금지" .-> yImpl
+    main[":feature:main<br/>탭 셸"]
+    nav[":core:navigation<br/>XLauncher · EXTRA_*"]
+
+    app --> x
+    app --> y
+    app --> main
+    main -- "등록 함수 호출" --> h
+    x -- "전환은 계약으로" --> nav
+    y --> nav
+    main --> nav
+    x -. "의존 금지" .-> y
 ```
 
-**핵심**: feature 간 결합은 `impl`이 상대 `api`(Launcher 인터페이스 + 키 상수)에만 의존한다. Hilt가 `impl`의 `XLauncherImpl`을 상대 `api`의 `XLauncher`로 주입해주므로 `impl`끼리 직접 알 필요가 없다. (전환 메커니즘 → `feature-navigation.md`)
+**핵심**: feature 간 결합은 `:core:navigation`의 전환 계약 한 겹이다. Hilt가 대상 feature의 `XLauncherImpl`을 그 계약으로 주입해주므로 feature 모듈끼리 컴파일 타임에 서로를 모른다. 계약을 각 feature에 두지 않는 이유(순환 참조)와 탭 등록 형태의 배경은 → [ADR](../adr/2026-08-01-single-module-navigation-contract.md). 전환 메커니즘 자체는 → `feature-navigation.md`.
+
+### 공개 범위
+
+모듈 밖에서 닿을 수 있는 표면은 **가시성으로 정한다.**
+
+- `public`으로 두는 것은 **진입형의 `XActivity`**, **탭의 `XNavigation.kt`(진입 Route + 등록 함수)** 뿐이다.
+- 화면·ViewModel·Route·`XShell`·`XNavHost`·`XLauncherImpl`은 `internal`로 둔다.
+- 전환 계약(`XLauncher`·`EXTRA_*`)은 이 모듈이 아니라 `:core:navigation`에 있다.
+
+feature 간 순환 참조는 금지한다. 탭끼리 서로를 의존하지 않고, 탭 간 전환은 `:feature:main`이 콜백으로 배선한다.
 
 ---
 
@@ -44,13 +63,11 @@ flowchart LR
 
 **화면 단위 우선** 배치다. 그래프 레벨 파일은 모듈 루트, DI는 `di/`, 각 화면은 자기 이름의 디렉터리(`main`, `detail`, …) 아래 `screen·vm·model·component`를 갖는다.
 
-```
-:feature:x:api  —  team/mino/feature/x/api/
-├── XLauncher.kt         # interface XLauncher : ActivityLauncher
-└── XExtras.kt           # const val EXTRA_* = "..."
+**진입형 feature**
 
-:feature:x:impl —  team/mino/feature/x/
-├── XActivity.kt         # @AndroidEntryPoint, 셸 호스팅 + feature 간 전환
+```
+:feature:x  —  team/mino/feature/x/
+├── XActivity.kt         # @AndroidEntryPoint, 셸 호스팅 + feature 간 전환 (public)
 ├── XDestinations.kt     # @Serializable Route 정의(XMain, XDetail) + typeMap
 ├── XShell.kt            # MinoScaffold + chrome, navController 보유·화면 로깅
 ├── XNavHost.kt          # MinoNavHost + screen<T> 등록 (그래프만)
@@ -69,7 +86,17 @@ flowchart LR
     └── vm/      XDetailViewModel · XDetailUiState · XDetailSideEffect
 ```
 
-`api` 모듈은 가볍다 — Launcher 인터페이스와 `EXTRA_*` 상수만 둔다(compose·hilt 미적용).
+**탭 feature** — `XActivity`·`XShell`·`XNavHost`·`di/`가 없다. 셸을 `:feature:main`이 소유하고, 진입은 등록 함수로 이뤄지기 때문이다.
+
+```
+:feature:x  —  team/mino/feature/x/
+├── XNavigation.kt       # 진입 Route(XGraph, public) + 내부 Route + NavGraphBuilder.xGraph() (public)
+├── main/                # 화면 단위 배치는 진입형과 동일
+│   ├── screen/  XRoute · XScreen
+│   └── vm/      XViewModel · XUiState · XSideEffect · (XIntent)
+└── detail/
+```
+
 
 ### 디렉터리 역할 (`<screen>/` 하위)
 
@@ -88,11 +115,12 @@ flowchart LR
 
 | 객체 | 역할 |
 |---|---|
-| `XActivity` | feature의 단일 진입 Activity. `setContent`로 `XShell` 호스팅. feature 간 전환·Intent 처리(→ `feature-navigation.md`) |
+| `XActivity` | **진입형**의 단일 진입 Activity. `setContent`로 `XShell` 호스팅. feature 간 전환·Intent 처리(→ `feature-navigation.md`) |
 | `XDestinations`(`XMain`/`XDetail`) | feature 내부 화면의 type-safe `@Serializable` Route (→ `feature-navigation.md`) |
-| `XShell` | feature의 **셸**. `MinoScaffold`로 chrome·insets를 열고, `navController`를 만들어 화면 조회 로깅(`TrackScreenViews`)까지 담당한다(4장) |
+| `XShell` | **진입형**의 셸. `MinoScaffold`로 chrome·insets를 열고, `navController`를 만들어 화면 조회 로깅(`TrackScreenViews`)까지 담당한다(4장) |
 | `XNavHost` | `MinoNavHost` + `screen<T>`로 **화면 그래프만** 구성. `navController`는 셸에서 받는다 (→ `feature-navigation.md`) |
-| `XLauncher`(api) / `XLauncherImpl`(impl) | 다른 feature가 이 feature로 전환하는 계약/구현 (→ `feature-navigation.md`) |
+| `XNavigation.kt`(`XGraph` · `xGraph()`) | **탭**의 유일한 공개 표면. 진입 Route와 그래프 등록 함수를 노출하고 셸이 호출한다 (→ `feature-navigation.md`) |
+| `XLauncher`(`:core:navigation`) / `XLauncherImpl`(feature) | 다른 feature가 이 feature로 전환하는 계약/구현 (→ `feature-navigation.md`) |
 | `XRoute` | **stateful** 컴포저블 — VM·state·sideEffect를 Screen에 연결 (4장) |
 | `XScreen` | **stateless** 컴포저블 — state·콜백만으로 그리는 순수 UI (4장) |
 | `XViewModel` | `MviContainer<XUiState, XSideEffect>` 위임. 라우트 인자는 `savedStateHandle.toRoute<T>()`로 복원 |
@@ -101,9 +129,9 @@ flowchart LR
 
 ## 3. 진입점·MVI 스켈레톤
 
-> 전환 관련 스켈레톤(`XDestinations`·`XShell`·`XNavHost`·`XLauncherImpl`·DI)은 → `feature-navigation.md`.
+> 전환 관련 스켈레톤(`XDestinations`·`XShell`·`XNavHost`·`XNavigation`·`XLauncherImpl`·DI)은 → `feature-navigation.md`.
 
-**XActivity — 진입점 (셸 호스팅)**
+**XActivity — 진입형의 진입점 (셸 호스팅)**. 탭 feature는 Activity 없이 `XNavigation.kt`의 등록 함수가 진입점 역할을 한다.
 ```kotlin
 @AndroidEntryPoint
 class XActivity : ComponentActivity() {
@@ -240,7 +268,7 @@ internal fun XNavHost(navController: NavHostController, startDestination: Route,
 }
 ```
 
-- **`Activity`가 호출하는 것은 `XShell`이다.** `XNavHost`는 셸만 호출한다.
+- **`Activity`가 호출하는 것은 `XShell`이다.** `XNavHost`는 셸만 호출한다. 탭 feature는 셸을 갖지 않으므로 이 절은 진입형과 `:feature:main`에만 적용된다 — 탭의 화면은 셸이 연 `MinoScaffold` 안에서 그려진다.
 - `navController`는 **셸이 만들어** 그래프에 넘긴다. chrome(탭 바 등)이 현재 목적지를 읽어야 하고 화면 로깅도 `navController`에 붙으므로, 소유자를 셸로 못박아 두 관심사가 그래프 안에 섞이지 않게 한다.
 - `MinoScaffold`의 슬롯은 `content` **하나**다. 화면 전환이 있으면 그 안에서 `XNavHost`를, 단일 화면이면 화면 컴포저블을 직접 그린다. 화면이 하나여도 인자 복원(`toRoute`)·화면 조회 로깅이 NavHost에 딸려 오므로 **NavHost 유지가 기본**이고, VM·인자·로깅이 모두 없는 정적 화면만 `XNavHost` 없이 셸이 화면을 직접 그린다.
 - 여러 화면에 걸치는 chrome(bottomBar)은 **셸의 slot**에 둔다. 탭 전환 화면도 이 형태의 `XShell`일 뿐 별도 구조가 아니다.
@@ -254,12 +282,24 @@ internal fun XNavHost(navController: NavHostController, startDestination: Route,
 
 ## 5. 새 feature 추가 체크리스트
 
-1. `:feature:x:api`, `:feature:x:impl` 생성 후 `settings.gradle.kts` 등록. 컨벤션 플러그인 `mino.android.feature.api` / `mino.android.feature.impl` 적용.
-2. `api`: `interface XLauncher : ActivityLauncher` + 필요한 `EXTRA_*` 상수.
-3. `impl` 루트: `XActivity` · `XDestinations` · `XShell` · `XNavHost`.
-4. `impl/di`: `XLauncherImpl`(`BaseActivityLauncher`) + `@Binds` 모듈.
-5. 화면마다 `<screen>/screen`(`XRoute`+`XScreen`) · `<screen>/vm`(`XViewModel`·`XUiState`·`XSideEffect`, 액션 있으면 `XIntent`). 인자·UiModel·컴포저블 조각은 `args`/`model`/`component`(2장 규칙).
-6. **화면 전환**(feature 간 Launcher / 내부 Route·인자 복원)은 → `docs/architecture/feature-navigation.md`.
-7. Route↔Screen 분리·셸/그래프 분리(4장)를 지킨다.
+모듈 생성·등록 절차(디렉터리·`settings.gradle.kts`·`:app` 의존)는 → `modularization.md`. 여기서는 코드 골격만 적는다.
 
-> 참고: 현재 `:feature:sample`이 이 구조의 구현 예시다. 단 **데모용이라 추후 제거될 수 있으므로** 규약의 기준은 이 문서이며, sample 존재에 의존하지 않는다.
+**공통**
+
+1. 화면마다 `<screen>/screen`(`XRoute`+`XScreen`) · `<screen>/vm`(`XViewModel`·`XUiState`·`XSideEffect`, 액션 있으면 `XIntent`). 인자·UiModel·컴포저블 조각은 `args`/`model`/`component`(2장 규칙).
+2. Route↔Screen 분리(4장)를 지키고, 공개 범위는 1장 규칙을 따른다.
+3. **화면 전환**(feature 간 Launcher / 내부 Route·인자 복원)은 → `feature-navigation.md`.
+
+**진입형이면**
+
+4. 모듈 루트에 `XActivity` · `XDestinations` · `XShell` · `XNavHost`. 셸/그래프 분리(4장)를 지킨다.
+5. `di/`에 `XLauncherImpl`(`BaseActivityLauncher`) + `@Binds` 모듈. 그 짝인 `XLauncher` 계약은 `:core:navigation`에 둔다(→ `feature-navigation.md` 1장).
+
+**탭이면**
+
+4. 모듈 루트에 `XNavigation.kt` — 진입 Route(`XGraph`)와 `NavGraphBuilder.xGraph(...)`만 `public`.
+5. 셸(`:feature:main`)의 `MainTab`에 항목을 더하고 `MainNavHost`에서 등록 함수를 호출한다.
+
+> 이미 셸에 placeholder로 등록된 탭을 모듈로 떼어내는 경우라면, Route를 셸의 `MainDestinations`에서 새 모듈로 옮겨 `XGraph`로 만들고, `MainTab`이 그것을 참조하도록 바꾼 뒤 placeholder `screen<T>` 등록을 지운다.
+
+> 참고: 현재 `:feature:sample`이 진입형, `:feature:home`이 탭의 구현 예시다. 단 **데모용이라 추후 제거될 수 있으므로** 규약의 기준은 이 문서이며, 두 모듈의 존재에 의존하지 않는다.

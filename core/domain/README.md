@@ -22,7 +22,7 @@ MinoAndroid의 **비즈니스 로직 중심** 모듈. 도메인 모델·Reposito
 
 ```mermaid
 flowchart TD
-    VM["ViewModel\n(feature:x:impl)"]
+    VM["ViewModel\n(feature:x)"]
     UC["UseCase\n(core:domain/usecase)"]
     RI["Repository 인터페이스\n(core:domain/repository)"]
     Impl["RepositoryImpl\n(core:data)"]

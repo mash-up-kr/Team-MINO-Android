@@ -46,7 +46,7 @@ Android SDK 기반 공용 유틸리티 (Context 확장, Intent 헬퍼 등).
 → Android Library
 
 ### `:core:navigation`
-네비게이션 인프라 — feature 간 Activity 전환(`ActivityLauncher`)과 feature 내부 type-safe Route(`MinoNavHost`·`screen`·`serializableNavType`).
+네비게이션 인프라 — feature 간 Activity 전환(`ActivityLauncher`)과 feature 내부 type-safe Route(`MinoNavHost`·`screen`·`graph`·`serializableNavType`). feature별 전환 계약(`XLauncher` 인터페이스와 Intent extra 키)도 이 모듈이 보유한다. 구현은 각 feature에 있다.
 → Android Library
 
 ### `:core:map`
@@ -57,15 +57,15 @@ Android SDK 기반 공용 유틸리티 (Context 확장, Intent 헬퍼 등).
 분석 — 이벤트 로깅(`AnalyticsTracker`)과 화면 조회 자동 로깅(`TrackScreenViews`).
 → Android Library (Compose)
 
-### `:feature:main` — `:api` / `:impl`
-앱의 진입 feature. BottomNavigation 탭 셸을 소유한다.
+### `:feature:main`
+앱의 진입 feature. BottomNavigation 탭 셸을 소유하고 탭 feature의 그래프를 조립한다.
 → Android Library (Compose)
 
-### `:feature:sample`·`:feature:home` — 각각 `:api` / `:impl`
+### `:feature:sample` (진입형)·`:feature:home` (탭)
 데모 feature(추후 제거 가능).
 → Android Library (Compose)
 
-> feature의 `api`/`impl` 역할과 패키지 구조는 `docs/architecture/feature-module.md`, 전환 규약은 `feature-navigation.md`.
+> feature는 단일 모듈이며 진입형·탭 두 종류로 나뉜다. 종류별 골격과 공개 범위는 `docs/architecture/feature-module.md`, 전환 규약은 `feature-navigation.md`.
 
 ---
 
@@ -79,16 +79,15 @@ Android SDK 기반 공용 유틸리티 (Context 확장, Intent 헬퍼 등).
 
 ### 그래프
 
-feature는 `api`/`impl`로 나뉜다 — `impl`은 자신과 **상대 feature의 `api`**(전환 계약)에만 의존하고, `api`는 `:core:navigation`에 의존한다.
+feature 모듈끼리는 서로를 의존하지 않는다. 전환 계약이 `:core:navigation`에 모여 있어 호출자는 그 계약만 알면 되고, Hilt가 대상 feature의 구현을 주입한다. 예외는 탭 셸(`:feature:main`)이 탭 feature를 직접 의존하는 경우뿐이다.
 
 ```mermaid
 flowchart TD
     app[":app"]
-    subgraph featX[":feature:x"]
-        xImpl[":x:impl"]
-        xApi[":x:api"]
-    end
-    yApi([":feature:y:api"])
+    x[":feature:x<br/>진입형"]
+    y([":feature:y<br/>진입형"])
+    main[":feature:main<br/>탭 셸"]
+    tab[":feature:h<br/>탭"]
     nav[":core:navigation"]
     data[":core:data"]
     domain[":core:domain"]
@@ -97,17 +96,21 @@ flowchart TD
     android[":core:common:android"]
     kotlin[":core:common:kotlin"]
 
-    app --> xImpl
-    app --> xApi
+    app --> x
+    app --> main
     app --> data
 
-    xImpl --> xApi
-    xImpl -. "상대 feature 전환" .-> yApi
-    xImpl --> domain
-    xImpl --> ui
-    xImpl --> design
-    xImpl --> android
-    xApi --> nav
+    main -- "탭 그래프 등록 (예외)" --> tab
+    x -- "전환 계약" --> nav
+    y --> nav
+    main --> nav
+    tab --> nav
+    x -. "의존 금지" .-> y
+
+    x --> domain
+    x --> ui
+    x --> design
+    x --> android
 
     data --> domain
     data --> android
@@ -117,25 +120,31 @@ flowchart TD
     android --> kotlin
 ```
 
+`:app`은 **진입형 feature와 탭 셸만** 등록한다. 탭 feature는 셸을 통해 런타임 클래스패스에 들어오므로 직접 의존을 두지 않는다.
+
 ### 금지 규칙 (안티패턴)
 - `:core:domain`이 Android에 의존 → 단위 테스트가 Android로 오염됨
 - `:core:data`가 `:core:common:ui`를 의존 → UI 레이어 침범
-- `:feature:x:impl`이 다른 `:feature:y:impl`을 의존 → 전환은 상대 `:feature:y:api`(Launcher)에만 의존한다. 그 외 공유가 필요하면 `:core:common:*`로 해결
+- feature 모듈이 다른 feature 모듈을 의존 → 전환은 `:core:navigation`의 계약을 통한다. 탭 셸 → 탭 feature만 예외이며, 탭끼리는 서로를 모르고 탭 간 전환은 셸이 콜백으로 배선한다. 그 외 공유가 필요하면 `:core:common:*`로 해결
 - `:feature:*`가 `:core:data`를 직접 의존 → domain 인터페이스만 알고, 구현 바인딩은 `:app`의 DI에서
+
+> 위 규칙을 검사하는 장치는 아직 없다. `lint.xml`에 모듈 의존 방향 룰이 없고 Gradle 의존 검증도 도입하지 않아, 순환 참조를 제외하면 경계는 문서와 리뷰에만 의존한다. 순환 참조는 계약을 `:core:navigation`에 모은 덕에 Gradle이 컴파일 타임에 거부한다. 검증 장치 도입은 모듈 구조와 독립적인 별도 과제다.
 
 ---
 
 ## 새 feature 모듈 추가 절차
 
-feature는 **`api` / `impl` 두 모듈**로 만든다. 여기서는 절차만 적고, 구조·역할·네비게이션 상세는 컨벤션 문서를 단일 출처로 따른다.
+feature는 **단일 모듈**이다. 여기서는 절차만 적고, 구조·역할·네비게이션 상세는 컨벤션 문서를 단일 출처로 따른다.
 
-> 패키지 구조·객체 역할·Route↔Screen → `docs/architecture/feature-module.md`
-> 화면 전환(feature 간 Launcher / 내부 Route·인자 전달) → `docs/architecture/feature-navigation.md`
+> 진입형/탭 구분·패키지 구조·공개 범위·Route↔Screen → `docs/architecture/feature-module.md`
+> 화면 전환(feature 간 Launcher / 내부 Route·인자 전달 / 탭 그래프 편입) → `docs/architecture/feature-navigation.md`
 
-1. `feature/<name>/api`, `feature/<name>/impl` 디렉터리와 각 `build.gradle.kts` 생성. 컨벤션 플러그인만 적용한다:
-   - `api`: `alias(libs.plugins.mino.android.feature.api)` + `namespace`
-   - `impl`: `alias(libs.plugins.mino.android.feature.impl)` + `namespace` + 자신·상대 feature의 `api` 의존(`implementation(project(":feature:<name>:api"))`)
-2. `settings.gradle.kts`에 **둘 다** 등록: `include(":feature:<name>:api")`, `include(":feature:<name>:impl")`
-3. `:app`의 `build.gradle.kts`에 **둘 다** `implementation(project(...))` 추가 (`:api`, `:impl`)
-4. 코드 작성은 `feature-module.md` 골격을 본뜬다 — `api`에 `XLauncher`+`EXTRA_*`, `impl`에 `XActivity`·`XDestinations`·`XShell`·`XNavHost`·`di/`, 화면별 `screen·vm`(+필요 시 `args·model·component`)
+1. `feature/<name>/` 디렉터리와 `build.gradle.kts` 생성. `alias(libs.plugins.mino.android.feature)` + `namespace`만 적용한다(진입형·탭 공통).
+2. `settings.gradle.kts`에 `include(":feature:<name>")` 등록.
+3. 의존 등록은 종류에 따라 갈린다.
+   - **진입형**: `:app`의 `build.gradle.kts`에 `implementation(project(":feature:<name>"))` 추가
+   - **탭**: `:feature:main`의 `build.gradle.kts`에 추가한다. `:app`에는 넣지 않는다
+4. 코드 작성은 `feature-module.md` 골격을 본뜬다.
+   - **진입형**: `XActivity`·`XDestinations`·`XShell`·`XNavHost`·`di/`, 화면별 `screen·vm`(+필요 시 `args·model·component`). 전환 계약(`XLauncher`·extra 키)은 `:core:navigation`의 `activity/launcher/`에 추가
+   - **탭**: `XNavigation.kt`(진입 Route + 등록 함수)와 화면별 `screen·vm`. `:feature:main`의 `MainTab`·`MainNavHost`에 배선
 5. `./gradlew :app:assembleQaDebug`로 빌드 확인

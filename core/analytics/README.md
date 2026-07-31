@@ -101,7 +101,7 @@ team/mino/core/analytics/
 
 ## 5. 의존성 추가 가이드
 
-feature `:impl`은 **컨벤션 플러그인(`mino.android.feature.impl`)이 이 모듈을 이미 의존**하므로 별도 추가가 필요 없다. 그 밖의 모듈이 직접 트래킹해야 하면:
+feature 모듈은 **컨벤션 플러그인(`mino.android.feature`)이 이 모듈을 이미 의존**하므로 별도 추가가 필요 없다. 그 밖의 모듈이 직접 트래킹해야 하면:
 
 ```kotlin
 dependencies {

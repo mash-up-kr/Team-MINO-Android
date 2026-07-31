@@ -23,7 +23,7 @@ MinoAndroid의 **데이터 계층** 모듈. `core:domain`의 Repository 인터�
 
 ```mermaid
 flowchart TD
-    VM["ViewModel<br/>(feature:x:impl)"]
+    VM["ViewModel<br/>(feature:x)"]
     RI["GithubRepository 인터페이스<br/>(core:domain)"]
     Impl["GithubRepositoryImpl<br/>(core:data/repository)"]
     DS["GithubRemoteDataSource 인터페이스<br/>(core:data/datasource)"]

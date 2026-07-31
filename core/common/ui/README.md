@@ -141,7 +141,7 @@ core/common/ui/src/main/java/team/mino/core/common/ui/
 | 헷갈리는 대상 | 그건 여기가 아니라 |
 |---|---|
 | 색·타이포·셰이프 토큰, 테마, 기본 디자인 컴포넌트 | [`core:design-system`](../../design-system/README.md) |
-| 특정 feature 전용 화면/컴포넌트 | 해당 feature `impl` (공유되면 [§5](#5-feature--corecommonui-승격)로 승격) |
+| 특정 feature 전용 화면/컴포넌트 | 해당 feature 모듈 (공유되면 [§5](#5-feature--corecommonui-승격)로 승격) |
 
 그 외 모듈 경계 판단은 [`modularization.md`](../../../docs/architecture/modularization.md)를 따른다.
 
@@ -183,7 +183,7 @@ dependencies {
 }
 ```
 
-주로 feature `impl` 모듈(화면을 그리는 쪽)이 의존한다.
+주로 feature 모듈(화면을 그리는 쪽)이 의존한다.
 
 ---
 

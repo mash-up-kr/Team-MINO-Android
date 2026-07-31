@@ -16,7 +16,7 @@ Android 프로젝트. Git Flow 브랜치 전략 사용.
 | 에러 처리 — 도메인 예외(`MinoDomainException`) 매핑, `launchSafely`·`runCatchingDomain` 소비, CEH 안전망 | `docs/conventions/error_handling.md` |
 | 모듈 구성·의존성 규칙, 레이어 경계, 새 모듈 추가 절차 | `docs/architecture/modularization.md` |
 | Domain Repository 인터페이스, UseCase 사용 기준, ViewModel 책임 분리 | `core/domain/README.md` |
-| feature 모듈 추가, api/impl 구조, 패키지·역할, Route↔Screen 작성 | `docs/architecture/feature-module.md` |
+| feature 모듈 추가, 진입형/탭 구분, 패키지·역할, Route↔Screen 작성 | `docs/architecture/feature-module.md` |
 | feature 화면 전환 — feature 간 Activity(Launcher), feature 내부 Route(NavHost·인자 전달) | `docs/architecture/feature-navigation.md` |
 | 디자인 시스템 사용·토큰 추가, `core:design-system` 모듈 작업 | `core/design-system/README.md` |
 | `core:common` 공용 기반 모듈 사용·확장 (Kotlin 유틸·MVI·공통 UI) | `core/common/kotlin/README.md` · `core/common/android/README.md` · `core/common/ui/README.md` |
