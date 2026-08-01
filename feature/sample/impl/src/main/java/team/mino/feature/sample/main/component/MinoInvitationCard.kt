@@ -26,7 +26,7 @@ import team.mino.core.designsystem.foundation.icons.MinoIcons
 import team.mino.core.designsystem.foundation.icons.icons.Image
 import team.mino.core.designsystem.theme.MinoAndroidAppTheme
 import team.mino.core.designsystem.theme.MinoAndroidTheme
-import team.mino.core.designsystem.util.image.FallbackAsyncImage
+import team.mino.core.designsystem.util.image.MinoAsyncImage
 import team.mino.core.designsystem.util.modifier.shadow.dropShadow
 import team.mino.core.designsystem.util.modifier.surface.surface
 import team.mino.core.designsystem.util.preview.UiModePreviews
@@ -124,7 +124,7 @@ private fun InvitationCover(
     backgroundColor: Color,
     modifier: Modifier = Modifier,
 ) {
-    FallbackAsyncImage(
+    MinoAsyncImage(
         imageUrl = imageUrl,
         fallback = rememberVectorPainter(MinoIcons.Image),
         fallbackTint = MinoInvitationDefaults.coverPlaceholderTint,
