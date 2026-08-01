@@ -9,9 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -22,11 +20,8 @@ import androidx.compose.ui.unit.dp
 import team.mino.core.designsystem.component.avatar.MinoAvatar
 import team.mino.core.designsystem.component.avatar.MinoAvatarSize
 import team.mino.core.designsystem.component.avatar.MinoAvatarVariant
-import team.mino.core.designsystem.foundation.icons.MinoIcons
-import team.mino.core.designsystem.foundation.icons.icons.MoreVertical
 import team.mino.core.designsystem.theme.MinoAndroidAppTheme
 import team.mino.core.designsystem.theme.MinoAndroidTheme
-import team.mino.core.designsystem.util.modifier.clickable.rippleSingleClickable
 import team.mino.core.designsystem.util.preview.UiModePreviews
 
 /**
@@ -43,17 +38,18 @@ enum class HomeCardCategory(val label: String) {
 /**
  * 홈 화면에서 장소를 소개하는 카드.
  *
- * Figma(MU_Wanted / Montage)의 `Aos_home_card` 스펙을 따른다. 상단 헤더(아바타 + 분류 뱃지 +
- * 더보기) · 제목 · 주소 · 하단 대표 이미지 2칸으로 구성된다. 카드 골격은 [category]와 무관하게
+ * Figma(MU_Wanted / Montage)의 `Aos_home_card` 스펙을 따른다. 상단 헤더(아바타 + 분류 뱃지) ·
+ * 제목 · 주소 · 하단 대표 이미지 2칸으로 구성된다. 카드 골격은 [category]와 무관하게
  * 동일하고, 분류 뱃지의 라벨·색만 [category]에 따라 바뀐다.
  *
  * design-system 공용 컴포넌트가 아니라 sample 화면 내부 컴포넌트다. 색·타이포·라운드는
- * `core:design-system` 토큰으로 조립하고, 아바타·아이콘은 design-system 컴포넌트를 재사용한다.
+ * `core:design-system` 토큰으로 조립하고, 아바타는 design-system 컴포넌트를 재사용한다.
+ *
+ * Figma에는 우측 상단 더보기(⋮) 아이콘이 있으나 제거 예정이라 반영하지 않는다.
  *
  * @param imageCount 하단에 표시할 이미지 슬롯 수(기본 2). 실제 이미지 로딩은 이후 도입 예정이라
  *   현재는 placeholder로 그린다(spec Open Questions TBD-2).
  * @param avatarImageUrl 헤더 아바타 이미지 URL. null이면 placeholder 글리프.
- * @param onMoreClick 더보기(⋮) 클릭 콜백.
  */
 @Composable
 fun HomeCard(
@@ -63,7 +59,6 @@ fun HomeCard(
     modifier: Modifier = Modifier,
     imageCount: Int = 2,
     avatarImageUrl: String? = null,
-    onMoreClick: () -> Unit = {},
 ) {
     Column(
         modifier = modifier
@@ -79,7 +74,6 @@ fun HomeCard(
             title = title,
             address = address,
             avatarImageUrl = avatarImageUrl,
-            onMoreClick = onMoreClick,
         )
         HomeCardImages(imageCount = imageCount)
     }
@@ -91,36 +85,20 @@ private fun HomeCardHeader(
     title: String,
     address: String,
     avatarImageUrl: String?,
-    onMoreClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                MinoAvatar(
-                    variant = MinoAvatarVariant.Person,
-                    size = MinoAvatarSize.Small,
-                    imageUrl = avatarImageUrl,
-                )
-                CategoryBadge(category = category)
-            }
-            Icon(
-                imageVector = MinoIcons.MoreVertical,
-                contentDescription = "더보기",
-                tint = MinoAndroidTheme.colors.labelNormal,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(1000.dp))
-                    .rippleSingleClickable(onClick = onMoreClick)
-                    .padding(7.dp)
-                    .size(18.dp),
+            MinoAvatar(
+                variant = MinoAvatarVariant.Person,
+                size = MinoAvatarSize.Small,
+                imageUrl = avatarImageUrl,
             )
+            CategoryBadge(category = category)
         }
         Column(
             modifier = Modifier.padding(horizontal = 4.dp),
