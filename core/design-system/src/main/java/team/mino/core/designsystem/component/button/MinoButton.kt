@@ -2,6 +2,7 @@ package team.mino.core.designsystem.component.button
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -37,6 +38,9 @@ import team.mino.core.designsystem.util.modifier.surface.surface
  *   슬롯 안에서는 `LocalContentColor`가 [style]의 글자색으로 지정돼 있어, 색을 따로 넘기지 않은
  *   [androidx.compose.material3.Icon]은 글자와 같은 색으로 그려진다.
  * @param trailingIcon 글자 뒤 아이콘(Figma `Trailing Icon`). 동작은 [leadingIcon]과 같다.
+ * @param contentPadding 콘텐츠 좌우·상하 패딩. 기본값은 [size]의 표준 패딩([ButtonTokens]
+ *   `ContentPaddingBySize`)이다. Figma 인스턴스가 컴포넌트 기본값을 덮어쓴 경우(예: Chip Room의
+ *   정렬 버튼은 Medium 기본 20dp 대신 16dp 수평 패딩) 호출부가 실측값으로 넘긴다.
  */
 @Composable
 fun MinoButton(
@@ -46,6 +50,7 @@ fun MinoButton(
     enabled: Boolean = true,
     size: ButtonSize = ButtonSize.Large,
     style: ButtonStyle = ButtonStyle.SolidPrimary,
+    contentPadding: PaddingValues = size.contentPadding(),
     leadingIcon: (@Composable () -> Unit)? = null,
     trailingIcon: (@Composable () -> Unit)? = null,
 ) {
@@ -60,7 +65,7 @@ fun MinoButton(
                 borderColor = colors.borderColor,
                 borderWidth = ButtonTokens.BorderWidth,
             ).rippleSingleClickable(enabled = enabled, onClick = onClick)
-            .padding(size.contentPadding()),
+            .padding(contentPadding),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(
             space = size.iconTextSpacing,
