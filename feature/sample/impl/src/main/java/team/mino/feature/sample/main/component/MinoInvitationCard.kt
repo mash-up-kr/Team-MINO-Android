@@ -1,4 +1,4 @@
-package team.mino.core.designsystem.component.invitation
+package team.mino.feature.sample.main.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -22,16 +22,15 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import team.mino.core.designsystem.component.avatar.MinoAvatarGroup
 import team.mino.core.designsystem.component.avatar.MinoAvatarVariant
-import team.mino.core.designsystem.component.invitation.token.InvitationTokens
-import team.mino.core.designsystem.foundation.color.token.ColorAccessKeyToken
-import team.mino.core.designsystem.foundation.color.token.value
 import team.mino.core.designsystem.foundation.icons.MinoIcons
 import team.mino.core.designsystem.foundation.icons.icons.Image
 import team.mino.core.designsystem.theme.MinoAndroidAppTheme
+import team.mino.core.designsystem.theme.MinoAndroidTheme
 import team.mino.core.designsystem.util.image.FallbackAsyncImage
 import team.mino.core.designsystem.util.modifier.shadow.dropShadow
 import team.mino.core.designsystem.util.modifier.surface.surface
 import team.mino.core.designsystem.util.preview.UiModePreviews
+import team.mino.feature.sample.main.component.token.InvitationTokens
 
 /**
  * 모임·룸으로의 초대 정보를 요약해 보여주는 카드. Figma `invitation_card`(16108-23190) 스펙을 따른다.
@@ -139,11 +138,11 @@ private fun InvitationCover(
 
 @UiModePreviews
 @Composable
-private fun MinoInvitationCardPreview() {
+private fun MinoInvitationCardPreview(modifier: Modifier = Modifier) {
     MinoAndroidAppTheme {
         Box(
-            modifier = Modifier
-                .background(ColorAccessKeyToken.BackgroundNormalAlternative.value)
+            modifier = modifier
+                .background(MinoAndroidTheme.colors.backgroundNormalAlternative)
                 .padding(24.dp),
         ) {
             MinoInvitationCard(
