@@ -1,22 +1,20 @@
-package team.mino.core.designsystem.component.invitation.token
+package team.mino.feature.sample.main.component.token
 
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import team.mino.core.designsystem.component.avatar.MinoAvatarSize
-import team.mino.core.designsystem.foundation.color.token.ColorAccessKeyToken
-import team.mino.core.designsystem.foundation.shadow.token.ShadowAccessKeyToken
-import team.mino.core.designsystem.foundation.typography.token.TypographyAccessKeyToken
 
 /**
- * Invitation 컴포넌트 슬롯 → 디자인 토큰 키 매핑. Figma `invitation`(16108-23382, AOS) 기준.
+ * Invitation 컴포넌트 슬롯 → 크기/간격 토큰 매핑. Figma `invitation`(16108-23382, AOS) 기준.
+ *
+ * 색·타이포·그림자 토큰은 design-system 내부(`internal`) API라 여기서 직접 들고 있지 않고,
+ * `MinoInvitationDefaults`가 `MinoAndroidTheme.colors`/`.typography`/`.shadows`로 직접 조회한다.
  */
 internal object InvitationTokens {
     val CardWidth = 265.dp
     val CardShape: Shape = RoundedCornerShape(20.dp)
-    val CardBackgroundColor = ColorAccessKeyToken.BackgroundElevatedNormal
-    val CardShadow = ShadowAccessKeyToken.NormalSmall
     val CardHorizontalPadding = 16.dp
     val CardVerticalPadding = 24.dp
 
@@ -34,14 +32,6 @@ internal object InvitationTokens {
     /** Figma 노드 실측값(md, 18.286px). 셰이프 스케일(Small/Medium/Large)에 없는 컴포넌트 전용 값. */
     val CoverShape: Shape = RoundedCornerShape(18.29.dp)
     val CoverImagePadding = 14.dp
-    val CoverPlaceholderTint = ColorAccessKeyToken.LabelAssistive
-
-    val TitleFont = TypographyAccessKeyToken.Body1NormalBold
-    val TitleColor = ColorAccessKeyToken.LabelNormal
-    val DescriptionFont = TypographyAccessKeyToken.Label2Medium
-    val DescriptionColor = ColorAccessKeyToken.LabelAlternative
-    val CountFont = TypographyAccessKeyToken.Label2Bold
-    val CountColor = ColorAccessKeyToken.LabelAlternative
 
     val AvatarSize = MinoAvatarSize.XSmall
 

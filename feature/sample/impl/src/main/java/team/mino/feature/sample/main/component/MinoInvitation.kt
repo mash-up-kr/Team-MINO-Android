@@ -1,4 +1,4 @@
-package team.mino.core.designsystem.component.invitation
+package team.mino.feature.sample.main.component
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -18,12 +18,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
-import team.mino.core.designsystem.R
-import team.mino.core.designsystem.component.invitation.token.InvitationTokens
-import team.mino.core.designsystem.foundation.color.token.ColorAccessKeyToken
-import team.mino.core.designsystem.foundation.color.token.value
 import team.mino.core.designsystem.theme.MinoAndroidAppTheme
+import team.mino.core.designsystem.theme.MinoAndroidTheme
 import team.mino.core.designsystem.util.preview.UiModePreviews
+import team.mino.feature.sample.R
+import team.mino.feature.sample.main.component.token.InvitationTokens
 
 /**
  * 봉투에서 카드가 삐져나온 형태의 초대장. Figma `invitation`(16108-23382, AOS variant) 스펙을 따른다.
@@ -89,11 +88,11 @@ private fun EnvelopeLayer(
 
 @UiModePreviews
 @Composable
-private fun MinoInvitationPreview() {
+private fun MinoInvitationPreview(modifier: Modifier = Modifier) {
     MinoAndroidAppTheme {
         Box(
-            modifier = Modifier
-                .background(ColorAccessKeyToken.BackgroundNormalAlternative.value)
+            modifier = modifier
+                .background(MinoAndroidTheme.colors.backgroundNormalAlternative)
                 .padding(24.dp),
         ) {
             MinoInvitation(
