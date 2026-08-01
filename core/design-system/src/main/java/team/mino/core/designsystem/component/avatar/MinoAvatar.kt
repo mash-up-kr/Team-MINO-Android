@@ -22,7 +22,7 @@ import team.mino.core.designsystem.foundation.color.token.value
 import team.mino.core.designsystem.foundation.icons.MinoIcons
 import team.mino.core.designsystem.foundation.icons.icons.PersonFill
 import team.mino.core.designsystem.theme.MinoAndroidAppTheme
-import team.mino.core.designsystem.util.image.FallbackAsyncImage
+import team.mino.core.designsystem.util.image.MinoAsyncImage
 import team.mino.core.designsystem.util.preview.UiModePreviews
 
 /**
@@ -73,7 +73,7 @@ fun MinoAvatar(
 ) {
     val shape = MinoAvatarDefaults.shape(variant)
 
-    FallbackAsyncImage(
+    MinoAsyncImage(
         imageUrl = imageUrl,
         fallback = variant.placeholderPainter(),
         fallbackTint = MinoAvatarDefaults.placeholderTint,

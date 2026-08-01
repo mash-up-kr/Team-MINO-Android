@@ -20,7 +20,7 @@ import coil3.compose.AsyncImage
  * @param modifier 렌더링되는 쪽(이미지 또는 아이콘)에 그대로 적용된다.
  */
 @Composable
-fun FallbackAsyncImage(
+fun MinoAsyncImage(
     imageUrl: String?,
     fallback: Painter,
     fallbackTint: Color,
