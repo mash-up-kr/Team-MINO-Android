@@ -81,7 +81,9 @@ xLauncher.launch(this, withFinish = true) { putExtra(...) }                   //
 - **결과**: `registerForActivityResult(StartActivityForResult())`로 받고, 대상은 `setResult(RESULT_OK, Intent().putExtra(...))`로 돌려준다.
 - 첫 인자가 `Activity`인 이유와 `withFinish`의 제약은 → [`core:navigation` README](../../core/navigation/README.md).
 
-**컴포저블에서 호출하지 않는다.** 전환은 Activity가 시작하고, 화면은 콜백만 올려보낸다(`onNavigateToX`). 콜백이 Activity·`resultLauncher`를 캡처하면 컴파일러가 memoize하지 못해 그래프 빌더 람다의 identity가 리컴포지션마다 바뀌므로, Activity에서 `remember`로 감싸 내려보낸다.
+**컴포저블에서 호출하지 않는다.** 전환은 Activity가 시작하고, 화면은 콜백만 올려보낸다(`onNavigateToX`).
+
+> 콜백을 수동으로 `remember`하지 않는다 → [ADR](../adr/2026-08-01-compose-lambda-memoization.md).
 
 ---
 

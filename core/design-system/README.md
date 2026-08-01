@@ -318,6 +318,8 @@ Icon(
 - **공개 API는 `Modifier` 확장 함수뿐.** `ModifierNodeElement`·`Modifier.Node` 구현은 `internal`로 숨기고, 외부에는 확장 함수만 노출한다.
 - **위치**: `util/modifier/<종류>/`. `Modifier.Node`/`Element` 구현은 그 아래 `node/` 하위 패키지에 둔다.
 
+> 컴포저블 안의 람다는 수동 `remember`로 감싸지 않는다 → [ADR](../../docs/adr/2026-08-01-compose-lambda-memoization.md). 상태 홀더·비용 큰 객체를 붙잡는 `remember`는 그대로 쓴다.
+
 ### 6.3 클릭·선택 Modifier 유틸
 
 `util/modifier/clickable`·`util/modifier/selectable`은 **연타(중복 클릭) 차단**과 **리플(ripple) 표시**를 디자인 시스템 차원에서 표준화한 `Modifier` 확장이다. 외부 모듈은 아래 6개 공개 확장만 사용하고, 일반 클릭에 `Modifier.clickable`을 직접 쓰기보다 이 확장으로 연타·리플 정책을 일관되게 가져간다.

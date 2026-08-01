@@ -35,3 +35,4 @@ ADR은 [`adr-writer` 스킬](../../.claude/skills/adr-writer/SKILL.md)이 자동
 | 2026-07-31 | [네비게이션 셸을 `MinoScaffold`로 승격하고 feature 셸(`XShell`)과 화면 그래프(`XNavHost`)를 분리한다](2026-07-31-common-shell-mino-scaffold.md) | Accepted | Jaesung Lee |
 | 2026-08-01 | [feature 간 전환 계약은 `:core:navigation`에 두고, 탭 feature는 등록 함수로 셸 그래프에 편입한다](2026-08-01-single-module-navigation-contract.md) | Accepted | Jaesung Lee |
 | 2026-08-01 | [래스터 이미지 리소스는 WebP 확장자를 사용한다](2026-08-01-webp-for-raster-images.md) | Accepted | full_avocado |
+| 2026-08-01 | [컴포저블 안의 람다는 수동 `remember`로 감싸지 않는다](2026-08-01-compose-lambda-memoization.md) | Accepted | Jaesung Lee |
