@@ -1,4 +1,4 @@
-package team.mino.core.designsystem.component.chiproom
+package team.mino.feature.sample.main.component
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,11 +17,11 @@ import team.mino.core.designsystem.component.button.ButtonSize
 import team.mino.core.designsystem.component.button.ButtonStyle
 import team.mino.core.designsystem.component.button.MinoButton
 import team.mino.core.designsystem.component.category.MinoCategory
-import team.mino.core.designsystem.component.chiproom.token.ChipRoomTokens
 import team.mino.core.designsystem.component.menu.MinoMenu
 import team.mino.core.designsystem.component.menu.MinoMenuItem
 import team.mino.core.designsystem.foundation.icons.MinoIcons
 import team.mino.core.designsystem.foundation.icons.icons.CaretDown
+import team.mino.feature.sample.main.component.token.ChipRoomTokens
 
 /**
  * 리소스 목록 상단에서 정렬·카테고리 필터를 함께 다루는 컴포넌트(Figma `Chip_Room`, 15852:88538).

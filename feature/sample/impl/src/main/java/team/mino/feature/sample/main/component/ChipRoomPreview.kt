@@ -1,4 +1,4 @@
-package team.mino.core.designsystem.component.chiproom
+package team.mino.feature.sample.main.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -19,15 +19,14 @@ import kotlinx.collections.immutable.persistentListOf
 import team.mino.core.designsystem.component.button.ButtonSize
 import team.mino.core.designsystem.component.button.ButtonStyle
 import team.mino.core.designsystem.component.button.MinoButton
-import team.mino.core.designsystem.component.chiproom.token.ChipRoomTokens
 import team.mino.core.designsystem.component.menu.MinoMenu
 import team.mino.core.designsystem.component.menu.MinoMenuItem
-import team.mino.core.designsystem.foundation.color.token.ColorAccessKeyToken
-import team.mino.core.designsystem.foundation.color.token.value
 import team.mino.core.designsystem.foundation.icons.MinoIcons
 import team.mino.core.designsystem.foundation.icons.icons.CaretDown
 import team.mino.core.designsystem.theme.MinoAndroidAppTheme
+import team.mino.core.designsystem.theme.MinoAndroidTheme
 import team.mino.core.designsystem.util.preview.UiModePreviews
+import team.mino.feature.sample.main.component.token.ChipRoomTokens
 
 private val SortOptions = persistentListOf("거리순", "오래된순", "최신순", "코멘트순")
 private val Categories = persistentListOf("전체", "카페", "음식점")
@@ -46,7 +45,7 @@ private fun ChipRoomSample(
         MinoChipRoom(
             modifier = modifier
                 .fillMaxWidth()
-                .background(ColorAccessKeyToken.BackgroundNormalNormal.value),
+                .background(MinoAndroidTheme.colors.backgroundNormalNormal),
             sortOptions = SortOptions,
             selectedSortIndex = selectedSortIndex,
             expanded = expanded,
@@ -87,12 +86,12 @@ private fun MinoChipRoomEditOnPreview() {
  */
 @UiModePreviews
 @Composable
-private fun MinoChipRoomSortDropdownAnchoredPreview() {
+private fun MinoChipRoomSortDropdownAnchoredPreview(modifier: Modifier = Modifier) {
     MinoAndroidAppTheme {
         Column(
-            modifier = Modifier
+            modifier = modifier
                 .fillMaxWidth()
-                .background(ColorAccessKeyToken.BackgroundNormalNormal.value)
+                .background(MinoAndroidTheme.colors.backgroundNormalNormal)
                 .padding(ChipRoomTokens.ContentPadding),
             verticalArrangement = Arrangement.spacedBy(0.dp),
         ) {

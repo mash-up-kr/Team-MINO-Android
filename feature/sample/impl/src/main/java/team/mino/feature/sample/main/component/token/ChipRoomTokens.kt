@@ -1,4 +1,4 @@
-package team.mino.core.designsystem.component.chiproom.token
+package team.mino.feature.sample.main.component.token
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.unit.dp

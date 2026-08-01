@@ -1,4 +1,4 @@
-package team.mino.core.designsystem.component.headerroom
+package team.mino.feature.sample.main.component
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
@@ -11,10 +11,10 @@ import team.mino.core.designsystem.util.preview.UiModePreviews
 
 @UiModePreviews
 @Composable
-private fun MinoHeaderRoomShowMemoOnPreview() {
+private fun MinoHeaderRoomShowMemoOnPreview(modifier: Modifier = Modifier) {
     MinoAndroidAppTheme {
         MinoHeaderRoom(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = modifier.fillMaxWidth(),
             title = "Title",
             memo = "memo",
             resourceCountText = "999+개",
@@ -28,10 +28,10 @@ private fun MinoHeaderRoomShowMemoOnPreview() {
 
 @UiModePreviews
 @Composable
-private fun MinoHeaderRoomShowMemoOffPreview() {
+private fun MinoHeaderRoomShowMemoOffPreview(modifier: Modifier = Modifier) {
     MinoAndroidAppTheme {
         MinoHeaderRoom(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = modifier.fillMaxWidth(),
             title = "Title",
             resourceCountText = "999+개",
             resourceIcon = MinoIcons.LocationFill,

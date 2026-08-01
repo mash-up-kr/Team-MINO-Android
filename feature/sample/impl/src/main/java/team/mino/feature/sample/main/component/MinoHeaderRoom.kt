@@ -1,4 +1,4 @@
-package team.mino.core.designsystem.component.headerroom
+package team.mino.feature.sample.main.component
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -15,9 +15,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
-import team.mino.core.designsystem.component.headerroom.token.HeaderRoomTokens
-import team.mino.core.designsystem.foundation.typography.token.value
 import team.mino.core.designsystem.util.modifier.clickable.rippleSingleClickable
+import team.mino.feature.sample.main.component.token.HeaderRoomTokens
 
 /**
  * 모임방 상세 화면 상단에 놓는 헤더(Figma `Header_Room`, 15852:88515).
@@ -38,7 +37,7 @@ import team.mino.core.designsystem.util.modifier.clickable.rippleSingleClickable
  *
  * 이 화면 하나만 쓰는 자리라 별도 컴포넌트로 빼지 않고 이 파일 안에 직접 그린다 — `Badge=true`(푸시
  * 배지)·`Disable` 변형은 쓰지 않아 만들지 않았다. 다른 화면에서 같은 아이콘 버튼이 또 필요해지면 그때
- * `component/iconbutton/`으로 추출한다.
+ * `core:design-system`의 `component/iconbutton/`으로 추출한다.
  *
  * @param resourceCountText 위치 아이콘 옆에 표시할 개수 문구. "999+개"처럼 상한 클램핑을 포함한
  *   최종 표시 문자열을 호출부가 만들어 넘긴다 — 이 컴포넌트는 서식을 모른다.
@@ -72,13 +71,13 @@ fun MinoHeaderRoom(
                 Text(
                     text = title,
                     color = MinoHeaderRoomDefaults.titleColor,
-                    style = HeaderRoomTokens.TitleFont.value,
+                    style = MinoHeaderRoomDefaults.titleFont,
                 )
                 if (memo != null) {
                     Text(
                         text = memo,
                         color = MinoHeaderRoomDefaults.memoColor,
-                        style = HeaderRoomTokens.MemoFont.value,
+                        style = MinoHeaderRoomDefaults.memoFont,
                     )
                 }
             }
@@ -101,7 +100,7 @@ fun MinoHeaderRoom(
                     Text(
                         text = resourceCountText,
                         color = MinoHeaderRoomDefaults.resourceColor,
-                        style = HeaderRoomTokens.ResourceFont.value,
+                        style = MinoHeaderRoomDefaults.resourceFont,
                     )
                 }
 
