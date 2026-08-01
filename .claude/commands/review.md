@@ -81,13 +81,14 @@ allowed-tools: Bash, Read
 - 새 파일/클래스 위치가 기존 구조와 일치하는지
 
 ### 5. 성능 (Performance)
-- 불필요한 리컴포지션 (Compose)
+- 불필요한 리컴포지션 (Compose) — 람다 관련은 6번 Compose 항목을 따른다
 - N+1 쿼리 또는 불필요한 반복 호출
 - 메모리 누수 가능성 (`CoroutineScope`, `Flow` 구독, 리스너 미해제, Context 참조)
 - 메인 스레드 블로킹
 
 ### 6. Android 특화
 - **Compose**: `remember` / `derivedStateOf` 누락, state hoisting, `LaunchedEffect` key 부적절
+  - 단 **람다는 `remember` 지적 대상이 아니다.** 감싸라고 요구하지 않고, 감싼 것을 보면 제거를 제안한다 → [ADR: 컴포저블 안의 람다는 수동 `remember`로 감싸지 않는다](../../docs/adr/2026-08-01-compose-lambda-memoization.md)
 - **Lifecycle**: `repeatOnLifecycle` / `collectAsStateWithLifecycle` 사용 여부 (UI Flow 구독 시)
 - **CoroutineScope**: `viewModelScope` / `lifecycleScope` 사용 적절성, `GlobalScope` 사용 여부
 - **Configuration Change**: 회전 등 구성 변경 시 상태 보존 처리
