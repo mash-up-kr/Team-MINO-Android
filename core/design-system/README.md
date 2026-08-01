@@ -281,6 +281,12 @@ Icon(
 
 변환 가능한 SVG 조건: 단색 fill(stroke·transform·그라데이션 불가), viewBox 원점 0,0. 조건을 벗어나면 스크립트가 에러로 알려주며, 그 경우 Figma에서 패스를 병합(flatten)해 다시 export한다.
 
+### 5.3 래스터 이미지 에셋
+
+`ImageVector`로 변환할 수 없는 사진·일러스트 등 래스터 이미지는 **WebP**로 저장한다(PNG·JPEG 등 다른 래스터 포맷 금지). Figma에서 export한 원본이 PNG여도 `cwebp -lossless -q 100 <원본>.png -o <대상>.webp`로 무손실 변환 후 커밋한다. 리소스 참조는 `R.drawable.<name>`으로 확장자와 무관해 코드 변경이 필요 없다. 배경은 [ADR](../../docs/adr/2026-08-01-webp-for-raster-images.md) 참고.
+
+밀도별로 `drawable-mdpi/xhdpi/xxhdpi/`에 나눠 배치한다(밀도 미구분 `drawable/`은 `IconLocation` 린트 경고 대상).
+
 ---
 
 ## 6. 컴포넌트 & UI 유틸
