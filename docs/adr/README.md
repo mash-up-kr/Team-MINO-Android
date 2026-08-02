@@ -36,3 +36,4 @@ ADR은 [`adr-writer` 스킬](../../.claude/skills/adr-writer/SKILL.md)이 자동
 | 2026-08-01 | [feature 간 전환 계약은 `:core:navigation`에 두고, 탭 feature는 등록 함수로 셸 그래프에 편입한다](2026-08-01-single-module-navigation-contract.md) | Accepted | Jaesung Lee |
 | 2026-08-01 | [래스터 이미지 리소스는 WebP 확장자를 사용한다](2026-08-01-webp-for-raster-images.md) | Accepted | full_avocado |
 | 2026-08-01 | [컴포저블 안의 람다는 수동 `remember`로 감싸지 않는다](2026-08-01-compose-lambda-memoization.md) | Accepted | Jaesung Lee |
+| 2026-08-02 | [Hilt 구현 바인딩은 구현을 소유한 모듈이 갖고, `:app`은 그래프 조립만 한다](2026-08-02-di-binding-ownership.md) | Accepted | Jaesung Lee |
