@@ -10,7 +10,7 @@ tools: Bash, Write, Read
 
 ## 입력 (메인이 주입)
 
-- **작업 디렉터리** — `docs/specs/{NNN}-{슬러그}/` (하위 `assets/`는 생성돼 있음)
+- **작업 디렉터리** — `docs/specs/{슬러그}/` (하위 `assets/`는 생성돼 있음)
 - **노드→파일명 매핑표 (계약)** — `노드ID ↔ 파일명.png`
 - **Figma fileKey / URL**
 

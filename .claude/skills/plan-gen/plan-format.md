@@ -60,7 +60,7 @@ plan.md의 **출력 템플릿·통제 어휘·interactionType→MVI 매핑·아�
 ## 1. 한눈에 보기
 | 항목 | 내용 |
 |---|---|
-| 연결 spec | docs/specs/{NNN}-{슬러그}/spec.md (v0.1.0) |
+| 연결 spec | docs/specs/{슬러그}/spec.md (v0.1.0) |
 | feature 모듈 | feature/{name} (진입형 \| 탭) |
 | 영향 core 모듈 | core:domain, core:data, … |
 | 화면 | N개 ({화면 목록}) |
