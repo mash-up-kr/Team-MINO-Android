@@ -26,7 +26,7 @@ plan.md의 **출력 템플릿·통제 어휘·interactionType→MVI 매핑·아�
 - MVI: ViewModel은 `MviContainer<S,E> by mviContainer(초기State)` 위임. **Reducer 클래스 없음.** `updateState { copy() }` / `postSideEffect()` / `processIntent()`.
 - **Intent는 사용자 액션이 있을 때만** 정의(없으면 화면에 Intent 없음).
 - 비동기 상태는 `UiState` 안 **sealed `Status`(Idle/Loading/Success/Error)** 패턴.
-- **feature 모듈은 `core:data`를 직접 의존하지 않는다** — `core:domain` 인터페이스만 알고, 구현 바인딩은 `:app` DI.
+- **feature 모듈은 `core:data`를 직접 의존하지 않는다** — `core:domain` 인터페이스만 알고, 구현 바인딩은 구현을 소유한 모듈의 `di/`가 갖는다.
 - 화면 패키지: `<screen>/{screen, vm, model, args, component}`. **feature는 단일 모듈**이며 진입형(Activity 진입)/탭(셸 그래프 편입) 중 하나다.
 - 네비게이션: 내부 전환은 `Route` 콜백, feature 간 전환은 `Launcher`(계약은 `core:navigation`), 탭은 모듈이 `XNavigation.kt`로 등록 함수를 노출하고 셸이 호출.
 - **feature 모듈끼리 의존하지 않는다** — 예외는 탭 셸(`:feature:main`)→탭 feature뿐.
@@ -34,6 +34,7 @@ plan.md의 **출력 템플릿·통제 어휘·interactionType→MVI 매핑·아�
 ## 작성 규칙
 
 - **추측 금지.** spec의 `Open Questions(TBD)`·`needs_policy` 항목은 `## 7. 미해결 / 외부 의존`으로 이어받아 명시한다.
+- **문서와 코드가 충돌하면 코드를 사실로 삼는다.** plan은 실제 코드 구조대로 쓰고, 근거가 된 파일 경로와 어긋난 문서 위치를 `## 7. 미해결 / 외부 의존`에 "문서 갱신 필요"로 남긴다. 문서를 따라 쓰고 넘어가지 않는다.
 - **참고한 docs를 `## 2. 참고 문서`에 빠짐없이 명시**한다.
 - **`6. 기능 명세 ↔ 구현 매핑`에는 spec의 모든 기능 행(5.x ID)을 전수 포함**한다 (1:1 추적성 — 누락 시 검증에서 즉시 드러나도록).
 - **버전은 spec과 연동**한다(예: spec v0.1.0 번역 → plan `v0.1.0`). 날짜는 오늘 날짜 자동 기입.
@@ -80,7 +81,7 @@ plan.md의 **출력 템플릿·통제 어휘·interactionType→MVI 매핑·아�
 | core:domain | 모델·UseCase·Repository 인터페이스 | new/modify |
 | core:data   | RepositoryImpl·DataSource·DTO      | new/modify |
 
-> 의존 규칙: feature→core:navigation(전환 계약), feature→core:domain(인터페이스), core:data 바인딩은 :app DI. feature 간 의존은 탭 셸→탭 feature만 예외
+> 의존 규칙: feature→core:navigation(전환 계약), feature→core:domain(인터페이스), core:data 바인딩은 core:data의 `di/`. feature 간 의존은 탭 셸→탭 feature만 예외
 
 ## 4. 화면 설계
 ### 4.1 {화면명}   (Route: XMain · 패키지: feature/{name}/main)
