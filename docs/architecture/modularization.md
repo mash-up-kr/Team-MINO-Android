@@ -122,11 +122,20 @@ flowchart TD
 
 `:app`은 **진입형 feature와 탭 셸만** 등록한다. 탭 feature는 셸을 통해 런타임 클래스패스에 들어오므로 직접 의존을 두지 않는다.
 
+### DI 바인딩 소유
+
+인터페이스 구현을 가진 모듈이 자신의 `di/` 패키지에서 그 바인딩을 소유한다. 구현체는 `internal`로 닫고 `@Module @InstallIn(...) internal abstract class` + `@Binds`로만 노출한다.
+
+`:app`은 `@HiltAndroidApp`으로 그래프를 조립할 뿐 바인딩을 두지 않는다. `:app`이 바인딩하려면 모든 구현체를 `public`으로 열어야 하고, 그 순간 모듈 경계가 무너진다.
+
+스코프는 컴포넌트를 따른다. 앱 전역 싱글턴은 `SingletonComponent`, Activity 수명에 묶인 전환 계약(`Launcher`)은 `ActivityRetainedComponent` + `@ActivityRetainedScoped`.
+
 ### 금지 규칙 (안티패턴)
 - `:core:domain`이 Android에 의존 → 단위 테스트가 Android로 오염됨
 - `:core:data`가 `:core:common:ui`를 의존 → UI 레이어 침범
 - feature 모듈이 다른 feature 모듈을 의존 → 전환은 `:core:navigation`의 계약을 통한다. 탭 셸 → 탭 feature만 예외이며, 탭끼리는 서로를 모르고 탭 간 전환은 셸이 콜백으로 배선한다. 그 외 공유가 필요하면 `:core:common:*`로 해결
-- `:feature:*`가 `:core:data`를 직접 의존 → domain 인터페이스만 알고, 구현 바인딩은 `:app`의 DI에서
+- `:feature:*`가 `:core:data`를 직접 의존 → domain 인터페이스만 알고, 구현 바인딩은 구현을 소유한 모듈의 DI에서 (위 `DI 바인딩 소유`)
+- 구현 바인딩을 `:app`에 모으기 → 구현체를 `public`으로 열게 되어 모듈 경계가 무너진다
 
 > 위 규칙을 검사하는 장치는 아직 없다. `lint.xml`에 모듈 의존 방향 룰이 없고 Gradle 의존 검증도 도입하지 않아, 순환 참조를 제외하면 경계는 문서와 리뷰에만 의존한다. 순환 참조는 계약을 `:core:navigation`에 모은 덕에 Gradle이 컴파일 타임에 거부한다. 검증 장치 도입은 모듈 구조와 독립적인 별도 과제다.
 
