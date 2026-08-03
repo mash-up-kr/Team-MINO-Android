@@ -357,12 +357,27 @@ Box(
 
 **프리뷰는 기본적으로 `@UiModePreviews`를 사용한다.** 단일 `@Preview` 대신 이 어노테이션을 붙여 라이트/다크를 항상 함께 확인한다.
 
+**`component/` 프리뷰는 Figma 문서 페이지의 구조를 그대로 옮긴다.** Figma는 컴포넌트마다 `속성 = 값 · 값` 헤딩과 그 아래 예시 묶음을 세로로 쌓아 문서 페이지를 만든다. 코드도 `PreviewPage` + `PreviewProperty`로 같은 구조를 만들어, **Figma 페이지와 프리뷰를 나란히 놓고 속성 축 단위로 대조**할 수 있게 한다.
+
 ```kotlin
 @UiModePreviews
 @Composable
 private fun MyComponentPreview() {
-    MinoAndroidAppTheme {
-        /* ... */
+    PreviewPage {
+        PreviewProperty(name = "size", values = MySize.entries.previewValues()) {
+            PreviewRow {
+                MySize.entries.forEach { MyComponent(size = it) }
+            }
+        }
     }
 }
 ```
+
+작성 규칙:
+
+- **블록 순서·이름은 Figma 문서 페이지를 따른다.** 헤딩에는 코드 파라미터명이 아니라 **Figma 속성명**을 적는다. 둘이 다르면 KDoc에 대응을 남긴다.
+- **Figma에 있으나 만들지 않은 축은 이유를 KDoc에 적는다.** 웹 전용 축, 미구현 기능, Android에서 다른 방식으로 대체한 축(hover·press → 리플)이 여기 해당한다.
+- **프리뷰는 컴포넌트 파일이 아니라 `<Name>Preview.kt`에 둔다.** 컴포넌트셋이 나뉘어 있으면(예: 형제 컴포넌트셋) 파일도 나눈다.
+- 상태가 필요한 컴포넌트는 프리뷰 파일 안에 **인스턴스 하나에 대응하는 private 헬퍼**를 두고 그 헬퍼가 상태를 들게 한다.
+
+`PreviewPage`·`PreviewProperty`·`PreviewRow`·`previewValues`는 `util/preview`가 제공하는 `internal` 유틸이다.
