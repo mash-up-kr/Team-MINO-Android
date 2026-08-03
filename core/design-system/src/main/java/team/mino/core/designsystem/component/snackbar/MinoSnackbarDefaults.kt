@@ -44,6 +44,9 @@ object MinoSnackbarDefaults {
         @Composable @ReadOnlyComposable get() =
             SnackbarTokens.ContentColor.value.copy(alpha = SnackbarTokens.CloseOpacity)
 
+    /** 액션 버튼 리플 셰이프. 테마 셰이프 스케일에 없는 값이라 컴포넌트 토큰이 직접 들고 있다. */
+    val actionShape: Shape = SnackbarTokens.ActionShape
+
     /** 컨테이너 최대 너비. */
     val maxWidth: Dp = SnackbarTokens.MaxWidth
 }

@@ -1,5 +1,6 @@
 package team.mino.core.designsystem.component.menu.token
 
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 import team.mino.core.designsystem.foundation.color.token.AtomicOpacityToken
 import team.mino.core.designsystem.foundation.color.token.ColorAccessKeyToken
@@ -41,4 +42,42 @@ internal object MenuTokens {
     val LabelCaptionSpacing = 4.dp
 
     val DisabledOpacity = AtomicOpacityToken.Opacity43
+
+    // 라디오·체크박스 표식. 선택되면 상자가 Primary로 채워지고 흰 표시가 얹힌다.
+    val ControlActiveColor = ColorAccessKeyToken.PrimaryNormal
+    val ControlBorderColor = ColorAccessKeyToken.LineNormalNormal
+    val ControlIconColor = ColorAccessKeyToken.StaticWhite
+    val ControlBorderWidth = 1.5.dp
+
+    /** 표식과 라벨 사이 간격. 표식 자체의 오른쪽 여백([ControlEndPadding])이 여기에 더해진다. */
+    val ControlLabelSpacing = 8.dp
+    val ControlEndPadding = 2.dp
+
+    val RadioSize = 20.dp
+    val RadioVerticalPadding = 2.dp
+
+    /**
+     * 선택된 라디오 안쪽 흰 점의 지름.
+     *
+     * Figma는 이 자리에 `Icon/Normal/Dot`을 얹는다. 글리프가 아이콘 박스의 정확히 절반이고
+     * (24 뷰박스에 반지름 6), 상자(20dp)에서 세로 패딩 2dp를 뺀 16dp로 렌더되므로 8dp가 된다.
+     */
+    val RadioDotSize = 8.dp
+
+    val CheckboxSize = 18.dp
+    val CheckboxShape = RoundedCornerShape(5.dp)
+    val CheckboxIconSize = 16.dp
+    val CheckboxVerticalPadding = 3.dp
+    val CheckboxHorizontalPadding = 1.dp
+
+    val TitleColor = ColorAccessKeyToken.LabelAlternative
+    val TitleFont = TypographyAccessKeyToken.Caption1Bold
+    val TitleHorizontalPadding = 1.dp
+    val TitleVerticalPadding = 4.dp
+
+    val ActionAreaDividerColor = ColorAccessKeyToken.LineNormalAlternative
+    val ActionAreaDividerThickness = 1.dp
+    val ActionAreaPadding = 12.dp
+    val ActionAreaContentSpacing = 24.dp
+    val ActionAreaLeadingStartPadding = 8.dp
 }

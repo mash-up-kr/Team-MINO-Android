@@ -3,7 +3,7 @@ package team.mino.feature.sample.main.component.token
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
-import team.mino.core.designsystem.component.avatar.MinoAvatarSize
+import team.mino.core.designsystem.component.avatar.MinoAvatarGroupSize
 
 /**
  * Card_Room 컴포넌트 슬롯 → 크기/간격 토큰 매핑. Figma `Card_Room`(15892-81881) 기준.
@@ -28,7 +28,7 @@ internal object RoomCardTokens {
 
     val CoverSize = 80.dp
 
-    val AvatarSize = MinoAvatarSize.XSmall
+    val AvatarSize = MinoAvatarGroupSize.XSmall
 
     /** 그룹방에서 겹쳐 보여줄 참여자 아바타 최대 개수. 초과분은 렌더하지 않는다. */
     const val MAX_AVATAR_COUNT = 5

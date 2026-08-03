@@ -66,6 +66,9 @@ object MinoMenuDefaults {
         captionColor: Color = Color.Unspecified,
         disabledTextColor: Color = Color.Unspecified,
         disabledCaptionColor: Color = Color.Unspecified,
+        activeControlColor: Color = Color.Unspecified,
+        controlBorderColor: Color = Color.Unspecified,
+        controlIconColor: Color = Color.Unspecified,
     ): MinoMenuItemColors =
         MinoAndroidTheme.colors.defaultMenuItemColors.copy(
             textColor = textColor,
@@ -73,6 +76,9 @@ object MinoMenuDefaults {
             captionColor = captionColor,
             disabledTextColor = disabledTextColor,
             disabledCaptionColor = disabledCaptionColor,
+            activeControlColor = activeControlColor,
+            controlBorderColor = controlBorderColor,
+            controlIconColor = controlIconColor,
         )
 
     internal val ColorScheme.defaultMenuItemColors: MinoMenuItemColors
@@ -84,6 +90,9 @@ object MinoMenuDefaults {
                     captionColor = fromToken(MenuTokens.CaptionColor),
                     disabledTextColor = fromToken(MenuTokens.DisabledLabelColor),
                     disabledCaptionColor = fromToken(MenuTokens.CaptionColor),
+                    activeControlColor = fromToken(MenuTokens.ControlActiveColor),
+                    controlBorderColor = fromToken(MenuTokens.ControlBorderColor),
+                    controlIconColor = fromToken(MenuTokens.ControlIconColor),
                 ).also { defaultMenuItemColorsCached = it }
 }
 
@@ -97,6 +106,9 @@ class MinoMenuItemColors(
     val captionColor: Color,
     val disabledTextColor: Color,
     val disabledCaptionColor: Color,
+    val activeControlColor: Color,
+    val controlBorderColor: Color,
+    val controlIconColor: Color,
 ) {
     fun copy(
         textColor: Color = this.textColor,
@@ -104,6 +116,9 @@ class MinoMenuItemColors(
         captionColor: Color = this.captionColor,
         disabledTextColor: Color = this.disabledTextColor,
         disabledCaptionColor: Color = this.disabledCaptionColor,
+        activeControlColor: Color = this.activeControlColor,
+        controlBorderColor: Color = this.controlBorderColor,
+        controlIconColor: Color = this.controlIconColor,
     ): MinoMenuItemColors =
         MinoMenuItemColors(
             textColor = textColor.takeOrElse { this.textColor },
@@ -111,16 +126,21 @@ class MinoMenuItemColors(
             captionColor = captionColor.takeOrElse { this.captionColor },
             disabledTextColor = disabledTextColor.takeOrElse { this.disabledTextColor },
             disabledCaptionColor = disabledCaptionColor.takeOrElse { this.disabledCaptionColor },
+            activeControlColor = activeControlColor.takeOrElse { this.activeControlColor },
+            controlBorderColor = controlBorderColor.takeOrElse { this.controlBorderColor },
+            controlIconColor = controlIconColor.takeOrElse { this.controlIconColor },
         )
 
+    /** 표식이 선택을 나타내는 변형은 라벨 색이 그대로다 — [MenuItemVariant] 참조. */
     @Stable
     internal fun textColor(
         enabled: Boolean,
         active: Boolean,
+        variant: MenuItemVariant,
     ): Color =
         when {
             !enabled -> disabledTextColor
-            active -> activeTextColor
+            active && variant.highlightsActiveLabel -> activeTextColor
             else -> textColor
         }
 
@@ -136,6 +156,9 @@ class MinoMenuItemColors(
         if (captionColor != other.captionColor) return false
         if (disabledTextColor != other.disabledTextColor) return false
         if (disabledCaptionColor != other.disabledCaptionColor) return false
+        if (activeControlColor != other.activeControlColor) return false
+        if (controlBorderColor != other.controlBorderColor) return false
+        if (controlIconColor != other.controlIconColor) return false
 
         return true
     }
@@ -147,5 +170,8 @@ class MinoMenuItemColors(
             captionColor,
             disabledTextColor,
             disabledCaptionColor,
+            activeControlColor,
+            controlBorderColor,
+            controlIconColor,
         ).contentHashCode()
 }

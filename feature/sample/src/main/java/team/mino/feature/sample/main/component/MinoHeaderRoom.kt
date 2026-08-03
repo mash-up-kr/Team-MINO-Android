@@ -33,7 +33,7 @@ import team.mino.feature.sample.main.component.token.HeaderRoomTokens
  * 하나뿐이라 아이콘을 바꿔 끼우는 용법 자체가 시안에 없다.
  *
  * 아이콘이 고정이면 그 의미도 이 컴포넌트가 안다. 그래서 접근성 설명을 파라미터로 받지 않고
- * `MinoSnackbar`("닫기")·`MinoTextInput`("입력 삭제")과 같은 방식으로 안에서 직접 붙인다 —
+ * `MinoSnackbar`("닫기")·`MinoTextField`("입력 삭제")과 같은 방식으로 안에서 직접 붙인다 —
  * 아이콘 전용 버튼의 설명을 nullable 파라미터로 열어 두면 호출부가 안 넘겼을 때 스크린 리더가
  * 아무것도 읽지 않는 버튼이 조용히 생긴다. 좌측 개수 아이콘은 바로 옆 텍스트("999+개")가 같은
  * 정보를 읽어 주므로 장식으로 보고 `contentDescription = null`이다.

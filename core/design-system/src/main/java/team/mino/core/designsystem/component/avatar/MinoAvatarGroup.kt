@@ -1,227 +1,87 @@
 package team.mino.core.designsystem.component.avatar
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
 import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
 import team.mino.core.designsystem.component.avatar.token.AvatarTokens
-import team.mino.core.designsystem.foundation.color.token.ColorAccessKeyToken
-import team.mino.core.designsystem.foundation.color.token.value
-import team.mino.core.designsystem.foundation.icons.MinoIcons
-import team.mino.core.designsystem.foundation.icons.icons.Plus
-import team.mino.core.designsystem.theme.MinoAndroidAppTheme
-import team.mino.core.designsystem.util.modifier.clickable.rippleSingleClickable
-import team.mino.core.designsystem.util.modifier.surface.surface
-import team.mino.core.designsystem.util.preview.UiModePreviews
+import team.mino.core.designsystem.component.avatar.token.avatarSize
+import team.mino.core.designsystem.component.avatar.token.overlap
+import team.mino.core.designsystem.component.avatar.token.trailingSpacing
 
 /**
  * 여러 Avatar를 일부 겹쳐 나열하는 Avatar Group.
  *
- * Figma(MU_Wanted / Montage)의 `Avatar/Avatar Group`(15852-88488) 스펙을 따른다. 옅은 배경의
- * pill 컨테이너 안에서 각 아바타가 흰 링으로 경계를 구분하며 겹친다. `state`(add/default/more)를
- * 닫힌 타입으로 강제하지 않고, 맨 끝에 붙는 콘텐츠를 [overflowSlot]·[trailingSlot] 두 슬롯으로
- * 열어둬 호출부가 필요한 조합(멤버 추가 버튼·초과 인원 뱃지·커스텀 콘텐츠 등)을 자유롭게 구성한다.
- * Figma 스펙과 동일한 모양이 필요하면 [MinoAvatarGroupAddButton]·[MinoAvatarGroupOverflowBadge]를
- * 슬롯에 꽂아 쓴다.
+ * Figma(MU_Wanted / Montage)의 `Avatar/Avatar Group`(16215-26148) 스펙을 따른다. 배경 없이
+ * 아바타만 겹쳐 놓고, 각 아바타는 흰 링으로 경계를 구분한다. 링은 아바타 크기 **안쪽**에 그려져
+ * 전체 폭을 늘리지 않는다.
+ *
+ * 끝에 붙는 [trailingContent]는 Figma가 "외 0명" 같은 텍스트 버튼을 기본 프리셋으로 두지만,
+ * Custom도 허용하므로 슬롯으로 연다. 기본 프리셋과 같은 모양이 필요하면
+ * `MinoTextButton(size = Small, style = Assistive)`를 넣는다.
+ *
+ * 옅은 배경의 pill 안에 담고 멤버 추가 버튼·초과 인원 뱃지를 붙이는 형태는 **디자인 시스템이 아니라
+ * 화면 레벨 조합**(Figma `15852:88488`)이라 여기 있지 않다. `feature`의 해당 컴포넌트를 쓴다.
  *
  * @param imageUrls 표시할 아바타들의 이미지 URL 목록(각각 null이면 placeholder).
  * @param variant 공통 형태.
- * @param size 공통 크기.
- * @param containerColor pill 컨테이너 배경색. 다른 배경 위에 얹혀 pill이 필요 없는 맥락(예: 카드
- *  내부)에서는 [androidx.compose.ui.graphics.Color.Transparent]로 덮어쓴다.
- * @param overflowSlot 아바타 스택 맨 끝에 다른 아바타와 같은 간격·링으로 겹쳐 붙는 슬롯(state=more류).
- *  아바타와 같은 [Shape]·[MinoAvatarSize]가 인자로 주어진다. null이면 표시하지 않는다.
- * @param trailingSlot 아바타 스택 밖에 별도 간격을 두고 붙는 슬롯(state=add류). null이면 표시하지 않는다.
+ * @param size 공통 크기([MinoAvatarGroupSize]). 겹침 폭과 [trailingContent] 간격이 함께 바뀐다.
+ * @param trailingContent 아바타 스택 오른쪽에 붙는 슬롯. null이면 표시하지 않는다.
  */
 @Composable
 fun MinoAvatarGroup(
     imageUrls: ImmutableList<String?>,
     modifier: Modifier = Modifier,
     variant: MinoAvatarVariant = MinoAvatarVariant.Person,
-    size: MinoAvatarSize = MinoAvatarSize.Small,
-    containerColor: Color = MinoAvatarDefaults.groupContainerColor,
-    overflowSlot: (@Composable (shape: Shape, size: MinoAvatarSize) -> Unit)? = null,
-    trailingSlot: (@Composable (shape: Shape, size: MinoAvatarSize) -> Unit)? = null,
+    size: MinoAvatarGroupSize = MinoAvatarGroupSize.XSmall,
+    trailingContent: (@Composable () -> Unit)? = null,
 ) {
     val shape = MinoAvatarDefaults.shape(variant)
     val ringColor = MinoAvatarDefaults.groupRingColor
 
     Row(
-        modifier = modifier
-            .surface(shape = AvatarTokens.GroupContainerShape, containerColor = containerColor)
-            .padding(AvatarTokens.GroupContainerPadding),
-        horizontalArrangement = Arrangement.spacedBy(AvatarTokens.GroupTrailingSpacing),
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(size.trailingSpacing),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(-AvatarTokens.GroupOverlap)) {
-            imageUrls.forEachIndexed { index, url ->
-                RingedGroupSlot(
-                    shape = shape,
-                    ringColor = ringColor,
-                    modifier = Modifier.zIndex((imageUrls.size - index).toFloat()),
-                ) {
-                    MinoAvatar(
-                        variant = variant,
-                        size = size,
-                        imageUrl = url,
+        Row(horizontalArrangement = Arrangement.spacedBy(-size.overlap)) {
+            imageUrls.forEach { url ->
+                Box(modifier = Modifier.size(size.avatarSize.dp)) {
+                    MinoAvatar(variant = variant, size = size.avatarSize, imageUrl = url)
+                    // 링은 아바타 위에 덧그린다. Figma도 링과 아바타를 합친 폭이 아바타 크기와
+                    // 같아(심볼 폭 역산: XSmall 96 / Small 128, 각 5개) 바깥으로 자라지 않는다.
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .border(AvatarTokens.GroupRingWidth, ringColor, shape),
                     )
                 }
             }
-
-            if (overflowSlot != null) {
-                RingedGroupSlot(shape = shape, ringColor = ringColor) {
-                    overflowSlot(shape, size)
-                }
-            }
         }
 
-        if (trailingSlot != null) {
-            trailingSlot(shape, size)
+        if (trailingContent != null) {
+            trailingContent()
         }
-    }
-}
-
-/** 아바타·[overflowSlot] 콘텐츠를 [AvatarTokens.GroupRingColor] 링으로 감싼다. */
-@Composable
-private fun RingedGroupSlot(
-    shape: Shape,
-    ringColor: Color,
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit,
-) {
-    Box(
-        modifier = modifier
-            .surface(shape = shape, containerColor = ringColor)
-            .padding(AvatarTokens.GroupRingWidth),
-    ) {
-        content()
     }
 }
 
 /**
- * [MinoAvatarGroup]의 `trailingSlot`에 꽂는 멤버 추가 버튼(Figma state=add). 검정 원 배경에 흰 plus 아이콘.
+ * Avatar Group의 크기. Figma `Avatar/Avatar Group`의 `Size` 축에 대응한다.
  *
- * @param shape·[size] 그룹의 아바타와 동일한 값을 그대로 전달한다(슬롯 람다 인자로 받는다).
- */
-@Composable
-fun MinoAvatarGroupAddButton(
-    onClick: () -> Unit,
-    shape: Shape,
-    size: MinoAvatarSize,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier = modifier
-            .size(size.dp)
-            .surface(shape = shape, containerColor = MinoAvatarDefaults.addButtonBackgroundColor)
-            .rippleSingleClickable(onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            imageVector = MinoIcons.Plus,
-            contentDescription = "추가",
-            tint = MinoAvatarDefaults.addButtonIconColor,
-            modifier = Modifier.size(AvatarTokens.AddButtonIconSize),
-        )
-    }
-}
-
-/**
- * [MinoAvatarGroup]의 `overflowSlot`에 꽂는 초과 인원 뱃지(Figma state=more).
+ * **[MinoAvatarSize]와 값이 다르다.** 그룹은 다섯 크기 중 두 개만 정의돼 있고, 크기가 아바타
+ * 지름뿐 아니라 겹침 폭·트레일링 간격까지 함께 가른다. 아바타 단독으로 쓸 때는 [MinoAvatarSize]다.
  *
- * @param label 뱃지에 표시할 텍스트(예: "99+", "+12"). 포맷 규칙은 호출부가 결정한다.
- * @param shape·[size] 그룹의 아바타와 동일한 값을 그대로 전달한다(슬롯 람다 인자로 받는다).
+ * 실측값 세 가지는 `token/AvatarTokens.kt`가 소유한다.
  */
-@Composable
-fun MinoAvatarGroupOverflowBadge(
-    label: String,
-    shape: Shape,
-    size: MinoAvatarSize,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier = modifier
-            .size(size.dp)
-            .surface(shape = shape, containerColor = MinoAvatarDefaults.overflowBackgroundColor),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = label,
-            style = MinoAvatarDefaults.overflowLabelFont,
-            color = MinoAvatarDefaults.overflowLabelColor,
-        )
-    }
-}
+enum class MinoAvatarGroupSize {
+    /** Figma `Size=XSmall`. 아바타 24, 겹침 6, 트레일링 간격 8. */
+    XSmall,
 
-@UiModePreviews
-@Composable
-private fun MinoAvatarGroupPreview() {
-    MinoAndroidAppTheme {
-        Row(
-            modifier = Modifier
-                .background(ColorAccessKeyToken.BackgroundNormalNormal.value)
-                .padding(16.dp),
-        ) {
-            MinoAvatarGroup(
-                imageUrls = persistentListOf(null, null, null, null),
-                variant = MinoAvatarVariant.Person,
-                size = MinoAvatarSize.Small,
-            )
-        }
-    }
-}
-
-@UiModePreviews
-@Composable
-private fun MinoAvatarGroupAddPreview() {
-    MinoAndroidAppTheme {
-        Row(
-            modifier = Modifier
-                .background(ColorAccessKeyToken.BackgroundNormalNormal.value)
-                .padding(16.dp),
-        ) {
-            MinoAvatarGroup(
-                imageUrls = persistentListOf(null),
-                variant = MinoAvatarVariant.Person,
-                size = MinoAvatarSize.Small,
-                trailingSlot = { shape, size ->
-                    MinoAvatarGroupAddButton(onClick = {}, shape = shape, size = size)
-                },
-            )
-        }
-    }
-}
-
-@UiModePreviews
-@Composable
-private fun MinoAvatarGroupOverflowPreview() {
-    MinoAndroidAppTheme {
-        Row(
-            modifier = Modifier
-                .background(ColorAccessKeyToken.BackgroundNormalNormal.value)
-                .padding(16.dp),
-        ) {
-            MinoAvatarGroup(
-                imageUrls = persistentListOf(null, null, null),
-                variant = MinoAvatarVariant.Person,
-                size = MinoAvatarSize.Small,
-                overflowSlot = { shape, size ->
-                    MinoAvatarGroupOverflowBadge(label = "99+", shape = shape, size = size)
-                },
-            )
-        }
-    }
+    /** Figma `Size=Small`. 아바타 32, 겹침 8, 트레일링 간격 10. */
+    Small,
 }

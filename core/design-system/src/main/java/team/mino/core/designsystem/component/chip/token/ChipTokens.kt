@@ -3,6 +3,7 @@ package team.mino.core.designsystem.component.chip.token
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import team.mino.core.designsystem.component.chip.ChipSize
 import team.mino.core.designsystem.foundation.color.token.AtomicOpacityToken
@@ -13,7 +14,6 @@ import team.mino.core.designsystem.foundation.typography.token.TypographyAccessK
  * Chip 컴포넌트 슬롯 → 디자인 토큰 키 매핑.
  */
 internal object ChipTokens {
-    val TextFont = TypographyAccessKeyToken.Body2NormalMedium
     val BorderWidth = 1.dp
 
     /** 비활성(active=false) 상태 공통 글자색. */
@@ -61,3 +61,42 @@ private val ShapeBySize = mapOf(
 internal fun ChipSize.contentPadding(): PaddingValues = ContentPaddingBySize.getValue(this)
 
 internal fun ChipSize.shape(): Shape = ShapeBySize.getValue(this)
+
+/**
+ * 크기마다 글자 크기가 갈린다. 칩 높이(24/32/36/40dp)는 `세로 패딩 × 2 + 행간`으로 떨어진다.
+ */
+internal val ChipSize.font: TypographyAccessKeyToken
+    get() =
+        when (this) {
+            ChipSize.XSmall -> TypographyAccessKeyToken.Caption1Medium
+            ChipSize.Small -> TypographyAccessKeyToken.Label1NormalMedium
+            ChipSize.Medium, ChipSize.Large -> TypographyAccessKeyToken.Body2NormalMedium
+        }
+
+/** 리딩·트레일링 콘텐츠 슬롯의 한 변. Figma는 정사각 비율(1:1) 아이콘·썸네일을 넣는다. */
+internal val ChipSize.contentSize: Dp
+    get() =
+        when (this) {
+            ChipSize.XSmall -> 12.dp
+            ChipSize.Small, ChipSize.Medium -> 14.dp
+            ChipSize.Large -> 16.dp
+        }
+
+/** 콘텐츠 슬롯과 글자 사이 간격. */
+internal val ChipSize.contentSpacing: Dp
+    get() =
+        when (this) {
+            ChipSize.XSmall, ChipSize.Small -> 2.dp
+            ChipSize.Medium, ChipSize.Large -> 3.dp
+        }
+
+/**
+ * 글자 좌우에 추가로 붙는 여백. Figma가 글자를 `Wrapper` 프레임으로 한 번 감싸 주는 값이라
+ * 칩 좌우 여백([contentPadding])과 슬롯↔글자 간격([contentSpacing]) 양쪽에 더해진다.
+ */
+internal val ChipSize.textHorizontalPadding: Dp
+    get() =
+        when (this) {
+            ChipSize.XSmall -> 1.dp
+            ChipSize.Small, ChipSize.Medium, ChipSize.Large -> 2.dp
+        }
