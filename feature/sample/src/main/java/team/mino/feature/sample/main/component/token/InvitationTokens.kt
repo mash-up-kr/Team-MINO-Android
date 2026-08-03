@@ -4,7 +4,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import team.mino.core.designsystem.component.avatar.MinoAvatarSize
+import team.mino.core.designsystem.component.avatar.MinoAvatarGroupSize
 
 /**
  * Invitation 컴포넌트 슬롯 → 크기/간격 토큰 매핑. Figma `invitation`(16108-23382, AOS) 기준.
@@ -33,7 +33,7 @@ internal object InvitationTokens {
     val CoverShape: Shape = RoundedCornerShape(18.29.dp)
     val CoverImagePadding = 14.dp
 
-    val AvatarSize = MinoAvatarSize.XSmall
+    val AvatarSize = MinoAvatarGroupSize.XSmall
 
     // 편지봉투(envelope)는 고정 에셋. 좌표는 Figma `invitation`(16108-23382) 노드 실측값(dp=px 가정).
     val EnvelopeSize = DpSize(308.dp, 322.dp)

@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import team.mino.core.designsystem.component.avatar.MinoAvatarGroup
@@ -53,8 +52,6 @@ fun MinoRoomCard(
             imageUrls = visibleImageUrls,
             variant = MinoAvatarVariant.Person,
             size = RoomCardTokens.AvatarSize,
-            // 카드 배경 위에 바로 얹히므로 그룹의 pill 컨테이너는 쓰지 않는다.
-            containerColor = Color.Transparent,
         )
     }
 }

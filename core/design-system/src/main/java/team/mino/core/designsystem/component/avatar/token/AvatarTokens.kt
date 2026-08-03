@@ -1,13 +1,14 @@
 package team.mino.core.designsystem.component.avatar.token
 
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import team.mino.core.designsystem.component.avatar.MinoAvatarGroupSize
+import team.mino.core.designsystem.component.avatar.MinoAvatarSize
 import team.mino.core.designsystem.foundation.color.token.ColorAccessKeyToken
-import team.mino.core.designsystem.foundation.typography.token.TypographyAccessKeyToken
 
 /**
- * Avatar 컴포넌트 슬롯 → 디자인 토큰 키 매핑. Figma `Avatar/Avatar`(16215-25725) 기준.
+ * Avatar 컴포넌트 슬롯 → 디자인 토큰 키 매핑.
+ * Figma `Avatar/Avatar`(16215-25725)·`Avatar/Avatar Group`(16215-26148) 실측값 기준.
  */
 internal object AvatarTokens {
     val BackgroundColor = ColorAccessKeyToken.FillAlternative
@@ -18,28 +19,39 @@ internal object AvatarTokens {
     /** Company·Academy(둥근 사각형)의 코너 반경 비율(%). Person은 원형이라 미적용. */
     val SquircleCornerPercent = 28
 
-    /** Avatar Group에서 아바타를 감싸는 배경 링. Figma `Avatar/Avatar Group`(15852-88488) 기준. */
+    /**
+     * 알림 배지 자리 크기. Figma는 배지 프레임을 아바타 **우상단 모서리에 중심을 맞춰** 얹기 때문에
+     * 절반이 아바타 밖으로 나간다. 아바타 크기와 무관하게 20dp 고정이다.
+     */
+    val PushBadgeSize = 20.dp
+
+    /** Avatar Group에서 아바타를 감싸는 링. 아바타 크기 **안쪽**에 그려져 전체 폭을 늘리지 않는다. */
     val GroupRingColor = ColorAccessKeyToken.BackgroundNormalNormal
     val GroupRingWidth = 1.5.dp
-
-    /** Avatar Group 겹침 폭. Figma는 사이즈 변형 없이 고정 -6px을 쓴다. */
-    val GroupOverlap = 6.dp
-
-    /** Avatar Group 전체를 감싸는 pill 컨테이너. */
-    val GroupContainerBackground = ColorAccessKeyToken.FillNormal
-    val GroupContainerPadding = 4.dp
-    val GroupContainerShape: Shape = RoundedCornerShape(percent = 50)
-
-    /** 아바타 스택과 `trailingSlot` 사이 간격. */
-    val GroupTrailingSpacing = 8.dp
-
-    /** [team.mino.core.designsystem.component.avatar.MinoAvatarGroupAddButton] (멤버 추가). */
-    val AddButtonBackgroundColor = ColorAccessKeyToken.PrimaryNormal
-    val AddButtonIconColor = ColorAccessKeyToken.InversePrimary
-    val AddButtonIconSize = 18.dp
-
-    /** [team.mino.core.designsystem.component.avatar.MinoAvatarGroupOverflowBadge] (초과 인원). */
-    val OverflowBackgroundColor = ColorAccessKeyToken.BackgroundElevatedAlternative
-    val OverflowLabelColor = ColorAccessKeyToken.LabelAlternative
-    val OverflowLabelFont = TypographyAccessKeyToken.Label2Bold
 }
+
+/**
+ * Avatar Group 크기 → 아바타 지름. Figma 그룹은 다섯 크기 중 **두 개만** 정의한다.
+ */
+internal val MinoAvatarGroupSize.avatarSize: MinoAvatarSize
+    get() =
+        when (this) {
+            MinoAvatarGroupSize.XSmall -> MinoAvatarSize.XSmall
+            MinoAvatarGroupSize.Small -> MinoAvatarSize.Small
+        }
+
+/** 앞 아바타를 파고드는 겹침 폭. */
+internal val MinoAvatarGroupSize.overlap: Dp
+    get() =
+        when (this) {
+            MinoAvatarGroupSize.XSmall -> 6.dp
+            MinoAvatarGroupSize.Small -> 8.dp
+        }
+
+/** 아바타 스택과 트레일링 슬롯 사이 간격. */
+internal val MinoAvatarGroupSize.trailingSpacing: Dp
+    get() =
+        when (this) {
+            MinoAvatarGroupSize.XSmall -> 8.dp
+            MinoAvatarGroupSize.Small -> 10.dp
+        }

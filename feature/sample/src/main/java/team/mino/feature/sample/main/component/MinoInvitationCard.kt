@@ -106,7 +106,6 @@ fun MinoInvitationCard(
                     imageUrls = participantImageUrls,
                     variant = MinoAvatarVariant.Person,
                     size = InvitationTokens.AvatarSize,
-                    containerColor = Color.Transparent,
                 )
                 Text(
                     text = countLabel,

@@ -1,5 +1,7 @@
 package team.mino.core.designsystem.component.snackbar.token
 
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
 import team.mino.core.designsystem.foundation.color.token.AtomicOpacityToken
 import team.mino.core.designsystem.foundation.color.token.ColorAccessKeyToken
@@ -29,8 +31,29 @@ internal object SnackbarTokens {
     val MaxWidth = 420.dp
     val HorizontalPadding = 16.dp
     val VerticalPadding = 11.dp
+
+    /**
+     * 콘텐츠 영역(Figma `Container`)의 최소 높이. 제목 한 줄(행간 22 + 상하 5)과 같은 값이라
+     * 제목만 있을 때는 드러나지 않지만, 설명만 있는 형태(행간 18)에서 pill 높이를 54dp로 붙잡는다.
+     */
+    val MinContentHeight = 32.dp
+
+    /** 메시지 영역·액션·닫기 버튼 사이 간격(Figma `Container`의 gap). */
     val ContentSpacing = 12.dp
-    val MessagePadding = 2.dp
-    val LeadingIconSize = 20.dp
+
+    /** 리딩 아이콘과 메시지 사이 간격(Figma `Content`의 gap). 위 [ContentSpacing]과 다른 값이다. */
+    val LeadingIconSpacing = 8.dp
+    val LeadingIconSize = 22.dp
+
+    val MessageHorizontalPadding = 2.dp
+    val MessageVerticalPadding = 5.dp
+
+    val ActionHorizontalPadding = 2.dp
+    val ActionVerticalPadding = 4.dp
+
+    val CloseButtonPadding = 2.dp
     val CloseIconSize = 20.dp
+
+    /** 액션 버튼 리플 모서리(Figma `Interaction` 레이어). 셰이프 토큰 스케일(8/12/16)에 없는 값이다. */
+    val ActionShape: Shape = RoundedCornerShape(6.dp)
 }

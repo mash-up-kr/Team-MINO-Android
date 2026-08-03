@@ -7,11 +7,12 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import team.mino.core.designsystem.component.bottomnavigation.MinoBottomNavigationItemColors
 import team.mino.core.designsystem.component.button.MinoButtonColors
+import team.mino.core.designsystem.component.button.MinoTextButtonColors
 import team.mino.core.designsystem.component.category.MinoCategoryColors
 import team.mino.core.designsystem.component.chip.MinoChipColors
 import team.mino.core.designsystem.component.contentbadge.MinoContentBadgeColors
 import team.mino.core.designsystem.component.menu.MinoMenuItemColors
-import team.mino.core.designsystem.component.textfield.MinoTextFieldColors
+import team.mino.core.designsystem.component.textinput.MinoTextInputColors
 import team.mino.core.designsystem.foundation.color.token.ColorAccessKeyToken
 import team.mino.core.designsystem.foundation.color.token.ColorDarkTokens
 import team.mino.core.designsystem.foundation.color.token.ColorLightTokens
@@ -76,14 +77,18 @@ class ColorScheme(
     // 스킴(라이트/다크)당 1회만 생성해 재사용한다 (docs/adr/2026-07-25-design-system-component-m3-pattern.md).
     internal var defaultBottomNavigationItemColorsCached: MinoBottomNavigationItemColors? = null
     internal var solidPrimaryButtonColorsCached: MinoButtonColors? = null
+    internal var solidAssistiveButtonColorsCached: MinoButtonColors? = null
     internal var outlinedPrimaryButtonColorsCached: MinoButtonColors? = null
     internal var outlinedAssistiveButtonColorsCached: MinoButtonColors? = null
-    internal var defaultCategoryColorsCached: MinoCategoryColors? = null
+    internal var primaryTextButtonColorsCached: MinoTextButtonColors? = null
+    internal var assistiveTextButtonColorsCached: MinoTextButtonColors? = null
+    internal var normalCategoryColorsCached: MinoCategoryColors? = null
+    internal var alternativeCategoryColorsCached: MinoCategoryColors? = null
     internal var defaultChipColorsCached: MinoChipColors? = null
     internal var defaultContentBadgeColorsCached: MinoContentBadgeColors? = null
     internal var accentContentBadgeColorsCached: MinoContentBadgeColors? = null
     internal var defaultMenuItemColorsCached: MinoMenuItemColors? = null
-    internal var defaultTextFieldColorsCached: MinoTextFieldColors? = null
+    internal var defaultTextInputColorsCached: MinoTextInputColors? = null
 
     fun copy(
         staticWhite: Color = this.staticWhite,

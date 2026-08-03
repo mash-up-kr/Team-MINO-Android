@@ -18,6 +18,8 @@ import coil3.compose.AsyncImage
  * @param fallback placeholder로 보여줄 아이콘.
  * @param fallbackTint [fallback] tint.
  * @param modifier 렌더링되는 쪽(이미지 또는 아이콘)에 그대로 적용된다.
+ * @param fallbackModifier [fallback]을 그릴 때만 [modifier] 뒤에 덧붙는다. 이미지와 글리프의
+ *   차오르는 정도가 달라야 할 때(예: 이미지는 꽉 채우고 글리프는 여백을 두는 아바타) 쓴다.
  */
 @Composable
 fun MinoAsyncImage(
@@ -25,6 +27,7 @@ fun MinoAsyncImage(
     fallback: Painter,
     fallbackTint: Color,
     modifier: Modifier = Modifier,
+    fallbackModifier: Modifier = Modifier,
     contentDescription: String? = null,
     contentScale: ContentScale = ContentScale.Crop,
 ) {
@@ -44,7 +47,7 @@ fun MinoAsyncImage(
             painter = fallback,
             contentDescription = contentDescription,
             tint = fallbackTint,
-            modifier = modifier,
+            modifier = modifier.then(fallbackModifier),
         )
     }
 }
