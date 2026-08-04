@@ -16,14 +16,11 @@ internal object MemberAvatarStackTokens {
     val ContainerShape: Shape = RoundedCornerShape(percent = 50)
     val ContainerPadding = 4.dp
 
-    /** 아바타 스택과 추가 버튼 사이 간격. */
-    val TrailingSpacing = 8.dp
-
-    /** 아바타 겹침 폭. 디자인 시스템 Avatar Group과 달리 크기별로 갈리지 않고 6dp 고정이다. */
+    /**
+     * 겹침 폭. 디자인 시스템 Avatar Group과 달리 크기별로 갈리지 않고 6dp 고정이며,
+     * 초과 인원 뱃지·추가 버튼에도 똑같이 적용된다(Figma는 셋을 한 Container에 담는다).
+     */
     val Overlap = 6.dp
-
-    /** 아바타를 감싸는 흰 링. 바깥에 붙어 슬롯이 아바타보다 링 두께만큼 커진다. */
-    val RingWidth = 1.5.dp
 
     val AvatarSize = MinoAvatarSize.Small
 

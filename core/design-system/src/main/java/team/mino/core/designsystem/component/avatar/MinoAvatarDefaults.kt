@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.unit.Dp
 import team.mino.core.designsystem.component.avatar.token.AvatarTokens
 import team.mino.core.designsystem.foundation.color.token.value
 import team.mino.core.designsystem.foundation.typography.token.value
@@ -32,6 +33,9 @@ object MinoAvatarDefaults {
     /** Avatar Group에서 아바타·overflow 뱃지 슬롯을 감싸는 배경 링 색. */
     val groupRingColor: Color
         @Composable @ReadOnlyComposable get() = AvatarTokens.GroupRingColor.value
+
+    /** [groupRingColor] 링의 두께. 링을 직접 조립하는 화면 레벨 컴포넌트도 같은 값을 쓰도록 연다. */
+    val groupRingWidth: Dp get() = AvatarTokens.GroupRingWidth
 
     /** [variant]별 클리핑 셰이프(Person=원형, 그 외=둥근 사각형). */
     fun shape(variant: MinoAvatarVariant): Shape =
