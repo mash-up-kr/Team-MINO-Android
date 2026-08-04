@@ -1,10 +1,8 @@
 package team.mino.core.designsystem.component.avatar
 
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -13,13 +11,18 @@ import team.mino.core.designsystem.component.avatar.token.AvatarTokens
 import team.mino.core.designsystem.component.avatar.token.avatarSize
 import team.mino.core.designsystem.component.avatar.token.overlap
 import team.mino.core.designsystem.component.avatar.token.trailingSpacing
+import team.mino.core.designsystem.util.modifier.surface.surface
 
 /**
  * 여러 Avatar를 일부 겹쳐 나열하는 Avatar Group.
  *
  * Figma(MU_Wanted / Montage)의 `Avatar/Avatar Group`(16215-26148) 스펙을 따른다. 배경 없이
- * 아바타만 겹쳐 놓고, 각 아바타는 흰 링으로 경계를 구분한다. 링은 아바타 크기 **안쪽**에 그려져
- * 전체 폭을 늘리지 않는다.
+ * 아바타만 겹쳐 놓고, 각 아바타는 흰 링으로 경계를 구분한다. 링은 아바타 **바깥**에 붙어
+ * 슬롯이 아바타보다 링 두께만큼 커진다 — 아바타 자체 보더 위에 덧그리면 두 선이 같은 자리를
+ * 먹어 경계가 사라지기 때문이다.
+ *
+ * 그래서 폭이 Figma 심볼(XSmall 96 / Small 128, 각 5개 = 링을 아바타 안쪽에 덮은 값)보다
+ * 링 두께 두 배만큼 크다. 의도한 차이다.
  *
  * 끝에 붙는 [trailingContent]는 Figma가 "외 0명" 같은 텍스트 버튼을 기본 프리셋으로 두지만,
  * Custom도 허용하므로 슬롯으로 연다. 기본 프리셋과 같은 모양이 필요하면
@@ -51,16 +54,14 @@ fun MinoAvatarGroup(
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(-size.overlap)) {
             imageUrls.forEach { url ->
-                Box(modifier = Modifier.size(size.avatarSize.dp)) {
-                    MinoAvatar(variant = variant, size = size.avatarSize, imageUrl = url)
-                    // 링은 아바타 위에 덧그린다. Figma도 링과 아바타를 합친 폭이 아바타 크기와
-                    // 같아(심볼 폭 역산: XSmall 96 / Small 128, 각 5개) 바깥으로 자라지 않는다.
-                    Box(
-                        modifier = Modifier
-                            .matchParentSize()
-                            .border(AvatarTokens.GroupRingWidth, ringColor, shape),
-                    )
-                }
+                MinoAvatar(
+                    modifier = Modifier
+                        .surface(shape = shape, containerColor = ringColor)
+                        .padding(AvatarTokens.GroupRingWidth),
+                    variant = variant,
+                    size = size.avatarSize,
+                    imageUrl = url,
+                )
             }
         }
 

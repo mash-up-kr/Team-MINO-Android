@@ -28,7 +28,8 @@ import team.mino.core.designsystem.util.preview.UiModePreviews
 import team.mino.feature.sample.main.component.token.MemberAvatarStackTokens
 
 /**
- * 옅은 pill 안에 멤버 아바타를 겹쳐 담는 스택. 끝에 멤버 추가 버튼이나 초과 인원 뱃지를 붙인다.
+ * 옅은 pill 안에 멤버 아바타를 겹쳐 담는 스택. 끝에 멤버 추가 버튼이나 초과 인원 뱃지를 붙이며,
+ * 이들도 아바타와 같은 겹침 폭으로 파고든다.
  *
  * Figma `Avatar`(15852-88488, state=add·default·more) 스펙을 따른다. 이름은 같은 "Avatar"지만
  * **디자인 시스템 컴포넌트가 아니다** — DS 컴포넌트 영역 밖에 있고, 추가 버튼도 Menu의 아이콘 버튼
@@ -58,36 +59,35 @@ fun MemberAvatarStack(
                 shape = MemberAvatarStackTokens.ContainerShape,
                 containerColor = MinoAndroidTheme.colors.fillNormal,
             ).padding(MemberAvatarStackTokens.ContainerPadding),
-        horizontalArrangement = Arrangement.spacedBy(MemberAvatarStackTokens.TrailingSpacing),
+        horizontalArrangement = Arrangement.spacedBy(-MemberAvatarStackTokens.Overlap),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(-MemberAvatarStackTokens.Overlap)) {
-            imageUrls.forEach { url ->
-                RingedSlot(ringColor = ringColor, shape = slotShape) {
-                    MinoAvatar(
-                        variant = MinoAvatarVariant.Person,
-                        size = MemberAvatarStackTokens.AvatarSize,
-                        imageUrl = url,
-                    )
-                }
+        imageUrls.forEach { url ->
+            RingedSlot(ringColor = ringColor, shape = slotShape) {
+                MinoAvatar(
+                    variant = MinoAvatarVariant.Person,
+                    size = MemberAvatarStackTokens.AvatarSize,
+                    imageUrl = url,
+                )
             }
+        }
 
-            if (overflowLabel != null) {
-                RingedSlot(ringColor = ringColor, shape = slotShape) {
-                    AvatarSlot(
-                        containerColor = MinoAndroidTheme.colors.backgroundElevatedAlternative,
-                        shape = slotShape,
-                    ) {
-                        Text(
-                            text = overflowLabel,
-                            style = MinoAndroidTheme.typography.label2Bold,
-                            color = MinoAndroidTheme.colors.labelAlternative,
-                        )
-                    }
+        if (overflowLabel != null) {
+            RingedSlot(ringColor = ringColor, shape = slotShape) {
+                AvatarSlot(
+                    containerColor = MinoAndroidTheme.colors.backgroundElevatedAlternative,
+                    shape = slotShape,
+                ) {
+                    Text(
+                        text = overflowLabel,
+                        style = MinoAndroidTheme.typography.label2Bold,
+                        color = MinoAndroidTheme.colors.labelAlternative,
+                    )
                 }
             }
         }
 
+        // 추가 버튼만 링이 없다. Figma `state=add`의 아이콘 버튼에도 흰 테두리가 없다.
         if (onAddClick != null) {
             AvatarSlot(
                 containerColor = MinoAndroidTheme.colors.primaryNormal,
@@ -105,7 +105,7 @@ fun MemberAvatarStack(
     }
 }
 
-/** 아바타·뱃지를 흰 링으로 감싼다. 링이 바깥에 붙어 슬롯이 아바타보다 링 두께만큼 커진다. */
+/** 아바타·뱃지를 흰 링으로 감싼다. 링 두께·색은 디자인 시스템 Avatar Group과 같은 값을 쓴다. */
 @Composable
 private fun RingedSlot(
     ringColor: Color,
@@ -116,7 +116,7 @@ private fun RingedSlot(
     Box(
         modifier = modifier
             .surface(shape = shape, containerColor = ringColor)
-            .padding(MemberAvatarStackTokens.RingWidth),
+            .padding(MinoAvatarDefaults.groupRingWidth),
     ) {
         content()
     }

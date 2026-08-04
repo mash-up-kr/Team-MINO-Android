@@ -25,7 +25,10 @@ internal object AvatarTokens {
      */
     val PushBadgeSize = 20.dp
 
-    /** Avatar Group에서 아바타를 감싸는 링. 아바타 크기 **안쪽**에 그려져 전체 폭을 늘리지 않는다. */
+    /**
+     * Avatar Group에서 아바타를 감싸는 링. 아바타 **바깥**에 붙어 슬롯이 그만큼 커진다.
+     * [BorderWidth] 보더 위에 덧그리면 두 선이 겹쳐 아바타 경계가 사라지므로 자리를 따로 준다.
+     */
     val GroupRingColor = ColorAccessKeyToken.BackgroundNormalNormal
     val GroupRingWidth = 1.5.dp
 }
