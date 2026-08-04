@@ -81,10 +81,11 @@ fun MinoChip(
 @Composable
 private fun ChipContentSlot(
     size: ChipSize,
+    modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
     Box(
-        modifier = Modifier.size(size.contentSize),
+        modifier = modifier.size(size.contentSize),
         contentAlignment = Alignment.Center,
     ) {
         content()

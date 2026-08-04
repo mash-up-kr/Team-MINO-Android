@@ -24,7 +24,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
 import team.mino.core.designsystem.component.textinput.token.TextInputTokens
-import team.mino.core.designsystem.foundation.shadow.token.value
 import team.mino.core.designsystem.foundation.typography.token.value
 import team.mino.core.designsystem.util.modifier.shadow.dropShadow
 import team.mino.core.designsystem.util.modifier.surface.surface

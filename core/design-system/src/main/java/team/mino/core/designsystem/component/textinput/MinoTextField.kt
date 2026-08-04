@@ -27,7 +27,6 @@ import team.mino.core.designsystem.foundation.icons.MinoIcons
 import team.mino.core.designsystem.foundation.icons.icons.CircleCheckFill
 import team.mino.core.designsystem.foundation.icons.icons.CircleExclamationFill
 import team.mino.core.designsystem.foundation.icons.icons.Close
-import team.mino.core.designsystem.foundation.shadow.token.value
 import team.mino.core.designsystem.foundation.typography.token.value
 import team.mino.core.designsystem.util.modifier.clickable.rippleSingleClickable
 import team.mino.core.designsystem.util.modifier.shadow.dropShadow
