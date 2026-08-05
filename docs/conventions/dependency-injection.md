@@ -4,7 +4,7 @@
 
 인터페이스 구현을 가진 모듈이 자신의 `di/` 패키지에서 그 바인딩을 소유한다. 구현체는 `internal`로 닫고 `@Module @InstallIn(...) internal abstract class` + `@Binds`로만 노출한다.
 
-`:app`은 `@HiltAndroidApp`으로 그래프를 조립할 뿐 바인딩을 두지 않는다. `:app`이 바인딩하려면 모든 구현체를 `public`으로 열어야 하고, 그 순간 모듈 경계가 무너진다.
+`:app`은 `@HiltAndroidApp`으로 그래프를 조립할 뿐 바인딩을 두지 않는다.
 
 스코프는 컴포넌트를 따른다. 앱 전역 싱글턴은 `SingletonComponent`, Activity 수명에 묶인 전환 계약(`Launcher`)은 `ActivityRetainedComponent` + `@ActivityRetainedScoped`.
 
