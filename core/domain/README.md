@@ -35,7 +35,7 @@ flowchart TD
     Impl --> DS
 ```
 
-ViewModel은 UseCase 또는 Repository 인터페이스만 알고, 구현체(`RepositoryImpl`)는 알지 못한다. RepositoryImpl과 Hilt 바인딩은 `:core:data`에 두고, `:app`은 최종 DI 그래프를 조립한다.
+ViewModel은 UseCase 또는 Repository 인터페이스만 알고, 구현체(`RepositoryImpl`)는 알지 못한다. DI 바인딩 소유 규칙은 [`dependency-injection.md`](../../docs/conventions/dependency-injection.md)를 따른다.
 
 ---
 
