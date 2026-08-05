@@ -35,7 +35,7 @@ flowchart TD
     Impl --> DS
 ```
 
-ViewModel은 UseCase 또는 Repository 인터페이스만 알고, 구현체(`RepositoryImpl`)는 알지 못한다. DI 바인딩 소유 규칙은 [`modularization.md`의 `DI 바인딩 소유` 소절](../../docs/architecture/modularization.md)을 따른다.
+ViewModel은 UseCase 또는 Repository 인터페이스만 알고, 구현체(`RepositoryImpl`)는 알지 못한다. DI 바인딩 소유 규칙은 [`dependency-injection.md`](../../docs/conventions/dependency-injection.md)를 따른다.
 
 ---
 
