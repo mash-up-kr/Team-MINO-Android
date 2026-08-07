@@ -20,7 +20,7 @@ ADR은 [`adr-writer` 스킬](../../.claude/skills/adr-writer/SKILL.md)이 자동
 | 작성일 | 제목 | 상태 | 작성자 |
 |---|---|---|---|
 | 2026-06-29 | [직렬화 DTO의 IDE opt-in 경고에 `@OptIn` 우회를 쓰지 않는다](2026-06-29-serialization-optin-ide-warning.md) | Accepted | full_avocado |
-| 2026-07-15 | [plan-gen 고도화는 에이전트 팀이 아닌 서브에이전트 오케스트레이션으로 한다](2026-07-15-plan-gen-subagent-orchestration.md) | Accepted | Jaesung Lee |
+| 2026-07-15 | [plan-gen 고도화는 에이전트 팀이 아닌 서브에이전트 오케스트레이션으로 한다](2026-07-15-plan-gen-subagent-orchestration.md) | Superseded by [SDD 파이프라인은 단계별 단일 스킬로 구성하고 spec-gen·plan-gen 서브에이전트 오케스트레이션을 폐기한다](2026-08-07-sdd-single-skill-per-stage.md) | Jaesung Lee |
 | 2026-07-18 | [화면 트래킹은 호출부 조립 방식을 유지하고 TrackNavHost 래퍼는 강제화 시점까지 보류한다](2026-07-18-screen-tracking-composition.md) | Accepted | full_avocado |
 | 2026-07-21 | [AnalyticsTracker.logEvent 파라미터는 Map<String, Any>를 유지하고 타입 세이프 빌더는 커스텀 이벤트 도입 시점까지 보류한다](2026-07-21-analytics-event-params-typing.md) | Accepted | full_avocado |
 | 2026-07-24 | [시스템 폰트 배율을 무시하고 텍스트 크기를 고정한다 (1sp = 1dp)](2026-07-24-fixed-font-scale.md) | Accepted | Jaesung Lee |
@@ -38,3 +38,4 @@ ADR은 [`adr-writer` 스킬](../../.claude/skills/adr-writer/SKILL.md)이 자동
 | 2026-08-01 | [컴포저블 안의 람다는 수동 `remember`로 감싸지 않는다](2026-08-01-compose-lambda-memoization.md) | Accepted | Jaesung Lee |
 | 2026-08-02 | [Hilt 구현 바인딩은 구현을 소유한 모듈이 갖고, `:app`은 그래프 조립만 한다](2026-08-02-di-binding-ownership.md) | Accepted | Jaesung Lee |
 | 2026-08-03 | [Category 항목은 `MinoChip`으로 흡수하지 않고 전용으로 그리되, 치수 토큰만 공유한다](2026-08-03-category-item-dedicated-chip.md) | Accepted | Jaesung Lee |
+| 2026-08-07 | [SDD 파이프라인은 단계별 단일 스킬로 구성하고 spec-gen·plan-gen 서브에이전트 오케스트레이션을 폐기한다](2026-08-07-sdd-single-skill-per-stage.md) | Accepted | Jaesung Lee |
