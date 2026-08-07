@@ -1,6 +1,6 @@
 # plan-gen 고도화는 에이전트 팀이 아닌 서브에이전트 오케스트레이션으로 한다
 
-- **상태**: Accepted
+- **상태**: Superseded by [SDD 파이프라인은 단계별 단일 스킬로 구성하고 spec-gen·plan-gen 서브에이전트 오케스트레이션을 폐기한다](2026-08-07-sdd-single-skill-per-stage.md)
 - **작성일**: 2026-07-15
 - **작성자**: Jaesung Lee
 
