@@ -8,6 +8,7 @@ Android 프로젝트. Git Flow 브랜치 전략 사용.
 
 | 상황 | 참조할 문서 |
 |---|---|
+| 프로젝트 최상위 규범 확인, 원칙 간 충돌 판단, 헌법 개정 | `docs/constitution.md` |
 | Git 브랜치 생성, 이름 짓기, Git Flow 관련 작업 | `docs/conventions/branch-naming.md` |
 | Git Worktree 병렬 작업 환경, 워크트리 생성/정리, `claude -w` 사용 | `docs/conventions/worktree.md` |
 | 커밋 메시지 작성, 커밋 쪼개기 | `docs/conventions/commit-message.md` |
