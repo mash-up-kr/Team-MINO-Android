@@ -37,9 +37,29 @@ current=$(git symbolic-ref --short HEAD)
 > ⚠️ 현재 브랜치가 `<main|develop>` 입니다. 보호 브랜치에서 PR을 생성하는 것은 지양되지만 상황에 따라 필요할 수 있습니다. 그대로 진행합니다.
 
 ### 0-4. base 브랜치 결정
-- 기본값: `develop`
 - 현재 브랜치가 `hotfix/*` 또는 `release/*` 등 예외 패턴이면 AskUserQuestion으로 base 확인 (후보: `develop`, `main`)
-- 그 외 일반 feature/fix 브랜치는 `develop`으로 진행
+- 그 외에는 **워크플로우 하위 작업 자동판단**을 먼저 시도한다: 현재 브랜치가 `develop`이 아닌 다른 열린 브랜치에서 실제로 분기된 것인지 **git 조상 관계로** 확인한다(이름 패턴에 의존하지 않음 — 개념은 [`branch-naming.md`의 "base 브랜치"](../../docs/conventions/branch-naming.md#base-브랜치-워크플로우-통합) 참조):
+  ```sh
+  current=$(git symbolic-ref --short HEAD)
+  git fetch origin --quiet
+
+  base="develop"
+  best_count=$(git rev-list --count "origin/develop..HEAD" 2>/dev/null || echo 999999)
+
+  # HEAD의 조상인 origin 브랜치만 --merged로 걸러낸 뒤, 그중 가장 가까운(커밋 수 최소) 것을 채택
+  # main·develop·자기 자신·hotfix/release(별도 질문 대상)는 후보에서 제외
+  for ref in $(git for-each-ref --format='%(refname:short)' --merged=HEAD refs/remotes/origin \
+               | grep -v -E '/(HEAD|main|develop)$' \
+               | grep -v -E '^origin/(hotfix|release)/' \
+               | grep -vx "origin/$current"); do
+    count=$(git rev-list --count "$ref..HEAD")
+    if [ "$count" -lt "$best_count" ]; then
+      base="${ref#origin/}"
+      best_count="$count"
+    fi
+  done
+  ```
+  후보가 없으면 `develop`으로 폴백 — 별도 질문 없이 조용히 진행. 채택 기준(가장 가까운 조상 브랜치)은 위 코드가 유일한 출처이며, 다른 문서는 이 절차를 링크만 한다.
 
 ### 0-5. 커밋 존재 확인 (base 대비)
 ```sh
@@ -317,6 +337,7 @@ gh api "repos/$OWNER_REPO/pulls/$PR_NUMBER/comments" \
 ## 규칙 요약 (Claude에게)
 
 - 제목·섹션·연결 키워드·메타 규칙은 **[`docs/conventions/pull-request.md`](../../docs/conventions/pull-request.md)** 를 단일 출처로 한다. 커맨드 안에서 재정의하지 않는다.
+- base 브랜치는 기본 `develop`이되, 워크플로우 하위 작업은 git 조상 관계로 자동판단해 상위 브랜치를 base로 쓴다. 판단 기준은 0-4가 유일한 출처.
 - 본문 스켈레톤은 **[`.github/PULL_REQUEST_TEMPLATE.md`](../../.github/PULL_REQUEST_TEMPLATE.md)** 를 그대로 베이스로 사용. 섹션 순서·제목 변경 금지.
 - **Claude 자동 작성 섹션**: 요약, 관련 이슈, 변경 내용 (3개)
 - **사용자 작성 섹션**: 주요 스크린샷, 리뷰 포인트, 관련 레퍼런스 자료 (3개) — 힌트 주석 그대로 유지
