@@ -10,6 +10,7 @@
 
 - **기본**: `develop`
 - **예외**: `release`/`hotfix` 브랜치는 [`branch-naming.md`](branch-naming.md)의 머지 대상 표 참조
+- **워크플로우 하위 작업**: `/pr`이 git 조상 관계로 자동 판단해 상위 브랜치를 base로 쓴다(질문 없음). 판단 기준은 [`.claude/commands/pr.md`](../../.claude/commands/pr.md) 0-4가 단일 출처, 개념은 [`branch-naming.md`의 "base 브랜치"](branch-naming.md#base-브랜치-워크플로우-통합) 참조
 - `/pr`은 기본값 `develop`. 다른 base가 더 맞으면 사용자에게 확인 후 진행
 
 ## 이슈 연결
