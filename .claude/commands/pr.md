@@ -8,9 +8,10 @@ allowed-tools: Bash, AskUserQuestion, Read, Write
 
 너는 현재 브랜치의 커밋과 연결된 이슈를 바탕으로 **Pull Request 본문을 작성하고 `gh pr create`로 생성**한 뒤, **작성자 관점의 Review Comment**를 핵심 변경 지점에 남기는 Claude다. 푸시는 필요 시 자동으로 처리하되, 커밋 생성·수정은 범위 밖이다(`/done` 사용).
 
-> **선행 로드**: 이 커맨드는 아래 두 문서를 단일 출처로 한다. 본문 작성 단계(5)에 들어가기 전에 **반드시** 두 파일을 Read해 최신 규칙을 확보한다.
-> - `docs/conventions/pull-request.md` — 제목·섹션·연결 키워드·메타 규칙
-> - `.github/PULL_REQUEST_TEMPLATE.md` — 본문 스켈레톤
+> **선행 로드**: 이 커맨드는 아래 문서를 단일 출처로 한다. **반드시** Read해 최신 규칙을 확보한다.
+> - `docs/conventions/base-branch.md` — 워크플로우 하위 작업의 base 자동판단 절차 (0-4 진입 전 Read)
+> - `docs/conventions/pull-request.md` — 제목·섹션·연결 키워드·메타 규칙 (본문 작성 단계(5) 전 Read)
+> - `.github/PULL_REQUEST_TEMPLATE.md` — 본문 스켈레톤 (본문 작성 단계(5) 전 Read)
 
 ---
 
@@ -38,28 +39,7 @@ current=$(git symbolic-ref --short HEAD)
 
 ### 0-4. base 브랜치 결정
 - 현재 브랜치가 `hotfix/*` 또는 `release/*` 등 예외 패턴이면 AskUserQuestion으로 base 확인 (후보: `develop`, `main`)
-- 그 외에는 **워크플로우 하위 작업 자동판단**을 먼저 시도한다: 현재 브랜치가 `develop`이 아닌 다른 열린 브랜치에서 실제로 분기된 것인지 **git 조상 관계로** 확인한다(이름 패턴에 의존하지 않음 — 개념은 [`branch-naming.md`의 "base 브랜치"](../../docs/conventions/branch-naming.md#base-브랜치-워크플로우-통합) 참조):
-  ```sh
-  current=$(git symbolic-ref --short HEAD)
-  git fetch origin --quiet
-
-  base="develop"
-  best_count=$(git rev-list --count "origin/develop..HEAD" 2>/dev/null || echo 999999)
-
-  # HEAD의 조상인 origin 브랜치만 --merged로 걸러낸 뒤, 그중 가장 가까운(커밋 수 최소) 것을 채택
-  # main·develop·자기 자신·hotfix/release(별도 질문 대상)는 후보에서 제외
-  for ref in $(git for-each-ref --format='%(refname:short)' --merged=HEAD refs/remotes/origin \
-               | grep -v -E '/(HEAD|main|develop)$' \
-               | grep -v -E '^origin/(hotfix|release)/' \
-               | grep -vx "origin/$current"); do
-    count=$(git rev-list --count "$ref..HEAD")
-    if [ "$count" -lt "$best_count" ]; then
-      base="${ref#origin/}"
-      best_count="$count"
-    fi
-  done
-  ```
-  후보가 없으면 `develop`으로 폴백 — 별도 질문 없이 조용히 진행. 채택 기준(가장 가까운 조상 브랜치)은 위 코드가 유일한 출처이며, 다른 문서는 이 절차를 링크만 한다.
+- 그 외에는 [`docs/conventions/base-branch.md`](../../docs/conventions/base-branch.md)의 "base 자동판단 절차"를 그대로 실행한다 — git 조상 관계로 현재 브랜치가 실제로 어느 브랜치에서 분기됐는지 확인해 조용히(질문 없이) base를 정한다. 절차·스크립트는 그 문서가 단일 출처.
 
 ### 0-5. 커밋 존재 확인 (base 대비)
 ```sh
@@ -337,7 +317,7 @@ gh api "repos/$OWNER_REPO/pulls/$PR_NUMBER/comments" \
 ## 규칙 요약 (Claude에게)
 
 - 제목·섹션·연결 키워드·메타 규칙은 **[`docs/conventions/pull-request.md`](../../docs/conventions/pull-request.md)** 를 단일 출처로 한다. 커맨드 안에서 재정의하지 않는다.
-- base 브랜치는 기본 `develop`이되, 워크플로우 하위 작업은 git 조상 관계로 자동판단해 상위 브랜치를 base로 쓴다. 판단 기준은 0-4가 유일한 출처.
+- base 브랜치는 기본 `develop`이되, 워크플로우 하위 작업은 [`docs/conventions/base-branch.md`](../../docs/conventions/base-branch.md)의 절차로 자동판단한다(0-4).
 - 본문 스켈레톤은 **[`.github/PULL_REQUEST_TEMPLATE.md`](../../.github/PULL_REQUEST_TEMPLATE.md)** 를 그대로 베이스로 사용. 섹션 순서·제목 변경 금지.
 - **Claude 자동 작성 섹션**: 요약, 관련 이슈, 변경 내용 (3개)
 - **사용자 작성 섹션**: 주요 스크린샷, 리뷰 포인트, 관련 레퍼런스 자료 (3개) — 힌트 주석 그대로 유지
