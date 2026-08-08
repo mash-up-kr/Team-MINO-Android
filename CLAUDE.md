@@ -12,6 +12,7 @@ Android 프로젝트. Git Flow 브랜치 전략 사용.
 | Git Worktree 병렬 작업 환경, 워크트리 생성/정리, `claude -w` 사용 | `docs/conventions/worktree.md` |
 | 커밋 메시지 작성, 커밋 쪼개기 | `docs/conventions/commit-message.md` |
 | Pull Request 생성, 본문 작성, 제목·연결 키워드 | `docs/conventions/pull-request.md` + `.github/PULL_REQUEST_TEMPLATE.md` |
+| 워크플로우(spec/plan/task) 하위 작업의 base 브랜치, PR 타겟 자동판단 | `docs/conventions/base-branch.md` |
 | Compose Lint 룰·severity 조정, 위반 처리 | `docs/conventions/compose-lint.md` + `lint.xml` |
 | 에러 처리 — 도메인 예외(`MinoDomainException`) 매핑, `launchSafely`·`runCatchingDomain` 소비, CEH 안전망 | `docs/conventions/error_handling.md` |
 | DI 바인딩 소유 규칙, Hilt 바인딩 위치 결정 | `docs/conventions/dependency-injection.md` |
