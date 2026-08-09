@@ -233,7 +233,7 @@ rm -f "$TMP"
 ### 8-1. 브랜치 이름 구성
 - `docs/conventions/branch-naming.md`의 prefix 가이드에 따라 prefix 결정
 - 이슈 제목을 영어 kebab-case slug로 변환 (한국어면 의미 번역 후)
-- 최종 포맷: `<prefix>/<issue-number>-<slug>`
+- 최종 포맷: `<prefix>/<issue-number>-<slug>/base` — 이슈 생성 시 만드는 브랜치는 항상 `/base` 접미사를 붙인다. 이 브랜치가 곧 그 이슈의 base 브랜치([`base-branch.md`](../../docs/conventions/base-branch.md) 참조)이며, git은 같은 이름을 leaf 브랜치와 상위 경로로 동시에 쓸 수 없으므로(`feature/N-slug`가 이미 브랜치면 그 아래 `feature/N-slug/spec`을 만들 수 없음) `/base`가 반드시 별도 세그먼트여야 하위 작업(`.../spec`, `.../plan` 등)과 형제로 공존할 수 있다.
 
 ### 8-2. 분기 실행 (승인 절차 없이 바로 진행)
 
@@ -252,14 +252,14 @@ fi
 git pull --ff-only origin develop
 
 # 3) develop에서 새 브랜치 분기
-git checkout -b "<prefix>/<issue-number>-<slug>"
+git checkout -b "<prefix>/<issue-number>-<slug>/base"
 ```
 
 완료 후 최종 요약 출력:
 
 ```
 ✅ 이슈 #<번호> 생성 완료 — <URL>
-✅ 브랜치 <prefix>/<번호>-<slug> 체크아웃 완료 (develop 기준)
+✅ 브랜치 <prefix>/<번호>-<slug>/base 체크아웃 완료 (develop 기준)
 ```
 
 #### worktree 모드
@@ -268,8 +268,8 @@ git checkout -b "<prefix>/<issue-number>-<slug>"
 
 ```sh
 git fetch origin
-git worktree add ".claude/worktrees/<issue-number>-<slug>" -b "<prefix>/<issue-number>-<slug>" origin/develop
-git config "branch.<prefix>/<issue-number>-<slug>.merge" "refs/heads/<prefix>/<issue-number>-<slug>"
+git worktree add ".claude/worktrees/<issue-number>-<slug>" -b "<prefix>/<issue-number>-<slug>/base" origin/develop
+git config "branch.<prefix>/<issue-number>-<slug>/base.merge" "refs/heads/<prefix>/<issue-number>-<slug>/base"
 for f in local.properties keystore.properties app/google-services.json; do
   [ -f "$f" ] && cp "$f" ".claude/worktrees/<issue-number>-<slug>/$f"
 done
@@ -281,7 +281,7 @@ done
 
 ```
 ✅ 이슈 #<번호> 생성 완료 — <URL>
-✅ 워크트리 생성 완료: .claude/worktrees/<번호>-<slug> (<prefix>/<번호>-<slug>, develop 기준)
+✅ 워크트리 생성 완료: .claude/worktrees/<번호>-<slug> (<prefix>/<번호>-<slug>/base, develop 기준)
 ▶ 다음: cd .claude/worktrees/<번호>-<slug> && claude
 ```
 
@@ -300,5 +300,5 @@ done
 - **Feature 경로에서 사용자에게 묻는 항목은 "작업 목표" + "상세 설명" 2개만**. 제목·영향 모듈·완료 조건·참고 사항은 Claude가 직접 작성 후 6단계에서 일괄 확인.
 - Bug 경로는 제보성이므로 기존 6개 항목 모두 사용자 입력 (제목/요약/히스토리/예상/환경/추가).
 - 브랜치 네이밍·prefix·slug 규칙 및 Git Flow 전략은 **[`docs/conventions/branch-naming.md`](../../docs/conventions/branch-naming.md)** 를 단일 출처로 한다. 커맨드 실행 초기에 해당 파일을 Read하고, 커맨드 안에서 규칙을 재정의하지 않는다.
-- 브랜치 이름은 **별도 승인 없이** Claude가 규칙에 맞게 구성하여 바로 체크아웃한다.
+- 브랜치 이름은 **별도 승인 없이** Claude가 규칙에 맞게 구성하여 바로 체크아웃한다. 최종 이름은 항상 `/base` 접미사로 끝난다(`<prefix>/<issue-number>-<slug>/base`) — git ref 네임스페이스 제약(leaf 브랜치는 그 아래에 자식 ref를 가질 수 없음)때문에 하위 작업(`.../spec`, `.../plan` 등)과 형제로 공존하려면 base 쪽에 별도 세그먼트가 필요하다. 개념은 [`base-branch.md`](../../docs/conventions/base-branch.md) 참조.
 - `--worktree`/`-w` 플래그가 있으면 **worktree 모드**: 이슈 생성(1~7)은 동일하고, 0-2 clean 검증은 생략, 8단계는 제자리 checkout 대신 워크트리 생성으로 분기한다. 워크트리 생성 절차는 **[`docs/conventions/worktree.md`](../../docs/conventions/worktree.md)** 를 단일 출처로 하며 커맨드 안에서 재정의하지 않는다.

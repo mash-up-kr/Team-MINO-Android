@@ -1,15 +1,16 @@
 # base 브랜치 (워크플로우 통합)
 
-워크플로우(SDD: spec → plan → task 등) 도입으로 하나의 이슈 아래 여러 PR이 생기는 경우를 위한 동작 규칙. **새 prefix나 네이밍 규칙을 추가하는 게 아니다** — 기존 동작을 재해석하는 것뿐이다.
+워크플로우(SDD: spec → plan → task 등) 도입으로 하나의 이슈 아래 여러 PR이 생기는 경우를 위한 동작 규칙. 새 prefix를 추가하지 않고, `/issue`가 만드는 브랜치 이름 끝에 `/base` 세그먼트만 붙인다.
 
 브랜치 이름·prefix·slug 자체의 규칙은 [`branch-naming.md`](branch-naming.md)를 단일 출처로 따른다. 이 문서는 워크플로우 하위 작업이 **어느 브랜치를 base로 삼는지**만 다룬다.
 
 ## 개념
 
-- 에픽/상위 이슈에 대해 `/issue`가 만드는 브랜치(`feature/<issue-number>-<slug>`)는 **그 자체로 하위 작업의 base 역할을 겸한다.** 별도 플래그·prefix 불필요 — 이슈 생성 시 브랜치가 만들어지는 기존 동작 그대로.
+- `/issue`가 만드는 브랜치는 **항상** `<prefix>/<issue-number>-<slug>/base` 형태다 — 그 자체로 하위 작업의 base 역할을 겸한다는 뜻을 이름에서부터 드러낸다. 별도 플래그 불필요, 이슈 생성 시 자동.
+  - **왜 접미사가 필요한가**: git은 ref를 파일시스템처럼 계층 구조로 저장해서, `feature/<N>-<slug>`가 이미 브랜치(leaf)로 존재하면 그 아래 `feature/<N>-<slug>/spec` 같은 자식 ref를 만들 수 없다(동시에 파일이자 디렉터리일 수 없음). base 브랜치 이름에 `/base`를 붙여 별도 세그먼트로 만들어야, 하위 작업 브랜치들이 `feature/<N>-<slug>/<phase>` 형태로 형제(sibling)가 되어 base와 충돌 없이 공존한다.
 - 하위 작업(spec/plan/task 등) 브랜치를 만들 때는 `develop`이 아니라 이 base 브랜치에서 분기한다.
 - 하위 작업 브랜치의 PR은 `develop`이 아니라 base 브랜치를 타겟한다. `/pr`이 이를 **git 조상 관계로 자동 판단**한다 — 판단 방식은 아래 "base 자동판단 절차" 참고. 이 판단은 이름이 아니라 실제 분기 이력만 보므로, 하위 브랜치명이 달라도 동작 자체는 깨지지 않는다.
-- **권장 네이밍(강제 아님)**: 하위 브랜치는 base 브랜치 이름 그대로에 `/<phase>`를 붙인다 — `<base-branch-full-name>/<phase>` (예: base가 `feature/130-base-branch-workflow`면 spec 작업은 `feature/130-base-branch-workflow/spec`). base 브랜치 이름 부분은 고정, `<phase>`는 `spec`/`plan`/`task` 등 자유롭게 정한다. 이 형식을 따르면 `git branch`만 봐도 어느 base에 속한 하위 작업인지 한눈에 보인다 — 강제는 아니지만 일관성을 위해 따르는 것을 권장.
+- **권장 네이밍(강제 아님)**: 하위 브랜치는 base 브랜치의 `/base` 자리를 `/<phase>`로 바꾼 이름을 쓴다 — `<prefix>/<issue-number>-<slug>/<phase>` (예: base가 `feature/130-base-branch-workflow/base`면 spec 작업은 `feature/130-base-branch-workflow/spec`). `<phase>`는 `spec`/`plan`/`task` 등 자유롭게 정한다. 이 형식을 따르면 `git branch`만 봐도 어느 base에 속한 하위 작업인지 한눈에 보인다.
 - base 브랜치가 모든 하위 작업을 흡수한 뒤에는, base 브랜치에서 `/pr`을 실행해 `develop`으로 머지한다. 이때는 더 가까운 조상 브랜치가 없으므로 아래 절차대로 자동으로 `develop`이 default가 된다.
 
 ## base 자동판단 절차 (`/pr` 0-4 단일 출처)
