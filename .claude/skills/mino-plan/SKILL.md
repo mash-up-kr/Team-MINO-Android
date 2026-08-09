@@ -23,7 +23,7 @@ $ARGUMENTS
 
 ## 범위 가드 (Scope Guard)
 
-이 스킬의 작업 범위는 `{SPEC_DIR}/plan.md` 작성으로 한정한다.
+이 스킬의 작업 범위는 `{SPEC_DIR}` 아래 Plan 단계 설계 산출물 작성으로 한정한다 — `plan.md`와 Phase 0/1 산출물(`research.md`·`data-model.md`·`contracts/`·`quickstart.md`)이다. 그 밖의 파일은 만들지도 고치지도 않는다.
 
 - 이 단계에서는 구현하지 않는다. 애플리케이션 소스, Gradle 스크립트, 리소스, 테스트 파일을 만들거나 고치지 않는다.
 - `spec.md`은 **절대 고치지 않는다.**

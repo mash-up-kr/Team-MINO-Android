@@ -4,7 +4,7 @@
 
 **명세서**: [링크]
 
-**입력**: `/specs/[feature-name]/spec.md` 의 기능 명세서
+**입력**: `docs/specs/[feature-name]/spec.md` 의 기능 명세서
 
 **참고**: 이 템플릿은 `/mino-plan` 명령으로 채워지며, 해당 명령의 정의가 실행 워크플로우를 설명한다.
 
@@ -48,7 +48,7 @@
 ### 문서 (이번 Feature)
 
 ```text
-specs/[###-feature]/
+docs/specs/[feature-name]/
 ├── plan.md              # 이 파일 (/mino-plan 산출물)
 ├── research.md          # Phase 0 산출물 (/mino-plan)
 ├── data-model.md        # Phase 1 산출물 (/mino-plan)
