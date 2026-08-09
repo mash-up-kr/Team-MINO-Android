@@ -15,15 +15,19 @@
 
 ## 브랜치 구조
 
-```
-develop
- └─ feature/<N>-<slug>/base        (/issue가 생성, PR → develop)
-     ├─ feature/<N>-<slug>/spec    (1. base에서 분기, PR → base)
-     ├─ feature/<N>-<slug>/plan    (2. spec 머지 후 base에서 분기, PR → base)
-     └─ feature/<N>-<slug>/task    (3. plan 머지 후 base에서 분기, PR → base)
+```mermaid
+flowchart TD
+    dev["develop"] -->|"/issue"| base["feature/N-slug/base"]
+    base -->|"① 분기"| spec["feature/N-slug/spec"]
+    base -->|"② 분기 (spec 머지 후)"| plan["feature/N-slug/plan"]
+    base -->|"③ 분기 (plan 머지 후)"| task["feature/N-slug/task"]
+    spec -.->|"PR"| base
+    plan -.->|"PR"| base
+    task -.->|"PR"| base
+    base -.->|"PR"| dev
 ```
 
-spec/plan/task는 서로가 아니라 **모두 base에서** 분기한다(순서는 순차 진행). 셋 다 base로 머지되고 나면, base 자체가 develop으로 머지된다.
+실선은 분기 출처, 점선은 PR 타겟이다. spec/plan/task는 서로가 아니라 **모두 base에서** 분기하며(순서는 순차 진행), 셋 다 base로 머지되고 나면 base 자체가 develop으로 머지된다.
 
 ## base 자동판단 절차 (`/pr` 0-4 단일 출처)
 
