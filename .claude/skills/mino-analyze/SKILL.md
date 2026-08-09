@@ -2,7 +2,6 @@
 name: "mino-analyze"
 description: "Mino-Android SDD Analyze 단계. 작업 생성 이후 spec.md, plan.md, tasks.md 문서 전반에 대해 교차 산출물 일관성·품질 분석을 수행한다."
 argument-hint: "문서 교차 분석 시 집중할 영역(선택)"
-compatibility: "mino-sdd/template/ 과 docs/specs/ 를 갖춘 Mino-Android 레포 구조가 필요함"
 ---
 
 # mino-analyze — SDD Analyze 단계
