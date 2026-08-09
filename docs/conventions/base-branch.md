@@ -13,6 +13,18 @@
 - **권장 네이밍(강제 아님)**: 하위 브랜치는 base 브랜치의 `/base` 자리를 `/<phase>`로 바꾼 이름을 쓴다 — `<prefix>/<issue-number>-<slug>/<phase>` (예: base가 `feature/130-base-branch-workflow/base`면 spec 작업은 `feature/130-base-branch-workflow/spec`). `<phase>`는 `spec`/`plan`/`task` 등 자유롭게 정한다. 이 형식을 따르면 `git branch`만 봐도 어느 base에 속한 하위 작업인지 한눈에 보인다.
 - base 브랜치가 모든 하위 작업을 흡수한 뒤에는, base 브랜치에서 `/pr`을 실행해 `develop`으로 머지한다. 이때는 더 가까운 조상 브랜치가 없으므로 아래 절차대로 자동으로 `develop`이 default가 된다.
 
+## 브랜치 구조
+
+```
+develop
+ └─ feature/<N>-<slug>/base        (/issue가 생성, PR → develop)
+     ├─ feature/<N>-<slug>/spec    (1. base에서 분기, PR → base)
+     ├─ feature/<N>-<slug>/plan    (2. spec 머지 후 base에서 분기, PR → base)
+     └─ feature/<N>-<slug>/task    (3. plan 머지 후 base에서 분기, PR → base)
+```
+
+spec/plan/task는 서로가 아니라 **모두 base에서** 분기한다(순서는 순차 진행). 셋 다 base로 머지되고 나면, base 자체가 develop으로 머지된다.
+
 ## base 자동판단 절차 (`/pr` 0-4 단일 출처)
 
 `/pr`의 base 브랜치 결정 단계(0-4)는 이 절차를 실행한다.
