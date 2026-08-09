@@ -2,11 +2,12 @@
 
 ## 포맷
 ```
-<prefix>/<issue-number>-<english-slug>
+<prefix>/<issue-number>-<english-slug>/base
 ```
-- 예: `feature/12-login-api`, `feature/15-design-system-kdocs`
+- 예: `feature/12-login-api/base`, `feature/15-design-system-kdocs/base`
 - `#` 문자는 **포함하지 않는다**
 - slug는 **반드시 영어 kebab-case**
+- `/base` 접미사는 `/issue`가 만드는 모든 브랜치에 항상 붙는다. git은 leaf 브랜치(`feature/N-slug`)를 상위 경로로 동시에 쓸 수 없어서, `.../spec`·`.../plan` 같은 하위 작업 브랜치와 형제로 공존하려면 base 쪽에 별도 세그먼트가 필요하다 — 의미는 [`base-branch.md`](base-branch.md) 참조. 하위 작업 브랜치 이름 자체는 이 규칙 밖이며 강제하지 않는다.
 
 ## prefix 가이드 (Git Flow)
 
@@ -20,7 +21,7 @@
 
 ## 브랜치 prefix vs 커밋 메시지 type
 
-브랜치 prefix(릴리스 흐름)와 커밋 type(변경 성격)은 별개. 일반 개발 작업은 type과 무관하게 모두 `feature/`로 분기한다. 예: `docs:` 커밋이라도 브랜치는 `feature/15-design-system-kdocs`.
+브랜치 prefix(릴리스 흐름)와 커밋 type(변경 성격)은 별개. 일반 개발 작업은 type과 무관하게 모두 `feature/`로 분기한다. 예: `docs:` 커밋이라도 브랜치는 `feature/15-design-system-kdocs/base`.
 
 커밋 type은 [`commit-message.md`](commit-message.md) 참조.
 
@@ -40,7 +41,7 @@
 
 1. 워킹 트리 clean
 2. `develop` checkout → `git pull --ff-only origin develop`
-3. `git checkout -b feature/<issue-number>-<slug>`
+3. `git checkout -b feature/<issue-number>-<slug>/base`
 
 ### `release` / `hotfix` 분기 절차
 

@@ -19,10 +19,10 @@
 | 용도 | 방식 | 브랜치 | base |
 |---|---|---|---|
 | 즉석 실험·짧은 작업 | 네이티브 `claude -w <name>` | `worktree-<name>` | `develop`(위 전제 2 적용 시) |
-| 정식 이슈 작업 | `/issue --worktree` | `feature/<issue#>-<slug>` | `origin/develop` |
+| 정식 이슈 작업 | `/issue --worktree` | `feature/<issue#>-<slug>/base` | `origin/develop` |
 
 - **즉석 흐름**: 컨벤션 브랜치명이 필요 없는 짧은 실험에 쓴다. `worktree-*` 브랜치명은 Git Flow 정식 브랜치가 아니므로, 계속 이어갈 작업이라면 정식 흐름으로 옮긴다.
-- **정식 흐름**: 이슈 번호가 있는 작업은 [`/issue --worktree`](../../.claude/commands/issue.md)로 만든다. 기존 `/issue`(제자리 checkout) 위에 워크트리 생성만 얹은 변형으로, `feature/<issue#>-<slug>` 컨벤션을 그대로 지킨다. 아래 [절차](#issue---worktree-절차)가 그 동작의 단일 출처다.
+- **정식 흐름**: 이슈 번호가 있는 작업은 [`/issue --worktree`](../../.claude/commands/issue.md)로 만든다. 기존 `/issue`(제자리 checkout) 위에 워크트리 생성만 얹은 변형으로, `feature/<issue#>-<slug>/base` 컨벤션을 그대로 지킨다. 아래 [절차](#issue---worktree-절차)가 그 동작의 단일 출처다.
 
 ## 워크트리 위치와 로컬 파일
 
@@ -35,14 +35,14 @@
 `/issue`에 `--worktree`(별칭 `-w`)를 주면, 이슈 생성까지는 기본 흐름과 동일하고 **브랜치 분기만 워크트리 생성으로 바뀐다**. 커맨드는 이 절차를 단일 출처로 따른다.
 
 - **워킹 트리 clean 검증 생략**: 새 워크트리는 현재 작업 트리를 건드리지 않으므로, 미커밋 변경이 있어도 진행한다.
-- **base는 `origin/develop`**: 네이티브 `claude -w`와 달리 수동 `git worktree add`로 만들어 컨벤션 브랜치명(`feature/<issue#>-<slug>`)을 지킨다.
+- **base는 `origin/develop`**: 네이티브 `claude -w`와 달리 수동 `git worktree add`로 만들어 컨벤션 브랜치명(`feature/<issue#>-<slug>/base`)을 지킨다.
 - **로컬 파일 직접 복사**: 수동 생성이라 `.worktreeinclude`가 적용되지 않으므로, [`.worktreeinclude`](../../.worktreeinclude)에 등록된 로컬 파일들(`local.properties`·`keystore.properties`·`app/google-services.json`)을 새 워크트리의 같은 경로로 복사한다.
-- **upstream을 자기 브랜치로 교정**: `worktree add -b ... origin/develop`은 새 브랜치의 upstream을 `origin/develop`으로 잡는다. 이대로면 `push.default=simple`에서 브랜치 이름이 달라 `git push`가 거부되고 매번 `-u`가 필요하다(`upstream`/`tracking` 모드였다면 develop에 직접 push될 수도 있다). merge ref를 자기 브랜치로 덮어쓰면 첫 `git push`가 별도 플래그 없이 `origin/feature/<issue#>-<slug>`를 생성한다.
+- **upstream을 자기 브랜치로 교정**: `worktree add -b ... origin/develop`은 새 브랜치의 upstream을 `origin/develop`으로 잡는다. 이대로면 `push.default=simple`에서 브랜치 이름이 달라 `git push`가 거부되고 매번 `-u`가 필요하다(`upstream`/`tracking` 모드였다면 develop에 직접 push될 수도 있다). merge ref를 자기 브랜치로 덮어쓰면 첫 `git push`가 별도 플래그 없이 `origin/feature/<issue#>-<slug>/base`를 생성한다.
 
 ```sh
 git fetch origin
-git worktree add ".claude/worktrees/<issue#>-<slug>" -b "feature/<issue#>-<slug>" origin/develop
-git config "branch.feature/<issue#>-<slug>.merge" "refs/heads/feature/<issue#>-<slug>"
+git worktree add ".claude/worktrees/<issue#>-<slug>" -b "feature/<issue#>-<slug>/base" origin/develop
+git config "branch.feature/<issue#>-<slug>/base.merge" "refs/heads/feature/<issue#>-<slug>/base"
 for f in local.properties keystore.properties app/google-services.json; do
   [ -f "$f" ] && cp "$f" ".claude/worktrees/<issue#>-<slug>/$f"
 done
