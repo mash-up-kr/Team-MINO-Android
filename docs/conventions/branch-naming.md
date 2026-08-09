@@ -7,7 +7,7 @@
 - 예: `feature/12-login-api/base`, `feature/15-design-system-kdocs/base`
 - `#` 문자는 **포함하지 않는다**
 - slug는 **반드시 영어 kebab-case**
-- `/base` 접미사는 `/issue`가 만드는 모든 브랜치에 항상 붙는다. git은 leaf 브랜치(`feature/N-slug`)를 상위 경로로 동시에 쓸 수 없어서, `.../spec`·`.../plan` 같은 하위 작업 브랜치와 형제로 공존하려면 base 쪽에 별도 세그먼트가 필요하다 — 의미는 [`base-branch.md`](base-branch.md) 참조. 하위 작업 브랜치 이름 자체는 이 규칙 밖이며 강제하지 않는다.
+- `/base` 접미사는 `/issue`가 만드는 모든 브랜치에 항상 붙는다 — 이유·개념은 [`base-branch.md`](base-branch.md) 참조. 하위 작업 브랜치 이름 자체는 이 규칙 밖이며 강제하지 않는다.
 
 ## prefix 가이드 (Git Flow)
 
