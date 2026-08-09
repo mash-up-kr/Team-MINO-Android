@@ -1,10 +1,16 @@
 # 구현 계획: [FEATURE NAME]
 
-**작성일**: [날짜]
+**대상 스펙 경로**: `{SPEC_DIR}`
 
-**명세서**: [링크]
+**명세서**: [spec.md](./spec.md)
 
-**입력**: `docs/specs/[feature-name]/spec.md` 의 기능 명세서
+**기준 spec 버전**: [1.0.0]
+
+**최초 작성일**: [날짜]
+
+**최종 수정일**: [날짜]
+
+**버전**: [1.0.0]
 
 **참고**: 이 템플릿은 `/mino-plan` 명령으로 채워지며, 해당 명령의 정의가 실행 워크플로우를 설명한다.
 
@@ -48,13 +54,13 @@
 ### 문서 (이번 Feature)
 
 ```text
-docs/specs/[feature-name]/
+docs/specs/{feature-name}/
 ├── plan.md              # 이 파일 (/mino-plan 산출물)
 ├── research.md          # Phase 0 산출물 (/mino-plan)
 ├── data-model.md        # Phase 1 산출물 (/mino-plan)
 ├── quickstart.md        # Phase 1 산출물 (/mino-plan)
 ├── contracts/           # Phase 1 산출물 (/mino-plan)
-└── tasks.md             # 후속 구현 단계 산출물 (/mino-plan 이 생성하지 않음)
+└── tasks.md             # /mino-task 산출물 (/mino-plan 이 생성하지 않음)
 ```
 
 ### 소스 코드 (Repository Root 기준)
