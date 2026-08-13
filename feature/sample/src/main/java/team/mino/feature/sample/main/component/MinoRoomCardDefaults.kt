@@ -19,8 +19,7 @@ import team.mino.feature.sample.main.component.token.RoomCardTokens
  * [MinoRoomCheckBoxCardColors]로 묶는다.
  */
 object MinoRoomCardDefaults {
-    val coverShape: Shape
-        @Composable @ReadOnlyComposable get() = MinoAndroidTheme.shapes.large
+    val coverShape: Shape = RoomCardTokens.CoverShape
 
     /** 커버 이미지가 없을 때 채우는 배경색. */
     val coverBackgroundColor: Color
@@ -47,7 +46,7 @@ object MinoRoomCardDefaults {
     val placeCountColor: Color
         @Composable @ReadOnlyComposable get() = MinoAndroidTheme.colors.labelAlternative
 
-    val checkBoxShape: Shape get() = RoomCardTokens.CheckBoxShape
+    val checkBoxShape: Shape = RoomCardTokens.CheckBoxShape
 
     /** [MinoRoomCheckBoxCard]의 기본 [MinoRoomCheckBoxCardColors]. */
     @Composable

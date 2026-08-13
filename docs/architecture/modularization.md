@@ -30,7 +30,7 @@ Android SDK 기반 공용 유틸리티 (Context 확장, Intent 헬퍼 등).
 → Android Library (Compose)
 
 ### `:core:design-system`
-디자인 시스템 — 컬러·타이포그래피·셰이프·기본 컴포넌트.
+디자인 시스템 — 컬러·타이포그래피·그림자·기본 컴포넌트.
 → Android Library (Compose)
 
 ### `:core:domain`

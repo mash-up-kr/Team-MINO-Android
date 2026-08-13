@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -17,12 +18,13 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import team.mino.core.designsystem.foundation.color.token.ColorAccessKeyToken
 import team.mino.core.designsystem.foundation.color.token.value
-import team.mino.core.designsystem.foundation.shape.token.ShapeAccessKeyToken
-import team.mino.core.designsystem.foundation.shape.token.value
 import team.mino.core.designsystem.foundation.typography.token.TypographyAccessKeyToken
 import team.mino.core.designsystem.foundation.typography.token.value
 import team.mino.core.designsystem.theme.MinoAndroidAppTheme
 import team.mino.core.designsystem.util.preview.UiModePreviews
+
+/** 카탈로그 표현용 모서리. 디자인 근거가 있는 값이 아니다. */
+private val SwatchShape = RoundedCornerShape(8.dp)
 
 @UiModePreviews
 @Composable
@@ -57,11 +59,11 @@ private fun ColorTokenRow(
                 .size(32.dp)
                 .background(
                     color = color,
-                    shape = ShapeAccessKeyToken.Small.value,
+                    shape = SwatchShape,
                 ).border(
                     width = 1.dp,
                     color = ColorAccessKeyToken.LineNormalNormal.value,
-                    shape = ShapeAccessKeyToken.Small.value,
+                    shape = SwatchShape,
                 ),
         )
         Text(
