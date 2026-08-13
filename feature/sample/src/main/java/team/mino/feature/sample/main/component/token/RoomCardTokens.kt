@@ -28,6 +28,9 @@ internal object RoomCardTokens {
 
     val CoverSize = 80.dp
 
+    /** 썸네일 모서리. Figma `Room Thumbnail`의 `Radius` 변수(14)를 따른다. */
+    val CoverShape: Shape = RoundedCornerShape(14.dp)
+
     val AvatarSize = MinoAvatarGroupSize.XSmall
 
     /** 그룹방에서 겹쳐 보여줄 참여자 아바타 최대 개수. 초과분은 렌더하지 않는다. */
@@ -37,6 +40,6 @@ internal object RoomCardTokens {
     val CheckBoxBorderWidth = 1.dp
     val CheckBoxIconSize = 18.dp
 
-    /** 셰이프 스케일(Small/Medium/Large)에 없는 컴포넌트 전용 값. Figma 카드의 `xs` 토큰(4)을 따른다. */
+    /** Figma 카드의 `xs` 토큰(4)을 따른다. */
     val CheckBoxShape: Shape = RoundedCornerShape(4.dp)
 }

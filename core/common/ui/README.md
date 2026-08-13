@@ -140,7 +140,7 @@ core/common/ui/src/main/java/team/mino/core/common/ui/
 
 | 헷갈리는 대상 | 그건 여기가 아니라 |
 |---|---|
-| 색·타이포·셰이프 토큰, 테마, 기본 디자인 컴포넌트 | [`core:design-system`](../../design-system/README.md) |
+| 색·타이포·그림자 토큰, 테마, 기본 디자인 컴포넌트 | [`core:design-system`](../../design-system/README.md) |
 | 특정 feature 전용 화면/컴포넌트 | 해당 feature 모듈 (공유되면 [§5](#5-feature--corecommonui-승격)로 승격) |
 
 그 외 모듈 경계 판단은 [`modularization.md`](../../../docs/architecture/modularization.md)를 따른다.
@@ -155,7 +155,7 @@ UI 컴포넌트·Composable·화면 단위는 **처음부터 이 모듈에 만�
 
 - **2개 이상의 feature가 실제로 같은 컴포넌트를 필요로 한다.** ("언젠가 쓸 것 같다"는 제외 — 두 번째 사용처가 생긴 시점이 신호)
 - **특정 feature의 도메인/네비게이션에 묶여 있지 않다.** 화면 단위라도 feature 고유 ViewModel·Route·도메인 모델에 의존하면 승격 대상이 아니다. 순수 표현(상태를 인자로 받고 콜백을 올리는 stateless 형태)으로 분리 가능해야 한다.
-- **토큰이 아니라 동작/구조다.** 색·타이포·셰이프면 [`core:design-system`](../../design-system/README.md)으로 간다. ([§4](#4-확장-규칙--어디에-둘지-결정))
+- **토큰이 아니라 동작/구조다.** 색·타이포·그림자면 [`core:design-system`](../../design-system/README.md)으로 간다. ([§4](#4-확장-규칙--어디에-둘지-결정))
 
 > [!NOTE]
 > 화면(Screen) 단위 승격은 컴포넌트보다 드물다. 화면은 보통 feature의 Route·ViewModel·인자에 강하게 묶이기 때문이다. 승격한다면 **상태·콜백만 받는 stateless Screen**으로 분리하고, feature 쪽에는 ViewModel·Route를 잇는 Route 컴포저블만 남긴다.

@@ -5,7 +5,6 @@ import androidx.compose.ui.unit.dp
 import team.mino.core.designsystem.foundation.color.token.AtomicOpacityToken
 import team.mino.core.designsystem.foundation.color.token.ColorAccessKeyToken
 import team.mino.core.designsystem.foundation.shadow.token.ShadowAccessKeyToken
-import team.mino.core.designsystem.foundation.shape.token.ShapeAccessKeyToken
 import team.mino.core.designsystem.foundation.typography.token.TypographyAccessKeyToken
 
 /**
@@ -15,7 +14,7 @@ internal object MenuTokens {
     val ContainerColor = ColorAccessKeyToken.BackgroundElevatedNormal
     val ContainerBorderColor = ColorAccessKeyToken.LineSolidNeutral
     val ContainerBorderWidth = 1.dp
-    val ContainerShape = ShapeAccessKeyToken.Large
+    val ContainerShape = RoundedCornerShape(16.dp)
     val ContainerShadow = ShadowAccessKeyToken.NormalSmall
     val ContainerMinWidth = 140.dp
 
@@ -25,7 +24,7 @@ internal object MenuTokens {
     val ContainerVerticalPadding = 8.dp
     val CellSpacing = 4.dp
 
-    val ItemShape = ShapeAccessKeyToken.Medium
+    val ItemShape = RoundedCornerShape(12.dp)
     val ItemHorizontalPadding = 12.dp
     val ItemVerticalPadding = 12.dp
     val ItemVerticalPaddingCompact = 8.dp

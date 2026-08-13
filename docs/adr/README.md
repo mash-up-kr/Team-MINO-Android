@@ -40,3 +40,4 @@ ADR은 [`adr-writer` 스킬](../../.claude/skills/adr-writer/SKILL.md)이 자동
 | 2026-08-03 | [Category 항목은 `MinoChip`으로 흡수하지 않고 전용으로 그리되, 치수 토큰만 공유한다](2026-08-03-category-item-dedicated-chip.md) | Accepted | Jaesung Lee |
 | 2026-08-07 | [SDD 파이프라인은 단계별 단일 스킬로 구성하고 spec-gen·plan-gen 서브에이전트 오케스트레이션을 폐기한다](2026-08-07-sdd-single-skill-per-stage.md) | Accepted | Jaesung Lee |
 | 2026-08-09 | [SDD Implement 단계는 오케스트레이터 + 전문가 서브에이전트로 실행하고 `.claude/agents/`를 다시 둔다](2026-08-09-implement-agent-orchestration.md) | Accepted | Jaesung Lee |
+| 2026-08-13 | [모서리(셰이프)는 토큰 foundation을 두지 않고 컴포넌트 토큰이 실측값을 직접 든다](2026-08-13-no-shape-token-foundation.md) | Accepted | Jaesung Lee |

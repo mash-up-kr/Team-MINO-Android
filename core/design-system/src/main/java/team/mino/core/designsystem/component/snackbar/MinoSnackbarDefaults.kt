@@ -7,7 +7,6 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
 import team.mino.core.designsystem.component.snackbar.token.SnackbarTokens
 import team.mino.core.designsystem.foundation.color.token.value
-import team.mino.core.designsystem.foundation.shape.token.value
 
 /**
  * [MinoSnackbar]의 기본값 모음.
@@ -17,8 +16,7 @@ import team.mino.core.designsystem.foundation.shape.token.value
  */
 object MinoSnackbarDefaults {
     /** 컨테이너 기본 셰이프. */
-    val shape: Shape
-        @Composable @ReadOnlyComposable get() = SnackbarTokens.ContainerShape.value
+    val shape: Shape = SnackbarTokens.ContainerShape
 
     /** 컨테이너 기본 배경색(Inverse, 불투명도 적용). */
     val containerColor: Color
@@ -44,7 +42,7 @@ object MinoSnackbarDefaults {
         @Composable @ReadOnlyComposable get() =
             SnackbarTokens.ContentColor.value.copy(alpha = SnackbarTokens.CloseOpacity)
 
-    /** 액션 버튼 리플 셰이프. 테마 셰이프 스케일에 없는 값이라 컴포넌트 토큰이 직접 들고 있다. */
+    /** 액션 버튼 리플 셰이프. */
     val actionShape: Shape = SnackbarTokens.ActionShape
 
     /** 컨테이너 최대 너비. */

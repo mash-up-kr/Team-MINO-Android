@@ -5,7 +5,6 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
 import team.mino.core.designsystem.foundation.color.token.AtomicOpacityToken
 import team.mino.core.designsystem.foundation.color.token.ColorAccessKeyToken
-import team.mino.core.designsystem.foundation.shape.token.ShapeAccessKeyToken
 import team.mino.core.designsystem.foundation.typography.token.TypographyAccessKeyToken
 
 /**
@@ -23,7 +22,7 @@ internal object SnackbarTokens {
     val ContentOpacity = AtomicOpacityToken.Opacity88
     val CloseOpacity = AtomicOpacityToken.Opacity61
 
-    val ContainerShape = ShapeAccessKeyToken.Medium
+    val ContainerShape: Shape = RoundedCornerShape(12.dp)
     val MessageFont = TypographyAccessKeyToken.Body2NormalBold
     val DescriptionFont = TypographyAccessKeyToken.Label2Regular
     val ActionFont = TypographyAccessKeyToken.Body2NormalBold
@@ -54,6 +53,6 @@ internal object SnackbarTokens {
     val CloseButtonPadding = 2.dp
     val CloseIconSize = 20.dp
 
-    /** 액션 버튼 리플 모서리(Figma `Interaction` 레이어). 셰이프 토큰 스케일(8/12/16)에 없는 값이다. */
+    /** 액션 버튼 리플 모서리(Figma `Interaction` 레이어). */
     val ActionShape: Shape = RoundedCornerShape(6.dp)
 }

@@ -5,7 +5,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
 import team.mino.core.designsystem.foundation.color.token.ColorAccessKeyToken
-import team.mino.core.designsystem.foundation.shape.token.AtomicShapeToken
 import team.mino.core.designsystem.foundation.typography.token.TypographyAccessKeyToken
 
 /**
@@ -42,8 +41,8 @@ internal object ActionAreaTokens {
 
     /** extra 영역이 붙으면 상단 모서리가 둥글어진다(Figma `Extra=True` 루트). */
     val ExtraShape: Shape = RoundedCornerShape(
-        topStart = AtomicShapeToken.CornerMedium,
-        topEnd = AtomicShapeToken.CornerMedium,
+        topStart = 12.dp,
+        topEnd = 12.dp,
     )
 
     /**
