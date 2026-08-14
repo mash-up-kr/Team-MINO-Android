@@ -59,6 +59,7 @@ flowchart TD
         direction LR
         qg["quality-gate-runner"]
         ca["constitution-auditor"]
+        da["design-auditor"]
     end
 
     lead == "브리프 (작업 ID · 경로)" ==> W
@@ -101,6 +102,7 @@ flowchart LR
 | `design-system-builder` | 조건부 |
 | `quality-gate-runner` | 각 Phase 종료 · 7 |
 | `constitution-auditor` | 각 Phase 종료 · 7 |
+| `design-auditor` | UI 작업이 있는 Phase 종료 · 7 |
 
 리드의 몫은 게이트 판정, 작업 배정과 브리프, tasks.md `[X]` 마킹, 완료 보고다. 각 전문가가 무엇을 소유하고 무엇을 금지당하는지는 `.claude/agents/<이름>.md`가 단일 출처이며, 그 `description`은 배정 시점에 이미 리드에게 보인다. 이 표에 다시 풀어쓰지 않는다.
 
@@ -108,7 +110,7 @@ flowchart LR
 
 ### 에이전트 공통 계약
 
-아래 계약은 게이트 2종을 포함해 **리드가 띄우는 모든 서브에이전트**에 적용된다. 이 절에서 "전문가"는 그 전부를 가리킨다.
+아래 계약은 게이트 3종을 포함해 **리드가 띄우는 모든 서브에이전트**에 적용된다. 이 절에서 "전문가"는 그 전부를 가리킨다.
 
 **리드가 배정할 때 주입하는 브리프** — tasks.md나 산출물 원문을 통째로 넘기지 않는다:
 
@@ -116,6 +118,7 @@ flowchart LR
 - 근거가 되는 spec 조항·plan 섹션의 **경로와 위치**
 - 이 작업에서 지켜야 할 규약 문서의 **경로** (본문을 옮겨 적지 않는다 — 헌법 원칙 I)
 - 선행 작업이 만든 산출물의 경로
+- UI를 만드는 작업이면 **대조할 Figma 노드 ID**. tasks.md 줄이 노드를 달고 있으면 그것을, 없으면 그 작업의 `[US*]` 마커로 `context-analyst` 브리프의 `## 대조 노드` 표에서 찾는다. 양쪽 다 없으면 배정하지 말고 사용자에게 확인한다
 
 **전문가가 반환하는 보고** — 사람에게 하는 설명이 아니라 리드가 파싱할 줄이다. 작업 하나당 한 줄:
 
@@ -193,7 +196,7 @@ T014 blocked | -                                   | contracts/room.yaml에 삭�
 
 2. 구현 컨텍스트를 로드하고 분석한다 — **담당**: `context-analyst`:
    - 리드는 아래 산출물의 원문을 직접 쌓지 않는다. 분석가에게 위임하고 **구현 브리프**만 받는다
-   - 브리프에 담길 것: 모듈별 변경 대상 목록 / 반드시 지켜야 할 제약 목록 / 미해결·모순 지점
+   - 브리프에 담길 것: 모듈별 변경 대상 목록 / 반드시 지켜야 할 제약 목록 / **US별 대조 Figma 노드 표** / 미해결·모순 지점
    - 브리프에 모순이나 `[TBD]`가 남아 있으면 **중단**하고 사용자에게 확인한다(헌법 원칙 IV)
    - 분석가가 읽을 산출물의 목록은 `context-analyst` 정의가 단일 출처다. 리드는 `{SPEC_DIR}` 경로만 브리프로 넘긴다
    - tasks.md는 분석가에게 넘기지 않고 리드가 직접 읽는다(4단계) — 배정 권한이 리드에 있기 때문이다
@@ -248,15 +251,17 @@ T014 blocked | -                                   | contracts/room.yaml에 삭�
    - **`[X]` 마킹은 리드만 한다.** 마킹 근거는 아래 둘 중 하나여야 하며, 전문가의 자기신고만으로는 체크하지 않는다:
      - 리드가 보고된 파일 경로의 산출물을 직접 확인했다
      - `quality-gate-runner`가 그 작업을 포함한 빌드·테스트 통과를 보고했다
+   - **UI를 만드는 작업은 위 둘만으로는 체크하지 않는다.** 빌드·테스트는 디자인 일치를 전혀 검사하지 않으므로([`figma-design-fidelity.md`](../../../docs/conventions/figma-design-fidelity.md) §6), 그 작업을 포함한 `design-auditor`의 판정을 함께 받아야 마킹한다
    - 각 작업을 완료할 때마다 진행 상황을 보고한다
    - 병렬이 아닌 작업이 실패하면 실행을 중단한다
    - 병렬 작업 [P]의 경우 성공한 작업은 계속 진행하고, 실패한 작업을 보고한다
    - `blocked` 반환은 전문가가 스스로 풀지 않는다. 리드가 브리프를 갱신해 재배정하거나 사용자에게 확인한다
+   - **에셋 부재로 인한 `blocked`는 사용자에게 넘기지 않는다.** 아이콘·이미지 export는 MCP로 되므로([`figma-design-fidelity.md`](../../../docs/conventions/figma-design-fidelity.md#13-에셋-export--아이콘-svg이미지) §1.3), 리드는 노드 ID·아이콘 이름을 붙여 `design-system-builder`에 재배정한다. 사용자 손이 실제로 필요한 것은 컴포넌트 정의 노드의 링크(§1.1)와 변환 스크립트가 거부하는 SVG뿐이다
    - 디버깅에 필요한 맥락과 함께 명확한 오류 메시지를 제공한다
    - 구현을 진행할 수 없다면 다음 단계를 제안한다
 
 7. 완료 검증:
-   - `quality-gate-runner`와 `constitution-auditor`를 병렬로 띄운다. 감사관은 지적만 하고 코드를 고치지 않는다
+   - `quality-gate-runner`·`constitution-auditor`를 병렬로 띄우고, UI를 만든 작업이 있었으면 `design-auditor`도 함께 띄운다. 게이트 3종은 모두 지적만 하고 코드를 고치지 않는다
    - 필요한 모든 작업이 완료되었는지 확인한다
    - 구현된 기능이 원래 명세와 일치하는지 확인한다
    - 테스트가 통과하고 커버리지가 요구사항을 충족하는지 검증한다
@@ -269,7 +274,7 @@ T014 blocked | -                                   | contracts/room.yaml에 삭�
 ## 완료 보고(Completion Report)
 
 - **작업**: 완료 `N`건 / 남은 `N`건 — 남은 것은 작업 ID와 사유(`blocked` 원문)를 그대로 적는다
-- **게이트**: `quality-gate-runner`의 마지막 반환 줄과 `constitution-auditor`의 판정을 요약하지 말고 그대로 옮긴다. `env`로 분류된 실패는 통과가 아니다
+- **게이트**: `quality-gate-runner`의 마지막 반환 줄과 `constitution-auditor`·`design-auditor`의 판정을 요약하지 말고 그대로 옮긴다. `env`로 분류된 실패도, `design-auditor`가 **미검증**으로 분류한 노드도 통과가 아니다
 - **남은 위반**: 재배정으로 해소하지 못한 지적
 - **커밋**: 실행하지 않았음을 명시하고, 필요하면 분할안만 제안한다
 
@@ -278,7 +283,7 @@ T014 blocked | -                                   | contracts/room.yaml에 삭�
 - [ ] tasks.md의 모든 작업이 완료되고 `[X]`로 표시되었다
 - [ ] 모든 `[X]`가 산출물 확인 또는 게이트 통과라는 근거를 갖는다
 - [ ] 구현이 명세, 계획, 테스트 커버리지에 대해 검증되었다
-- [ ] `quality-gate-runner`·`constitution-auditor`의 최종 판정이 완료 보고에 포함되었다
+- [ ] `quality-gate-runner`·`constitution-auditor`·`design-auditor`의 최종 판정이 완료 보고에 포함되었다
 - [ ] 진행 로그 Monitor가 종료되고 로그 파일이 정리되었다
 - [ ] 커밋은 실행하지 않았고, 필요한 경우 분할안만 제안했다
 - [ ] 완료된 작업 요약과 함께 완료가 사용자에게 보고되었다
