@@ -42,3 +42,4 @@ ADR은 [`adr-writer` 스킬](../../.claude/skills/adr-writer/SKILL.md)이 자동
 | 2026-08-09 | [SDD Implement 단계는 오케스트레이터 + 전문가 서브에이전트로 실행하고 `.claude/agents/`를 다시 둔다](2026-08-09-implement-agent-orchestration.md) | Accepted | Jaesung Lee |
 | 2026-08-13 | [모서리(셰이프)는 토큰 foundation을 두지 않고 컴포넌트 토큰이 실측값을 직접 든다](2026-08-13-no-shape-token-foundation.md) | Accepted | Jaesung Lee |
 | 2026-08-13 | [디자인 토큰은 값이 일치할 때만 강제하고, 없으면 실측 raw를 그대로 쓴다](2026-08-13-design-token-when-value-matches.md) | Accepted | Jaesung Lee |
+| 2026-08-14 | [방 대표 색상 12종 팔레트와 색상 칩은 `:core:design-system`이 소유한다](2026-08-14-room-color-palette-in-design-system.md) | Accepted | Jaesung Lee |
