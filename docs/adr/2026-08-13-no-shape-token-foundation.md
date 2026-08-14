@@ -4,6 +4,9 @@
 - **작성일**: 2026-08-13
 - **작성자**: Jaesung Lee
 
+> [!NOTE]
+> 아래 결정 중 **"값의 출처는 KDoc에 Figma 노드·변수명으로 적는다"는 더 이상 유효하지 않다.** [디자인 토큰은 값이 일치할 때만 강제한다](2026-08-13-design-token-when-value-matches.md)가 값을 복사한 주석을 금지로 뒤집었고(그 주석은 Figma의 사본이라 조용히 낡는다), 현행 규칙은 [`conventions/figma-design-fidelity.md`](../conventions/figma-design-fidelity.md) §2 금지·§5가 소유한다 — 코드에는 값의 출처도 노드 ID도 적지 않으며, 예외는 §2.2 마커 주석(**변수명만**, 값은 적지 않음) 하나뿐이다. foundation을 두지 않고 컴포넌트 토큰이 실측값을 직접 든다는 이 ADR의 본 결정은 그대로다.
+
 ## 컨텍스트
 
 `:core:design-system`은 색·타이포·셰이프·그림자 네 foundation을 같은 3계층(`Atomic → Semantic → AccessKey + Holder + CompositionLocal`)으로 세웠다. 셰이프는 `66a9c46 feat: 디자인 시스템 셰이프 토큰 구성`에서 `Small=8 / Medium=12 / Large=16`(dp) 3단 스케일로 만들어졌고, 다른 세 foundation과 달리 **Figma에서 추출한 값이 아니라 placeholder**였다. `README`도 그 사실을 "셰이프(8/12/16dp)는 아직 placeholder"라고 명시하고 있었다.
