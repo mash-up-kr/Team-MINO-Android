@@ -38,8 +38,8 @@ Sync Impact Report
   - TODO(TOKEN_DECISION_PROCEDURE): `conventions/figma-design-fidelity.md`를 판정 절차의 소유자로 정하고
     작성 완료했다. TODO가 포함을 요구한 다크 모드 단서("모드에 따라 달라져야 하는 색은 raw로 표현할 수
     없으므로 디자이너에게 변수 바인딩을 요청한다")는 그 문서 §2.1이 소유한다.
-  - TODO(SPEC_RECHECK): `specs/group-room-form/plan.md`가 2.0.0 기준으로 재판정을 마쳤다. Constitution
-    Check의 "디자인 토큰만 사용" 항목이 "토큰·실측값 판정" 게이트로 대체됐다.
+  - TODO(SPEC_RECHECK): `group-room-form` 기능의 Constitution Check를 2.0.0 기준으로 재판정했다. "디자인
+    토큰만 사용" 항목이 "토큰·실측값 판정" 게이트로 대체됐다.
   - TODO(AGENT_RULE_DUPLICATION): `../.claude/agents/ui-developer.md`가 복제하던 구 조항 본문을
     `conventions/figma-design-fidelity.md` 링크 참조로 교체했다.
 - 후속 TODO:
