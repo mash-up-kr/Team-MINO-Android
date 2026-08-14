@@ -6,13 +6,11 @@
 
 ## 컨텍스트
 
-공동방 생성·편집 폼([spec](../specs/group-room-form/spec.md) FR-006)이 대표 색상 12종(red / red orange / orange / lime / green / cyan / violet / pink / blue / brown / light blue / purple) 중 하나를 고르는 칩 그리드를 요구한다. 이 팔레트를 코드 어디에 두느냐를 정해야 했고, 두 가지 제약이 위치를 좁혔다.
+공동방 생성·편집 폼이 [대표 색상 12종](../prd/business-context.md)(red / red orange / orange / lime / green / cyan / violet / pink / blue / brown / light blue / purple) 중 하나를 고르는 칩 그리드를 요구한다. 이 팔레트를 코드 어디에 두느냐를 정해야 했고, 두 가지 제약이 위치를 좁혔다.
 
 **첫째, 값이 `internal`인 토큰에 걸려 있다.** 칩의 채움색·테두리색은 Figma에서 `Atomic/Red/60`·`Atomic/Red/40` 같은 원시 팔레트 변수를 참조한다. 실사 결과 12색 24개 슬롯 중 **22개가 이미 `AtomicColorToken`에 존재**한다(없는 것은 brown 2개인데, Figma에도 brown만 변수가 붙어 있지 않다). 그런데 [`core:design-system` README §4.5](../../core/design-system/README.md#45-토큰-규칙)가 `*Token` 오브젝트를 `internal`로 못박아 두었으므로, **feature 모듈에서는 `AtomicColorToken.Red60`이 보이지 않는다.** 팔레트를 쓰는 컴포넌트는 디자인 시스템 안에서만 만들 수 있다.
 
-**둘째, 이 팔레트의 소비자가 폼 하나가 아니다.** 대표 색상은 방 썸네일·지도 마커·방 뱃지·툴팁 색의 기준이 되고(spec §2.3, FR-016), 그 화면들은 앞으로 서로 다른 feature 모듈에 생긴다. 어느 한 feature가 팔레트를 들면 나머지가 그것을 볼 수 없어 값이 복제된다.
-
-배경 조사와 대안 검토의 전문은 [`docs/specs/group-room-form/research.md` R-006](../specs/group-room-form/research.md)에 있다.
+**둘째, 이 팔레트의 소비자가 폼 하나가 아니다.** 대표 색상은 [방 썸네일·지도 마커·방 뱃지·툴팁 색의 기준](../prd/business-context.md)이 되고, 그 화면들은 앞으로 서로 다른 feature 모듈에 생긴다. 어느 한 feature가 팔레트를 들면 나머지가 그것을 볼 수 없어 값이 복제된다.
 
 ## 결정
 
@@ -41,7 +39,7 @@
 - **미선택은 nullable로 표현한다.** 팔레트에 "없음"이나 "회색" 항목을 추가하지 않는다. 회색 기본값이 필요한 자리는 도메인 레이어가 채운다.
 - **brown 슬롯은 임시가 아니다.** 디자이너가 Figma에 변수를 붙이면 그때 `AtomicColorToken`에 추가하고 raw를 걷어낸다. 그전까지는 마커 주석 대상이 아니다.
 - **칩의 접근성 시맨틱은 선택 상태를 노출한다.** `Modifier.rippleSingleSelectable`을 쓴다([README §6.3](../../core/design-system/README.md#63-클릭선택-modifier-유틸)).
-- 첫 적용은 `:feature:roomform`이며, 공개 API는 [`contracts/design-system-components.md`](../specs/group-room-form/contracts/design-system-components.md)가 소유한다.
+- 첫 적용은 `:feature:roomform`이다.
 
 ## 고려한 대안
 
