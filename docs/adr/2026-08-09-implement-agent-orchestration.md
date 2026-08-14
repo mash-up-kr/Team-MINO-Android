@@ -4,6 +4,9 @@
 - **작성일**: 2026-08-09
 - **작성자**: Jaesung Lee
 
+> [!NOTE]
+> 아래 "전문가 서브에이전트 9종"과 "검증 2종"은 이슈 #147에서 **10종·검증 3종**으로 늘었다. Figma 대조를 담당하는 `design-auditor`가 추가됐고, 이 ADR이 정한 나머지 전제 — 리드 단독 조율, 피어 통신 금지, 게이트의 수정 권한 박탈 — 는 그대로 적용된다. 다만 아래 `[X]` 마킹 근거 조항은 **UI를 만드는 작업에 한해** 좁혀졌다. 빌드·테스트가 디자인 일치를 검사하지 않으므로 `quality-gate-runner`의 통과 보고만으로는 마킹하지 않고, `design-auditor`의 판정을 함께 받는다. 배경은 [디자인 토큰은 값이 일치할 때만 강제한다](2026-08-13-design-token-when-value-matches.md)와 [`conventions/figma-design-fidelity.md`](../conventions/figma-design-fidelity.md).
+
 ## 컨텍스트
 
 이슈 #129에서 SDD 마지막 단계인 `mino-implement` 스킬을 추가했다. 초안 본문은 tasks.md의 작업을 메인 단일 컨텍스트가 직렬로 실행하는 것을 전제한다.
