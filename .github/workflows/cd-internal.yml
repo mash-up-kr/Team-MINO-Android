@@ -35,6 +35,11 @@ jobs:
           keystore-properties: ${{ secrets.KEYSTORE_PROPERTIES_B64 }}
           prod-keystore: ${{ secrets.KEYSTORE_PROD_B64 }}
 
+      - name: Restore google-services.json
+        uses: ./.github/actions/restore-google-services
+        with:
+          google-services-json: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
+
       - name: Restore Play service account
         uses: ./.github/actions/restore-play-credentials
         with:
