@@ -34,6 +34,7 @@ GitHub Actions + Fastlane 기반 Play Store 배포 자동화. 배포는 `release
 └── actions/          (공통 스텝 composite)
     ├── setup-android-build      JDK 17 + Gradle
     ├── restore-signing         keystore.properties + jks 복원
+    ├── restore-google-services  google-services.json 복원
     ├── restore-play-credentials Play 서비스계정 키 복원
     └── discord-notify          embed 알림 전송
 fastlane/             Appfile · Fastfile (internal·promote 레인)
@@ -48,10 +49,13 @@ fastlane/             Appfile · Fastfile (internal·promote 레인)
 | `KEYSTORE_PROPERTIES_B64` | `keystore.properties`의 base64 | ①② |
 | `KEYSTORE_QA_B64` | `keystore/qa.jks`의 base64 | ① |
 | `KEYSTORE_PROD_B64` | `keystore/prod.jks`의 base64 | ② |
+| `GOOGLE_SERVICES_JSON_B64` | `app/google-services.json`의 base64 | ①② |
 | `PLAY_SERVICE_ACCOUNT_JSON` | Play 업로드용 서비스계정 JSON (원문) | ②③ |
 | `DISCORD_WEBHOOK_URL` | 배포 알림 webhook | ①②③ |
 
-> base64 인코딩 예: `base64 -i keystore/prod.jks | pbcopy`
+> base64 시크릿 등록 예: `base64 -i <파일> | pbcopy` 후 웹에 붙여넣거나, `base64 -i <파일> | gh secret set <시크릿명>`
+
+`google-services.json`은 `.gitignore` 대상이라 레포에 없고, `:app`이 google-services 플러그인을 적용하므로 파일이 없으면 Gradle 빌드가 중단된다. Gradle 빌드를 돌리지 않는 ③이 제외인 이유다. 파일 하나에 `team.mino`·`team.mino.qa` 두 패키지가 모두 들어 있어 flavor별 분리는 하지 않는다.
 
 ### GitHub Variables
 
