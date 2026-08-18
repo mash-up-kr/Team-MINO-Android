@@ -13,12 +13,6 @@ data class Profile(
 ```
 - 앱 전체 단일 인스턴스. 검증(2자 이상 등)은 도메인이 아니라 `feature:mypage`의 `ProfileUiState` 계산 로직이 담당 — spec FR-004는 UX 규칙이지 도메인 불변식이 아니다.
 
-### `AppTheme`
-```kotlin
-enum class AppTheme { LIGHT, DARK, SYSTEM_DEFAULT }
-```
-- 초기값(변경 이력 없음)은 `SYSTEM_DEFAULT` (spec FR-005).
-
 ### `PermissionType`
 ```kotlin
 enum class PermissionType { NOTIFICATION, LOCATION }
@@ -42,13 +36,10 @@ interface ProfileRepository {
 ### `AppSettingsRepository`
 ```kotlin
 interface AppSettingsRepository {
-    fun observeAppTheme(): Flow<AppTheme>
-    suspend fun setAppTheme(theme: AppTheme)
     fun observeNotificationDeliveryEnabled(): Flow<Boolean>
     suspend fun setNotificationDeliveryEnabled(enabled: Boolean)
 }
 ```
-- `observeAppTheme()`는 `:feature:main`의 `MainActivity`(research.md D4)와 `:feature:mypage`의 `MyPageViewModel` 양쪽이 구독한다 — 전자는 전역 적용, 후자는 현재 선택값 표시.
 - `notificationDeliveryEnabled` 기본값은 `false`. `true`로 바뀌는 유일한 자연 경로는 알림 권한이 처음 허용되는 시점(FR-007 성공 콜백, spec 가정: "OS 알림 권한이 어느 진입점에서든 최초로 허용되면 기본값 ON")이다.
 
 ### `PermissionRepository`
@@ -69,7 +60,6 @@ interface PermissionRepository {
 |---|---|---|
 | `profile_nickname` | `String` | `ProfileRepository` |
 | `profile_avatar_id` | `String` | `ProfileRepository` |
-| `app_theme` | `String` (enum name) | `AppSettingsRepository` |
 | `notification_delivery_enabled` | `Boolean` | `AppSettingsRepository` |
 | `notification_permission_requested` | `Boolean` | `PermissionRepository` |
 | `location_permission_requested` | `Boolean` | `PermissionRepository` |
@@ -84,25 +74,11 @@ interface PermissionRepository {
 - **재조회 지점**: `MyPageMain` 화면은 진입·복귀(`ON_RESUME` 또는 NavBackStackEntry 재활성화) 시점마다 `ProfileRepository.getProfile()`·`AppSettingsRepository.observe*()`·`PermissionRepository.is*Granted()`를 다시 읽는다. 이 하나의 재조회 지점이 spec FR-003(프로필 즉시 반영)과 FR-009(권한 상태 동기화)를 함께 만족시킨다 — 프로필 화면에서 저장 후 뒤로 돌아오는 것도 "복귀"이므로 별도의 전역 상태 공유가 필요 없다.
 - **로컬 캐시 금지 대상**: `isNotificationSwitchOn`·`isLocationSwitchOn`은 위 재조회 결과로만 계산하고 `UiState`에 낙관적으로 미리 반영하지 않는다(UX-003).
 
-## 5. `core:design-system` 신규 컴포넌트 (research.md D6·D7)
+## 5. `core:design-system` 신규 컴포넌트 (research.md D7)
 
 | 컴포넌트 | 위치 | 용도 |
 |---|---|---|
-| `MinoBottomSheet` | `component/bottomsheet/` | 다크모드 3옵션 선택 |
 | `MinoDialog` | `component/dialog/` | 권한 재요청 불가 안내(EC-003·EC-007) |
 | `MinoSwitch` | `component/switch/` | 알림·위치 토글 |
 
-세 컴포넌트 모두 M3 패턴(Defaults·Colors·`token/`)을 따른다(README §6.1). Figma 노드 대조는 구현 단계에서 `figma-design-fidelity.md` 절차로 수행한다 — 이 문서는 존재 여부·역할만 못박는다.
-
-## 6. `core:design-system` API 변경
-
-### `MinoAndroidAppTheme`
-```kotlin
-@Composable
-fun MinoAndroidAppTheme(
-    darkTheme: Boolean? = null,   // null = 시스템 추종(기존 동작 유지), 아니면 강제
-    content: @Composable () -> Unit,
-)
-```
-- 기본값이 기존 동작(`isSystemInDarkTheme()`)과 100% 동일해 기존 호출부(`:feature:sample` 등)는 수정 없이 컴파일된다.
-- 읽기·주입 책임은 `:feature:main`의 `MainActivity`(research.md D4).
+두 컴포넌트 모두 M3 패턴(Defaults·Colors·`token/`)을 따른다(README §6.1). Figma 노드 대조는 구현 단계에서 `figma-design-fidelity.md` 절차로 수행한다 — 이 문서는 존재 여부·역할만 못박는다.
