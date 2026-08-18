@@ -9,7 +9,7 @@
 
 ## `AppSettingsRepository`
 
-- **구현**: `core:data/repository/AppSettingsRepositoryImpl` — `datasource/AppSettingsLocalDataSource`(DataStore) 호출. `observeAppTheme()`/`observeNotificationDeliveryEnabled()`는 DataStore의 `Flow<Preferences>`를 `map`으로 변환해 그대로 반환(자체 캐시 없음).
+- **구현**: `core:data/repository/AppSettingsRepositoryImpl` — `datasource/AppSettingsLocalDataSource`(DataStore) 호출. `observeNotificationDeliveryEnabled()`는 DataStore의 `Flow<Preferences>`를 `map`으로 변환해 그대로 반환(자체 캐시 없음).
 - **DI**: `core:data/repository/di/AppSettingsRepositoryModule.kt`.
 
 ## `PermissionRepository`
@@ -24,7 +24,7 @@
 | Repository | 소비 화면 | 소비 방식 |
 |---|---|---|
 | `ProfileRepository` | `MyPageMain`(조회), `MyPageProfile`(조회+저장) | ViewModel 직접 호출(UseCase 없음) |
-| `AppSettingsRepository` | `MyPageMain`(조회+저장), `:feature:main`의 `MainActivity`(조회 전용, research.md D4) | ViewModel/Activity 직접 호출 |
+| `AppSettingsRepository` | `MyPageMain`(조회+저장) | ViewModel 직접 호출 |
 | `PermissionRepository` | `MyPageMain` | ViewModel 직접 호출 |
 
 세 Repository 모두 "단일 API·단순 조회·비즈니스 규칙 없음·재사용 없음"(`core:domain/README.md` §4) 조건을 만족해 UseCase를 두지 않는다. 유일하게 여러 값을 조합하는 지점은 `isNotificationSwitchOn` 계산(권한 AND 발송 설정)인데, 이는 "정렬·필터링 같은 비즈니스 규칙"이 아니라 두 Repository 결과를 화면이 조립하는 표현 로직이라 ViewModel(`MyPageViewModel`)에 남긴다.

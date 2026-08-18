@@ -25,13 +25,13 @@ Phase 0 산출물. `plan.md` 1.0.0에서 발생한 결정을 모은다. 이 feat
 - **Alternatives considered**: (a) 로컬 플래그만으로 판정 — 이미 거부됐지만 시스템이 재요청을 허용하는 상태(첫 거부, "다시 묻지 않음" 미체크)까지 영구 거부로 오판해 매번 설정으로 보내버리는 UX 저하가 생겨 기각. (b) `rationale` API만으로 판정 — 최초 요청과 영구 거부를 구분하지 못해 기각.
 - (plan 1.0.0에서 결정)
 
-## D4. 다크모드 전역 적용 지점 — `core:design-system`은 파라미터만, 읽기·주입은 `:feature:main`
+## ~~D4. 다크모드 전역 적용 지점 — `core:design-system`은 파라미터만, 읽기·주입은 `:feature:main`~~ 재검토됨(plan 2.0.0)
 
-- **Decision**: `MinoAndroidAppTheme`에 `darkTheme: Boolean? = null` 파라미터를 추가한다(`null` = 시스템 추종, `true`/`false` = 강제). 실제로 `AppSettingsRepository.observeAppTheme()`를 읽어 `Boolean?`으로 변환해 넘기는 책임은 `:feature:main`의 `MainActivity`가 진다(현재 `MinoAndroidAppTheme` 호출부).
-- **Rationale**: `core:design-system`은 domain·data를 의존하지 않는 순수 UI 모듈이다(모듈 그래프 §의존성 흐름). 저장소 읽기를 그 안으로 들이면 레이어 경계(헌법 원칙 II)를 깬다. `:feature:main`은 이미 모든 feature 공통으로 `:core:domain`을 의존하므로(`AndroidFeatureConventionPlugin`), 새 의존 추가 없이 `AppSettingsRepository`를 주입받을 수 있다.
-- **Alternatives considered**: (a) 각 feature가 개별적으로 다크모드를 읽어 자기 화면에만 적용 — 화면마다 값이 어긋날 수 있어 "앱 전체 즉시 반영"(spec 완료조건) 요건을 못 만족해 기각. (b) `core:design-system`이 `DataStore`를 직접 읽기 — 모듈이 저장 방식을 알게 돼 교체 시(D1 뒤집힐 때) design-system까지 건드려야 해 기각.
-- **ADR 승격 후보**: `core:design-system`의 공개 API(`MinoAndroidAppTheme`) 시그니처를 바꾸고, "전역 설정은 테마 루트를 호출하는 feature가 주입한다"는 패턴을 새로 세우는 결정이라 다른 feature에도 구속력을 가질 수 있다. 완료 보고에서 승격을 제안한다.
-- (plan 1.0.0에서 결정)
+- ~~**Decision**: `MinoAndroidAppTheme`에 `darkTheme: Boolean? = null` 파라미터를 추가한다(`null` = 시스템 추종, `true`/`false` = 강제). 실제로 `AppSettingsRepository.observeAppTheme()`를 읽어 `Boolean?`으로 변환해 넘기는 책임은 `:feature:main`의 `MainActivity`가 진다(현재 `MinoAndroidAppTheme` 호출부).~~
+- ~~**Rationale**: `core:design-system`은 domain·data를 의존하지 않는 순수 UI 모듈이다(모듈 그래프 §의존성 흐름). 저장소 읽기를 그 안으로 들이면 레이어 경계(헌법 원칙 II)를 깬다. `:feature:main`은 이미 모든 feature 공통으로 `:core:domain`을 의존하므로(`AndroidFeatureConventionPlugin`), 새 의존 추가 없이 `AppSettingsRepository`를 주입받을 수 있다.~~
+- ~~**Alternatives considered**: (a) 각 feature가 개별적으로 다크모드를 읽어 자기 화면에만 적용 — 화면마다 값이 어긋날 수 있어 "앱 전체 즉시 반영"(spec 완료조건) 요건을 못 만족해 기각. (b) `core:design-system`이 `DataStore`를 직접 읽기 — 모듈이 저장 방식을 알게 돼 교체 시(D1 뒤집힐 때) design-system까지 건드려야 해 기각.~~
+- **재검토 사유(plan 2.0.0)**: spec 3.0.0에서 PRD 4.1.0의 다크모드 비목표 확정을 반영해 다크모드 요구사항(유저 플로우 2, FR-005·FR-006, UX-001, SC-002)이 전부 삭제됐다. 이 결정이 다루던 문제 자체가 사라져 대체 결정 없음 — `MinoAndroidAppTheme`는 손대지 않는다.
+- (plan 1.0.0에서 결정, plan 2.0.0에서 재검토)
 
 ## D5. 외부 URL·앱 설정 이동 — `core:common:android`의 `Context` 확장 함수
 
@@ -40,12 +40,13 @@ Phase 0 산출물. `plan.md` 1.0.0에서 발생한 결정을 모은다. 이 feat
 - **Alternatives considered**: Custom Tabs(`androidx.browser`) 도입 — 인앱 브라우저 UX가 나아지지만 새 의존성이 필요하고 spec은 "웹 브라우저에서 연다"고만 요구해 굳이 필요하지 않아 기각. 두 번째 사용처가 생기면 재검토한다.
 - (plan 1.0.0에서 결정)
 
-## D6. 다크모드 선택 UI — `core:design-system`에 `MinoBottomSheet` 신설
+## ~~D6. 다크모드 선택 UI — `core:design-system`에 `MinoBottomSheet` 신설~~ 재검토됨(plan 2.0.0)
 
-- **Decision**: Material3 `ModalBottomSheet`를 디자인 토큰으로 감싼 `MinoBottomSheet` 컴포넌트를 `core:design-system/component/bottomsheet/`에 새로 만들고, 다크모드 선택 목록(라이트/다크/시스템 기본값)을 그 안에 배치한다.
-- **Rationale**: UX-001이 요구하는 "Android 관용 BottomSheet"는 이 저장소의 컴포넌트 M3 패턴(Defaults·Colors·토큰 계층)을 그대로 따라야 다른 화면에도 일관되게 재사용된다. Figma 디자인 시스템 라이브러리에도 대응 컴포넌트가 있을 가능성이 높아(다른 M3 컴포넌트들처럼) 처음부터 feature 로컬이 아니라 `core:design-system`에 둔다 — Button·TextInput·Menu 등 기존 컴포넌트가 이미 이 경로를 따른다.
-- **Alternatives considered**: `:feature:mypage` 안에 로컬로 만들고 두 번째 사용처가 생기면 승격 — `core:common:ui`의 "승격" 정책(§5)은 동작/구조 컴포넌트에 적용되는 기준이고, 바텀시트는 디자인 토큰이 필요한 시각적 컴포넌트라 성격상 design-system에 더 가깝다고 판단해 기각. 구현 시 Figma에 실제 대응 컴포넌트가 없다고 확인되면 이 결정을 재검토한다.
-- (plan 1.0.0에서 결정)
+- ~~**Decision**: Material3 `ModalBottomSheet`를 디자인 토큰으로 감싼 `MinoBottomSheet` 컴포넌트를 `core:design-system/component/bottomsheet/`에 새로 만들고, 다크모드 선택 목록(라이트/다크/시스템 기본값)을 그 안에 배치한다.~~
+- ~~**Rationale**: UX-001이 요구하는 "Android 관용 BottomSheet"는 이 저장소의 컴포넌트 M3 패턴(Defaults·Colors·토큰 계층)을 그대로 따라야 다른 화면에도 일관되게 재사용된다. Figma 디자인 시스템 라이브러리에도 대응 컴포넌트가 있을 가능성이 높아(다른 M3 컴포넌트들처럼) 처음부터 feature 로컬이 아니라 `core:design-system`에 둔다 — Button·TextInput·Menu 등 기존 컴포넌트가 이미 이 경로를 따른다.~~
+- ~~**Alternatives considered**: `:feature:mypage` 안에 로컬로 만들고 두 번째 사용처가 생기면 승격 — `core:common:ui`의 "승격" 정책(§5)은 동작/구조 컴포넌트에 적용되는 기준이고, 바텀시트는 디자인 토큰이 필요한 시각적 컴포넌트라 성격상 design-system에 더 가깝다고 판단해 기각. 구현 시 Figma에 실제 대응 컴포넌트가 없다고 확인되면 이 결정을 재검토한다.~~
+- **재검토 사유(plan 2.0.0)**: 다크모드 선택 UX-001 자체가 spec 3.0.0에서 삭제됐다(D4와 같은 사유). `MinoBottomSheet`를 만들 화면이 없어져 신설을 보류한다 — 다른 화면에서 바텀시트가 필요해지면 그때 새 결정으로 다시 연다.
+- (plan 1.0.0에서 결정, plan 2.0.0에서 재검토)
 
 ## D7. 권한 재요청 불가 안내 — `core:design-system`에 `MinoDialog` 신설
 
