@@ -8,10 +8,8 @@
 data class MyPageUiState(
     val nickname: String = "",
     val avatarId: String = "",
-    val appTheme: AppTheme = AppTheme.SYSTEM_DEFAULT,
     val isNotificationSwitchOn: Boolean = false,     // (OS 알림 권한 허용 AND 앱 자체 발송 설정) 합성값 — data-model.md §4
     val isLocationSwitchOn: Boolean = false,          // OS 위치 권한 상태 그대로
-    val isDarkModeSheetVisible: Boolean = false,
     val permissionSettingsDialogTarget: PermissionType? = null,  // null이면 다이얼로그 비노출
 ) : UiState
 ```
@@ -22,9 +20,6 @@ data class MyPageUiState(
 sealed interface MyPageIntent : Intent {
     data object OnScreenResumed : MyPageIntent
     data object OnEditProfileClick : MyPageIntent
-    data object OnDarkModeRowClick : MyPageIntent
-    data class OnDarkModeOptionSelected(val theme: AppTheme) : MyPageIntent
-    data object OnDarkModeSheetDismissed : MyPageIntent
 
     // rationale은 Route(Activity 전용 API)가 계산해 함께 싣는다 — research.md D3
     data class OnNotificationSwitchClick(val canShowSystemDialog: Boolean) : MyPageIntent
@@ -79,8 +74,8 @@ sealed interface MyPageSideEffect : SideEffect {
 
 ## 재조회 (FR-009, data-model.md §4)
 
-`OnScreenResumed`(및 `init`)에서 `ProfileRepository.getProfile()` · `AppSettingsRepository.observeAppTheme()`/`observeNotificationDeliveryEnabled()` · `PermissionRepository.isNotificationPermissionGranted()`/`isLocationPermissionGranted()`를 모두 다시 읽어 `UiState`를 재계산한다. `isNotificationSwitchOn = isNotificationPermissionGranted && notificationDeliveryEnabled`, `isLocationSwitchOn = isLocationPermissionGranted`.
+`OnScreenResumed`(및 `init`)에서 `ProfileRepository.getProfile()` · `AppSettingsRepository.observeNotificationDeliveryEnabled()` · `PermissionRepository.isNotificationPermissionGranted()`/`isLocationPermissionGranted()`를 모두 다시 읽어 `UiState`를 재계산한다. `isNotificationSwitchOn = isNotificationPermissionGranted && notificationDeliveryEnabled`, `isLocationSwitchOn = isLocationPermissionGranted`.
 
 ## Figma
 
-[마이페이지 메인](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2792-151806&m=dev) · [다크모드 선택](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2792-151659&m=dev) — 구현 단계에서 `MinoBottomSheet`·`MinoDialog`·`MinoSwitch`를 조립해 그린다(대조 절차는 `figma-design-fidelity.md`).
+[마이페이지 메인](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2792-151806&m=dev) — 구현 단계에서 `MinoDialog`·`MinoSwitch`를 조립해 그린다(대조 절차는 `figma-design-fidelity.md`).
