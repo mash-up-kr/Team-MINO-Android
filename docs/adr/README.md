@@ -43,3 +43,5 @@ ADR은 [`adr-writer` 스킬](../../.claude/skills/adr-writer/SKILL.md)이 자동
 | 2026-08-13 | [모서리(셰이프)는 토큰 foundation을 두지 않고 컴포넌트 토큰이 실측값을 직접 든다](2026-08-13-no-shape-token-foundation.md) | Accepted | Jaesung Lee |
 | 2026-08-13 | [디자인 토큰은 값이 일치할 때만 강제하고, 없으면 실측 raw를 그대로 쓴다](2026-08-13-design-token-when-value-matches.md) | Accepted | Jaesung Lee |
 | 2026-08-14 | [방 대표 색상 12종 팔레트와 색상 칩은 `:core:design-system`이 소유한다](2026-08-14-room-color-palette-in-design-system.md) | Accepted | Jaesung Lee |
+| 2026-08-16 | [mino-implement는 배정을 잘게 쪼개 병렬로 돌리고, Figma 값은 착수 시점에 한 번만 추출해 공유한다](2026-08-16-implement-chunking-parallelism-figma-value-sheet.md) | Accepted | Jaesung Lee |
+| 2026-08-18 | [디자인 검수는 Phase 종료가 아니라 컴포넌트가 완성되는 즉시 붙인다](2026-08-18-design-audit-at-component-completion.md) | Accepted | Jaesung Lee |
