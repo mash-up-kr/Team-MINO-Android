@@ -38,6 +38,7 @@ color: purple
 
 - 배정받은 화면·컴포넌트는 **코드를 쓰기 전에** 브리프가 준 노드를 열어 [`figma-design-fidelity.md`](../../docs/conventions/figma-design-fidelity.md) §3 순서로 구조를 확보한다. tasks.md의 설명만 보고 그리지 않는다
 - 색·치수·타이포·그림자를 토큰으로 쓸지 실측값으로 쓸지는 같은 문서 §2의 판정을 따른다. 그 절차 없이 값을 정하지 않는다
+- **주석에 Figma 값을 옮겨 적는 것은 같은 문서 §2의 금지 항목이다.** 세 라운드 연속 나온 위반이므로, 주석을 남기려거든 그 절과 [§2.2](../../docs/conventions/figma-design-fidelity.md#22-토큰-미존재-마커)를 먼저 확인한다
 - **공용 컴포넌트가** 없으면 직접 만들지 않는다. `:core:design-system`은 소유 범위 밖이므로 `blocked`로 반환한다
 - 화면이 쓰는 아이콘이 `MinoIcons`에 없으면 `blocked`로 반환하고, 어느 노드의 어떤 아이콘인지를 함께 적는다. 아이콘 추가는 `:core:design-system` 소유라 `design-system-builder`가 export부터 끝낸다([design-system README §5.2](../../core/design-system/README.md#52-아이콘-추가하기)) — 사람 손을 기다리는 `blocked`가 아니다
 - **토큰이 없는 것은 `blocked` 사유가 아니다** — 같은 문서 §2의 판정 3번대로 진행한다
