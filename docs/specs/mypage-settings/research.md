@@ -4,12 +4,13 @@ Phase 0 산출물. `plan.md` 1.0.0에서 발생한 결정을 모은다. 이 feat
 
 ---
 
-## D1. 프로필 저장소 — 로컬(DataStore) 단독, 원격 API 없음
+## ~~D1. 프로필 저장소 — 로컬(DataStore) 단독, 원격 API 없음~~ 재검토됨(plan 3.0.0)
 
-- **Decision**: `Profile`(닉네임+아바타)은 원격 API 없이 `core:data`의 공유 DataStore(`storage/DataStoreModule`)에만 저장한다.
-- **Rationale**: 저장소 전반에 프로필 관련 네트워크 계약(DTO·엔드포인트)이 아직 없다. spec의 완료 조건(FR-003)도 "마이페이지·앱 전체 표기에 즉시 반영"만 요구할 뿐 서버 동기화를 요구하지 않는다. `ProfileRepository` 인터페이스로 감싸두면 추후 실제 프로필 API가 생겨도 `ProfileRepositoryImpl`만 교체하면 되므로 지금 서버 계약을 지어내지 않는다.
-- **Alternatives considered**: (a) `GithubRepository`처럼 임시 원격 API를 지어내 연결 — 존재하지 않는 계약을 임의로 만드는 것이라 기각. (b) 온보딩 모듈과 공유 DB 테이블 설계 — 온보딩 모듈 자체가 아직 없어 시기상조.
-- (plan 1.0.0에서 결정)
+- ~~**Decision**: `Profile`(닉네임+아바타)은 원격 API 없이 `core:data`의 공유 DataStore(`storage/DataStoreModule`)에만 저장한다.~~
+- ~~**Rationale**: 저장소 전반에 프로필 관련 네트워크 계약(DTO·엔드포인트)이 아직 없다. spec의 완료 조건(FR-003)도 "마이페이지·앱 전체 표기에 즉시 반영"만 요구할 뿐 서버 동기화를 요구하지 않는다. `ProfileRepository` 인터페이스로 감싸두면 추후 실제 프로필 API가 생겨도 `ProfileRepositoryImpl`만 교체하면 되므로 지금 서버 계약을 지어내지 않는다.~~
+- ~~**Alternatives considered**: (a) `GithubRepository`처럼 임시 원격 API를 지어내 연결 — 존재하지 않는 계약을 임의로 만드는 것이라 기각. (b) 온보딩 모듈과 공유 DB 테이블 설계 — 온보딩 모듈 자체가 아직 없어 시기상조.~~
+- **재검토 사유(plan 3.0.0)**: 이 결정이 "생기면 교체"라고 예고했던 실제 프로필 API가 백엔드 `swagger.yaml`(`GET/PATCH /api/v1/users/me`)로 문서화됐다. 존재하지 않는 계약을 지어내는 문제가 해소됐으므로 원격 우선으로 뒤집는다. 새 결정은 D9 참조.
+- (plan 1.0.0에서 결정, plan 3.0.0에서 재검토)
 
 ## D2. 알림/위치 스위치의 "끄기" 동작 — 서로 다른 저장 계층
 
@@ -61,3 +62,26 @@ Phase 0 산출물. `plan.md` 1.0.0에서 발생한 결정을 모은다. 이 feat
 - **Rationale**: 기존 `MinoAvatar` 컴포넌트(사진 기반 프로필 이미지, placeholder 폴백)와는 성격이 다른 자산(디자이너가 그린 12색 캐릭터 일러스트)이라 재사용 대상이 아니다. `ImageVector` 변환 조건(§5.2 — 단색 fill만)을 만족하지 못할 가능성이 높아 래스터(WebP) 경로를 기본으로 잡는다.
 - **Alternatives considered**: `MinoAvatar`의 `imageUrl` 파라미터로 원격 이미지처럼 취급 — 로컬 번들 자산을 URL처럼 다루는 것은 부자연스럽고 오프라인에서도 항상 보여야 하므로 기각.
 - (plan 1.0.0에서 결정)
+
+## D9. 프로필 저장소를 원격 API로 전환 — `avatarId`는 `Int`
+
+- **Decision**: `ProfileRepositoryImpl`은 `core:data/network/service/UserApiService`(Ktor)로 `GET /api/v1/users/me`·`PATCH /api/v1/users/me`를 호출한다. 로컬 캐시는 두지 않는다(매번 원격 조회, 필요해지면 나중에 캐시 계층 추가). `Profile.avatarId`는 `String`이 아니라 `Int`로 바꾼다 — swagger `Avatar` 스키마가 `{ id: integer }`이기 때문이다(§design-system은 그 정수를 12종 아바타 카탈로그의 키로 매핑).
+- **Rationale**: D1 재검토 사유와 동일 — 실제 계약이 생겼으니 그걸 따른다. `getProfile()`은 `Profile?`이 아니라 `Profile`(non-null)로 좁힌다: spec이 이미 "프로필이 생성된 사용자"를 진입 전제로 삼고(§1 진입 조건), swagger에도 "프로필 없음"을 나타내는 응답이 없다 — 인증은 됐는데 프로필이 없는 상태는 이 API 설계에서 존재하지 않는다.
+- **Alternatives considered**: 로컬 캐시를 두고 원격과 동기화 — 오프라인 지원이 spec 요구사항에 없고(§4 가정에 오프라인 언급 없음), 캐시 무효화 규칙까지 설계하는 건 지금 필요 이상의 복잡도라 기각. 필요해지면 별도 결정으로 추가한다.
+- **의존성(범위 밖)**: `core:data`의 `HttpClient`는 아직 `https://api.github.com/` 임시 baseUrl과 인증 헤더 주입이 없다(`core/data/README.md` §4 NOTE). 실서버(`https://api.gguk.org`) 연결과 Bearer 토큰 부착은 이 feature 고유 관심사가 아니라 여러 feature가 공유할 인프라라 D11에서 별도로 다룬다.
+- (plan 3.0.0에서 결정)
+
+## D10. 알림 발송 억제 — 서버 구독 해제 API가 없어 클라이언트 표시 단계에서 억제
+
+- **Decision**: 알림 권한이 처음 허용되는 시점(FR-007 성공 콜백)에 FCM 토큰을 발급받아 `PUT /api/v1/users/me/push-token`으로 등록한다. "앱 자체 알림 발송 설정"(`notificationDeliveryEnabled`, D2) OFF는 서버의 푸시 발송 자체를 막지 못한다 — 대신 클라이언트의 FCM 수신 지점(`FirebaseMessagingService.onMessageReceived`)에서 이 로컬 플래그를 확인해 OFF면 시스템 알림으로 표시하지 않고 조용히 버린다.
+- **Rationale**: swagger에 토큰 등록(`PUT`)만 있고 해제(`DELETE` 등)가 없다 — 서버에 "이 사용자에게 그만 보내라"고 알릴 방법이 API 계약에 없다. D2가 이미 "OS 권한은 유지, 앱 자체 플래그만 끈다"고 정했으므로, 그 플래그의 실제 효력을 수신 단계에서 만드는 것이 계약을 어기지 않는 유일한 방법이다.
+- **Alternatives considered**: (a) 스위치 OFF 시 `PUT push-token`을 빈 토큰으로 호출해 사실상 해제 시도 — 계약에 없는 동작을 서버가 어떻게 처리할지 불명확해(빈 문자열이 유효한 요청인지 문서에 없음) 기각. (b) 백엔드에 해제 API 추가를 요청 — 이 feature의 plan이 결정할 수 있는 범위 밖이라 지금은 클라이언트 억제로 가고, API가 생기면 재검토.
+- **신규 컴포넌트**: `core:domain/repository/PushNotificationRepository`(`suspend fun syncPushToken()`), `core:data/device/PushTokenProvider`(FCM SDK 래퍼, `firebase-messaging` 의존성 신규 추가 필요), `core:data/repository/PushNotificationRepositoryImpl`.
+- (plan 3.0.0에서 결정)
+
+## D11. 실서버 연결·인증 부착 — 이 feature의 범위 밖, 선행 의존성으로 기록만
+
+- **Decision**: `HttpClient`의 baseUrl을 `https://api.gguk.org`로 바꾸는 것과 `Authorization: Bearer <token>` 헤더를 붙이는 인증 인프라는 이 plan이 설계하지 않는다. `ProfileRepositoryImpl`·`PushNotificationRepositoryImpl`은 그 인프라가 이미 갖춰져 있다고 가정하고 인터페이스 수준에서만 설계한다.
+- **Rationale**: swagger 자체가 "인증 방식은 별도 인증 설계 문서에서 확정한다"고 명시해 백엔드에서도 미확정이다. baseUrl·인증은 프로필뿐 아니라 이후 모든 원격 API(방·핀·코멘트·알림)가 공유할 인프라라 이 feature 하나가 결정할 성격이 아니다. 지어내면 다른 feature가 나중에 다른 방식으로 다시 만들 위험이 크다.
+- **Alternatives considered**: 이 feature 안에서 임시로 `NetworkModule`을 고쳐 baseUrl·인증을 직접 배선 — 다른 feature와 충돌할 임시방편을 스스로 만드는 것이라 기각. 완료 보고에서 이 의존성을 선행 과제로 명시한다.
+- (plan 3.0.0에서 결정)
