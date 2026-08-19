@@ -9,6 +9,7 @@
 | 강제 규칙의 본문 (무엇이 위반인가) | [헌법 §기술 표준과 제약](../constitution.md) |
 | 결정의 근거·배제한 대안 | [ADR — 값이 일치할 때만 토큰 강제](../adr/2026-08-13-design-token-when-value-matches.md) · [ADR — 셰이프 foundation 폐기](../adr/2026-08-13-no-shape-token-foundation.md) |
 | 토큰 체계·계층·토큰 추가 절차 | [`core:design-system` README §4](../../core/design-system/README.md#4-토큰-시스템) |
+| 컴포넌트·이미지 에셋의 소속 모듈, 공용 모듈로의 승격 | [`component-asset-placement.md`](component-asset-placement.md) |
 
 ---
 
