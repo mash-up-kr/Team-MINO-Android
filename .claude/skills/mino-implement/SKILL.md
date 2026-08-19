@@ -106,7 +106,7 @@ flowchart LR
 
 리드의 몫은 게이트 판정, 작업 배정과 브리프, tasks.md `[X]` 마킹, 완료 보고다. 각 전문가가 무엇을 소유하고 무엇을 금지당하는지는 `.claude/agents/<이름>.md`가 단일 출처이며, 그 `description`은 배정 시점에 이미 리드에게 보인다. 이 표에 다시 풀어쓰지 않는다.
 
-**소유자가 표에 없는 모듈**을 건드리는 작업은 다음 기준으로 배정한다 — `:core:common:*`·`:core:error-handling`·`:core:map`·`:core:analytics`처럼 레이어 성격이 강한 공용 모듈은 `core-layer-developer`, `:core:navigation`은 `navigation-integrator`, 빌드 스크립트만 손대면 `build-setup-engineer`다. 어느 쪽도 아니면 배정하지 말고 사용자에게 확인한다.
+**소유자가 표에 없는 모듈**을 건드리는 작업은 다음 기준으로 배정한다 — `:core:common:kotlin`·`:core:common:android`·`:core:error-handling`·`:core:map`·`:core:analytics`처럼 레이어 성격이 강한 공용 모듈은 `core-layer-developer`(`:core:common:ui`는 `ui-developer`가 소유하므로 이 기준의 대상이 아니다), `:core:navigation`은 `navigation-integrator`, 빌드 스크립트만 손대면 `build-setup-engineer`다. 어느 쪽도 아니면 배정하지 말고 사용자에게 확인한다.
 
 ### 에이전트 공통 계약
 

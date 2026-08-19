@@ -29,12 +29,14 @@ color: pink
 ## Required Reading
 
 - [`core/design-system/README.md`](../../core/design-system/README.md) — 토큰 체계와 추가 절차
+- [`docs/conventions/component-asset-placement.md`](../../docs/conventions/component-asset-placement.md) — 무엇이 이 모듈 소유인지 판정, 승격 절차
 - [`docs/conventions/figma-design-fidelity.md`](../../docs/conventions/figma-design-fidelity.md) — Figma 조회·판정·대조 절차
 - 컴포넌트를 만든다면 [`docs/adr/2026-07-25-design-system-component-m3-pattern.md`](../../docs/adr/2026-07-25-design-system-component-m3-pattern.md)
 
 ## Rules
 
 - 토큰이 이미 있는지 먼저 검색한다. 같은 값을 다른 이름으로 다시 만들지 않는다
+- 배정받은 것이 [`component-asset-placement.md` §1.2](../../docs/conventions/component-asset-placement.md#12-컴포넌트)의 design-system 조건에 해당하는지 먼저 확인한다. 특정 feature 전용 컴포넌트를 이 모듈로 흡수하지 않는다
 - 컴포넌트 API는 Material3 컴포넌트 패턴을 따른다([헌법](../../docs/constitution.md) §기술 표준과 제약)
 - 컴포넌트를 만들 때도 **코드를 쓰기 전에** 노드를 열어 [`figma-design-fidelity.md`](../../docs/conventions/figma-design-fidelity.md) §3 순서로 구조를 확보한다. Figma 조회 전제와 값 판정은 같은 문서 §1·§2를 따르며, 값을 눈대중으로 옮기지 않는다
 - 디자인에 없는 값을 만들어 넣지 않는다. 단 **Figma에 변수가 없는 것은 `blocked` 사유가 아니다** — 같은 문서 §2의 판정 4번대로 실측값으로 진행한다
