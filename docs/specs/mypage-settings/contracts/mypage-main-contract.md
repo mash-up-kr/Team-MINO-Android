@@ -7,7 +7,7 @@
 ```kotlin
 data class MyPageUiState(
     val nickname: String = "",
-    val avatarId: String = "",
+    val avatarId: Int? = null,   // 백엔드 Avatar.id 타입에 맞춤 (research.md D9)
     val isNotificationSwitchOn: Boolean = false,     // (OS 알림 권한 허용 AND 앱 자체 발송 설정) 합성값 — data-model.md §4
     val isLocationSwitchOn: Boolean = false,          // OS 위치 권한 상태 그대로
     val permissionSettingsDialogTarget: PermissionType? = null,  // null이면 다이얼로그 비노출
@@ -59,7 +59,7 @@ sealed interface MyPageSideEffect : SideEffect {
 | OFF, OS 권한 미허용 | `false` | `false` | `SideEffect.RequestNotificationPermission` (최초 요청, research.md D3) |
 | OFF, OS 권한 미허용 | `false` | `true` | `permissionSettingsDialogTarget = NOTIFICATION` (영구 거부, FR-010) |
 
-권한 결과 콜백(`OnNotificationPermissionResult`)에서: `granted == true`면 `markPermissionRequested`는 이미 요청 시점에 호출됐다는 전제로 발송 설정을 ON 저장 후 재조회. `granted == false`면 `markPermissionRequested(NOTIFICATION)`만 기록하고 스위치는 OFF 유지.
+권한 결과 콜백(`OnNotificationPermissionResult`)에서: `granted == true`면 `markPermissionRequested`는 이미 요청 시점에 호출됐다는 전제로 발송 설정을 ON 저장하고 `PushNotificationRepository.syncPushToken()`을 호출한 뒤 재조회한다(research.md D10 — 서버에 발송 억제 API가 없어 토큰은 등록해 두고 표시만 로컬에서 걸러낸다). `granted == false`면 `markPermissionRequested(NOTIFICATION)`만 기록하고 스위치는 OFF 유지, 토큰 등록 없음.
 
 ## 분기 규칙 — 위치 스위치 클릭 (FR-008·FR-009·FR-010·FR-015)
 
