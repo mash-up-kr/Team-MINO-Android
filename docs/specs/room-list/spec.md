@@ -6,13 +6,13 @@
 
 **최초 작성일**: 2026-08-17
 
-**최종 수정일**: 2026-08-18
+**최종 수정일**: 2026-08-20
 
 **상태**: CREATED
 
-**버전**: 2.1.1
+**버전**: 2.1.4
 
-**입력**: 사용자 설명: "room-list — [SCR-004] 방 리스트 탭. 이슈 #154, 브랜치 feature/154-room-list/base. 지도 위 3단 바텀시트로 내 방 전체를 훑고, 방을 골라 상세로 들어가거나 새 공동방을 만든다. PRD business-context.md 3.1.0 [SCR-004] 절 + 「3단 바텀시트」·[SYS-001]·[SYS-004]·[SYS-005]·[SYS-009] 정의 기준."
+**입력**: 사용자 설명: "스펙 출처에 피그마링크가 없어 다시 스펙 생성해줘. https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2370-114745&m=dev https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-157242&m=dev https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-157338&m=dev https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-157259&m=dev https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2392-123138&m=dev https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-158108&m=dev https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-158144&m=dev https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-159182&m=dev https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-158125&m=dev" (원본 기능 설명: "room-list — [SCR-004] 방 리스트 탭. 이슈 #154, 브랜치 feature/154-room-list/base. 지도 위 3단 바텀시트로 내 방 전체를 훑고, 방을 골라 상세로 들어가거나 새 공동방을 만든다. PRD business-context.md 3.1.0 [SCR-004] 절 + 「3단 바텀시트」·[SYS-001]·[SYS-004]·[SYS-005]·[SYS-009] 정의 기준.", 2026-08-17)
 
 ---
 
@@ -20,6 +20,8 @@
 
 ### 유저 플로우 1 - 지도 & 3단 바텀시트 탐색
 방 리스트 탭에 진입한 사용자가 지도 위 마커로 자신이 속한 모든 방의 장소를 훑어보고, 바텀시트를 드래그해 방 목록의 밀도를 조절한다.
+
+**Figma**: [003-1-1 peek](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-157242&m=dev) · [003-2-1 peek](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-158108&m=dev) · [003-1-2 half(Default)](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-157338&m=dev) · [003-2-2 half_공동방 1개(Default)](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-158144&m=dev) · [003-2-2-1 half_공동방 N개(Default)](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-159182&m=dev)
 
 **진입 조건**: 사용자가 바텀 네비게이션에서 방 리스트 탭을 선택했다.
 
@@ -57,6 +59,8 @@
 
 ### 유저 플로우 2 - 방 목록 조회 및 방 상세 진입 (Full)
 사용자가 `Full`로 승격한 시트에서 자신이 속한 모든 방을 정렬해 훑어보고, 원하는 방을 선택해 상세로 이동한다.
+
+**Figma**: [003-1-3_방 리스트 full_개인방만 존재](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-157259&m=dev) · [003-2-3 full](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-158125&m=dev)
 
 **진입 조건**: 시트가 `Full` 상태다.
 
@@ -139,10 +143,10 @@
 ## 2. 요구사항 (Requirements)
 ### 2.1 기능적 요구사항 (Functional Requirements)
 
-- **FR-001**: 시스템은 반드시 방 리스트 탭 진입 시 [SYS-004]로 지도를 초기화하고(위치 권한이 아직 없을 때만 이 시점에 요청한다 — [SCR-003] 홈 탭 `가까운순` 전환 또는 [SCR-008] 마이페이지 위치 스위치에서 이미 허용됐다면 다시 묻지 않는다) 내가 속한 모든 방의 장소 마커를 표시하며, 바텀시트를 보유한 공동방 개수에 따른 고정 높이의 `Half` 상태로 표출해야 한다(진입 기본값, 높이 값은 FR-002 참고). 단, [SCR-005] 방 상세에서 [X]로 복귀한 경우는 이 진입 기본값 대신 `room-detail` spec FR-004의 상태 유지 규칙(방 상세 `Half`→방 리스트 `Half`, `Full`→`Full`)을 따른다. 사용자는 시트를 위/아래로 드래그해 `Peek`(88dp, 바텀 네비게이션 높이 제외)·`Full` 상태로 전환할 수 있다. (근거: PRD [SCR-004] Flow A, 「3단 바텀시트」·「지연 권한 요청」 정의, [SYS-004] Flow A; 담당자 확인 2026-08-17, PRD 4.1.0 갱신 반영 2026-08-18)
-- **FR-002**: 시스템은 반드시 바텀시트가 `Half`로 전환될 때 보유한 공동방 개수에 따라 고정 높이를 다르게 적용해야 한다 — 공동방 0개(개인방만): 256dp, 공동방 1개: 360dp, 공동방 2개 이상: 380dp(3번째 카드부터 스크롤 어포던스로 잘려 보임). (근거: PRD 「3단 바텀시트」[SCR-004] 정의)
-- **FR-003**: 시스템은 반드시 바텀시트를 `Full`로 승격 시 전체 화면으로 확장하고 바텀 네비게이션을 숨겨야 한다. (근거: PRD [SYS-005] Flow B)
-- **FR-004**: 시스템은 반드시 `Full` 상태에서 개인방(`내 장소`)이 최상단에 고정된 방 카드 목록(방 썸네일·이름·설명·장소 개수·멤버 아바타)을 표시해야 한다. (근거: PRD [SCR-004] Flow B)
+- **FR-001**: 시스템은 반드시 방 리스트 탭 진입 시 [SYS-004]로 지도를 초기화하고(위치 권한이 아직 없을 때만 이 시점에 요청한다 — [SCR-003] 홈 탭 `가까운순` 전환 또는 [SCR-008] 마이페이지 위치 스위치에서 이미 허용됐다면 다시 묻지 않는다) 내가 속한 모든 방의 장소 마커를 표시하며, 바텀시트를 보유한 공동방 개수에 따른 고정 높이의 `Half` 상태로 표출해야 한다(진입 기본값, 높이 값은 FR-002 참고). 단, [SCR-005] 방 상세에서 [X]로 복귀한 경우는 이 진입 기본값 대신 `room-detail` spec FR-004의 상태 유지 규칙(방 상세 `Half`→방 리스트 `Half`, `Full`→`Full`)을 따른다. 사용자는 시트를 위/아래로 드래그해 `Peek`(88dp, 바텀 네비게이션 높이 제외)·`Full` 상태로 전환할 수 있다. (근거: PRD [SCR-004] Flow A, 「3단 바텀시트」·「지연 권한 요청」 정의, [SYS-004] Flow A; 담당자 확인 2026-08-17, PRD 4.1.0 갱신 반영 2026-08-18; Figma [003-1-1 peek](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-157242&m=dev)·[003-2-1 peek](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-158108&m=dev))
+- **FR-002**: 시스템은 반드시 바텀시트가 `Half`로 전환될 때 보유한 공동방 개수에 따라 고정 높이를 다르게 적용해야 한다 — 공동방 0개(개인방만): 256dp, 공동방 1개: 360dp, 공동방 2개 이상: 380dp(3번째 카드부터 스크롤 어포던스로 잘려 보임). (근거: PRD 「3단 바텀시트」[SCR-004] 정의; Figma [003-1-2 half(Default)](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-157338&m=dev)·[003-2-2 half_공동방 1개(Default)](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-158144&m=dev)·[003-2-2-1 half_공동방 N개(Default)](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-159182&m=dev))
+- **FR-003**: 시스템은 반드시 바텀시트를 `Full`로 승격 시 전체 화면으로 확장하고 바텀 네비게이션을 숨겨야 한다. (근거: PRD [SYS-005] Flow B; Figma [003-1-3_방 리스트 full_개인방만 존재](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-157259&m=dev)·[003-2-3 full](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-158125&m=dev))
+- **FR-004**: 시스템은 반드시 `Full` 상태에서 개인방(`내 장소`)이 최상단에 고정된 방 카드 목록(방 썸네일·이름·설명·장소 개수·멤버 아바타)을 표시해야 한다. (근거: PRD [SCR-004] Flow B; Figma [003-2-3 full](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-158125&m=dev))
 - **FR-005**: 시스템은 반드시 정렬 칩(전체 / 최근 저장 순 / 코멘트 순)을 제공하고, 선택에 따라 개인방 고정을 유지한 채 공동방 목록을 재정렬해야 한다. (근거: PRD [SCR-004] Flow B)
 - **FR-006**: 시스템은 반드시 방 카드 선택 시 [SCR-005] 방 상세로 이동해야 한다. (근거: PRD [SCR-004] Flow B)
 - **FR-007**: 시스템은 반드시 시트 우상단 [+] 클릭 시 [SYS-001] 공동방 생성 폼을 호출하고, 생성 완료 시 [SCR-005] 방 상세로 직행해야 한다. (근거: PRD [SCR-004] Flow C)
@@ -159,7 +163,7 @@
 
 ### 2.3 주요 도메인 (Core Domain)
 
-- **방 리스트 시트 (Room List Sheet)**: 방 리스트 탭의 지도 위에 떠 있는 3단(`Peek`/`Half`/`Full`) 바텀시트. 담기는 콘텐츠가 보유 공동방 개수에 따라 달라지며, 그에 맞춰 `Half` 고정 높이도 달라진다.
+- **방 리스트 시트 (Room List Sheet)**: 방 리스트 탭의 지도 위에 떠 있는 3단(`Peek`/`Half`/`Full`) 바텀시트. 담기는 콘텐츠가 보유 공동방 개수에 따라 달라지며, 그에 맞춰 `Half` 고정 높이도 달라진다. (Figma: [003-1 방 리스트_개인방만 존재](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2370-114745&m=dev)·[003-2 방리스트_개인방 + 공동방](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2392-123138&m=dev))
 - **방 카드 (Room Card)**: 방 목록의 표시 단위. 방 썸네일·이름·설명·장소 개수·멤버 아바타로 구성되며, 개인방은 항상 최상단에 고정된다.
 
 ---
