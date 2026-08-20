@@ -6,11 +6,11 @@
 
 **최초 작성일**: 2026-08-17
 
-**최종 수정일**: 2026-08-19
+**최종 수정일**: 2026-08-20
 
 **상태**: CREATED
 
-**버전**: 2.1.2
+**버전**: 2.1.3
 
 **입력**: 사용자 설명: "room-list — [SCR-004] 방 리스트 탭. 이슈 #154, 브랜치 feature/154-room-list/base. 지도 위 3단 바텀시트로 내 방 전체를 훑고, 방을 골라 상세로 들어가거나 새 공동방을 만든다. PRD business-context.md 3.1.0 [SCR-004] 절 + 「3단 바텀시트」·[SYS-001]·[SYS-004]·[SYS-005]·[SYS-009] 정의 기준."
 
@@ -20,6 +20,8 @@
 
 ### 유저 플로우 1 - 지도 & 3단 바텀시트 탐색
 방 리스트 탭에 진입한 사용자가 지도 위 마커로 자신이 속한 모든 방의 장소를 훑어보고, 바텀시트를 드래그해 방 목록의 밀도를 조절한다.
+
+**Figma**: [003-1-1 peek](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-157242&m=dev) · [003-2-1 peek](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-158108&m=dev) · [003-1-2 half(Default)](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-157338&m=dev) · [003-2-2 half_공동방 1개(Default)](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-158144&m=dev) · [003-2-2-1 half_공동방 N개(Default)](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-159182&m=dev)
 
 **진입 조건**: 사용자가 바텀 네비게이션에서 방 리스트 탭을 선택했다.
 
@@ -58,6 +60,8 @@
 ### 유저 플로우 2 - 방 목록 조회 및 방 상세 진입 (Full)
 사용자가 `Full`로 승격한 시트에서 자신이 속한 모든 방을 정렬해 훑어보고, 원하는 방을 선택해 상세로 이동한다.
 
+**Figma**: [003-1-3_방 리스트 full_개인방만 존재](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-157259&m=dev) · [003-2-3 full](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-158125&m=dev)
+
 **진입 조건**: 시트가 `Full` 상태다.
 
 1. 시트가 `Full`로 표출 → 개인방(`내 장소`)이 최상단에 고정된 방 카드 목록 노출(방 썸네일·이름·설명·장소 개수·멤버 아바타)
@@ -79,8 +83,6 @@
 | ID | 상황 | 처리 | 관련 FR |
 |---|---|---|---|
 | EC-003 | 공동방이 하나도 없는 상태에서 Full 진입 | 개인방 카드와 [SYS-009] Ghost Card(`공동방 만들기`)만 목록에 표시된다 | FR-004 |
-
-Figma 근거: [003-1-3_방 리스트 full_개인방만 존재](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-157259&m=dev)
 
 ---
 
