@@ -10,9 +10,9 @@
 
 **상태**: CREATED
 
-**버전**: 2.1.3
+**버전**: 2.1.4
 
-**입력**: 사용자 설명: "room-list — [SCR-004] 방 리스트 탭. 이슈 #154, 브랜치 feature/154-room-list/base. 지도 위 3단 바텀시트로 내 방 전체를 훑고, 방을 골라 상세로 들어가거나 새 공동방을 만든다. PRD business-context.md 3.1.0 [SCR-004] 절 + 「3단 바텀시트」·[SYS-001]·[SYS-004]·[SYS-005]·[SYS-009] 정의 기준."
+**입력**: 사용자 설명: "스펙 출처에 피그마링크가 없어 다시 스펙 생성해줘. https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2370-114745&m=dev https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-157242&m=dev https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-157338&m=dev https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-157259&m=dev https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2392-123138&m=dev https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-158108&m=dev https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-158144&m=dev https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-159182&m=dev https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-158125&m=dev" (원본 기능 설명: "room-list — [SCR-004] 방 리스트 탭. 이슈 #154, 브랜치 feature/154-room-list/base. 지도 위 3단 바텀시트로 내 방 전체를 훑고, 방을 골라 상세로 들어가거나 새 공동방을 만든다. PRD business-context.md 3.1.0 [SCR-004] 절 + 「3단 바텀시트」·[SYS-001]·[SYS-004]·[SYS-005]·[SYS-009] 정의 기준.", 2026-08-17)
 
 ---
 
