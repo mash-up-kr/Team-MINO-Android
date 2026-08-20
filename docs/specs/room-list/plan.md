@@ -4,13 +4,13 @@
 
 **명세서**: [spec.md](./spec.md)
 
-**기준 spec 버전**: 2.1.0
+**기준 spec 버전**: 2.1.4
 
 **최초 작성일**: 2026-08-18
 
-**최종 수정일**: 2026-08-18
+**최종 수정일**: 2026-08-20
 
-**버전**: 1.0.0
+**버전**: 1.1.0
 
 **참고**: 이 템플릿은 `/mino-plan` 명령으로 채워지며, 해당 명령의 정의가 실행 워크플로우를 설명한다.
 
@@ -22,9 +22,9 @@
 
 **언어/버전**: Kotlin (프로젝트 표준 버전 카탈로그 `mino.android.*`/`mino.kotlin.*` 컨벤션 플러그인 기준, `docs/constitution.md` 「기술 표준과 제약」)
 
-**주요 의존성**: Jetpack Compose · Hilt · `:core:map`(Google Maps Compose 래퍼) · `:core:design-system` · `:core:common:android`(MVI) · `:core:common:ui`(`MinoScaffold`) · `:core:navigation` · `:core:domain`
+**주요 의존성**: Jetpack Compose · Hilt · `:core:map`(Google Maps Compose 래퍼) · `:core:design-system`(`MinoMenu`·`MinoChip` 재사용 — [research.md D11](./research.md)) · `:core:common:android`(MVI) · `:core:common:ui`(`MinoScaffold`) · `:core:navigation` · `:core:domain`
 
-**저장소**: 없음(이 spec 범위에서는 원격 조회만 — `RoomRepository.observeMyRooms()`가 유일한 데이터 진입점, [contracts/room-repository.md](./contracts/room-repository.md)). 로컬 영속화(캐시·DB)는 요구되지 않는다 — Nudge 재노출도 상태 저장 없이 매 진입 판정([research.md D9](./research.md)).
+**저장소**: 없음(이 spec 범위에서는 원격 조회만 — `RoomRepository.observeMyRooms()`가 유일한 데이터 진입점, [contracts/room-repository.md](./contracts/room-repository.md)). 로컬 영속화(캐시·DB)는 요구되지 않는다 — Nudge 재노출도 상태 저장 없이 매 진입 판정([research.md D9](./research.md)). 백엔드 API는 아직 draft 단계라 `RoomRepositoryImpl`(`:core:data`, 이 spec 범위 밖) 구현 시 필드 갭을 임시 목데이터로 메운다 — [research.md D12](./research.md), [contracts/room-repository.md §백엔드 참고](./contracts/room-repository.md).
 
 **테스트**: 이 저장소에 확립된 자동 테스트 컨벤션이 없다(헌법 「검증 장치의 한계」 — CI 없음, 최소 게이트는 `./gradlew :app:assembleQaDebug`). `tasks.md`에서 ViewModel 단위 테스트(JVM, `:core:domain` 순수 로직 포함) 도입 여부를 정한다.
 
@@ -118,3 +118,4 @@ core/design-system/src/main/java/team/mino/core/designsystem/component/
 | 항목 | 필요한 이유 | 단순 대안을 기각한 이유 |
 |---|---|---|
 | `RoomDetailLauncher`·`RoomFormLauncher`를 구현 없는 대상 모듈용으로 미리 선언 | [FR-006]·[FR-007]이 요구하는 전환을 room-list 혼자 로컬로 만들면 room-detail·room-form spec과 중복·충돌한다([research.md D5·D6](./research.md)) | room-list 안에 방 상세·방 생성 폼을 직접 구현 — 기각. 두 화면 모두 별도 spec/issue(#161 등)로 이미 갈라져 있어 이 spec의 범위(`spec.md §3.2`)를 벗어난다. `/mino-task`가 최소 스텁 바인딩 작업을 포함해야 room-list 단독으로도 빌드·수동 검증이 가능하다([quickstart.md](./quickstart.md) 선행 조건). |
+| `RoomRepositoryImpl`(`:core:data`)이 백엔드 draft API의 필드 갭(썸네일·아바타 URL·최근 저장일·코멘트 수)을 임시 목데이터로 채워야 함 | 백엔드가 아직 `0.1.0-draft` 단계라 spec이 요구하는 필드 일부가 없다([research.md D12](./research.md)) | `Room` 도메인 모델을 draft API 형태로 축소 — 기각(spec.md가 이미 확정한 요구사항을 미확정 draft가 지배하게 됨, 헌법 원칙 IV). 이 spec은 계약·모델을 바꾸지 않고, 갭 처리를 구현 단계(`/mino-task`)의 별도 작업으로 남긴다. |
