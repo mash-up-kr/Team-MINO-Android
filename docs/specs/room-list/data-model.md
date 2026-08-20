@@ -77,7 +77,7 @@ enum class PlaceCategoryFilter { ALL, CAFE, RESTAURANT }
 
 ## 2. `:feature:room` UI 상태
 
-이 절은 domain이 아니라 화면 상태다(참고용 — 실제 필드는 구현 단계에서 확정).
+이 절은 domain이 아니라 화면 상태다. `RoomListUiState`·`Intent`·`SideEffect`·분기 규칙의 공식 계약은 [contracts/room-list-main-contract.md](./contracts/room-list-main-contract.md)가 소유한다 — 아래는 그 계약이 참조하는 보조 enum만 남긴다(중복 정의 금지).
 
 ### `BottomSheetLevel` (enum)
 
@@ -85,24 +85,7 @@ enum class PlaceCategoryFilter { ALL, CAFE, RESTAURANT }
 enum class BottomSheetLevel { PEEK, HALF, FULL }
 ```
 
-### `RoomListUiState`
-
-```kotlin
-data class RoomListUiState(
-    val sheetLevel: BottomSheetLevel = BottomSheetLevel.HALF,   // 진입 기본값(FR-001), EC-007 예외는 시작 인자로 override
-    val personalRoom: Room? = null,
-    val groupRooms: ImmutableList<Room> = persistentListOf(),
-    val roomListSort: RoomListSortOption = RoomListSortOption.ALL,
-    val mapMarkerSort: MapMarkerSortOption = MapMarkerSortOption.ALL,
-    val categoryFilter: PlaceCategoryFilter = PlaceCategoryFilter.ALL,
-    val showNudge: Boolean = false,          // groupRooms.isEmpty() 파생값(FR-008)
-    val showGhostCard: Boolean = false,      // groupRooms.isEmpty() 파생값(FR-009)
-    val mapCenter: GeoPoint? = null,         // 위치 권한 결과에 따른 초기 카메라 중심(SYS-004 Flow A)
-) : UiState
-```
-
-- **상태 전이**: `sheetLevel`은 사용자 드래그로만 바뀐다(`PEEK ↔ HALF ↔ FULL` 인접 전환, [spec.md SC-002](./spec.md)). `showNudge`·`showGhostCard`는 `groupRooms`의 파생값이라 독립적으로 set하지 않는다(단일 진실 공급원 유지).
-- **시작 인자**: 진입 Route는 `sheetLevelOverride: BottomSheetLevel?`를 선택적으로 받는다 — `null`이면 FR-001 기본값(`HALF`+공동방 수에 따른 높이), 값이 있으면 EC-007(방 상세 `[X]` 복귀) 케이스.
+- **시작 인자**: 진입 Route는 `sheetLevelOverride: BottomSheetLevel?`를 선택적으로 받는다 — `null`이면 FR-001 기본값(`HALF`+공동방 수에 따른 높이), 값이 있으면 EC-007(방 상세 `[X]` 복귀) 케이스. 실제 `RoomListUiState` 필드·Intent·SideEffect·상태 전이 규칙은 [contracts/room-list-main-contract.md](./contracts/room-list-main-contract.md) 참조.
 
 ---
 
