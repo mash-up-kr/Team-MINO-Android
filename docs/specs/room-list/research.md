@@ -73,6 +73,24 @@
 
 ---
 
+## D11. 정렬 드롭다운·카테고리 칩은 `:core:design-system`의 `MinoMenu`·`MinoChip`을 그대로 쓴다
+
+- **Decision**: `[FR-011]` 지도 상단 정렬 드롭다운은 `MinoMenu`(`core/design-system/.../component/menu/`), `[FR-005]`·`[FR-011]`의 정렬 칩·카테고리 칩은 `MinoChip`(`component/chip/`)을 그대로 쓴다. `:feature:room`에 새 드롭다운·칩 컴포넌트를 만들지 않는다.
+- **Rationale**: `:feature:sample`·`:core:common:ui`·`:core:design-system` 전수 조사 결과, 바텀시트·Nudge·Ghost Card·현재 위치 버튼(D10) 계열은 이 spec이 처음 만드는 것이 맞지만(2개 이상 소비자가 아직 없음, `core/common/ui/README.md` §5 승격 기준 미달), 드롭다운·칩은 이미 `:core:design-system`에 일반 컴포넌트로 존재해 새로 만들면 헌법 원칙 I(SSOT) 위반이 된다.
+- **Alternatives considered**: room-list 전용 `SortDropdown`·`CategoryChip`을 새로 만든다 — 기각. `MinoMenu`·`MinoChip`이 이미 항목 리스트·선택 상태를 다루는 범용 API라 그대로 재사용 가능하고, 새로 만들면 두 구현이 갈라진다.
+- **(plan 2.1.0 개정에서 결정 — 사용자 요청으로 `:feature:sample`·공용 모듈의 기존 컴포넌트 재사용 여부를 재조사)**
+
+## D12. 백엔드 draft API 참고 — `Room` 필드 갭은 구현 단계의 임시 목데이터로 메운다
+
+- **Decision**: `Team-MINO-Node` 저장소의 draft OpenAPI 문서([swagger.yaml](https://raw.githubusercontent.com/mash-up-kr/Team-MINO-Node/refs/heads/KKardy/GM-111-outline-prd/docs/swagger.yaml), `info.version: 0.1.0-draft`, 브랜치명 자체가 `outline-prd`)를 `:core:data`의 `RoomRepositoryImpl` 구현 시 DTO 형태의 참고 자료로 남긴다. 이 plan의 `RoomRepository` 계약([contracts/room-repository.md](./contracts/room-repository.md))과 `Room` 도메인 모델([data-model.md](./data-model.md))은 **바꾸지 않는다** — 이 문서가 확정 계약이 아니라 draft이기 때문이다.
+- **필드 갭 확인**: `GET /api/v1/rooms`(`RoomSummary`)는 `id`·`type`(personal/shared)·`name`·`description`·`color`(hex)·`ownerId`·`inviteCode`·`createdAt`·`pinCount`·`memberCount`·(옵션)`hasPlace`·(옵션)`users: RoomMember[]`만 제공한다. spec이 요구하는 `RoomThumbnail`(콜라주 이미지), `RoomMemberSummary.visibleAvatarUrls`(서버는 `avatar: { id: integer }`만 제공, URL 매핑 없음), `lastPlaceSavedAt`, `commentCount`, 서버 정렬·필터 파라미터는 **draft에 없다**("정렬/필터·카드형/리스트형 뷰는 기획 TBD"로 문서에 명시).
+- **Rationale**: 서버 정렬 API가 없다는 [D7](#d7-지도-마커-필터5종과-방-카드-정렬3종은-별개-enum)의 전제가 이 draft로 재확인됐다. 나머지 갭(썸네일·아바타 URL·최근 저장일·코멘트 수)은 `:core:data` 구현 시점에 임시 목데이터/플레이스홀더로 채우고, 백엔드가 필드를 확정하면 매핑만 교체하면 되도록 `Room` 도메인 모델(이 plan의 계약)은 이미 필드 자체를 spec 요구사항 기준으로 독립적으로 정의해 뒀다 — draft API 형태를 그대로 베끼지 않은 것이 이번에 유효했다.
+- **범위**: 이 목데이터 작성 자체는 `:core:data` 구현 작업이라 이 plan이 만들지 않는다. `/mino-task`가 "임시 목데이터로 채울 필드 목록"을 별도 작업으로 인지해야 한다는 사실만 여기 남긴다.
+- **Alternatives considered**: draft API 필드에 맞춰 `Room` 모델을 지금 축소한다 — 기각. spec.md FR-004 등은 이미 승인된 요구사항이고, draft는 "기획 TBD"라고 스스로 명시한 미확정 문서라 지금 도메인 모델을 거기 맞추면 spec을 draft가 지배하게 된다(헌법 원칙 IV, Spec-First 역행).
+- **(plan 2.1.0 개정에서 결정 — PR #186 리뷰 코멘트 반영, [contracts/room-repository.md](./contracts/room-repository.md) §백엔드 참고 추가)**
+
+---
+
 ## NEEDS CLARIFICATION 해소 현황
 
 Technical Context에 남겼던 미확정 항목은 모두 위 결정으로 해소됐다. 남은 진짜 미확정은 D5·D6의 **미구현 크로스 feature 의존성**뿐이며, 이는 설계 공백이 아니라 다른 issue의 진행 상태에 대한 의존이다.
