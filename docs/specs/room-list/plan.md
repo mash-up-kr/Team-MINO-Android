@@ -10,7 +10,7 @@
 
 **최종 수정일**: 2026-08-20
 
-**버전**: 1.1.0
+**버전**: 1.2.0
 
 **참고**: 이 템플릿은 `/mino-plan` 명령으로 채워지며, 해당 명령의 정의가 실행 워크플로우를 설명한다.
 
@@ -24,7 +24,7 @@
 
 **주요 의존성**: Jetpack Compose · Hilt · `:core:map`(Google Maps Compose 래퍼) · `:core:design-system`(`MinoMenu`·`MinoChip` 재사용 — [research.md D11](./research.md)) · `:core:common:android`(MVI) · `:core:common:ui`(`MinoScaffold`) · `:core:navigation` · `:core:domain`
 
-**저장소**: 없음(이 spec 범위에서는 원격 조회만 — `RoomRepository.observeMyRooms()`가 유일한 데이터 진입점, [contracts/room-repository.md](./contracts/room-repository.md)). 로컬 영속화(캐시·DB)는 요구되지 않는다 — Nudge 재노출도 상태 저장 없이 매 진입 판정([research.md D9](./research.md)). 백엔드 API는 아직 draft 단계라 `RoomRepositoryImpl`(`:core:data`, 이 spec 범위 밖) 구현 시 필드 갭을 임시 목데이터로 메운다 — [research.md D12](./research.md), [contracts/room-repository.md §백엔드 참고](./contracts/room-repository.md).
+**저장소**: 없음(이 spec 범위에서는 원격 조회만 — `RoomRepository.observeMyRooms()`가 유일한 데이터 진입점, [contracts/room-repository.md](./contracts/room-repository.md)). 로컬 영속화(캐시·DB)는 요구되지 않는다 — Nudge 재노출도 상태 저장 없이 매 진입 판정([research.md D9](./research.md)). 백엔드 API는 아직 draft 단계라 `RoomRepositoryImpl`(`:core:data`, 이 spec 범위 밖) 구현 시 필드 갭을 임시 목데이터로 메운다 — [research.md D12](./research.md), [contracts/room-repository.md §구현 위치](./contracts/room-repository.md).
 
 **테스트**: 이 저장소에 확립된 자동 테스트 컨벤션이 없다(헌법 「검증 장치의 한계」 — CI 없음, 최소 게이트는 `./gradlew :app:assembleQaDebug`). `tasks.md`에서 ViewModel 단위 테스트(JVM, `:core:domain` 순수 로직 포함) 도입 여부를 정한다.
 
@@ -63,6 +63,7 @@ docs/specs/room-list/
 ├── data-model.md         # Phase 1 산출물
 ├── quickstart.md         # Phase 1 산출물
 ├── contracts/
+│   ├── room-list-main-contract.md   # UiState·Intent·SideEffect·분기 규칙 (mypage-settings 계약 패턴과 동일)
 │   ├── room-repository.md
 │   └── navigation-launchers.md
 └── tasks.md               # /mino-task 산출물 (아직 없음)

@@ -87,7 +87,7 @@
 - **Rationale**: 서버 정렬 API가 없다는 [D7](#d7-지도-마커-필터5종과-방-카드-정렬3종은-별개-enum)의 전제가 이 draft로 재확인됐다. 나머지 갭(썸네일·아바타 URL·최근 저장일·코멘트 수)은 `:core:data` 구현 시점에 임시 목데이터/플레이스홀더로 채우고, 백엔드가 필드를 확정하면 매핑만 교체하면 되도록 `Room` 도메인 모델(이 plan의 계약)은 이미 필드 자체를 spec 요구사항 기준으로 독립적으로 정의해 뒀다 — draft API 형태를 그대로 베끼지 않은 것이 이번에 유효했다.
 - **범위**: 이 목데이터 작성 자체는 `:core:data` 구현 작업이라 이 plan이 만들지 않는다. `/mino-task`가 "임시 목데이터로 채울 필드 목록"을 별도 작업으로 인지해야 한다는 사실만 여기 남긴다.
 - **Alternatives considered**: draft API 필드에 맞춰 `Room` 모델을 지금 축소한다 — 기각. spec.md FR-004 등은 이미 승인된 요구사항이고, draft는 "기획 TBD"라고 스스로 명시한 미확정 문서라 지금 도메인 모델을 거기 맞추면 spec을 draft가 지배하게 된다(헌법 원칙 IV, Spec-First 역행).
-- **(plan 2.1.0 개정에서 결정 — PR #186 리뷰 코멘트 반영, [contracts/room-repository.md](./contracts/room-repository.md) §백엔드 참고 추가)**
+- **(plan 2.1.0 개정에서 결정 — PR #186 리뷰 코멘트 반영, [contracts/room-repository.md](./contracts/room-repository.md) §구현 위치에 DTO 갭 대응 반영)**
 
 ---
 
