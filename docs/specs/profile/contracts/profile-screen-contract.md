@@ -2,6 +2,8 @@
 
 온보딩·마이페이지 두 진입점이 공유하는 단일 화면(FR-001). 골격은 [feature-module.md](../../../architecture/feature-module.md) 4장의 Route↔Screen 분리를 따른다.
 
+> **범위**: 화면은 저장이 어디로 나가는지 모른다. 이번 범위에서 그 뒤가 로컬 DataStore 하나라는 사실([research.md D22](../research.md#d22-이번-범위의-저장소--로컬-datastore-단독-원격-연동은-후속-작업))은 이 계약의 어느 항목도 바꾸지 않으며, 원격이 붙어도 이 파일은 그대로다([research.md D24](../research.md#d24-원격-연동이-붙을-때-바뀌는-지점을-지금-고정한다)).
+
 ## Route (feature 내부)
 
 ```kotlin
@@ -37,8 +39,8 @@ internal sealed interface ProfileIntent : Intent {
 - 비활성 상태의 버튼은 인텐트를 만들지 않는다(UX-004, EC-011). 활성 여부 판정은 화면이 UiState로 계산한다.
 - `SaveClicked` 처리는 `launchSafely` 안에서 `runCatchingDomain`으로 감싸고, 성공·실패 어느 쪽이든 `isSaving=false`로 되돌린다([에러 처리 규약](../../../conventions/error_handling.md) §4).
 - 넘기는 아바타 id는 `selectedAvatar ?: 기본 아바타`를 `Int`로 옮긴 값이다(EC-002). enum ↔ id 매핑은 이 feature가 소유한다([data-model.md §4](../data-model.md)).
-- 등록(`POST /users`)과 수정(`PATCH /users/me`) 중 무엇이 나가는지는 화면이 모른다 — UseCase가 캐시 상태로 고른다([repository 계약](profile-repository-contract.md)).
-- 마이페이지 진입의 프리필(FR-006)은 `ProfileRepository.observeProfile()`의 첫 값으로 채운다. 화면이 서버를 조회하지 않는다.
+- 저장이 어디에 어떻게 쓰이는지는 화면이 모른다. `SaveProfileUseCase`의 시그니처(`rawNickname`·`avatarId`)만 안다([repository 계약](profile-repository-contract.md)).
+- 마이페이지 진입의 프리필(FR-006)은 `ProfileRepository.observeProfile()`의 첫 값으로 채운다. 화면이 따로 조회를 걸지 않는다.
 
 ## SideEffect
 
@@ -71,9 +73,10 @@ Figma [010-1 기본](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%
 | 안내 문구 | 텍스트 | `친구들에게 어떻게 보일까요?` |
 | 상단 썸네일 | `MinoProfileAvatarImage` (신설) | 선택 아바타 또는 기본 아바타 |
 | 닉네임 입력 | `MinoTextField` | `label="이름 또는 닉네임"`, `required=true`, `placeholder="한글·영문 2글자 이상"`, `helperText`는 오류 시 `한글·영문 2글자 이상을 입력해주세요.`, `status`는 오류 시 `Negative` |
-| 아바타 목록 | 4열 × 3행 그리드 + 제목 `프로필 이미지 선택` | 칸은 `MinoProfileAvatarImage`, 배치는 화면이 소유 |
+| 아바타 목록 | 4열 × 3행 그리드 + 제목 `프로필 이미지 선택` | 칸은 `MinoProfileAvatarImage`, 배치는 화면이 소유. 고정 `Column`+`Row`로 그리고 `LazyVerticalGrid`를 쓰지 않는다([research.md D26](../research.md#d26-아바타-그리드의-배치--화면이-소유하고-lazyverticalgrid를-쓰지-않는다)) |
 | 하단 액션 | `MinoActionArea` | `지우기`·`저장` 두 버튼이 가로로 놓이고 오른쪽이 메인이다 — variant 판정은 구현 단계에서 Figma 대조로 확정 |
 
+- 화면 전체가 세로 스크롤 하나로 흐른다(상단 바 → 안내 문구 → 썸네일 → 입력 필드 → 그리드 → 액션). 그리드가 그 안에 고정 높이로 놓이므로 중첩 스크롤이 생기지 않는다.
 - 바텀 네비게이션을 노출하지 않는다(UX-006). 이 화면은 탭 셸 밖의 진입형 feature이므로 구조상 자연히 만족한다.
 - 스크롤·인셋은 `ProfileShell`이 연 `MinoScaffold` 안에서 처리한다. 화면이 `Scaffold`를 또 열지 않는다(feature-module.md 4장).
 - 정확한 치수·색·간격은 구현 단계에서 [figma-design-fidelity.md](../../../conventions/figma-design-fidelity.md)의 판정 절차로 정한다. 이 계약은 무엇을 쓰는지까지만 정한다.
@@ -86,3 +89,4 @@ Figma [010-1 기본](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%
 | 마이페이지 | 활성 | 저장하지 않고 화면을 닫는다(`finish()`) |
 
 - 마이페이지 진입에서는 확인 모달을 띄우지 않고 수정 내용을 버린다(FR-013, EC-005).
+- 온보딩 진입에서 저장이 끝난 뒤 이 화면으로 되돌아오는 경로는 화면 밖에도 없다(TS-018, EC-013). 화면은 `finish()`로 스스로를 닫으므로 스택에 남지 않는다.
