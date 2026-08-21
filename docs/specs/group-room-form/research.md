@@ -40,6 +40,8 @@
 - **Ktor `MockEngine`으로 HTTP 레이어까지 흉내낸다**(`libs.ktor.client.mock`이 카탈로그에 이미 있다) — 기각. JSON 문자열을 손으로 쓰고 라우팅을 흉내내는 비용이 인메모리 맵보다 크고, 검증되는 것은 우리가 쓴 mock JSON뿐이다. 단일 `HttpClient`에 baseUrl이 GitHub 임시값으로 잡혀 있어(`NetworkModule`) 엔진만 바꿔서는 깨끗하게 분리되지도 않는다.
 - **`:core:domain`의 `RoomRepository`를 feature에서 fake로 구현한다** — 기각. feature가 Repository 구현을 가지면 [`dependency-injection.md`](../../conventions/dependency-injection.md)의 바인딩 소유 규칙이 뒤집히고, `:core:data`가 나중에 같은 인터페이스를 구현할 때 바인딩이 충돌한다.
 
+> **사실 정정 (plan 1.2.0)**: 위 본문이 근거로 든 "baseUrl이 GitHub 임시값으로 잡혀 있다"는 더 이상 사실이 아니다. `core/data`가 그 사이에 `BuildConfig.API_BASE_URL`(flavor별)로 교체했다. 결정은 바뀌지 않는다 — MockEngine을 기각한 주된 이유는 JSON을 손으로 쓰는 비용이었고 baseUrl은 보조 근거였다.
+
 ---
 
 ## R-003. swagger 계약이 spec과 어긋나는 세 지점 *(plan 1.0.0)*
@@ -294,3 +296,52 @@
 `GRAY`의 식별자를 `"gray"`로 두는 것은 R-017과 별개다 — 에셋 이름은 `my room`이지만 그것은 Figma variant 이름이지 서버 계약이 아니다. 도메인 값 이름을 따른다.
 
 **Alternatives considered**: R-003의 기각 이력을 참조한다. 이번 항목은 그 결정의 확정일 뿐 새 후보를 검토하지 않았다.
+
+---
+
+## R-019. 방 설명 필드의 편집 상태를 누가 소유하는가 *(plan 1.2.0)*
+
+**Decision**: **`RoomFormRoute`가 `TextFieldState`를 소유한다.** 텍스트 변화를 `DescriptionChanged`로 ViewModel에 전달하고, 편집 진입 초기값은 `initial`이 처음 채워질 때 한 번만 주입한다. `RoomFormScreen`은 그것을 파라미터로 받아 stateless를 유지한다. 전달 수단과 생성 호출은 구현이 고르며, 계약은 [contracts/room-form-ui.md](./contracts/room-form-ui.md) §4가 소유한다.
+
+**Rationale**: 1.1.1까지 이 지점이 비어 있었다. `MinoTextArea`는 `state: TextFieldState`를 받는데 `RoomFormUiState.values.description`은 `String`이라, 둘을 잇는 주인이 정해지지 않은 채 계약이 "`maxLength = 30`으로 그대로 받는다"로 덮여 있었다.
+
+Route가 드는 것이 세 후보 중 가장 적게 잃는다. **디자인 시스템을 건드리지 않고**, 상한(`InputTransformation.maxLength`)과 카운터가 컴포넌트 계약에 그대로 남는다. `TextFieldState`는 편집 버퍼, `UiState`는 도메인 값이라는 역할 분담은 Compose가 의도한 형태이기도 하다.
+
+**대가는 두 가지이고 감추지 않는다.**
+
+- **초기값 주입에 타이밍 결합이 생긴다.** 편집 폼은 값을 서버에서 읽어 오므로([R-005](#r-005-편집-진입-시-기존-값을-어떻게-채우는가-plan-100)) 조회 완료 시점에 한 번 주입해야 한다. 여러 번 주입하면 사용자가 고치던 내용을 덮어쓴다. 재시도와 프로세스 사망 복원에서의 가드는 계약이 못박았다.
+- **두 입력 필드가 비대칭이 된다.** 방 이름은 ViewModel이 15자로 자르고, 방 설명은 컴포넌트가 30자로 자른다. 원인은 `MinoTextField`에 `maxLength`가 없고 `MinoTextArea`에만 있다는 디자인 시스템 API의 차이다. 계약에 그 사실을 적어 두어 구현이 양쪽 다 자르거나 한쪽도 안 자르는 일이 없게 한다.
+
+FR-024(진입 시점 대비 변경 판정)와 FR-008(미리보기 실시간 반영)은 둘 다 `UiState.values`를 읽으므로 이 결정에 영향을 받지 않는다.
+
+**Alternatives considered**:
+- **`MinoTextArea`에 `value: String` 오버로드를 추가한다** — 기각. 두 필드가 대칭이 되고 `UiState`가 유일한 원천이 되는 이점이 있으나, `BasicTextField`의 state 기반 이점(IME 조합 처리·undo)을 잃고 `InputTransformation.maxLength`를 못 써 상한과 카운터를 오버로드에서 다시 구현해야 한다. Compose가 state 기반으로 가는 방향과도 역행한다.
+- **ViewModel이 `TextFieldState`를 들고 `UiState`에 넣는다** — 기각. 가변 Compose 타입이 `data class`에 들어가 `copy`·`equals`의 의미가 깨지고, `MviContainer`의 `updateState { copy(...) }` 모델과 충돌한다([`core/common/android/README.md`](../../../core/common/android/README.md) §2).
+
+---
+
+## R-020. `Room.type`을 도메인 모델에 두는가 *(plan 1.2.0)*
+
+**Decision**: **두지 않는다.** `Room`에서 `type` 필드를, `model/`에서 `RoomType` enum을, `RoomResponse`에서 대응 필드를 함께 뺀다.
+
+**Rationale**: 1.0.0이 `type`을 넣으며 근거로 든 FR-014·EC-013(개인방은 편집 대상이 아니다)은 **방 상세 더보기 메뉴의 요구**이고 [§범위 경계](./plan.md)가 이번 범위 밖으로 둔 항목이다. 그 결과 이 feature의 `UiState`·`Intent`·`RoomFormViewModel` 어디도 `type`을 읽지 않는다. [`core/domain/README.md`](../../../core/domain/README.md) §5가 "서버 스펙에만 존재하는 필드는 도메인 모델에 포함하지 않는다"를 정했으므로 빼는 것이 규약대로다.
+
+**DTO에서도 뺀다.** `ignoreUnknownKeys = true`가 걸려 있어 서버가 `type`을 보내도 파싱이 깨지지 않는다([`core/data/README.md`](../../../core/data/README.md) §4). 매핑되지 않을 필드를 DTO에만 남기면 "왜 안 쓰는가"라는 질문이 코드에 남는다.
+
+**필요해지는 시점은 예측 가능하다** — 방 상세가 더보기 메뉴를 그릴 때다. 그 feature가 그때 `Room`에 필드를 더하면 되고, 도메인 모델에 필드를 추가하는 것은 되돌리기 어려운 결정이 아니다.
+
+**Alternatives considered**:
+- **남기고 개인방 `roomId`로 편집 폼이 열렸을 때의 방어를 더한다** — 기각. spec은 그 경로를 진입점 없음(FR-014)으로 닫아 두었으므로, 방어를 넣는 것은 spec에 없는 요구사항 신설이다([헌법 원칙 IV](../../constitution.md)).
+- **필드는 남기고 근거만 "DTO 매핑 완전성"으로 바꾼다** — 기각. 쓰이지 않는 필드를 도메인에 두는 근거로는 약하고, 위 README §5와 정면으로 어긋난다.
+
+---
+
+## R-021. 방 이름의 허용 문자에 자모 단독이 드는가 *(plan 1.2.0)*
+
+**Decision**: **든다.** `ValidateRoomNameUseCase`는 자모 단독(`ㄱ`·`ㅏ`)을 한글로 보아 `Valid`로 판정한다.
+
+**Rationale**: 1.1.1이 이 판단을 `[TBD]`로 남겼던 이유는 **저장 허용값을 넓히는 결정을 설계가 임의로 내릴 수 없기 때문**이었다. spec 3.1.0이 FR-004를 `한글(완성형·자모)`로 고치고 EC-025를 신설해 그 자리를 채웠으므로 이제 설계는 spec을 따르기만 하면 된다.
+
+근거의 핵심은 FR-004가 오류 판정을 **입력 즉시** 하도록 정했다는 점이다. 조합이 끝나기를 기다릴 수 없으므로, 자모를 배제하면 IME로 한글을 치는 동안 매 글자 오류가 번쩍인다. `value: String` API로는 조합 구간을 알 수 없어 억제할 방법도 없다.
+
+**Alternatives considered**: 1.1.1의 `[TBD]`가 적어 둔 두 갈래(불허 + 조합 중 억제 / 불허 + 판정 시점 이연)는 spec 3.1.0의 §5 답변이 기각했다. 이 항목은 그 결정의 설계 반영일 뿐 새 후보를 검토하지 않았다.
