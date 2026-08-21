@@ -60,6 +60,7 @@ profileLauncher.launch(this) {
 
 - 결과 Intent에 프로필 값을 싣지 않는다. 저장된 값은 `ProfileRepository.observeProfile()`이 원천이다([repository 계약](profile-repository-contract.md)).
 - 온보딩 진입에서는 `RESULT_CANCELED`가 나올 수 없다 — 뒤로가기가 막혀 있고 저장 외에 화면을 닫는 경로가 없다(FR-010, EC-001).
+- 온보딩 호출자는 `RESULT_OK`를 받은 뒤 프로필 설정을 스택에서 되짚지 않는다(TS-018, EC-013). 이 화면은 이미 스스로를 닫았으므로 호출자가 할 일은 다음 스텝으로 나아가는 것뿐이다.
 - 이 계약을 호출하는 코드는 이번 범위에 없다. 온보딩·마이페이지 feature가 생길 때 각자 배선한다.
 
 ## 이번 범위에서 만드는 것

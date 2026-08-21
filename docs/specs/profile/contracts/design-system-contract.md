@@ -26,7 +26,7 @@ fun MinoProfileAvatarImage(
 | 클릭 | `onClick`이 있으면 선택 시맨틱을 노출한다 — `Modifier.rippleSingleSelectable`([README §6.3](../../../../core/design-system/README.md)) |
 | 에셋 | `ImageVector` 변환이 가능하면 벡터, 아니면 밀도별 WebP([ADR](../../../adr/2026-08-01-webp-for-raster-images.md)) |
 
-- enum은 그림만 안다. 서버·저장 식별자, "미선택", 그리드 배치는 갖지 않는다([data-model.md §4](../data-model.md)).
+- enum은 그림만 안다. 저장 식별자, "미선택", 그리드 배치는 갖지 않는다([data-model.md §4](../data-model.md)). 이 모듈은 도메인·데이터 레이어를 모르므로 원격 연동이 붙어도 이 표면은 그대로다([research.md D24](../research.md#d24-원격-연동이-붙을-때-바뀌는-지점을-지금-고정한다)).
 - 기존 `MinoAvatar`·`MinoAvatarSize`는 수정하지 않는다. 두 컴포넌트가 나뉘어 있는 이유는 research.md D5에 있다.
 
 ## 2. 상단 내비게이션 (`component/topnavigation/`)
@@ -53,4 +53,4 @@ fun MinoTopNavigation(
 ## 3. 소비 규칙
 
 - `:feature:profile`은 위 두 표면과 기존 컴포넌트(`MinoTextField`·`MinoActionArea`)만 쓴다. 색·치수를 직접 상수로 들지 않는다(헌법 §기술 표준).
-- 아바타 그리드의 **배치**(4열 × 3행, 간격, 제목 `프로필 이미지 선택`)는 화면이 소유한다. 컴포넌트는 자기 한 칸만 안다.
+- 아바타 그리드의 **배치**(4열 × 3행, 간격, 제목 `프로필 이미지 선택`)는 화면이 소유한다. 컴포넌트는 자기 한 칸만 안다([research.md D26](../research.md#d26-아바타-그리드의-배치--화면이-소유하고-lazyverticalgrid를-쓰지-않는다)).
