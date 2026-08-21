@@ -48,26 +48,26 @@ sealed class MinoDomainException(
 ```kotlin
 @HiltViewModel
 class SampleViewModel @Inject constructor(
-    private val githubRepository: GithubRepository,
+    private val xxxRepository: XxxRepository,
 ) : ViewModel(),
     MviContainer<SampleUiState, SampleSideEffect> by mviContainer(SampleUiState()),
     DomainErrorEmitter by domainErrorEmitter() {
 
     // 주 데이터 로드 실패 → State에 리프를 담는다 (문구 매핑은 화면이)
-    private fun loadTeamMembers() {
+    private fun loadXxx(id: String) {
         launchSafely {
             updateState { copy(status = Loading) }
-            runCatchingDomain { githubRepository.getUser("mash-up-kr") }
+            runCatchingDomain { xxxRepository.getXxx(id) }
                 .onSuccess { updateState { copy(status = Success(it)) } }
                 .onDomainFailure { e -> updateState { copy(status = Error(e)) } }
         }
     }
 
     // 사용자 액션의 일회성 실패 → 매핑 없이 리프 그대로 방출
-    private fun follow(login: String) {
+    private fun bookmarkXxx(id: String) {
         launchSafely {
-            runCatchingDomain { githubRepository.follow(login) }
-                .onSuccess { postSideEffect(ShowToast("팔로우 완료")) }
+            runCatchingDomain { xxxRepository.bookmarkXxx(id) }
+                .onSuccess { postSideEffect(ShowToast("저장 완료")) }
                 .onDomainFailure(::emitDomainError)
         }
     }
