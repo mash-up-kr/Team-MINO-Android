@@ -26,7 +26,7 @@ internal object NetworkModule {
             expectSuccess = true
             convertDomainException()
             defaultRequest {
-                url("https://api.github.com/")
+                url(BuildConfig.API_BASE_URL)
             }
             install(ContentNegotiation) {
                 json(Json { ignoreUnknownKeys = true })

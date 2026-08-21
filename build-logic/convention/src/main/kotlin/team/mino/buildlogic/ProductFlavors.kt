@@ -10,6 +10,7 @@ enum class FlavorDimension {
 
 enum class Flavor(
     val dimension: FlavorDimension,
+    // 실서버 도메인 확정 전까지 example.com 플레이스홀더. 빌드는 통과하므로 배포 전 반드시 교체할 것
     val apiBaseUrl: String,
     val appName: String,
     val applicationIdSuffix: String? = null,
