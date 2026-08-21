@@ -13,11 +13,10 @@
 ```mermaid
 flowchart TD
     subgraph domain[":core:domain — model/"]
-        Room["Room<br/>id · type · name · description<br/>color · ownerId"]
+        Room["Room<br/>id · name · description<br/>color · ownerId"]
         RoomColor["RoomColor (enum)<br/>12색 + GRAY"]
         RoomDraft["RoomDraft<br/>name · description · color?"]
         RoomNameValidation["RoomNameValidation (sealed)<br/>Valid · Blank · InvalidCharacter"]
-        RoomType["RoomType (enum)<br/>PERSONAL · SHARED"]
     end
     subgraph data[":core:data — network/dto/"]
         RoomResponse["RoomResponse (DTO)"]
@@ -33,7 +32,6 @@ flowchart TD
     end
 
     Room --> RoomColor
-    Room --> RoomType
     RoomDraft --> RoomColor
     RoomResponse -. "toDomain()" .-> Room
     RoomDraft -. "toRequest()" .-> CreateRoomRequest
@@ -56,22 +54,13 @@ flowchart TD
 | 필드 | 타입 | 제약 | 근거 |
 |---|---|---|---|
 | `id` | `String` | 비어 있지 않다 | swagger `Room.id` (uuid) |
-| `type` | `RoomType` | — | spec §2.3 — 개인방은 편집 대상이 아니다(FR-014·EC-013) |
-| `name` | `String` | 1–15자, 한글·영문·숫자·공백 | FR-002·FR-003·FR-004 |
+| `name` | `String` | 1–15자, 한글(완성형·자모)·영문·숫자·공백 | FR-002·FR-003·FR-004·EC-025 |
 | `description` | `String` | 0–30자, 문자 종류 제한 없음. 없으면 빈 문자열 | FR-005·EC-006 |
 | `color` | `RoomColor` | nullable 아님 — 미선택은 `GRAY`로 확정된 상태 | FR-006 · [research.md](./research.md) R-010 |
 | `ownerId` | `String` | — | FR-010·FR-014 |
 
-- **`inviteCode`·`createdAt`·`pinCount`·`memberCount`를 넣지 않는다.** swagger `Room`·`RoomDetail`에 있으나 이 feature가 쓰지 않는다 — [`core/domain/README.md`](../../../core/domain/README.md) §5 "서버 전용 필드는 도메인 모델에 포함하지 않는다". 초대 링크는 spec §3.2가 PRD [SYS-006] 몫으로 뒀다. 다른 feature가 필요로 할 때 필드를 더한다.
+- **`type`·`inviteCode`·`createdAt`·`pinCount`·`memberCount`를 넣지 않는다.** swagger `Room`·`RoomDetail`에 있으나 이 feature가 쓰지 않는다 — [`core/domain/README.md`](../../../core/domain/README.md) §5 "서버 전용 필드는 도메인 모델에 포함하지 않는다". 초대 링크는 spec §3.2가 PRD [SYS-006] 몫으로 뒀다. 다른 feature가 필요로 할 때 필드를 더한다.
 - **`description`을 nullable로 두지 않는다.** DTO의 `null`은 Mapper가 `.orEmpty()`로 흡수한다(같은 README §7).
-
-### `RoomType`
-
-```
-enum class RoomType { PERSONAL, SHARED }
-```
-
-swagger `Room.type`의 `personal` · `shared`에 대응한다. 이 feature는 값을 읽기만 하고 만들지 않는다 — 폼이 만드는 방은 항상 공동방이다.
 
 ### `RoomColor`
 
@@ -129,10 +118,10 @@ sealed interface RoomNameValidation {
 |---|---|---|---|
 | 필수 | 앞뒤 공백 제거 후 1자 이상 | `ValidateRoomNameUseCase` | FR-002·EC-001 |
 | 최대 길이 | 공백 포함 15자 | ViewModel의 `NameChanged`가 자른다(`MinoTextField`에는 `maxLength`가 없다). **글자 수 카운터는 표시하지 않는다** | FR-003·TS-003·TS-045·EC-002 |
-| 허용 문자 | 한글·영문·숫자·공백 | `ValidateRoomNameUseCase` | FR-004·EC-005 |
+| 허용 문자 | 한글(**완성형·자모**)·영문·숫자·공백 | `ValidateRoomNameUseCase` | FR-004·EC-005·EC-025 |
 | 판정 시점 | 글자 단위 입력마다 | ViewModel의 `NameChanged` 처리 | spec §4 가정 · SC-002 |
 | 중복 검사 | **하지 않는다** | — | EC-003 |
-| 글자 수 세기 | 사용자가 보는 문자 단위 | ViewModel의 `NameChanged`·`DescriptionChanged` | spec §4 가정 |
+| 글자 수 세기 | 사용자가 보는 문자 단위 | ViewModel의 `NameChanged` | spec §4 가정 |
 
 **길이 계산 단위**: 코드 유닛이 아니라 **사용자가 보는 문자 단위**로 센다(spec §4 가정). 조합형 한글이 두세 자로 세어지면 15자를 채우기 전에 입력이 막혀 TS-003·EC-002가 어긋난다. 세는 수단은 구현이 정한다.
 
@@ -141,7 +130,7 @@ sealed interface RoomNameValidation {
 | 규칙 | 값 | 근거 |
 |---|---|---|
 | 필수 여부 | 선택 | FR-005·TS-002 |
-| 최대 길이 | 공백 포함 30자. 카운터 `n/30`을 표시한다(`MinoTextArea` 기본) | FR-005·TS-004 |
+| 최대 길이 | 공백 포함 30자. 자르는 주체와 세는 단위는 [contracts/room-form-ui.md](./contracts/room-form-ui.md) §1이 소유한다 | FR-005·TS-004 |
 | 문자 종류 | 제한 없음 | EC-006 |
 
 **swagger는 20자로 적었으나 30자를 따른다** — [research.md](./research.md) R-003.
@@ -238,7 +227,6 @@ swagger 필드명을 그대로 따른다. 세부 계약과 어긋난 지점의 �
 | 필드 | 타입 | swagger 대응 | 도메인 매핑 |
 |---|---|---|---|
 | `id` | `String` | `Room.id` | `Room.id` |
-| `type` | `String` | `Room.type` | `RoomType` (`personal`/`shared`) |
 | `name` | `String` | `Room.name` | `Room.name` |
 | `description` | `String?` | `Room.description` | `.orEmpty()` |
 | `color` | `String` | `Room.color` | `RoomColor` (식별자 문자열, R-003) |

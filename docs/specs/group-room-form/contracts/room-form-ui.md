@@ -21,7 +21,7 @@ RoomFormActivity          extra 복원 → RoomFormShell(startDestination) · �
                 ├── (스크롤 영역)
                 │   ├── RoomPreviewCard    썸네일 + 이름·설명 (FR-008)
                 │   ├── MinoTextField      방 이름 (FR-002·FR-004) — 카운터 없음 (FR-003·TS-045)
-                │   ├── MinoTextArea       방 설명 (FR-005)
+                │   ├── MinoTextArea       방 설명 (FR-005) — state는 Route가 소유
                 │   └── RoomColorPalette   3×4 칩 그리드 (FR-006)
                 ├── MinoActionArea         하단 고정 CTA (UX-005)
                 └── RoomFormConfirmDialog  dialog != null 일 때 (UX-008)
@@ -30,6 +30,20 @@ RoomFormActivity          extra 복원 → RoomFormShell(startDestination) · �
 - **`RoomFormScreen`은 `Scaffold`를 열지 않는다.** 셸이 소유한다.
 - **모달은 Route가 아니라 `RoomFormScreen` 안의 오버레이다** — [research.md](../research.md) R-011.
 - `MinoTopNavigation`은 화면 고유 chrome이라 셸의 슬롯이 아니라 화면이 직접 배치한다([`feature-module.md`](../../../architecture/feature-module.md) 4장).
+- **두 입력 필드의 상한을 자르는 주체가 다르다** — 방 이름은 ViewModel의 `NameChanged`, 방 설명은 `MinoTextArea`가 자른다. 근거와 대가는 [research.md](../research.md) R-019가 소유한다. 이 문서가 그 규칙의 계약이며, 다른 산출물은 여기를 지목한다.
+- **방 설명 30자는 UI 차단이 유일한 강제 지점이다.** 도메인·Repository는 길이를 재검증하지 않는다 — 방 이름의 15자를 `ValidateRoomNameUseCase`가 판정하지 않는 것과 같은 이유다([contracts/room-repository.md](./room-repository.md) §2).
+- `[TBD]` **방 설명의 글자 수 세는 단위가 spec 가정과 어긋난다.** spec §4 가정은 "사용자가 보는 문자 단위"를 요구하는데 `MinoTextArea`는 `state.text.length`(코드 유닛)로 세고 자른다. 방 설명에는 문자 종류 제한이 없어(EC-006) 이모지가 들어올 수 있고, 그때 `n/30` 카운터와 실제 차단 지점이 사용자가 보는 글자 수와 갈린다. 디자인 시스템 컴포넌트를 고칠지 편차를 받아들일지는 설계가 임의로 정하지 않는다.
+- `RoomFormScreen`은 상태와 콜백만 받는다. `descriptionState`는 Route가 소유하므로 stateless는 유지된다.
+
+```
+@Composable
+internal fun RoomFormScreen(
+    state: RoomFormUiState,
+    descriptionState: TextFieldState,
+    onIntent: (RoomFormIntent) -> Unit,
+    modifier: Modifier = Modifier,
+)
+```
 
 ---
 
@@ -38,7 +52,7 @@ RoomFormActivity          extra 복원 → RoomFormShell(startDestination) · �
 | Intent | 화면 조작 | ViewModel이 하는 일 | 근거 |
 |---|---|---|---|
 | `NameChanged(value)` | 방 이름 입력 | 15자로 자른 값을 `values.name`에 반영하고 `ValidateRoomNameUseCase` 재실행. **카운터는 그리지 않는다** | FR-003·FR-004·TS-045 |
-| `DescriptionChanged(value)` | 방 설명 입력 | 30자로 자른 값을 반영 | FR-005·UX-007 |
+| `DescriptionChanged(value)` | `descriptionState`의 텍스트 변화 | `values.description`에 **그대로** 반영한다 | FR-005·UX-007 |
 | `ColorSelected(color)` | 칩 선택 | `values.color`를 교체. 같은 칩 재선택으로 해제하지 않는다 | FR-006·TS-006 |
 | `SubmitClicked` | CTA | 생성이면 `dialog = Save`, 편집이면 곧바로 제출. `!canSubmit`이면 아무 일도 하지 않는다 | FR-020·UX-004·TS-038 |
 | `SaveConfirmed` | 저장 확인 모달 [저장하기] | `dialog = null`로 모달을 닫고 `CreateRoomUseCase` 실행. **실패해도 모달을 다시 열지 않는다** | FR-010·TS-012·EC-009 |
@@ -90,6 +104,8 @@ sealed interface RoomFormOutcome {
 | 액션 실패 표시 | `CollectDomainError(viewModel)` → `LocalSnackbarHostState`로 스낵바 | error_handling §5·§6 |
 | 리프 → 문구 매핑 | 이 파일의 `messageResOf(error)` `when` | error_handling §8 |
 | OS 뒤로 제스처 | `BackHandler`로 가로채 `BackClicked`로 보낸다 | EC-015 |
+| 방 설명 편집 버퍼 소유 | `TextFieldState`를 만들어 들고 `RoomFormScreen`에 넘긴다. 텍스트 변화를 `DescriptionChanged`로 ViewModel에 전달하며, **전달에 지연 연산자를 붙이지 않는다**([plan.md](../plan.md) §성능 목표). 전달 수단은 구현이 고른다 | [research.md](../research.md) R-019 |
+| 편집 진입 초기값 주입 | `initial`이 `null`에서 **처음** non-null이 될 때만 넣는다. 재시도로 `initial`이 다시 채워져도 재주입하지 않고, 프로세스 사망 복원 시에는 `TextFieldState`가 복원한 값이 이긴다 | FR-013 · R-019 |
 
 **온보딩에서는 `BackHandler`를 항상 켠 채 아무 일도 하지 않는다.** FR-022가 "OS 뒤로 제스처로도 이전 온보딩 스텝으로 되돌아갈 수 없게 한다"를 요구하므로, 온보딩이면 제스처를 삼킨다(TS-026·EC-015).
 
@@ -120,7 +136,7 @@ class RoomFormViewModel @Inject constructor(
 |---|---|
 | 빈 폼 CTA 비활성 / 이름만 입력 시 활성 | TS-001·TS-002 |
 | 진입 맥락에 따라 상단 타이틀과 CTA 라벨이 갈림 | TS-044·TS-037 |
-| 15자·30자 상한에서 초과 입력이 반영되지 않음 | TS-003·TS-004 |
+| 방 이름 15자 상한에서 초과 입력이 반영되지 않음 | TS-003 |
 | 오류 상태에서 다른 항목을 채워도 CTA 비활성 | TS-009 |
 | 생성 CTA가 방을 만들지 않고 모달만 띄움 | TS-030 |
 | 모달 [취소]가 입력값을 유지 | TS-031·TS-034 |
