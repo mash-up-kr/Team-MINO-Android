@@ -96,4 +96,4 @@ mock이 던지는 예외도 도메인 예외여야 한다 — `HttpClient`의 �
 
 **바뀌지 않는 곳**: DTO · Mapper · `RoomRepositoryImpl` · `:core:domain` 전체 · `:feature:roomform` 전체. 예외 매핑도 그대로다 — `convertDomainException`이 이미 전역으로 걸려 있어 새 API에 매핑을 붙일 일이 없다([`core/data/README.md`](../../../../core/data/README.md) §4).
 
-`NetworkModule`의 임시 `baseUrl`(GitHub)을 `BuildConfig.API_BASE_URL`로 교체하는 것은 이 feature의 몫이 아니다 — 같은 README가 실서버 배포 전 과제로 이미 적어 두었다.
+`baseUrl`은 이미 `BuildConfig.API_BASE_URL`로 flavor가 결정한다([`core/data/README.md`](../../../../core/data/README.md) §4). 서버 주소가 확정되면 고칠 곳은 `NetworkModule`이 아니라 `ProductFlavors`이며, 이 feature의 몫이 아니다.

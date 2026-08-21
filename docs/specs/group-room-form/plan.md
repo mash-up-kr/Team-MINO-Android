@@ -4,13 +4,13 @@
 
 **명세서**: [spec.md](./spec.md)
 
-**기준 spec 버전**: 3.0.0
+**기준 spec 버전**: 3.1.0
 
 **최초 작성일**: 2026-08-21
 
 **최종 수정일**: 2026-08-21
 
-**버전**: 1.1.1
+**버전**: 1.2.0
 
 **참고**: 이 템플릿은 `/mino-plan` 명령으로 채워지며, 해당 명령의 정의가 실행 워크플로우를 설명한다.
 
@@ -26,7 +26,9 @@
 
 디자인 자산 실사 결과 세 갈래가 갈렸다 — 상단 내비게이션은 Figma 디자인 시스템 컴포넌트셋이라 `:core:design-system`이 신설하고(`MinoTopNavigation`), 대표 색상 칩은 [ADR](../../adr/2026-08-14-room-color-palette-in-design-system.md)이 이미 그 모듈로 정해 두었으며, 확인 모달 3종과 미리보기 카드는 디자인 시스템 컴포넌트가 아니라서 `:feature:roomform`이 갖는다. 근거는 [research.md](./research.md) R-006·R-007·R-008.
 
-1.1.0에서 남아 있던 미확정 4건을 Figma 대조로 모두 닫았다(R-015~R-018). 그 과정에서 확인된 두 가지 — **방 이름 필드에 글자 수 카운터가 없다**는 것과 **편집 타이틀이 `방 편집`**이라는 것 — 은 **spec 3.0.0이 FR-003과 FR-025로 추인**했다. 1.1.1은 그 추인에 맞춰 추적 근거를 갱신한 것이며, 설계는 1.1.0에서 바뀌지 않았다.
+1.1.0에서 남아 있던 미확정 4건을 Figma 대조로 모두 닫았고(R-015~R-018), spec 3.0.0이 그중 둘을 FR-003·FR-025로 추인했다.
+
+1.2.0은 **비어 있던 설계 공백 두 곳을 메운다.** 방 설명 필드의 편집 상태를 `RoomFormRoute`가 소유하기로 정했고(R-019), 이 feature가 읽지 않는 `Room.type`을 도메인 모델에서 뺐다(R-020). 앞의 결정은 두 입력 필드의 상한을 자르는 주체를 갈라 놓는다 — 방 이름은 ViewModel, 방 설명은 컴포넌트다. 함께 spec 3.1.0이 확정한 자모 허용을 검증 계약에 반영했다(R-021).
 
 ## 기술 컨텍스트 (Technical Context)
 
@@ -42,7 +44,7 @@
 
 **프로젝트 유형**: mobile-app — 다중 Gradle 모듈. 이번 작업이 손대는 모듈은 아래 §프로젝트 구조 참조.
 
-**성능 목표**: SC-002가 요구하는 "한 글자도 뒤처지지 않는 반영"은 프레임 예산이 아니라 **동기 상태 갱신**으로 만족시킨다 — 입력·검증·미리보기 반영에 비동기 경계를 두지 않고, `updateState`가 같은 프레임에서 끝난다. 디바운스·`snapshotFlow` 지연을 두지 않는다.
+**성능 목표**: SC-002가 요구하는 "한 글자도 뒤처지지 않는 반영"은 프레임 예산이 아니라 **동기 상태 갱신**으로 만족시킨다 — 입력·검증·미리보기 반영에 비동기 경계를 두지 않고, `updateState`가 같은 프레임에서 끝난다. 전달 경로에 지연 연산자(`debounce`·`sample` 등)를 두지 않는다 — 메커니즘 자체를 금지하는 것이 아니라 **지연을 넣지 않는다**는 뜻이다.
 
 **제약 조건**:
 - 폼은 다른 feature 모듈을 의존하지 않는다. 진입·복귀는 `:core:navigation` 계약 한 겹으로만 이뤄진다([헌법 원칙 II](../../constitution.md)).
@@ -101,7 +103,6 @@ core/navigation/src/main/java/team/mino/core/navigation/activity/launcher/
 core/domain/src/main/kotlin/team/mino/core/domain/
 ├── model/
 │   ├── Room.kt                       # [신규] 공동방 도메인 모델
-│   ├── RoomType.kt                   # [신규] PERSONAL · SHARED
 │   ├── RoomColor.kt                  # [신규] 대표 색상 12종 + GRAY
 │   ├── RoomDraft.kt                  # [신규] 생성·편집 입력값
 │   └── RoomNameValidation.kt         # [신규] 방 이름 판정 결과
@@ -210,6 +211,7 @@ spec §3.2가 이미 범위 밖으로 둔 것 외에, **도착점 feature가 존
 | # | 무엇 | 닫는 조건 |
 |---|---|---|
 | D | swagger 초안이 spec과 세 지점에서 어긋난다([research.md](./research.md) R-003) | 서버팀이 계약을 확정하면 닫힌다. 확정 표현이 달라도 고칠 곳은 `RoomMapper` 한 파일이다 |
-| E | 방 이름의 자모 단독 허용 여부([contracts/room-repository.md](./contracts/room-repository.md) §2의 `[TBD]`) | spec FR-004 개정으로 닫는다. 저장 허용값을 넓히는 판단이라 설계가 정하지 않는다 |
+| ~~E~~ | ~~방 이름의 자모 단독 허용 여부~~ | **해소(1.2.0).** spec 3.1.0이 FR-004를 `한글(완성형·자모)`로 고치고 EC-025를 신설했다 → [research.md](./research.md) R-021 |
+| F | **방 설명의 글자 수 세는 단위가 spec 가정과 어긋난다**([contracts/room-form-ui.md](./contracts/room-form-ui.md) §1의 `[TBD]`) | `MinoTextArea`가 코드 유닛으로 세고 자르는데 spec §4 가정은 사용자가 보는 문자 단위를 요구한다. 방 설명엔 문자 제한이 없어 이모지가 들어올 수 있다. 디자인 시스템을 고칠지 편차를 받아들일지 정해 닫는다 — 구현 착수 전 |
 
 **규약 충돌은 열린 항목이 아니다.** 1.1.0이 R-008에서 "규약 충돌"로 보고한 것(Figma 컴포넌트셋 vs 이미지 에셋)은 [래스터 이미지 배치·포맷 ADR](../../adr/2026-08-19-raster-image-placement-and-format.md)이 이미 닫아 둔 문제이므로, 그 ADR을 근거로 지목하는 것으로 끝난다.
