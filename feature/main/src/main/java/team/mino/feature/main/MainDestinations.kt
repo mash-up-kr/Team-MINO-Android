@@ -7,6 +7,3 @@ import team.mino.core.navigation.screen.Route
 
 @Serializable
 internal data object Notification : Route
-
-@Serializable
-internal data object MyPage : Route
