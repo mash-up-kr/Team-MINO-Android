@@ -16,4 +16,9 @@ internal interface UserRemoteDataSource {
     suspend fun register(request: ProfileRequest): ProfileResponse
 
     suspend fun updateMe(request: ProfileRequest): ProfileResponse
+
+    suspend fun putPushToken(
+        token: String,
+        platform: String,
+    )
 }

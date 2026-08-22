@@ -20,4 +20,9 @@ internal class UserRemoteDataSourceImpl @Inject constructor(
     override suspend fun register(request: ProfileRequest): ProfileResponse = service.register(request)
 
     override suspend fun updateMe(request: ProfileRequest): ProfileResponse = service.updateMe(request)
+
+    override suspend fun putPushToken(
+        token: String,
+        platform: String,
+    ) = service.putPushToken(token, platform)
 }
