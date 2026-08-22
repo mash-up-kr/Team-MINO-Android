@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mypage_profile_back_content_description">뒤로가기</string>
+    <string name="mypage_profile_top_bar_title">프로필 설정</string>
+    <string name="mypage_profile_headline">친구들에게 어떻게 보일까요?</string>
+    <string name="mypage_profile_avatar_content_description">아바타 %1$d번</string>
+    <string name="mypage_profile_nickname_label">이름 또는 닉네임</string>
+    <string name="mypage_profile_nickname_helper">한글·영문 2글자 이상을 입력해주세요.</string>
+    <string name="mypage_profile_avatar_section_label">프로필 이미지 선택</string>
+    <string name="mypage_profile_clear_button">지우기</string>
+    <string name="mypage_profile_save_button">저장</string>
+
+    <string name="mypage_main_edit_profile_content_description">프로필 편집</string>
+    <string name="mypage_main_app_settings_title">앱 설정</string>
+    <string name="mypage_main_notification_setting_label">알림 설정</string>
+    <string name="mypage_main_location_setting_label">위치 설정</string>
+    <string name="mypage_main_service_info_title">서비스 정보</string>
+    <string name="mypage_main_terms_label">약관 및 동의</string>
+    <string name="mypage_main_app_review_label">앱 리뷰 남기기</string>
+
+    <string name="mypage_main_notification_permission_dialog_title">알림 권한이 꺼져 있어요</string>
+    <string name="mypage_main_notification_permission_dialog_message">앱에서 알림 권한을 다시 요청할 수 없어요. 설정 화면에서 알림 권한을 허용해주세요.</string>
+    <string name="mypage_main_location_permission_dialog_title">위치 권한 안내</string>
+    <string name="mypage_main_location_permission_dialog_message">위치 권한은 앱에서 직접 변경할 수 없어요. 설정 화면에서 변경해주세요.</string>
+    <string name="mypage_main_permission_dialog_confirm">설정으로 이동</string>
+    <string name="mypage_main_permission_dialog_cancel">취소</string>
+
+    <string name="mypage_error_domain">일시적인 오류가 발생했어요</string>
+</resources>
