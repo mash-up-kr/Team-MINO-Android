@@ -18,7 +18,8 @@ internal class PermissionRepositoryImpl @Inject constructor(
         context.isPermissionGranted(Manifest.permission.POST_NOTIFICATIONS)
 
     override fun isLocationPermissionGranted(): Boolean =
-        context.isPermissionGranted(Manifest.permission.ACCESS_FINE_LOCATION)
+        context.isPermissionGranted(Manifest.permission.ACCESS_FINE_LOCATION) ||
+            context.isPermissionGranted(Manifest.permission.ACCESS_COARSE_LOCATION)
 
     override suspend fun hasRequestedPermissionBefore(type: PermissionType): Boolean =
         permissionLocalDataSource.hasRequestedPermissionBefore(type)
