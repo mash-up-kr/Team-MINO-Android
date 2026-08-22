@@ -7,6 +7,7 @@ import io.ktor.client.plugins.ResponseException
 import io.ktor.client.request.get
 import io.ktor.client.request.patch
 import io.ktor.client.request.post
+import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
@@ -14,6 +15,7 @@ import io.ktor.http.contentType
 import io.ktor.serialization.ContentConvertException
 import kotlinx.coroutines.CancellationException
 import team.mino.core.data.network.dto.request.ProfileRequest
+import team.mino.core.data.network.dto.request.PushTokenRequest
 import team.mino.core.data.network.dto.response.ErrorResponse
 import team.mino.core.data.network.dto.response.MinoResponse
 import team.mino.core.data.network.dto.response.ProfileResponse
@@ -73,6 +75,19 @@ internal class UserApiService @Inject constructor(
             .data
 
     /**
+     * `PUT /api/v1/users/me/push-token`으로 FCM 토큰을 등록/갱신한다. 응답 본문은 쓰지 않는다.
+     */
+    suspend fun putPushToken(
+        token: String,
+        platform: String,
+    ) {
+        client.put(PUSH_TOKEN_PATH) {
+            contentType(ContentType.Application.Json)
+            setBody(PushTokenRequest(token = token, platform = platform))
+        }
+    }
+
+    /**
      * 미등록(`401` + `USER_NOT_REGISTERED`)이면 `null`, 그 밖의 실패는 그대로 전파한다.
      *
      * 판정을 여기 한 곳에 둔다 — 두 벌로 두면 한쪽만 고쳐도 컴파일과 테스트가 통과해, 진입 게이트와 프리필이
@@ -121,6 +136,7 @@ internal class UserApiService @Inject constructor(
     private companion object {
         const val USERS_PATH = "api/v1/users"
         const val USERS_ME_PATH = "api/v1/users/me"
+        const val PUSH_TOKEN_PATH = "api/v1/users/me/push-token"
         const val USER_NOT_REGISTERED = "USER_NOT_REGISTERED"
     }
 }
