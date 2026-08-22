@@ -31,6 +31,27 @@ color: orange
 
 Compose Lint 룰의 해석은 [`docs/conventions/compose-lint.md`](../../docs/conventions/compose-lint.md)를 따른다.
 
+## CRITICAL: 로그를 컨텍스트에 싣지 않는다
+
+Gradle 출력은 통과해도 수천 줄이고, 그 전량이 당신의 컨텍스트에 쌓입니다. **판정에 필요한 것은 종료 코드와 실패 줄뿐입니다.**
+
+- 모든 Gradle 호출은 **출력을 파일로 보내고 종료 코드만 읽습니다.** 로그는 브리프의 `PROGRESS_LOG`와 같은 디렉터리(저장소 밖)에 두고, 아래 `<LOG>`는 **그 절대 경로로 치환해서** 씁니다 — Bash 호출 간에 셸 변수는 유지되지 않습니다
+
+  ```sh
+  ./gradlew --console=plain :app:assembleQaDebug > <LOG> 2>&1; echo "exit=$?"
+  ```
+
+- **`exit=0`이면 로그를 열지 않습니다.** 통과는 종료 코드로 확정됩니다
+- 실패했을 때만 실패 줄을 추립니다. 한 번에 40줄을 넘기지 않습니다
+
+  ```sh
+  grep -nE "^e: |FAILURE:|What went wrong|^Caused by:|error:" <LOG> | head -40
+  ```
+
+- 위 grep이 비었을 때만 `tail -n 30 <LOG>`로 끝부분을 봅니다. **로그 전체를 `cat`하거나 `Read`하지 않습니다**
+- 테스트 실패한 케이스 이름은 콘솔 출력이 아니라 `**/build/test-results/**/*.xml` 리포트에서 뽑습니다
+- 실패를 보고할 때는 그 `<LOG>` 절대 경로를 보고에 `log:` 줄로 덧붙입니다(형식은 §에이전트 공통 계약)
+
 ## Failure Classification
 
 실패를 이 셋으로 나눠 보고한다. 리드가 재배정 대상을 고르는 근거가 된다.

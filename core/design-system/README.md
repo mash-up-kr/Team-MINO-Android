@@ -26,7 +26,7 @@ MinoAndroid의 디자인 시스템 모듈. Material3를 기반으로 하되, Mat
 | 테마 진입점 | `MinoAndroidAppTheme` — 토큰을 주입하고 라이트/다크를 자동 전환 | [2. 빠른 시작](#2-빠른-시작) |
 | Modifier 유틸 | 클릭·선택(연타 차단·리플 표준화)·그림자 토큰 적용 `Modifier` 확장 | [6.3 클릭·선택 Modifier 유틸](#63-클릭선택-modifier-유틸) |
 | 프리뷰 어노테이션 | 라이트/다크 동시 프리뷰 `@UiModePreviews` | [6.4 프리뷰](#64-프리뷰) |
-| 공용 컴포넌트 | 토큰으로 조립한 재사용 Composable. `component/` 패키지에서 제공 | [6.1 컴포넌트 구현 패턴](#61-컴포넌트-구현-패턴--material3-관례) |
+| 공용 컴포넌트 | **Figma 디자인 시스템의 컴포넌트셋**을 구현한 Composable. `component/` 패키지에서 제공 | [6.1 컴포넌트 구현 패턴](#61-컴포넌트-구현-패턴--material3-관례) |
 
 ---
 
@@ -93,6 +93,8 @@ Box(
 ## 3. 디렉토리 구조
 
 패키지는 **역할**로 나뉜다. 새 코드는 성격에 맞는 곳에 두고, 새 종류면 같은 패턴으로 패키지를 추가한다.
+
+> 여기는 **이 모듈 안에서의** 자리만 말한다. 컴포넌트·이미지를 이 모듈에 둘지 feature나 `:core:common:ui`에 둘지는 [`docs/conventions/component-asset-placement.md`](../../docs/conventions/component-asset-placement.md)가 소유한다.
 
 ```
 team/mino/core/designsystem/
@@ -285,17 +287,11 @@ Icon(
 
 변환 가능한 SVG 조건: 단색 fill(stroke·transform·그라데이션 불가), viewBox 원점 0,0. 조건을 벗어나면 스크립트가 에러로 알려주며, 그 경우 Figma에서 패스를 병합(flatten)해 다시 export한다.
 
-### 5.3 래스터 이미지 에셋
-
-`ImageVector`로 변환할 수 없는 사진·일러스트 등 래스터 이미지는 **WebP**로 저장한다(PNG·JPEG 등 다른 래스터 포맷 금지). Figma에서 export한 원본이 PNG여도 `cwebp -lossless -q 100 <원본>.png -o <대상>.webp`로 무손실 변환 후 커밋한다. 리소스 참조는 `R.drawable.<name>`으로 확장자와 무관해 코드 변경이 필요 없다. 배경은 [ADR](../../docs/adr/2026-08-01-webp-for-raster-images.md) 참고.
-
-밀도별로 `drawable-mdpi/xhdpi/xxhdpi/`에 나눠 배치한다(밀도 미구분 `drawable/`은 `IconLocation` 린트 경고 대상).
-
 ---
 
 ## 6. 컴포넌트 & UI 유틸
 
-재사용하는 Composable·`Modifier` 자산. 외부 모듈은 여기의 public API를 그대로 가져다 쓴다.
+디자인 시스템이 소유하는 Composable·`Modifier` 자산. 외부 모듈은 여기의 public API를 그대로 가져다 쓴다.
 
 ### 6.1 컴포넌트 구현 패턴 — Material3 관례
 
@@ -312,7 +308,8 @@ Icon(
 
 - 상태 없는 컴포넌트는 Colors 클래스 없이 Defaults의 단일 값 프로퍼티로 둔다(M3 `BadgeDefaults.containerColor` 방식).
 - **클릭은 M3처럼 `Surface(onClick)`을 쓰지 않고** [6.3 클릭·선택 Modifier 유틸](#63-클릭선택-modifier-유틸)로 처리한다.
-- 아직 동작하지 않는 기능의 파라미터는 미리 만들지 않는다 — 이후 기능은 디폴트 파라미터로 소스 호환 추가한다.
+
+> 컴포넌트를 새로 만들지 기존 것을 확장할지, 파라미터를 언제 늘릴지는 [`component-asset-placement.md` §3](../../docs/conventions/component-asset-placement.md#3-컴포넌트-신설-vs-기존-확장)이 소유한다.
 
 ### 6.2 Modifier 확장 구현 규칙
 

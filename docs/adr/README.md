@@ -34,7 +34,7 @@ ADR은 [`adr-writer` 스킬](../../.claude/skills/adr-writer/SKILL.md)이 자동
 | 2026-07-30 | [SUITE 폰트의 빈 글리프를 cmap에서 제거해 OS 시스템 폰트 폴백으로 처리한다](2026-07-30-font-empty-glyph-strip-for-fallback.md) | Accepted | full_avocado |
 | 2026-07-31 | [네비게이션 셸을 `MinoScaffold`로 승격하고 feature 셸(`XShell`)과 화면 그래프(`XNavHost`)를 분리한다](2026-07-31-common-shell-mino-scaffold.md) | Accepted | Jaesung Lee |
 | 2026-08-01 | [feature 간 전환 계약은 `:core:navigation`에 두고, 탭 feature는 등록 함수로 셸 그래프에 편입한다](2026-08-01-single-module-navigation-contract.md) | Accepted | Jaesung Lee |
-| 2026-08-01 | [래스터 이미지 리소스는 WebP 확장자를 사용한다](2026-08-01-webp-for-raster-images.md) | Accepted | full_avocado |
+| 2026-08-01 | [래스터 이미지 리소스는 WebP 확장자를 사용한다](2026-08-01-webp-for-raster-images.md) | Superseded by [공유 래스터 이미지는 `:core:common:ui`에 두고, WebP·밀도 규칙은 배치 규약이 소유한다](2026-08-19-raster-image-placement-and-format.md) | full_avocado |
 | 2026-08-01 | [컴포저블 안의 람다는 수동 `remember`로 감싸지 않는다](2026-08-01-compose-lambda-memoization.md) | Accepted | Jaesung Lee |
 | 2026-08-02 | [Hilt 구현 바인딩은 구현을 소유한 모듈이 갖고, `:app`은 그래프 조립만 한다](2026-08-02-di-binding-ownership.md) | Accepted | Jaesung Lee |
 | 2026-08-03 | [Category 항목은 `MinoChip`으로 흡수하지 않고 전용으로 그리되, 치수 토큰만 공유한다](2026-08-03-category-item-dedicated-chip.md) | Accepted | Jaesung Lee |
@@ -43,3 +43,6 @@ ADR은 [`adr-writer` 스킬](../../.claude/skills/adr-writer/SKILL.md)이 자동
 | 2026-08-13 | [모서리(셰이프)는 토큰 foundation을 두지 않고 컴포넌트 토큰이 실측값을 직접 든다](2026-08-13-no-shape-token-foundation.md) | Accepted | Jaesung Lee |
 | 2026-08-13 | [디자인 토큰은 값이 일치할 때만 강제하고, 없으면 실측 raw를 그대로 쓴다](2026-08-13-design-token-when-value-matches.md) | Accepted | Jaesung Lee |
 | 2026-08-14 | [방 대표 색상 12종 팔레트와 색상 칩은 `:core:design-system`이 소유한다](2026-08-14-room-color-palette-in-design-system.md) | Accepted | Jaesung Lee |
+| 2026-08-16 | [mino-implement는 배정을 잘게 쪼개 병렬로 돌리고, Figma 값은 착수 시점에 한 번만 추출해 공유한다](2026-08-16-implement-chunking-parallelism-figma-value-sheet.md) | Accepted | Jaesung Lee |
+| 2026-08-18 | [디자인 검수는 Phase 종료가 아니라 컴포넌트가 완성되는 즉시 붙인다](2026-08-18-design-audit-at-component-completion.md) | Accepted | Jaesung Lee |
+| 2026-08-19 | [공유 래스터 이미지는 `:core:common:ui`에 두고, WebP·밀도 규칙은 배치 규약이 소유한다](2026-08-19-raster-image-placement-and-format.md) | Accepted | Jaesung Lee |
