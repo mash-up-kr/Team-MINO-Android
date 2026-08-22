@@ -1,4 +1,4 @@
-package team.mino.feature.sample.main.component
+package team.mino.feature.home.main.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
