@@ -53,22 +53,32 @@ class MyPageViewModel
 
         // 진입·복귀 시점마다 다시 읽는다 — data-model.md §5. isNotificationSwitchOn·isLocationSwitchOn은
         // 낙관적으로 미리 반영하지 않고 항상 이 재조회 결과로만 계산한다(UX-003).
-        // 실패 시 State 리프가 아니라 emitDomainError(스낵바)로 알린다 — 계약에 에러 리프가 없다.
+        // 프로필(원격)과 권한(로컬·OS)을 별도 블록으로 분리한다 — 하나로 묶으면 원격 조회 실패가
+        // 로컬 전용인 권한 상태 갱신까지 막아 스위치가 멈춘 것처럼 보인다(baseUrl 미배선 시 실제 관측된 버그).
         private suspend fun refresh() {
-            runCatchingDomain {
-                val profile = profileRepository.getProfile()
-                val notificationDeliveryEnabled = appSettingsRepository.observeNotificationDeliveryEnabled().first()
-                val isNotificationPermissionGranted = permissionRepository.isNotificationPermissionGranted()
-                val isLocationPermissionGranted = permissionRepository.isLocationPermissionGranted()
-                updateState {
-                    copy(
-                        nickname = profile.nickname,
-                        avatarId = profile.avatarId,
-                        isNotificationSwitchOn = isNotificationPermissionGranted && notificationDeliveryEnabled,
-                        isLocationSwitchOn = isLocationPermissionGranted,
-                    )
+            refreshPermissionState()
+            refreshProfile()
+        }
+
+        private suspend fun refreshPermissionState() {
+            val notificationDeliveryEnabled = appSettingsRepository.observeNotificationDeliveryEnabled().first()
+            val isNotificationPermissionGranted = permissionRepository.isNotificationPermissionGranted()
+            val isLocationPermissionGranted = permissionRepository.isLocationPermissionGranted()
+            updateState {
+                copy(
+                    isNotificationSwitchOn = isNotificationPermissionGranted && notificationDeliveryEnabled,
+                    isLocationSwitchOn = isLocationPermissionGranted,
+                )
+            }
+        }
+
+        // 실패 시 State 리프가 아니라 emitDomainError(스낵바)로 알린다 — 계약에 에러 리프가 없다.
+        private suspend fun refreshProfile() {
+            runCatchingDomain { profileRepository.getProfile() }
+                .onDomainFailure(::emitDomainError)
+                .onSuccess { profile ->
+                    updateState { copy(nickname = profile.nickname, avatarId = profile.avatarId) }
                 }
-            }.onDomainFailure(::emitDomainError)
         }
 
         private fun onNotificationSwitchClick(canShowSystemDialog: Boolean) {

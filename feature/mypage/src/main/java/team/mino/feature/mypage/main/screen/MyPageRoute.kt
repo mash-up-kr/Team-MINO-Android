@@ -110,7 +110,10 @@ internal fun MyPageRoute(
                 is MyPageIntent.OnLocationSwitchClick ->
                     MyPageIntent.OnLocationSwitchClick(
                         canShowSystemDialog =
-                            activity.shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION),
+                            activity.shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION) ||
+                                activity.shouldShowRequestPermissionRationale(
+                                    Manifest.permission.ACCESS_COARSE_LOCATION,
+                                ),
                     )
 
                 else -> intent
