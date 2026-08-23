@@ -40,7 +40,7 @@ flowchart TD
 ```
 
 - ViewModel은 `core:domain`의 Repository 인터페이스만 안다. 구현체(`RepositoryImpl`)를 직접 의존하지 않는다.
-- `RepositoryImpl`은 `DataSource` 인터페이스만 알고, `DataSourceImpl`의 존재는 모른다.
+- `RepositoryImpl`은 `DataSource` 인터페이스만 알고, `DataSourceImpl`의 존재는 모른다. 위 그림은 일반 경로이며, SDK 원천을 쓰는 경로는 `DataSource` 자리에 원천 접근자 인터페이스가 온다([§5 SDK 원천](#5-datasource-작성-규칙)).
 - DTO → 도메인 모델 변환(Mapper)은 `RepositoryImpl` 안에서 끝난다. 도메인 모델이 DataSource 밖으로 나올 때는 이미 변환이 완료돼 있다.
 
 ---
@@ -49,21 +49,23 @@ flowchart TD
 
 ```
 core/data/src/main/java/team/mino/core/data/
+├── auth/
+│   ├── ...            # 인증 제공자 SDK 등 외부 SDK 원천 접근자 인터페이스·구현체 (internal)
+│   ├── di/            # SDK 인스턴스 제공 + 접근자 @Binds 모듈 (internal)
+│   └── extension/     # SDK 타입 확장 — suspend 변환·도메인 예외 매핑 (internal)
 ├── database/
 │   ├── di/            # (예정) 데이터베이스 인프라 DI
 │   └── entity/        # (예정) DB Entity — 도메인 모델 의존 금지
 ├── datasource/
 │   ├── ...            # 데이터 출처 추상화. 인터페이스·구현체 쌍 (internal)
 │   └── di/            # DataSource @Binds 모듈 (internal)
-├── device/
-│   ├── ...            # 기기 정보 원천(시스템 설정 등) 접근자 인터페이스·구현체
-│   └── di/            # @Binds 모듈
 ├── network/
 │   ├── di/            # HttpClient 등 네트워크 인프라 제공 (internal)
 │   ├── dto/
 │   │   ├── request/   # 요청 DTO (@Serializable)
 │   │   └── response/  # 응답 DTO (@Serializable). 도메인 모델 의존 금지
 │   ├── extension/     # 네트워크 타입 확장 (convertDomainException)
+│   ├── plugin/        # HttpClient 전역에 거는 Ktor 클라이언트 플러그인 (internal)
 │   └── service/       # Ktor HttpClient로 엔드포인트를 호출하는 서비스 (internal)
 ├── repository/
 │   ├── ...            # core:domain Repository 인터페이스 구현 (internal)
@@ -94,6 +96,7 @@ HttpClient(OkHttp) {
     install(Logging) {
         level = if (BuildConfig.FLAVOR == "qa") LogLevel.BODY else LogLevel.NONE
     }
+    install(minoIdentityProofPlugin(idTokenProvider))
 }
 ```
 
@@ -104,6 +107,7 @@ HttpClient(OkHttp) {
 | `BuildConfig.API_BASE_URL` | 서버 환경 전환을 코드가 아니라 flavor가 결정 — qa/prod 빌드에 URL 분기 코드가 남지 않음 |
 | `ignoreUnknownKeys = true` | 서버 응답에 신규 필드가 추가돼도 파싱 실패 없음 |
 | `LogLevel.BODY` (qa 한정) | prod 빌드에서 토큰·PII가 로그캣에 노출되는 것을 차단 |
+| `minoIdentityProofPlugin` | 신원 증명 첨부를 클라이언트 한 곳에 모음 — Service마다 헤더를 손으로 붙이지 않는다. 설치 위치·판정 근거는 플러그인 KDoc이 지목하는 계약 문서가 단일 출처 |
 
 > [!NOTE]
 > `API_BASE_URL`은 `build-logic`의 [`ProductFlavors.kt`](../../build-logic/convention/src/main/kotlin/team/mino/buildlogic/ProductFlavors.kt)가 flavor별 `buildConfigField`로 생성한다. 서버 주소가 바뀌면 `NetworkModule`이 아니라 `Flavor` 열거형의 `apiBaseUrl`을 고친다. 현재 값은 실서버 도메인 확정 전까지의 플레이스홀더다.
@@ -112,8 +116,8 @@ HttpClient(OkHttp) {
 
 Ktor 예외를 `MinoDomainException`으로 바꾸는 유일한 지점이다. 분류 기준·화이트리스트 정책은 [`docs/conventions/error_handling.md`](../../docs/conventions/error_handling.md) §3을 단일 출처로 한다.
 
-- `Service`·`DataSource`·`RepositoryImpl`은 예외를 잡지 않는다 — 매핑은 validator가 전역 수행하고, 실패는 throw로 전파된다.
-- `MinoDomainException`에 새 리프를 추가하면 이 파일의 `when` 분기를 **짝으로** 추가한다.
+- `Service`·`DataSource`·`RepositoryImpl`은 예외를 잡지 않는다 — 매핑은 원천마다 정해진 지점이 전역 수행하고(HTTP 원천은 이 validator다), 실패는 throw로 전파된다.
+- `MinoDomainException`에 새 리프를 추가하면 **짝이 되는 매핑 지점의 `when` 분기를 함께** 추가한다. 지점은 원천마다 다르므로 HTTP 리프만 이 파일이고, 어느 원천의 지점인지는 [`docs/conventions/error_handling.md`](../../docs/conventions/error_handling.md) §3이 정한다.
 - 엔드포인트별 특수 정책(예: 특정 API의 404를 빈 결과로 취급)이 필요한 지점만 해당 DataSource에서 지역 catch를 병용한다.
 
 ### ApiService 작성 규칙
@@ -188,7 +192,7 @@ internal abstract class XxxDataSourceModule {
 | **키 관리** | 저장 항목은 Preferences 키로 구분하며, 키 상수는 해당 DataSource 구현체 안에 둔다 |
 | **DataSource 분리** | 수명주기·변경 이유가 다른 데이터는 키만 나누지 말고 DataSource 자체를 분리한다 (예: 불변 캐시 vs 발급·만료되는 값) |
 | **작성 규칙** | 원격과 동일 — 인터페이스·구현체 쌍, `internal`, 데이터 출처 접근만 담당 (명명: `XxxLocalDataSource`) |
-| **기기 정보 원천** | DataStore 밖의 기기 원천(시스템 설정 등)은 `device/` 패키지 참조. 작성 규칙은 위와 동일 |
+| **SDK 원천** | DataStore 밖의 원천(외부 SDK 등)은 `auth/`처럼 원천별 패키지에 인터페이스·구현체 쌍으로 두고, 위임만 하는 DataSource 계층을 끼우지 않는다. SDK 예외 → 도메인 예외 매핑은 그 패키지의 `extension/` 한 지점에서만 하며, 분류 기준·정책은 [`docs/conventions/error_handling.md`](../../docs/conventions/error_handling.md) §3을 단일 출처로 한다. 그 밖의 작성 규칙은 위와 동일 |
 
 ---
 
@@ -208,9 +212,9 @@ internal class XxxRepositoryImpl @Inject constructor(
 | 항목 | 규칙 |
 |---|---|
 | **가시성** | `internal` 필수 |
-| **의존** | DataSource 인터페이스만 주입. `DataSourceImpl` 직접 의존 금지 |
+| **의존** | DataSource 인터페이스만 주입. `DataSourceImpl` 직접 의존 금지. SDK 원천을 쓰는 경우만 예외로 원천 접근자 인터페이스를 주입한다([§5 SDK 원천](#5-datasource-작성-규칙)) |
 | **Mapper** | `RepositoryImpl` 안에서 DTO → 도메인 모델 변환 완료. UseCase·ViewModel에 DTO 노출 금지 |
-| **에러 처리** | 예외를 잡지 않는다 — 매핑은 validator가 전역 수행하며, 실패는 `MinoDomainException` throw로 전파 |
+| **에러 처리** | 예외를 잡지 않는다 — 매핑은 그 원천의 지점이 전역 수행하며(지점은 [`docs/conventions/error_handling.md`](../../docs/conventions/error_handling.md) §3), 실패는 `MinoDomainException` throw로 전파 |
 
 DI 바인딩은 별도 `@Module`로 분리해 `repository/di/`에 둔다.
 
