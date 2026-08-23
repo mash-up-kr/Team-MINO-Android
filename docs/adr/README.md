@@ -46,3 +46,6 @@ ADR은 [`adr-writer` 스킬](../../.claude/skills/adr-writer/SKILL.md)이 자동
 | 2026-08-16 | [mino-implement는 배정을 잘게 쪼개 병렬로 돌리고, Figma 값은 착수 시점에 한 번만 추출해 공유한다](2026-08-16-implement-chunking-parallelism-figma-value-sheet.md) | Accepted | Jaesung Lee |
 | 2026-08-18 | [디자인 검수는 Phase 종료가 아니라 컴포넌트가 완성되는 즉시 붙인다](2026-08-18-design-audit-at-component-completion.md) | Accepted | Jaesung Lee |
 | 2026-08-19 | [공유 래스터 이미지는 `:core:common:ui`에 두고, WebP·밀도 규칙은 배치 규약이 소유한다](2026-08-19-raster-image-placement-and-format.md) | Accepted | Jaesung Lee |
+| 2026-08-22 | [비회원 사용자 구분은 Firebase 익명 인증이 소유하고, 앱은 세션·신원 증명을 저장하지 않는다](2026-08-22-firebase-anonymous-auth-session.md) | Accepted | Jaesung Lee |
+| 2026-08-22 | [도메인 예외 매핑 지점은 원천마다 하나씩 두고, 인증 실패용 `Auth` 리프를 추가한다](2026-08-22-domain-exception-mapping-per-source.md) | Accepted | Jaesung Lee |
+| 2026-08-22 | [익명 세션 확보의 재시도·지연 판정은 호출 화면이 소유하고, 데이터 레이어는 멱등한 1회 확보만 제공한다](2026-08-22-session-retry-owned-by-caller.md) | Accepted | Jaesung Lee |
