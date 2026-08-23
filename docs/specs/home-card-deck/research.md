@@ -38,9 +38,11 @@
 
 ---
 
-## D3. 이미 구현된 `HomeCard`를 어떻게 가져올 것인가 *(plan 1.0.0)*
+## ~~D3. 이미 구현된 `HomeCard`를 어떻게 가져올 것인가~~ *(plan 1.0.0 → 재검토됨(plan 2.0.0), → [D10](#d10-homecard-배치-재판정--헌법-210-plan-200))*
 
-**Decision**: `:feature:sample`의 `HomeCard`·`HomeCardCategory`를 **`:feature:home`으로 이동**한다. 공용화(`:core:design-system` 승격)는 하지 않는다.
+**Decision**: ~~`:feature:sample`의 `HomeCard`·`HomeCardCategory`를 **`:feature:home`으로 이동**한다. 공용화(`:core:design-system` 승격)는 하지 않는다.~~
+
+> **뒤집힌 이유**: 이 결정은 "쓰는 곳이 하나뿐"이라는 사용처 개수 기준에 기대고 있었다. 헌법 2.1.0과 신설 규약 [`component-asset-placement.md`](../../conventions/component-asset-placement.md) §1.2가 **Figma 디자인 시스템 컴포넌트는 사용처 개수와 무관하게 `:core:design-system`**이라고 정하면서 그 기준 자체가 판정에서 빠졌다. 아래 D10이 대체한다.
 
 **Rationale**:
 - 현재 위치는 `feature/sample/.../main/component/HomeCard.kt`이고, KDoc이 스스로 "design-system 공용 컴포넌트가 아니라 sample 화면 내부 컴포넌트다"라고 밝히고 있다. sample은 샘플 모듈이므로 프로덕션 화면이 의존해서는 안 된다(헌법 원칙 II — feature 간 의존 금지).
@@ -137,3 +139,42 @@
 **Rationale**: 카드덱은 네트워크를 호출하지 않으므로(D5·D7·D8) 도메인 예외가 발생할 지점이 없다. 덱이 표현하는 유일한 비정상 상태는 "카드가 없음"이며, 그때 무엇을 안내할지는 spec EC-003이 명시적으로 범위 밖(홈 셸 소관)으로 넘겼다.
 
 **Alternatives considered**: 덱 내부에 에러 상태 추가 — spec에 근거 없음. 기각.
+
+---
+
+## D10. `HomeCard` 배치 재판정 — 헌법 2.1.0 *(plan 2.0.0)*
+
+**Decision**: `HomeCard`·`HomeCardCategory`를 **`:core:design-system`의 `component/homecard/`에 `MinoHomeCard`로 둔다.** `:feature:sample`의 정의는 지운다. `:feature:home`으로 옮기지 않는다.
+
+**Rationale**:
+- [`component-asset-placement.md`](../../conventions/component-asset-placement.md) §1.2 — **Figma 디자인 시스템에 컴포넌트로 존재하면 `:core:design-system`이며 사용처 개수와 무관하다.** 같은 문서가 "거꾸로는 성립하지 않는다"까지 못박아 두어, 판정 축은 오직 *Figma 디자인 시스템 컴포넌트인가* 하나다.
+- **확인된 사실**: 노드 `16043:23994`는 `MU_Wanted Design System` 파일의 `<symbol name="Property 1=여럿이 저장한 곳">`이다. `Property 1=` 명명은 **컴포넌트셋의 variant**를 뜻하며, 그 속성 축이 「장소분류 라벨」 4종이다. §1.2가 말하는 "자기 속성 축을 갖는 컴포넌트셋"에 정확히 해당한다.
+- §2.4가 이 상황을 직접 규정한다 — Figma 디자인 시스템 컴포넌트를 feature에 만들어 둔 것을 뒤늦게 발견하면 **"승격이 아니라 처음 판정이 틀렸던 것"**이므로 design-system에 만들고 feature 쪽 정의를 지운다.
+- **의존성 수술이 필요 없다.** 현재 `HomeCard.kt`의 import는 전부 `:core:design-system`(`MinoAvatar`·`MinoIcons`·`MinoAndroidTheme`·`rippleSingleClickable`·`UiModePreviews`)이고 feature·도메인 의존이 0건이다. 이미 design-system에 있어도 됐을 코드다.
+- **도메인 개념이 새지 않는다.** `HomeCardCategory`는 Figma 컴포넌트셋의 variant 축이지 도메인 모델이 아니다. 도메인 `PlaceCategoryLabel` → `HomeCardCategory` 변환은 `:feature:home`이 갖는다([contracts/card-deck-component.md](./contracts/card-deck-component.md) §4).
+- **`AtomicColorToken` 예외는 적용 대상이 아니다.** `accentColor()`가 쓰는 것은 `MinoAndroidTheme.colors.accentForeground*` 시맨틱 홀더 프로퍼티라 모듈 밖에서도 읽힌다. 이 컴포넌트가 design-system에 가는 근거는 예외가 아니라 §1.2 본문이다.
+
+**따라오는 것**: [design-system README](../../../core/design-system/README.md) §3·§6.1이 요구하는 형태로 맞춘다 — `component/homecard/` 패키지, `Mino` 접두사, `MinoHomeCardDefaults`(`imageCount`·`avatarImageUrl` 기본값), `token/HomeCardTokens`(실측 치수), `HomeCardPreview.kt`. 상태 없는 컴포넌트이므로 §6.1대로 **`Colors` 클래스는 두지 않는다.** 색은 이미 시맨틱 홀더를 쓰고 있어 교체 대상이 없다.
+
+**Alternatives considered**:
+- `:feature:home`으로 이동(구 D3): 규약 §1.2·§2.4가 정면으로 금지한다. 기각.
+- `:core:common:ui`: §1.2가 "Figma 디자인 시스템 컴포넌트가 아닌 공유"를 받는 자리로 규정한 모듈이다. 이 카드는 DS 컴포넌트이므로 대상이 아니다. 기각.
+- 이동 없이 `:feature:sample` 의존: 헌법 원칙 II 정면 위반. 기각(구 D3와 동일).
+
+> **D2(카드덱 자체의 배치)는 뒤집히지 않는다.** 결론(`:feature:home`)은 그대로지만 **근거가 바뀐다** — "쓰는 화면이 하나뿐"이 아니라 **"카드덱 스택은 Figma 디자인 시스템 컴포넌트가 아니다"**가 근거다. 덱 스택·액션 메뉴·`장소 더 보기` 버튼의 시안은 화면 파일 `MU_디자인`에 있고 디자인 시스템 파일에 컴포넌트로 배포되어 있지 않다. §1.2의 기본값("한 화면 전용 — 기본값 feature")이 적용된다.
+
+---
+
+## D11. FR-007의 "10장 충족" 판정을 무엇으로 하는가 *(plan 2.0.0)*
+
+**Decision**: `CardDeckState`가 이미 보유한 **덱 원본(`deck`)의 크기**로 판정한다. 별도 필드·파라미터를 추가하지 않는다.
+
+**Rationale**:
+- spec 5.0.0 FR-007이 판정 기준을 **덱 구성 시점의 장수**로 못박았다. `deck`은 `setCards`로 한 번 정해진 뒤 넘김·`장소 가리기`로 변하지 않는다(`visibleCards`가 파생값으로 걸러낼 뿐)이므로, `deck.size`가 곧 구성 시점 장수다.
+- 따라서 `deck.size == 10`이 "10장을 채운 덱"이고, 이것 하나로 TS-017(4장 덱은 끝까지 미노출)과 TS-018(가리기로 줄어든 10장 덱은 노출 유지)이 동시에 성립한다.
+- **공개 API를 늘리지 않는다.** 이 판정은 덱이 버튼을 그릴지 정하는 내부 조건이고, spec은 호출자가 이를 알아야 한다고 요구하지 않는다. `CardDeckState`의 공개 표면은 그대로 둔다.
+- spec §4 가정이 "카드덱은 방에 장소가 몇 개인지 알지 못하므로 PRD의 '방의 장소가 10개 미만'은 '받은 목록이 10개 미만'과 같다"고 정리해 두었다. 목록 크기 외에 판정 근거로 쓸 입력이 없다.
+
+**Alternatives considered**:
+- `CardDeck`에 `canLoadMore: Boolean` 파라미터를 추가해 호출자가 판정: 호출자(홈 셸)가 방의 장소 개수를 알기는 하지만, spec이 카드덱을 "목록을 입력으로 받아 내부에서 완결"로 정의했고 목록 크기만으로 판정이 닫힌다. 표면을 늘릴 이유가 없어 기각.
+- 잔여 장수(`remainingCount`)로 판정: FR-007이 명시적으로 배제한 기준이다. 10장 덱이 소진되는 순간 버튼이 사라져 FR-008(새 목록으로 재구성)이 성립하지 않는다. 기각.

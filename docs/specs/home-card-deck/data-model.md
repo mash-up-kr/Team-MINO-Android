@@ -97,15 +97,18 @@ suspend fun recordAccess(pinId: String)
 
 | 프로퍼티 | 타입 | 의미 | 근거 |
 |---|---|---|---|
-| `cards` | `List<PlaceCard>` | 현재 덱. 입력 목록에서 최대 10장 | FR-006 |
+| `cards` | `List<PlaceCard>` | 덱 원본. 입력 목록에서 최대 10장. **한 번 구성되면 넘김·`장소 가리기`로 변하지 않는다** — `장소 가리기`는 파생값에서 걸러낼 뿐이다 | FR-006 |
 | `currentIndex` | `Int` | 최상단 카드 위치 | FR-001·002 |
 | `undoneCard` | `PlaceCard?` | 직전에 넘긴 카드 1장. 되돌리기 대상 | FR-002, D4 |
 | `hiddenPinIds` | `Set<String>` | `장소 가리기`로 현재 덱에서 뺀 장소 | FR-005 |
 | `isAnimating` | `Boolean` | 전환 애니메이션 진행 여부. `true`면 입력을 무시 | UX-001 |
 
 **파생값** (별도 저장하지 않는다)
-- `remainingCount` = `cards.size - currentIndex - hiddenPinIds` 반영분 → **2 이하면 `장소 더 보기` 노출**(FR-007)
+- `remainingCount` = `cards.size - currentIndex - hiddenPinIds` 반영분
+- `isFullDeck` = `cards.size == 10` → **덱 구성 시점에 10장을 채웠는가.** `cards`가 불변이므로 이 값도 덱 수명 동안 불변이다
 - `canUndo` = `undoneCard != null` → `false`면 우→좌 스와이프가 무동작(EC-001)
+
+**`장소 더 보기` 노출 조건**(FR-007) = `isFullDeck && remainingCount <= 2`. 두 값이 모두 필요하다 — `remainingCount`만으로 판정하면 10장을 못 채운 덱에서도 버튼이 뜨고(TS-017 실패), `isFullDeck`을 잔여 장수로 대신하면 10장 덱이 소진되는 순간 버튼이 사라진다(TS-018·EC-003 실패). 두 값 다 **공개 표면에는 두지 않는다**([research.md](./research.md) D11).
 
 **상태 전이**
 
@@ -118,6 +121,6 @@ suspend fun recordAccess(pinId: String)
 | `!canUndo` | 우→좌 스와이프 | 변화 없음 | EC-001 |
 | `isAnimating` | 모든 스와이프 | 변화 없음 | UX-001 |
 | 카드 노출 | `장소 가리기` | `hiddenPinIds + pinId` | FR-005 |
-| 임의 | 새 목록 주입 | 전체 초기화(`currentIndex`=0, `undoneCard`=null, `hiddenPinIds`=∅) | FR-008 |
+| 임의 | 새 목록 주입 | 전체 초기화(`currentIndex`=0, `undoneCard`=null, `hiddenPinIds`=∅). `cards`가 다시 정해지므로 **`isFullDeck`도 이 시점에만 바뀐다** | FR-008, FR-007 |
 
 **영속성**: `rememberSaveable`로 프로세스 재생성에서 살아남되, 서버에 저장하지 않는다(spec §4 — "클라이언트 로컬 상태로만 관리"). `PlaceCard`가 `Parcelable`/`Serializable`이 아니어도 되도록 **`currentIndex`·`hiddenPinIds`·`undoneCard`의 `pinId`만** 저장하고 카드 본문은 재주입된 목록에서 복원한다.
