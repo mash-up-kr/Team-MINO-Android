@@ -10,7 +10,7 @@
 
 **최종 수정일**: 2026-08-23
 
-**버전**: 2.0.0
+**버전**: 2.1.0
 
 **참고**: 이 템플릿은 `/mino-plan` 명령으로 채워지며, 해당 명령의 정의가 실행 워크플로우를 설명한다.
 
@@ -137,7 +137,7 @@ settings.gradle.kts                               # 변경 — include(":feature
 |---|---|---|---|
 | ~~TBD-P1~~ | ~~익명 세션 발급 수단·저장 형태~~ | — | **해소(plan 2.0.0)** — `anonymous-auth-session` 스펙이 확정 소유 → [research.md R-010](./research.md) |
 | **TBD-P2** | 프로필 미생성 사용자에게 `GET /api/v1/users/me`가 무엇을 반환하는가. `200`·`401`만 정의됨 | `UserRepositoryImpl`, FR-003 판정 | 백엔드 합의 |
-| **TBD-P3** | Figma 012-3·012-4의 토스트가 `MinoSnackbar` 컴포넌트셋과 동일한가 | 토스트 구현 형태 | 디자인 대조 |
+| ~~TBD-P3~~ | ~~Figma 토스트가 `MinoSnackbar` 컴포넌트셋과 동일한가~~ | — | **해소(plan 2.1.0)** — `Snackbar/Snackbar` 인스턴스로 확인, 실측값은 [research.md R-006](./research.md) |
 | **TBD-P4** | 온보딩/프로필 설정 feature 부재 → `OnboardingLauncher` 대상 없음 | FR-003 전환 배선 | 온보딩 feature 머지 |
 
 **선행 의존**: `anonymous-auth-session`(#176)이 `develop`에 머지되어야 `EnsureAnonymousSessionUseCase`와 `MinoDomainException.Auth`를 주입·참조할 수 있다. 미머지 상태에서는 Fake로 대체해 `:feature:splash`를 먼저 구현할 수 있다.
