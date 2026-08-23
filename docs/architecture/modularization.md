@@ -26,11 +26,11 @@ Android SDK 기반 공용 유틸리티 (Context 확장, Intent 헬퍼 등).
 → Android Library
 
 ### `:core:common:ui`
-**feature 간 재사용되는 공통 UI 컴포넌트** 관리. 공용 Composable 유틸리티(Modifier 확장, Effect 헬퍼 등)도 포함.
+**feature 간 재사용되는 공통 UI 컴포넌트** 관리. 공용 Composable 유틸리티(Modifier 확장, Effect 헬퍼 등)와 여러 feature가 공유하는 이미지 에셋도 포함.
 → Android Library (Compose)
 
 ### `:core:design-system`
-디자인 시스템 — 컬러·타이포그래피·셰이프·기본 컴포넌트.
+디자인 시스템 — 컬러·타이포그래피·그림자 토큰과 아이콘, Figma 디자인 시스템에 컴포넌트로 존재하는 Composable.
 → Android Library (Compose)
 
 ### `:core:domain`
@@ -129,7 +129,7 @@ flowchart TD
 ### 금지 규칙 (안티패턴)
 - `:core:domain`이 Android에 의존 → 단위 테스트가 Android로 오염됨
 - `:core:data`가 `:core:common:ui`를 의존 → UI 레이어 침범
-- feature 모듈이 다른 feature 모듈을 의존 → 전환은 `:core:navigation`의 계약을 통한다. 탭 셸 → 탭 feature만 예외이며, 탭끼리는 서로를 모르고 탭 간 전환은 셸이 콜백으로 배선한다. 그 외 공유가 필요하면 `:core:common:*`로 해결
+- feature 모듈이 다른 feature 모듈을 의존 → 전환은 `:core:navigation`의 계약을 통한다. 탭 셸 → 탭 feature만 예외이며, 탭끼리는 서로를 모르고 탭 간 전환은 셸이 콜백으로 배선한다. 그 외 공유가 필요하면 `:core:common:*`로 해결(무엇을 어느 모듈에 두는지는 `docs/conventions/component-asset-placement.md`)
 - `:feature:*`가 `:core:data`를 직접 의존 → domain 인터페이스만 알고, 구현 바인딩은 구현을 소유한 모듈의 DI에서 (`docs/conventions/dependency-injection.md` 참조)
 
 > 위 규칙을 검사하는 장치는 아직 없다. `lint.xml`에 모듈 의존 방향 룰이 없고 Gradle 의존 검증도 도입하지 않아, 순환 참조를 제외하면 경계는 문서와 리뷰에만 의존한다. 순환 참조는 계약을 `:core:navigation`에 모은 덕에 Gradle이 컴파일 타임에 거부한다. 검증 장치 도입은 모듈 구조와 독립적인 별도 과제다.

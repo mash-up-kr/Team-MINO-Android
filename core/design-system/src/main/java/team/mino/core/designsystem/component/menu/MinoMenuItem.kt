@@ -23,7 +23,6 @@ import androidx.compose.ui.semantics.Role
 import team.mino.core.designsystem.component.menu.token.MenuTokens
 import team.mino.core.designsystem.foundation.icons.MinoIcons
 import team.mino.core.designsystem.foundation.icons.icons.Check
-import team.mino.core.designsystem.foundation.shape.token.value
 import team.mino.core.designsystem.foundation.typography.token.value
 import team.mino.core.designsystem.util.modifier.selectable.rippleSingleSelectable
 import team.mino.core.designsystem.util.modifier.surface.surface
@@ -61,7 +60,7 @@ fun MinoMenuItem(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clip(MenuTokens.ItemShape.value)
+            .clip(MenuTokens.ItemShape)
             .rippleSingleSelectable(
                 selected = active,
                 enabled = enabled,

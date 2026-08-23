@@ -35,7 +35,7 @@ private val ContentPaddingBySize = mapOf(
     TooltipSize.Small to PaddingValues(horizontal = 8.dp, vertical = 5.dp),
 )
 
-// 셰이프 토큰(8/12/16dp)이 아직 placeholder라 Figma 실측 반경을 직접 쓴다.
+// 크기마다 모서리가 다르다(Figma 실측).
 private val ShapeBySize = mapOf(
     TooltipSize.Medium to RoundedCornerShape(8.dp),
     TooltipSize.Small to RoundedCornerShape(6.dp),

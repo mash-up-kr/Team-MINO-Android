@@ -1,6 +1,6 @@
 # core:common:ui
 
-MinoAndroid의 **feature 간 재사용 공통 UI** 모듈. 공용 Composable 컴포넌트와 Compose 유틸리티(Modifier 확장, Effect 헬퍼 등)를 제공한다.
+MinoAndroid의 **feature 간 재사용 공통 UI** 모듈. 공용 Composable 컴포넌트와 Compose 유틸리티(Modifier 확장, Effect 헬퍼 등), 여러 feature가 공유하는 이미지 에셋을 제공한다.
 
 > 모듈 책임·경계·의존 방향(레이어 그래프)은 [`docs/architecture/modularization.md`](../../../docs/architecture/modularization.md)를 단일 출처로 한다. 이 문서는 이 모듈의 **API·사용법·확장 규칙**만 다룬다.
 
@@ -10,11 +10,11 @@ MinoAndroid의 **feature 간 재사용 공통 UI** 모듈. 공용 Composable 컴
 
 | | |
 |---|---|
-| **무엇을** | 여러 feature가 공유하는 Composable과 Compose 헬퍼를 제공한다. MVI `SideEffect` 수집(`CollectSideEffect`), 에러 소비(`CollectDomainError`·`CollectUncaughtError`), 네비게이션 셸(`MinoScaffold`). |
+| **무엇을** | 여러 feature가 공유하는 Composable과 Compose 헬퍼를 제공한다. MVI `SideEffect` 수집(`CollectSideEffect`), 에러 소비(`CollectDomainError`·`CollectUncaughtError`), 네비게이션 셸(`MinoScaffold`). 둘 이상의 feature가 쓰는 이미지 에셋도 이 모듈이 갖는다. |
 | **빌드 타입** | Android Library + Compose (`mino.android.library` + `mino.android.compose`) |
 
 > [!IMPORTANT]
-> **디자인 토큰/테마는 이 모듈이 아니라 [`core:design-system`](../../design-system/README.md)에 둔다.** 이 모듈은 "어떻게 보이는가(토큰)"가 아니라 "어떻게 동작하는가(Effect 수집·Modifier 확장 등)"를 담당한다.
+> **디자인 토큰/테마는 이 모듈이 아니라 [`core:design-system`](../../design-system/README.md)에 둔다.** 이 모듈은 "어떻게 보이는가"의 **기준**(토큰·테마)을 갖지 않고, 여러 feature가 공유하는 동작·구조와 이미지 에셋을 담는다.
 
 ---
 
@@ -97,7 +97,7 @@ M3 `Scaffold`를 그대로 노출하는 대신 **프로젝트 표준을 안에 �
 - **스낵바 호스트 제공** — `LocalSnackbarHostState`로 하위에 내려준다. Route가 도메인 에러를 표시할 때 쓰고, stateless한 `XScreen`에서는 읽지 않는다. 셸 밖에서 읽으면 즉시 `error`로 실패한다.
 - **배경 표준** — 기본값은 `MinoScaffoldDefaults`가 공급한다(design-system 토큰). 화면은 배경을 다시 칠하지 않는다.
 
-파라미터는 실제 호출부가 생길 때 디폴트 인자로 늘린다([M3 컴포넌트 패턴 ADR](../../../docs/adr/2026-07-25-design-system-component-m3-pattern.md)). 지금 `topBar`·`contentWindowInsets`가 없는 이유다 — 화면 고유 topBar는 화면이 직접 배치하고, 인셋을 무시해야 하는 화면은 M3 `Scaffold`를 직접 연다.
+파라미터는 실제 호출부가 생길 때 디폴트 인자로 늘린다([배치 규약 §3](../../../docs/conventions/component-asset-placement.md#3-컴포넌트-신설-vs-기존-확장)). 지금 `topBar`·`contentWindowInsets`가 없는 이유다 — 화면 고유 topBar는 화면이 직접 배치하고, 인셋을 무시해야 하는 화면은 M3 `Scaffold`를 직접 연다.
 
 ```kotlin
 // 화면 전환이 있는 feature — content 안에서 그래프(XNavHost)를 연다
@@ -130,7 +130,7 @@ core/common/ui/src/main/java/team/mino/core/common/ui/
     └── LocalSnackbarHostState.kt       # 셸이 소유한 스낵바 호스트 제공
 ```
 
-공용 Composable 컴포넌트나 Modifier 확장이 늘어나면 성격별 패키지(`component`, `modifier` 등)를 추가한다.
+공용 Composable 컴포넌트나 Modifier 확장이 늘어나면 성격별 패키지(`component`, `modifier` 등)를 추가한다. 여러 feature가 공유하는 이미지 에셋은 `src/main/res/drawable-*`에 둔다(포맷·밀도 규칙은 [배치 규약 §1.1](../../../docs/conventions/component-asset-placement.md#11-이미지-에셋)).
 
 ---
 
@@ -140,40 +140,15 @@ core/common/ui/src/main/java/team/mino/core/common/ui/
 
 | 헷갈리는 대상 | 그건 여기가 아니라 |
 |---|---|
-| 색·타이포·셰이프 토큰, 테마, 기본 디자인 컴포넌트 | [`core:design-system`](../../design-system/README.md) |
-| 특정 feature 전용 화면/컴포넌트 | 해당 feature 모듈 (공유되면 [§5](#5-feature--corecommonui-승격)로 승격) |
+| 색·타이포·그림자 토큰, 테마 | [`core:design-system`](../../design-system/README.md) |
+
+컴포넌트·이미지 에셋을 이 모듈에 둘지 feature나 `:core:design-system`에 둘지, 이미 만든 것을 언제 여기로 올릴지는 [`docs/conventions/component-asset-placement.md`](../../../docs/conventions/component-asset-placement.md)가 단일 출처다.
 
 그 외 모듈 경계 판단은 [`modularization.md`](../../../docs/architecture/modularization.md)를 따른다.
 
 ---
 
-## 5. feature → core:common:ui 승격
-
-UI 컴포넌트·Composable·화면 단위는 **처음부터 이 모듈에 만들지 않는다.** 특정 feature 안에서 먼저 만들고, **둘 이상의 feature가 실제로 공유하게 될 때** 이 모듈로 끌어올린다(승격). 쓰일지 모를 공용 컴포넌트를 선제적으로 여기 두면, 검증되지 않은 API가 공용 표면으로 굳어진다.
-
-### 승격 기준 — 아래를 모두 만족할 때
-
-- **2개 이상의 feature가 실제로 같은 컴포넌트를 필요로 한다.** ("언젠가 쓸 것 같다"는 제외 — 두 번째 사용처가 생긴 시점이 신호)
-- **특정 feature의 도메인/네비게이션에 묶여 있지 않다.** 화면 단위라도 feature 고유 ViewModel·Route·도메인 모델에 의존하면 승격 대상이 아니다. 순수 표현(상태를 인자로 받고 콜백을 올리는 stateless 형태)으로 분리 가능해야 한다.
-- **토큰이 아니라 동작/구조다.** 색·타이포·셰이프면 [`core:design-system`](../../design-system/README.md)으로 간다. ([§4](#4-확장-규칙--어디에-둘지-결정))
-
-> [!NOTE]
-> 화면(Screen) 단위 승격은 컴포넌트보다 드물다. 화면은 보통 feature의 Route·ViewModel·인자에 강하게 묶이기 때문이다. 승격한다면 **상태·콜백만 받는 stateless Screen**으로 분리하고, feature 쪽에는 ViewModel·Route를 잇는 Route 컴포저블만 남긴다.
-
-### 승격 절차
-
-1. 대상 컴포넌트에서 **feature 의존(ViewModel·Route·도메인 모델·feature 리소스)을 걷어내고** stateless로 다듬는다. 필요한 데이터는 파라미터로, 동작은 콜백(람다)으로 노출한다.
-2. 성격에 맞는 패키지로 이동한다 (`component`, `modifier` 등 — [§3](#3-디렉토리-구조)).
-3. 디자인 값은 [`core:design-system`](../../design-system/README.md) 토큰을 쓰도록 정리한다. 하드코딩된 색·치수·텍스트 스타일을 토큰으로 교체.
-4. 기존 사용처(feature)를 새 공용 컴포넌트 호출로 교체하고, 중복 정의를 제거한다.
-5. 공용 컴포넌트는 `@UiModePreviews` 프리뷰를 함께 둔다. (라이트/다크 확인 — design-system 규칙)
-
-> [!TIP]
-> 승격은 **"두 번째 사용처가 생겼을 때 리팩토링"** 으로 접근한다. 한 곳에서만 쓰는 동안은 그 feature에 두고, 중복이 실제로 발생한 뒤 공용화하면 잘못된 추상화를 피할 수 있다.
-
----
-
-## 6. 의존성 추가 가이드
+## 5. 의존성 추가 가이드
 
 `build.gradle.kts`에 추가:
 
@@ -187,11 +162,11 @@ dependencies {
 
 ---
 
-## 7. 컨벤션
+## 6. 컨벤션
 
 | 항목 | 규칙 |
 |---|---|
 | **lifecycle 인지** | UI 이벤트 수집은 `CollectSideEffect`처럼 lifecycle을 존중해 백그라운드 처리·유실을 통제한다. |
-| **공용성** | 둘 이상의 feature가 실제로 공유할 때만 이 모듈에 올린다. 단일 feature 전용은 그 feature에. ([§5](#5-feature--corecommonui-승격)) |
+| **공용성** | 배치·승격 판정은 [`component-asset-placement.md`](../../../docs/conventions/component-asset-placement.md)를 단일 출처로 한다. |
 | **stateless** | 공용 컴포넌트는 feature 의존 없이 상태를 인자로 받고 콜백을 올리는 형태로 둔다. |
 | **프리뷰** | 공용 컴포넌트는 `@UiModePreviews`로 라이트/다크 프리뷰를 함께 둔다. |
