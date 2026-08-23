@@ -29,7 +29,7 @@
 ```sh
 ./gradlew :app:assembleQaDebug
 adb install -r app/build/outputs/apk/qa/debug/app-qa-debug.apk
-adb shell cmd package resolve-activity -c android.intent.category.LAUNCHER team.mino.android.qa
+adb shell cmd package resolve-activity -c android.intent.category.LAUNCHER com.mino.gguk.qa
 ```
 
 **기대**: `SplashActivity`가 유일한 LAUNCHER로 나온다. `MainActivity`가 함께 나오면 §2 매니페스트 동반 변경이 누락된 것이다.
@@ -54,8 +54,8 @@ adb shell cmd package resolve-activity -c android.intent.category.LAUNCHER team.
 각 시나리오는 **콜드 스타트**로 시작한다. 백그라운드 복귀는 스플래시를 노출하지 않는다(spec §4 가정).
 
 ```sh
-adb shell am force-stop team.mino.android.qa
-adb shell am start -n team.mino.android.qa/team.mino.feature.splash.SplashActivity
+adb shell am force-stop com.mino.gguk.qa
+adb shell am start -n com.mino.gguk.qa/team.mino.feature.splash.SplashActivity
 ```
 
 ### A. 정상 경로 (TS-001·TS-002·TS-003·TS-006)
