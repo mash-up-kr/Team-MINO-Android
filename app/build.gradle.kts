@@ -21,7 +21,7 @@ android {
     namespace = "team.mino"
 
     defaultConfig {
-        applicationId = "team.mino"
+        applicationId = "com.mino.gguk"
         versionCode = (project.findProperty("versionCode") as? String)?.toIntOrNull() ?: 1
         versionName = (project.findProperty("versionName") as? String) ?: "1.0"
 
