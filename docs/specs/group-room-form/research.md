@@ -314,6 +314,8 @@ Route가 드는 것이 세 후보 중 가장 적게 잃는다. **디자인 시�
 
 FR-024(진입 시점 대비 변경 판정)와 FR-008(미리보기 실시간 반영)은 둘 다 `UiState.values`를 읽으므로 이 결정에 영향을 받지 않는다.
 
+> **근거 갱신 (plan 1.3.0)**: 위 Rationale이 이 선택의 장점으로 든 **"디자인 시스템을 건드리지 않고"**는 [R-022](#r-022-방-설명의-글자-수를-어느-단위로-세는가-plan-130)로 더 이상 사실이 아니다. 상한은 이제 `InputTransformation.maxLength`가 아니라 `MaxGraphemeLengthTransformation`이 건다. **결론(Route 소유)은 그대로 선다** — 나머지 두 근거(컴포넌트 계약 유지, Compose가 의도한 역할 분담)가 남아 있고, 아래 기각한 대안들의 비용도 변하지 않았다. 다만 "`InputTransformation.maxLength`를 못 써 다시 구현해야 한다"는 기각 근거는 이제 성립하지 않는다 — 어차피 직접 구현했다.
+
 **Alternatives considered**:
 - **`MinoTextArea`에 `value: String` 오버로드를 추가한다** — 기각. 두 필드가 대칭이 되고 `UiState`가 유일한 원천이 되는 이점이 있으나, `BasicTextField`의 state 기반 이점(IME 조합 처리·undo)을 잃고 `InputTransformation.maxLength`를 못 써 상한과 카운터를 오버로드에서 다시 구현해야 한다. Compose가 state 기반으로 가는 방향과도 역행한다.
 - **ViewModel이 `TextFieldState`를 들고 `UiState`에 넣는다** — 기각. 가변 Compose 타입이 `data class`에 들어가 `copy`·`equals`의 의미가 깨지고, `MviContainer`의 `updateState { copy(...) }` 모델과 충돌한다([`core/common/android/README.md`](../../../core/common/android/README.md) §2).
@@ -345,3 +347,49 @@ FR-024(진입 시점 대비 변경 판정)와 FR-008(미리보기 실시간 반�
 근거의 핵심은 FR-004가 오류 판정을 **입력 즉시** 하도록 정했다는 점이다. 조합이 끝나기를 기다릴 수 없으므로, 자모를 배제하면 IME로 한글을 치는 동안 매 글자 오류가 번쩍인다. `value: String` API로는 조합 구간을 알 수 없어 억제할 방법도 없다.
 
 **Alternatives considered**: 1.1.1의 `[TBD]`가 적어 둔 두 갈래(불허 + 조합 중 억제 / 불허 + 판정 시점 이연)는 spec 3.1.0의 §5 답변이 기각했다. 이 항목은 그 결정의 설계 반영일 뿐 새 후보를 검토하지 않았다.
+
+---
+
+## R-022. 방 설명의 글자 수를 어느 단위로 세는가 *(plan 1.3.0)*
+
+**Decision**: **`MinoTextArea`의 상한과 카운터를 grapheme 단위로 고쳤다.** `:core:design-system`의 실제 코드 변경이며, 이 계획이 문서로만 남긴 것이 아니다.
+
+**Rationale**: 1.2.0이 이 지점을 `[TBD]`로 남겼다 — `MinoTextArea`가 `InputTransformation.maxLength`와 `state.text.length`로, 즉 **UTF-16 코드 유닛**으로 세는데 spec §4 가정은 "사용자가 보는 문자 단위"를 요구했기 때문이다.
+
+**방 이름은 이 문제가 구조적으로 없다.** FR-004의 허용 문자(한글 완성형·자모·영문·숫자·공백)가 전부 BMP 안이라 코드 유닛과 화면 글자가 항상 1:1이다. 우연이 아니라 허용 문자 집합이 보장하는 성질이므로, 방 이름을 자르는 ViewModel은 `length`로 세도 된다 — FR-004가 넓어지면 그때 재검토한다(열린 항목 G). 문제는 **문자 종류 제한이 없는**(EC-006) 방 설명뿐이다.
+
+| 입력 | 화면 글자 | 코드 유닛 | 고치기 전 카운터 |
+|---|---|---|---|
+| `팀 회식 🍺🍻` | 7 | 9 | `9/30` |
+| `🍺` × 15 | 15 | 30 | `30/30` — 여기서 막힘 |
+| `👨‍👩‍👧` × 3 | 3 | 24 | `24/30` |
+
+경계 동작이 더 나빴다. `InputTransformation.maxLength`는 초과를 만드는 변경을 **통째로 되돌리므로**, 29/30에서 2코드 유닛짜리 이모지를 넣으려 하면 입력이 잘려 들어가는 게 아니라 **아무 일도 일어나지 않았다.**
+
+**상태 모델과 세는 단위는 다른 축이다.** `MinoTextArea`를 `MinoTextField`처럼 `value: String` 기반으로 바꾸는 것으로는 이 문제가 풀리지 않는다 — Kotlin의 `String.length`도 코드 유닛이기 때문이다. 그래서 R-019(Route 소유)를 유지한 채 세는 단위만 고쳤다.
+
+**코드포인트로는 부족하다.** 서로게이트 쌍은 잡히지만 `👨‍👩‍👧`는 이모지 3개를 ZWJ 2개가 잇는 시퀀스라 코드포인트로 5다. UAX #29의 grapheme cluster여야 하며, `android.icu.text.BreakIterator.getCharacterInstance()`가 그 단위를 준다(`minSdk` 29라 사용 가능).
+
+**API 표면은 바뀌지 않았다.** `maxLength`·`showCounter` 파라미터도, `TextFieldState`도, `MinoTextInputDefaults`·`TextInputTokens`도 그대로다. 신규 심볼은 둘 다 `internal`이고 기존 호출부(카탈로그 프리뷰)도 손대지 않았다.
+
+**규약을 어디까지 통과했는지 정확히 적는다.** [M3 컴포넌트 패턴 ADR](../../adr/2026-07-25-design-system-component-m3-pattern.md)과 [design-system README §6.1](../../../core/design-system/README.md#61-컴포넌트-구현-패턴--material3-관례)은 이 변경을 **규율하지 않는다** — 그 조항들이 다루는 축(`Defaults`·`Colors`·컴포넌트 토큰 구성, 파라미터를 언제 늘리는가)을 하나도 건드리지 않았기 때문이다. 통과했다기보다 해당이 없다. 이 변경이 실제로 걸리는 축은 **표면은 그대로인데 렌더 값이 달라지는 동작 변경**이고, 그것을 규정한 문서는 이 저장소에 없다. 소비자가 컴파일로 알 수 없는 종류의 변경이라는 뜻이며, 지금은 소비자가 카탈로그 프리뷰뿐이라 영향이 없다.
+
+**접근성 시맨틱은 상류와 같게 유지했다.** `InputTransformation.maxLength`는 `applySemantics`로 `maxTextLength`를 함께 노출한다. 그것을 걷어내면서 빠뜨리면 TalkBack·자동입력이 상한을 읽지 못하므로, `MaxGraphemeLengthTransformation`이 같은 시맨틱을 다시 붙인다.
+
+**이미 상한을 넘은 값이 들어와도 필드가 잠기지 않는다.** 상류 `maxLength`는 "결과가 초과인가"만 보므로 서버가 30 grapheme을 넘는 설명을 돌려주면 **지우는 편집까지 되돌아가** 편집이 불가능해진다. 열린 항목 D(서버 상한 미확정)가 살아 있는 동안 실제로 열려 있는 경로라, 길이가 **늘어난** 경우에만 되돌리도록 좁혔다.
+
+**다른 화면도 함께 나아진다.** PRD가 코멘트 입력에 `N/200` 카운터를 요구하면서 특수문자를 허용하므로, 그 화면이 `MinoTextArea`를 쓰면 같은 문제를 그대로 겪었을 것이다.
+
+**남는 것 — 헬퍼의 자리.** `graphemeLength`는 `:core:design-system`의 `util/text/`에 `internal`로 두었다. 방 이름은 위 이유로 승격이 필요 없고, 두 번째 사용처도 아직 코드로 없다. 승격 조건과 그때 판정할 것은 열린 항목 G가 추적한다.
+
+**검증**: `:app:assembleQaDebug`·`ktlintCheck` 통과.
+
+**디자인 대조는 대상이 아니다.** [figma-design-fidelity §4](../../conventions/figma-design-fidelity.md)가 대조를 요구하는 세 축(변수 전수·미바인딩 치수와 색·요소 구조) 중 걸리는 것이 없다 — 토큰·치수·색·Composable 트리가 모두 무변경이고, 카운터가 그리는 **숫자**는 런타임 상태이지 디자인 축이 아니다. 같은 문서 §6이 "게이트 통과를 디자인 일치의 근거로 삼지 않는다"고 못박았으므로, 위 빌드 통과를 그 근거로 적지 않는다.
+
+**이 동작을 검증하는 자동 장치가 없다.** JVM 단위 테스트는 `android.icu`가 `android.jar` 스텁이라 불가능하고(이 저장소에 Robolectric이 없다), `:core:design-system`에는 `androidTest` 소스셋 자체가 없다. 즉 "계측 테스트가 올바른 자리"라고 말할 수는 있어도 **그 자리는 아직 존재하지 않는다.** 세는 값이 실제로 맞는지는 실행해 봐야 확인되며, 계측 테스트 신설을 후속 작업으로 남긴다.
+
+**Alternatives considered**:
+- **편차를 안고 spec §4 가정을 방 설명에 한해 완화한다** — 기각. 30자짜리 짧은 필드라 피해가 작다고 볼 수 있으나, 방 설명에 이모지를 넣는 것은 흔한 사용 패턴이고 경계에서 입력이 통째로 씹히는 동작은 설명하기 어렵다.
+- **`MinoTextArea`를 `value: String` 기반으로 바꾼다** — 기각. 세는 단위 문제가 그대로 남고(위 참조), R-019가 이미 기각한 선택지다.
+- **코드포인트로 센다** — 기각. ZWJ 시퀀스를 놓친다.
+- **`java.text.BreakIterator`를 써서 `:core:common:kotlin`에 둔다** — 기각(보류). JVM 단위 테스트가 가능해지는 것이 큰 이점이나 **함정이 있다**: Android의 `java.text.BreakIterator`는 ICU가 뒤를 받치지만 **데스크톱 JVM은 JDK 자체 규칙이라 ZWJ 이모지 시퀀스를 한 클러스터로 묶지 않는다.** 그대로 옮기면 이 변경을 유발한 바로 그 케이스에서 JVM 테스트가 Android와 다른 값을 기대값으로 굳힌다. 승격할 때 이 차이를 먼저 판정해야 한다 — 조건은 [plan.md](./plan.md) §복잡도 추적 G가 추적한다.
