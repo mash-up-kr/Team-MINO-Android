@@ -46,3 +46,5 @@ ADR은 [`adr-writer` 스킬](../../.claude/skills/adr-writer/SKILL.md)이 자동
 | 2026-08-16 | [mino-implement는 배정을 잘게 쪼개 병렬로 돌리고, Figma 값은 착수 시점에 한 번만 추출해 공유한다](2026-08-16-implement-chunking-parallelism-figma-value-sheet.md) | Accepted | Jaesung Lee |
 | 2026-08-18 | [디자인 검수는 Phase 종료가 아니라 컴포넌트가 완성되는 즉시 붙인다](2026-08-18-design-audit-at-component-completion.md) | Accepted | Jaesung Lee |
 | 2026-08-19 | [공유 래스터 이미지는 `:core:common:ui`에 두고, WebP·밀도 규칙은 배치 규약이 소유한다](2026-08-19-raster-image-placement-and-format.md) | Accepted | Jaesung Lee |
+| 2026-08-24 | [초대 링크 문자열 조립은 도메인 인터페이스로 계약하고, 호스트를 아는 구현은 `:core:data`가 갖는다](2026-08-24-invite-link-assembly-domain-interface.md) | Accepted | Jaesung Lee |
+| 2026-08-24 | [토스트의 모양(`MinoSnackbar`)과 표출 위치(하단 40dp)는 화면이 아니라 `MinoScaffold`가 소유한다](2026-08-24-snackbar-host-owned-by-mino-scaffold.md) | Accepted | Jaesung Lee |
