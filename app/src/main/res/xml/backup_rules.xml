@@ -1,13 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?><!--
-   Sample backup rules file; uncomment and customize as necessary.
-   See https://developer.android.com/guide/topics/data/autobackup
-   for details.
-   Note: This file is ignored for devices older than API 31
-   See https://developer.android.com/about/versions/12/backup-restore
+   API 30 이하의 자동 백업(full-backup) 규칙. API 31 이상은 data_extraction_rules.xml이 담당한다.
+   https://developer.android.com/guide/topics/data/autobackup
+
+   sharedpref 도메인을 통째로 제외한다(FR-007). Firebase Auth가 익명 세션을 앱 프라이빗
+   SharedPreferences에 유지하므로, 백업·복원을 거친 다른 기기가 같은 사용자로 잡히는 것을 막는다.
+   파일명이 아니라 도메인 단위로 제외하는 것은 SDK 내부 파일명 규칙이 바뀌어도 규칙이
+   조용히 무력화되지 않게 하기 위해서다. path="."는 도메인 루트를 가리킨다.
 -->
 <full-backup-content>
-    <!--
-   <include domain="sharedpref" path="."/>
-   <exclude domain="sharedpref" path="device.xml"/>
--->
+    <exclude domain="sharedpref" path="." />
 </full-backup-content>

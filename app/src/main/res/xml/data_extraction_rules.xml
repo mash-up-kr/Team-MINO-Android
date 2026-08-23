@@ -1,19 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?><!--
-   Sample data extraction rules file; uncomment and customize as necessary.
-   See https://developer.android.com/about/versions/12/backup-restore#xml-changes
-   for details.
+   API 31 이상의 데이터 추출 규칙. API 30 이하는 backup_rules.xml이 담당한다.
+   https://developer.android.com/about/versions/12/backup-restore#xml-changes
+
+   클라우드 백업과 기기 간 이전(D2D)은 별개의 경로다. 한쪽만 제외하면 반대 구간이 뚫리므로
+   sharedpref 도메인을 양쪽 모두에서 제외한다(FR-007). path를 생략하면 도메인 전체에 적용된다.
 -->
 <data-extraction-rules>
     <cloud-backup>
-        <!-- TODO: Use <include> and <exclude> to control what is backed up.
-        <include .../>
-        <exclude .../>
-        -->
+        <exclude domain="sharedpref" />
     </cloud-backup>
-    <!--
     <device-transfer>
-        <include .../>
-        <exclude .../>
+        <exclude domain="sharedpref" />
     </device-transfer>
-    -->
 </data-extraction-rules>
