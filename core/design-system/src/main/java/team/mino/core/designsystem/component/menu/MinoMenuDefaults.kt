@@ -15,7 +15,6 @@ import team.mino.core.designsystem.foundation.color.fromToken
 import team.mino.core.designsystem.foundation.color.token.value
 import team.mino.core.designsystem.foundation.shadow.MinoShadow
 import team.mino.core.designsystem.foundation.shadow.token.value
-import team.mino.core.designsystem.foundation.shape.token.value
 import team.mino.core.designsystem.theme.MinoAndroidTheme
 
 /**
@@ -23,8 +22,7 @@ import team.mino.core.designsystem.theme.MinoAndroidTheme
  */
 object MinoMenuDefaults {
     /** 메뉴 컨테이너 기본 셰이프. */
-    val shape: Shape
-        @Composable @ReadOnlyComposable get() = MenuTokens.ContainerShape.value
+    val shape: Shape = MenuTokens.ContainerShape
 
     /** 메뉴 컨테이너 기본 배경색. */
     val containerColor: Color

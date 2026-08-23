@@ -1,10 +1,10 @@
 package team.mino.core.designsystem.component.textinput.token
 
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 import team.mino.core.designsystem.foundation.color.token.AtomicOpacityToken
 import team.mino.core.designsystem.foundation.color.token.ColorAccessKeyToken
 import team.mino.core.designsystem.foundation.shadow.token.ShadowAccessKeyToken
-import team.mino.core.designsystem.foundation.shape.token.ShapeAccessKeyToken
 import team.mino.core.designsystem.foundation.typography.token.TypographyAccessKeyToken
 
 /**
@@ -63,7 +63,7 @@ internal object TextInputTokens {
     val AssistiveTrailingButtonFont = TypographyAccessKeyToken.Body1NormalMedium
 
     // 셰이프·테두리·그림자
-    val ContainerShape = ShapeAccessKeyToken.Medium
+    val ContainerShape = RoundedCornerShape(12.dp)
     val ContainerShadow = ShadowAccessKeyToken.NormalXsmall
     val BorderWidth = 1.dp
 

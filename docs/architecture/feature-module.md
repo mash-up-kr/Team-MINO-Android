@@ -106,7 +106,7 @@ feature 간 순환 참조는 금지한다. 탭끼리 서로를 의존하지 않�
 | `vm/` | `XViewModel` · `XUiState` · `XSideEffect` · (`XIntent`) |
 | `args/` | **화면 진입 인자**(Route 프로퍼티)로 쓰는 타입의 **기본 위치** |
 | `model/` | **UiState를 구성하는 UiModel** |
-| `component/` | **Screen을 구성하는 컴포저블 단위**들의 모음 |
+| `component/` | **Screen을 구성하는 컴포저블 단위**들의 모음. 어느 모듈에 둘지(feature / `:core:common:ui` / `:core:design-system`)는 → [`component-asset-placement.md`](../conventions/component-asset-placement.md) |
 
 **인자 배치 규칙**: 진입 인자 타입은 기본적으로 `args/`에 둔다. **단 그 인자가 `UiState`에도 쓰이면**(= UiModel 겸용) `model/`에 두고 거기서 가져다 쓴다.
 예) `XQuery`가 `XDetail(query)`의 인자이면서 `XDetailUiState.query`이기도 하면 → `model/XQuery.kt`.

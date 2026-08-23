@@ -1,6 +1,6 @@
 # core:data
 
-MinoAndroid의 **데이터 계층** 모듈. `core:domain`의 Repository 인터페이스 구현체·DataSource·DTO·네트워크 인프라를 여기 두고, 도메인과 데이터 출처(원격 API·로컬 DB 등) 사이의 경계를 담당한다.
+MinoAndroid의 **데이터 계층** 모듈. `core:domain`의 Repository 인터페이스 구현체·DataSource·DTO·네트워크 인프라를 여기 두고, 도메인과 데이터 출처(원격 API·로컬 저장소 등) 사이의 경계를 담당한다.
 
 > 모듈 책임·경계·의존 방향(레이어 그래프)은 [`docs/architecture/modularization.md`](../../docs/architecture/modularization.md)를 단일 출처로 한다. 이 문서는 이 모듈의 **패키지 구성·확장 규칙·안티패턴**만 다룬다.
 
@@ -24,11 +24,11 @@ MinoAndroid의 **데이터 계층** 모듈. `core:domain`의 Repository 인터�
 ```mermaid
 flowchart TD
     VM["ViewModel<br/>(feature:x)"]
-    RI["GithubRepository 인터페이스<br/>(core:domain)"]
-    Impl["GithubRepositoryImpl<br/>(core:data/repository)"]
-    DS["GithubRemoteDataSource 인터페이스<br/>(core:data/datasource)"]
-    DSI["GithubRemoteDataSourceImpl<br/>(core:data/datasource)"]
-    SVC["GithubApiService<br/>(core:data/network/service)"]
+    RI["XxxRepository 인터페이스<br/>(core:domain)"]
+    Impl["XxxRepositoryImpl<br/>(core:data/repository)"]
+    DS["XxxRemoteDataSource 인터페이스<br/>(core:data/datasource)"]
+    DSI["XxxRemoteDataSourceImpl<br/>(core:data/datasource)"]
+    SVC["XxxApiService<br/>(core:data/network/service)"]
     NET["HttpClient<br/>(core:data/network/di)"]
 
     VM -->|"Hilt 주입"| RI
@@ -50,48 +50,29 @@ flowchart TD
 ```
 core/data/src/main/java/team/mino/core/data/
 ├── database/
-│   ├── di/                                # (예정) 데이터베이스 인프라 DI
-│   └── entity/                            # (예정) DB Entity — 도메인 모델 의존 금지
+│   ├── di/            # (예정) 데이터베이스 인프라 DI
+│   └── entity/        # (예정) DB Entity — 도메인 모델 의존 금지
 ├── datasource/
-│   ├── GithubRemoteDataSource.kt          # DataSource 인터페이스 (internal)
-│   ├── GithubRemoteDataSourceImpl.kt      # DataSource 구현체 (internal)
-│   └── di/
-│       └── GithubDataSourceModule.kt      # @Binds 모듈 (internal)
+│   ├── ...            # 데이터 출처 추상화. 인터페이스·구현체 쌍 (internal)
+│   └── di/            # DataSource @Binds 모듈 (internal)
 ├── device/
-│   ├── di/                                # @Binds 모듈
-│   └── ...                                # 기기 정보 원천(시스템 설정 등) 접근자 인터페이스·구현체
+│   ├── ...            # 기기 정보 원천(시스템 설정 등) 접근자 인터페이스·구현체
+│   └── di/            # @Binds 모듈
 ├── network/
-│   ├── extension/
-│   │   └── HttpClientConfig.kt            # convertDomainException — Ktor 예외 → 도메인 예외 전역 매핑 (internal)
-│   ├── di/
-│   │   └── NetworkModule.kt               # HttpClient 제공 (internal)
+│   ├── di/            # HttpClient 등 네트워크 인프라 제공 (internal)
 │   ├── dto/
-│   │   └── response/
-│   │       └── GithubRepoResponse.kt      # 서버 응답 DTO (@Serializable)
-│   └── service/
-│       └── GithubApiService.kt            # Ktor 직접 호출 서비스 (internal)
+│   │   ├── request/   # 요청 DTO (@Serializable)
+│   │   └── response/  # 응답 DTO (@Serializable). 도메인 모델 의존 금지
+│   ├── extension/     # 네트워크 타입 확장 (convertDomainException)
+│   └── service/       # Ktor HttpClient로 엔드포인트를 호출하는 서비스 (internal)
 ├── repository/
-│   ├── GithubRepositoryImpl.kt            # Repository 구현체 (internal)
-│   ├── mapper/
-│   │   └── GithubMapper.kt                # DTO → 도메인 모델 Mapper (internal)
-│   └── di/
-│       └── GithubRepositoryModule.kt      # @Binds 모듈 (internal)
-└── storage/
-    └── DataStoreModule.kt                 # DataStore<Preferences> 단일 인스턴스 제공 (internal)
+│   ├── ...            # core:domain Repository 인터페이스 구현 (internal)
+│   ├── di/            # Repository @Binds 모듈 (internal)
+│   └── mapper/        # DTO → 도메인 모델 Mapper (internal)
+└── storage/           # DataStore<Preferences> 단일 인스턴스 제공 (internal)
 ```
 
-| 패키지 | 역할 |
-|---|---|
-| `database/` | (예정) 데이터베이스 인프라 DI·Entity |
-| `datasource/` | 데이터 출처 추상화. 원격·로컬을 구분하는 경계 |
-| `device/` | 기기 정보 원천(시스템 설정 등) 접근자 |
-| `storage/` | DataStore 인프라 DI 제공 |
-| `network/di/` | HttpClient·네트워크 인프라 DI 제공 |
-| `network/dto/` | 서버 응답 스펙을 표현하는 DTO. `@Serializable` 필수. 도메인 모델 의존 금지 |
-| `network/extension/` | `HttpClientConfig` 등 네트워크 타입 확장 (`convertDomainException`) |
-| `network/service/` | Ktor HttpClient로 엔드포인트를 직접 호출하는 클래스 |
-| `repository/` | `core:domain` Repository 인터페이스 구현 |
-| `repository/mapper/` | DTO → 도메인 모델 Mapper. Repository가 늘어나도 `repository/`가 파일로 뒤섞이지 않도록 분리 |
+원격·로컬 DataSource는 출처만 다를 뿐 같은 레이어이므로 `datasource/` 하나에 둔다. 구분은 디렉터리가 아니라 이름(`XxxRemoteDataSource` / `XxxLocalDataSource`)이 한다.
 
 ---
 
@@ -105,7 +86,7 @@ HttpClient(OkHttp) {
     expectSuccess = true          // 비2xx 응답 시 ClientRequestException / ServerResponseException
     convertDomainException()
     defaultRequest {
-        url("https://api.github.com/")   // 현재는 임시 baseUrl — 실서버 연결 시 ProductFlavors로 이동
+        url(BuildConfig.API_BASE_URL)
     }
     install(ContentNegotiation) {
         json(Json { ignoreUnknownKeys = true })
@@ -120,12 +101,12 @@ HttpClient(OkHttp) {
 |---|---|
 | `expectSuccess = true` | 비2xx 응답 시 `SerializationException` 대신 명확한 HTTP 예외를 던짐 |
 | `convertDomainException()` | Ktor 예외 → `MinoDomainException` 전역 매핑 — 새 API 추가 시 매핑 누락이 구조적으로 불가능 |
+| `BuildConfig.API_BASE_URL` | 서버 환경 전환을 코드가 아니라 flavor가 결정 — qa/prod 빌드에 URL 분기 코드가 남지 않음 |
 | `ignoreUnknownKeys = true` | 서버 응답에 신규 필드가 추가돼도 파싱 실패 없음 |
 | `LogLevel.BODY` (qa 한정) | prod 빌드에서 토큰·PII가 로그캣에 노출되는 것을 차단 |
-| `baseUrl` (임시) | 현재는 GitHub 임시 API. 실서버 연결 시 `ProductFlavors.apiBaseUrl`로 교체 |
 
 > [!NOTE]
-> `baseUrl`은 `ProductFlavors.kt`의 `apiBaseUrl`로 flavor별 관리하는 것이 목표다. 실서버 배포 전에 `NetworkModule`의 하드코딩된 URL을 `BuildConfig.API_BASE_URL`로 교체한다.
+> `API_BASE_URL`은 `build-logic`의 [`ProductFlavors.kt`](../../build-logic/convention/src/main/kotlin/team/mino/buildlogic/ProductFlavors.kt)가 flavor별 `buildConfigField`로 생성한다. 서버 주소가 바뀌면 `NetworkModule`이 아니라 `Flavor` 열거형의 `apiBaseUrl`을 고친다. 현재 값은 실서버 도메인 확정 전까지의 플레이스홀더다.
 
 ### 예외 → 도메인 예외 매핑 (`convertDomainException`)
 
@@ -185,7 +166,7 @@ internal class XxxRemoteDataSourceImpl @Inject constructor(
 | **책임** | 데이터 출처 호출만. 변환·비즈니스 로직 없음 |
 | **명명** | `Xxx{Remote\|Local}DataSource` / `XxxDataSourceImpl` |
 
-DI 바인딩은 항상 `GithubDataSourceModule`처럼 별도 `@Module` abstract 클래스로 분리한다.
+DI 바인딩은 항상 별도 `@Module` abstract 클래스로 분리해 `datasource/di/`에 둔다. 바인딩 소유·형태 규칙은 [`docs/conventions/dependency-injection.md`](../../docs/conventions/dependency-injection.md)를 단일 출처로 한다.
 
 ```kotlin
 @Module
@@ -231,7 +212,7 @@ internal class XxxRepositoryImpl @Inject constructor(
 | **Mapper** | `RepositoryImpl` 안에서 DTO → 도메인 모델 변환 완료. UseCase·ViewModel에 DTO 노출 금지 |
 | **에러 처리** | 예외를 잡지 않는다 — 매핑은 validator가 전역 수행하며, 실패는 `MinoDomainException` throw로 전파 |
 
-DI 바인딩은 별도 `@Module`로 분리한다.
+DI 바인딩은 별도 `@Module`로 분리해 `repository/di/`에 둔다.
 
 ```kotlin
 @Module
@@ -249,17 +230,12 @@ internal abstract class XxxRepositoryModule {
 Mapper는 **DTO의 확장 함수**로 작성하고, 변환 책임의 소유자인 `RepositoryImpl`이 속한 `repository/` 하위의 `mapper/` 서브패키지에 `XxxMapper.kt`로 둔다. `network/dto/`는 서버 계약(DTO)만 표현하며 도메인 모델을 알지 못한다. Repository·Mapper 쌍이 늘어날 것을 감안해 `repository/` 최상위에 바로 두지 않고 `mapper/`로 분리한다.
 
 ```kotlin
-// core/data/repository/mapper/GithubMapper.kt
-internal fun GithubRepoResponse.toDomain(): GithubRepo =
-    GithubRepo(
+// core/data/repository/mapper/XxxMapper.kt
+internal fun XxxResponse.toDomain(): Xxx =
+    Xxx(
         id = id,
         name = name,
-        fullName = fullName,
         description = description.orEmpty(),
-        htmlUrl = htmlUrl,
-        language = language.orEmpty(),
-        stargazersCount = stargazersCount,
-        forksCount = forksCount,
     )
 ```
 
@@ -296,8 +272,9 @@ internal fun GithubRepoResponse.toDomain(): GithubRepo =
 | 구현 클래스(`Impl`·`ApiService`·`Module`)를 `public`으로 선언 | 의존 방향 역전, 계층 경계 파괴 |
 | RepositoryImpl·DataSourceImpl이 도메인 모델을 반환하기 전에 DTO를 노출 | UseCase·ViewModel에 데이터 계층 구현 상세가 노출됨 |
 | Mapper를 `core:domain`에 위치 | domain이 data에 역의존하게 됨 |
+| `NetworkModule`·`ApiService`에 서버 URL을 하드코딩 | flavor별 환경 분리가 무너진다. 주소는 `ProductFlavors.kt`의 `apiBaseUrl`이 단일 출처 |
 | `@OptIn(InternalSerializationApi::class)` 코드 추가 | IDE false-positive([KTIJ-31549](https://youtrack.jetbrains.com/issue/KTIJ-31549))에 대한 잘못된 해결. 실제 컴파일·런타임은 정상이며, 진짜 원인은 IDE 인덱싱 문제다. 해소 방법·배경은 [직렬화 opt-in 경고 ADR](../../docs/adr/2026-06-29-serialization-optin-ide-warning.md) 참조 |
-| 단일 `HttpClient`에 여러 baseUrl 혼용 | `defaultRequest.url`이 덮어써짐. 별도 클라이언트 또는 절대 URL 사용 |
+| 단일 `HttpClient`에 여러 baseUrl 혼용 | `defaultRequest.url`이 덮어써짐. 다른 호스트가 필요하면 별도 `HttpClient`를 제공한다 |
 
 ---
 

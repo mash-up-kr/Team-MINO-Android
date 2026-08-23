@@ -54,8 +54,7 @@ private val IconOnlyContentPaddingBySize = mapOf(
     ButtonSize.Small to PaddingValues(7.dp),
 )
 
-// Medium의 10dp가 셰이프 스케일(Small 8 / Medium 12 / Large 16)에 없어 ShapeAccessKeyToken을 쓰지
-// 못한다. ContentBadge와 같이 컴포넌트가 자기 셰이프를 직접 들고 있는다.
+// 크기마다 모서리가 다르다(Figma 실측).
 private val ShapeBySize = mapOf(
     ButtonSize.Large to RoundedCornerShape(12.dp),
     ButtonSize.Medium to RoundedCornerShape(10.dp),

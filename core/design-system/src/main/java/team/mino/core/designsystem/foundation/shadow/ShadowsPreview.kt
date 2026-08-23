@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -15,13 +16,14 @@ import team.mino.core.designsystem.foundation.color.token.ColorAccessKeyToken
 import team.mino.core.designsystem.foundation.color.token.value
 import team.mino.core.designsystem.foundation.shadow.token.ShadowAccessKeyToken
 import team.mino.core.designsystem.foundation.shadow.token.value
-import team.mino.core.designsystem.foundation.shape.token.ShapeAccessKeyToken
-import team.mino.core.designsystem.foundation.shape.token.value
 import team.mino.core.designsystem.foundation.typography.token.TypographyAccessKeyToken
 import team.mino.core.designsystem.foundation.typography.token.value
 import team.mino.core.designsystem.theme.MinoAndroidAppTheme
 import team.mino.core.designsystem.util.modifier.shadow.dropShadow
 import team.mino.core.designsystem.util.preview.UiModePreviews
+
+/** 카탈로그 표현용 모서리. 디자인 근거가 있는 값이 아니다. */
+private val SampleShape = RoundedCornerShape(12.dp)
 
 @UiModePreviews
 @Composable
@@ -43,11 +45,11 @@ private fun ShadowsPreview() {
                         modifier = Modifier
                             .size(80.dp)
                             .dropShadow(
-                                shape = ShapeAccessKeyToken.Medium.value,
+                                shape = SampleShape,
                                 shadow = token.value,
                             ).background(
                                 color = ColorAccessKeyToken.BackgroundElevatedNormal.value,
-                                shape = ShapeAccessKeyToken.Medium.value,
+                                shape = SampleShape,
                             ),
                     )
                     Text(

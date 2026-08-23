@@ -24,7 +24,6 @@ import team.mino.core.designsystem.foundation.color.ColorScheme
 import team.mino.core.designsystem.foundation.color.fromToken
 import team.mino.core.designsystem.foundation.shadow.MinoShadow
 import team.mino.core.designsystem.foundation.shadow.token.value
-import team.mino.core.designsystem.foundation.shape.token.value
 import team.mino.core.designsystem.foundation.typography.token.value
 import team.mino.core.designsystem.theme.MinoAndroidTheme
 import team.mino.core.designsystem.util.modifier.clickable.rippleSingleClickable
@@ -38,8 +37,7 @@ import team.mino.core.designsystem.util.modifier.clickable.rippleSingleClickable
  */
 object MinoTextInputDefaults {
     /** 필드 컨테이너 기본 셰이프. */
-    val shape: Shape
-        @Composable @ReadOnlyComposable get() = TextInputTokens.ContainerShape.value
+    val shape: Shape = TextInputTokens.ContainerShape
 
     /** TextArea 최대 글자수 기본값. */
     val MaxLength: Int = TextInputTokens.DefaultMaxLength

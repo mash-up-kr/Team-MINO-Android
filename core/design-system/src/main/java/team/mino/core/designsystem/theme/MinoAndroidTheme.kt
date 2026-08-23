@@ -2,6 +2,7 @@ package team.mino.core.designsystem.theme
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -18,10 +19,6 @@ import team.mino.core.designsystem.foundation.color.token.ColorAccessKeyToken
 import team.mino.core.designsystem.foundation.color.token.value
 import team.mino.core.designsystem.foundation.shadow.LocalShadows
 import team.mino.core.designsystem.foundation.shadow.Shadows
-import team.mino.core.designsystem.foundation.shape.LocalShapes
-import team.mino.core.designsystem.foundation.shape.Shapes
-import team.mino.core.designsystem.foundation.shape.token.ShapeAccessKeyToken
-import team.mino.core.designsystem.foundation.shape.token.value
 import team.mino.core.designsystem.foundation.typography.LocalTypography
 import team.mino.core.designsystem.foundation.typography.Typography
 import team.mino.core.designsystem.foundation.typography.token.TypographyAccessKeyToken
@@ -46,14 +43,12 @@ fun MinoAndroidAppTheme(content: @Composable () -> Unit) {
 private fun MinoAndroidTheme(
     colors: ColorScheme = MinoAndroidTheme.colors,
     typography: Typography = MinoAndroidTheme.typography,
-    shapes: Shapes = MinoAndroidTheme.shapes,
     shadows: Shadows = MinoAndroidTheme.shadows,
     content: @Composable () -> Unit,
 ) {
     CompositionLocalProvider(
         LocalColorScheme provides colors,
         LocalTypography provides typography,
-        LocalShapes provides shapes,
         LocalShadows provides shadows,
     ) {
         ProvideTextStyle(value = typography.body1NormalRegular, content = content)
@@ -71,11 +66,6 @@ object MinoAndroidTheme {
         @ReadOnlyComposable
         get() = LocalTypography.current
 
-    val shapes: Shapes
-        @Composable
-        @ReadOnlyComposable
-        get() = LocalShapes.current
-
     val shadows: Shadows
         @Composable
         @ReadOnlyComposable
@@ -89,7 +79,7 @@ private fun MinoAndroidAppThemePreview() {
         Text(
             modifier = Modifier
                 .background(
-                    shape = ShapeAccessKeyToken.Small.value,
+                    shape = RoundedCornerShape(8.dp),
                     color = ColorAccessKeyToken.BackgroundNormalNormal.value,
                 ).padding(4.dp),
             text = "Mino-Android",

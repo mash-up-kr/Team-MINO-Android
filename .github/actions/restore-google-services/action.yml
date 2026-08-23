@@ -1,0 +1,20 @@
+name: Restore Google Services
+description: app/google-services.json을 복원한다
+
+inputs:
+  google-services-json:
+    description: app/google-services.json의 base64
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        GOOGLE_SERVICES_JSON_B64: ${{ inputs.google-services-json }}
+      run: |
+        if [ -z "$GOOGLE_SERVICES_JSON_B64" ]; then
+          echo "::error::GOOGLE_SERVICES_JSON_B64 시크릿이 비어 있습니다."
+          exit 1
+        fi
+        echo "$GOOGLE_SERVICES_JSON_B64" | base64 -d > app/google-services.json

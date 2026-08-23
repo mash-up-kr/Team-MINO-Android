@@ -29,7 +29,7 @@ internal object InvitationTokens {
 
     val CoverSize = 80.dp
 
-    /** Figma 노드 실측값(md, 18.286px). 셰이프 스케일(Small/Medium/Large)에 없는 컴포넌트 전용 값. */
+    /** Figma 노드 실측값(md, 18.286px). */
     val CoverShape: Shape = RoundedCornerShape(18.29.dp)
     val CoverImagePadding = 14.dp
 

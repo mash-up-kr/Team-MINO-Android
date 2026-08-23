@@ -1,10 +1,10 @@
 # core:design-system
 
-MinoAndroid의 디자인 시스템 모듈. Material3를 기반으로 하되, Material의 `ColorScheme` / `Typography` / `Shapes`를 직접 노출하지 않고 **자체 토큰 시스템으로 한 번 감싸서** 제공한다.
+MinoAndroid의 디자인 시스템 모듈. Material3를 기반으로 하되, Material의 `ColorScheme` / `Typography`를 직접 노출하지 않고 **자체 토큰 시스템으로 한 번 감싸서** 제공한다.
 
 > [!IMPORTANT]
 > **색상·타이포·그림자 토큰은 디자이너의 Figma 디자인 시스템(MU_Wanted Design System)에서 추출한 실제 값이다.**
-> 서체는 디자인 지정 폰트 [SUITE](https://sun.fo/suite)(OFL-1.1, [SUITE-LICENSE.txt](SUITE-LICENSE.txt))를 Regular/Medium/Bold 3종으로 번들한다(`res/font/`). 단, **셰이프(8/12/16dp)는 아직 placeholder**다.
+> 서체는 디자인 지정 폰트 [SUITE](https://sun.fo/suite)(OFL-1.1, [SUITE-LICENSE.txt](SUITE-LICENSE.txt))를 Regular/Medium/Bold 3종으로 번들한다(`res/font/`).
 
 ---
 
@@ -12,7 +12,7 @@ MinoAndroid의 디자인 시스템 모듈. Material3를 기반으로 하되, Mat
 
 | | |
 |---|---|
-| **무엇을** | 앱 전역에서 일관되게 쓰는 색상·타이포·셰이프·그림자 토큰과, 이를 주입하는 테마(`MinoAndroidAppTheme`)를 제공한다. |
+| **무엇을** | 앱 전역에서 일관되게 쓰는 색상·타이포·그림자 토큰과, 이를 주입하는 테마(`MinoAndroidAppTheme`)를 제공한다. |
 | **왜 자체 토큰인가** | Material3 기본 타입을 그대로 쓰면 접근점이 흩어지고 디자인 토큰을 통제하기 어렵다. 자체 홀더로 감싸 **단일 접근점**(`MinoAndroidTheme.*`)을 두고, `원시값 → 시맨틱 → 사용처`로 이어지는 흐름을 명시적으로 관리한다. |
 
 `core` 레이어 모듈로, 화면을 그리는 모든 UI(주로 feature 모듈)가 의존한다.
@@ -21,12 +21,12 @@ MinoAndroid의 디자인 시스템 모듈. Material3를 기반으로 하되, Mat
 
 | 자산 | 설명 | 참조 |
 |---|---|---|
-| 디자인 토큰 | 색상·타이포·셰이프·그림자를 3계층(원시→시맨틱→홀더)으로 관리 | [4. 토큰 시스템](#4-토큰-시스템) |
+| 디자인 토큰 | 색상·타이포·그림자를 3계층(원시→시맨틱→홀더)으로 관리 | [4. 토큰 시스템](#4-토큰-시스템) |
 | 아이콘 | Figma 아이콘 세트를 `ImageVector`로 제공하는 `MinoIcons` 네임스페이스 | [5. 아이콘](#5-아이콘) |
 | 테마 진입점 | `MinoAndroidAppTheme` — 토큰을 주입하고 라이트/다크를 자동 전환 | [2. 빠른 시작](#2-빠른-시작) |
 | Modifier 유틸 | 클릭·선택(연타 차단·리플 표준화)·그림자 토큰 적용 `Modifier` 확장 | [6.3 클릭·선택 Modifier 유틸](#63-클릭선택-modifier-유틸) |
 | 프리뷰 어노테이션 | 라이트/다크 동시 프리뷰 `@UiModePreviews` | [6.4 프리뷰](#64-프리뷰) |
-| 공용 컴포넌트 | 토큰으로 조립한 재사용 Composable. `component/` 패키지에서 제공 | [6.1 컴포넌트 구현 패턴](#61-컴포넌트-구현-패턴--material3-관례) |
+| 공용 컴포넌트 | **Figma 디자인 시스템의 컴포넌트셋**을 구현한 Composable. `component/` 패키지에서 제공 | [6.1 컴포넌트 구현 패턴](#61-컴포넌트-구현-패턴--material3-관례) |
 
 ---
 
@@ -59,13 +59,15 @@ Text(
     style = MinoAndroidTheme.typography.body1NormalRegular,
 )
 
+val cardShape = RoundedCornerShape(12.dp)
+
 Box(
     modifier = Modifier
         .dropShadow(
-            shape = MinoAndroidTheme.shapes.medium,
+            shape = cardShape,
             shadow = MinoAndroidTheme.shadows.normalMedium,
         )
-        .clip(MinoAndroidTheme.shapes.medium)
+        .clip(cardShape)
         .background(MinoAndroidTheme.colors.fillNormal)
         .rippleSingleClickable { /* onClick */ },
 )
@@ -77,7 +79,6 @@ Box(
 |---|---|
 | `MinoAndroidTheme.colors` | `ColorScheme` |
 | `MinoAndroidTheme.typography` | `Typography` |
-| `MinoAndroidTheme.shapes` | `Shapes` |
 | `MinoAndroidTheme.shadows` | `Shadows` |
 
 그림자는 여러 겹의 드롭 섀도(`MinoShadow`)로 정의되므로, 위 예시처럼 디자인 시스템이 제공하는 `Modifier.dropShadow(shape, shadow)` 확장으로 적용한다.
@@ -93,9 +94,11 @@ Box(
 
 패키지는 **역할**로 나뉜다. 새 코드는 성격에 맞는 곳에 두고, 새 종류면 같은 패턴으로 패키지를 추가한다.
 
+> 여기는 **이 모듈 안에서의** 자리만 말한다. 컴포넌트·이미지를 이 모듈에 둘지 feature나 `:core:common:ui`에 둘지는 [`docs/conventions/component-asset-placement.md`](../../docs/conventions/component-asset-placement.md)가 소유한다.
+
 ```
 team/mino/core/designsystem/
-├── foundation/   # 디자인 기초 자산. foundation별로 color/ typography/ shape/ shadow/ icons/ 하위 패키지를 둔다.
+├── foundation/   # 디자인 기초 자산. foundation별로 color/ typography/ shadow/ icons/ 하위 패키지를 둔다.
 │   ├── <kind>/   #   토큰 foundation = token/ 패키지(Atomic·Semantic·AccessKey) + Holder 파일 + 토큰 카탈로그 프리뷰(*Preview.kt).
 │   └── icons/    #   예외: 아이콘은 토큰 3계층 없이 MinoIcons 네임스페이스 + 카탈로그 프리뷰. 아이콘별 ImageVector 파일은 icons/ 하위 패키지.
 ├── component/    # 토큰으로 조립한 공용 Composable 컴포넌트. 컴포넌트별 하위 패키지로 구성.
@@ -108,7 +111,7 @@ team/mino/core/designsystem/
 | 새로 추가하는 것 | 위치 |
 |---|---|
 | 새 토큰 값/슬롯 | 해당 `foundation/<kind>/` — 절차는 [4.4 토큰 추가하기](#44-토큰-추가하기) |
-| 새 foundation 종류 (예: spacing) | `foundation/` 아래 새 패키지를 기존 3계층 패턴으로 |
+| 새 foundation 종류 (예: spacing) | `foundation/` 아래 새 패키지를 기존 3계층 패턴으로 — 단, Figma가 이름 붙은 토큰 세트로 배포하는 축일 때만. 판단 기준은 [셰이프 foundation 폐기 ADR](../../docs/adr/2026-08-13-no-shape-token-foundation.md) |
 | 새 아이콘 | `foundation/icons/` — 절차는 [5.2 아이콘 추가하기](#52-아이콘-추가하기) |
 | 공용 Composable 컴포넌트 (버튼·칩 등) | `component/<name>/` — 구조는 [6.1 컴포넌트 구현 패턴](#61-컴포넌트-구현-패턴--material3-관례) |
 | `Modifier` 확장 | `util/modifier/<종류>/` (공개 확장만 노출, 내부 구현은 `internal`) |
@@ -118,7 +121,7 @@ team/mino/core/designsystem/
 
 ## 4. 토큰 시스템
 
-색상·타이포·셰이프·그림자 토큰의 구조부터 소비·확장·규칙까지 토큰에 관한 모든 것을 이 섹션에 모은다.
+색상·타이포·그림자 토큰의 구조부터 소비·확장·규칙까지 토큰에 관한 모든 것을 이 섹션에 모은다.
 
 ### 4.1 3계층 아키텍처
 
@@ -135,22 +138,22 @@ flowchart LR
     A --> B --> C --> D --> E --> F
 ```
 
-색상을 예로 들었지만 **타이포·셰이프·그림자도 동일한 3계층 구조**다. 네 foundation은 1:1로 대응한다.
+색상을 예로 들었지만 **타이포·그림자도 동일한 3계층 구조**다. 세 foundation은 1:1로 대응한다.
 
-| 계층 | color | typography | shape | shadow |
-|---|---|---|---|---|
-| **Atomic** (원시값) | `AtomicColorToken` | `AtomicTypographyToken` | `AtomicShapeToken` | `AtomicShadowToken` |
-| **Semantic** (의미 토큰) | `ColorLightTokens` / `ColorDarkTokens` | `TypographyTokens` | `ShapeTokens` | `ShadowTokens` |
-| **Key enum + `value`** | `ColorAccessKeyToken` | `TypographyAccessKeyToken` | `ShapeAccessKeyToken` | `ShadowAccessKeyToken` |
-| **Holder** (클래스) | `ColorScheme` | `Typography` | `Shapes` | `Shadows` |
-| **팩토리** | `light/darkColorScheme()` | `minoTypography()` | `minoShapes()` | `minoShadows()` |
-| **CompositionLocal** | `LocalColorScheme` | `LocalTypography` | `LocalShapes` | `LocalShadows` |
-| **접근자** | `MinoAndroidTheme.colors` | `.typography` | `.shapes` | `.shadows` |
+| 계층 | color | typography | shadow |
+|---|---|---|---|
+| **Atomic** (원시값) | `AtomicColorToken` | `AtomicTypographyToken` | `AtomicShadowToken` |
+| **Semantic** (의미 토큰) | `ColorLightTokens` / `ColorDarkTokens` | `TypographyTokens` | `ShadowTokens` |
+| **Key enum + `value`** | `ColorAccessKeyToken` | `TypographyAccessKeyToken` | `ShadowAccessKeyToken` |
+| **Holder** (클래스) | `ColorScheme` | `Typography` | `Shadows` |
+| **팩토리** | `light/darkColorScheme()` | `minoTypography()` | `minoShadows()` |
+| **CompositionLocal** | `LocalColorScheme` | `LocalTypography` | `LocalShadows` |
+| **접근자** | `MinoAndroidTheme.colors` | `.typography` | `.shadows` |
 
 > [!NOTE]
-> 색상만 라이트/다크 2개 팩토리를 가진다. 타이포·셰이프·그림자는 변형이 없어 단일 팩토리다.
+> 색상만 라이트/다크 2개 팩토리를 가진다. 타이포·그림자는 변형이 없어 단일 팩토리다.
 
-테마 주입은 `MinoAndroidAppTheme` → 내부 `MinoAndroidTheme`(private)에서 네 `CompositionLocal`을 **한 번에** provide 하는 구조다.
+테마 주입은 `MinoAndroidAppTheme` → 내부 `MinoAndroidTheme`(private)에서 세 `CompositionLocal`을 **한 번에** provide 하는 구조다.
 
 ```mermaid
 flowchart TD
@@ -158,10 +161,14 @@ flowchart TD
     Priv --> P["CompositionLocalProvider"]
     P --> LC["LocalColorScheme"]
     P --> LT["LocalTypography"]
-    P --> LS["LocalShapes"]
     P --> LSh["LocalShadows"]
-    LC & LT & LS & LSh --> Obj["MinoAndroidTheme object<br/>.colors / .typography / .shapes / .shadows"]
+    LC & LT & LSh --> Obj["MinoAndroidTheme object<br/>.colors / .typography / .shadows"]
 ```
+
+> [!NOTE]
+> 모서리(셰이프)는 토큰 foundation이 없다. 각 컴포넌트의 `<Name>Tokens`가 `RoundedCornerShape` 리터럴을 직접 들고 `<Name>Defaults`로 노출한다. 배경은 [셰이프 foundation 폐기 ADR](../../docs/adr/2026-08-13-no-shape-token-foundation.md) 참조.
+>
+> 컴포넌트 소유가 아닌 일회성 모서리(카탈로그 프리뷰 등)는 그 자리에서 `RoundedCornerShape(n.dp)`로 만들되, 디자인 근거가 없는 값이면 그 사실을 주석으로 밝힌다.
 
 ### 4.2 라이트·다크 모드
 
@@ -189,7 +196,6 @@ internal fun provideColorScheme(): ColorScheme = when {
 ```kotlin
 val color = MinoAndroidTheme.colors.labelNormal
 val style = MinoAndroidTheme.typography.body1NormalRegular
-val shape = MinoAndroidTheme.shapes.medium
 ```
 
 **(B) 모듈 내부 기여자 — AccessKey 토큰의 `value`**
@@ -200,7 +206,7 @@ design-system 안에서 컴포넌트를 만들 때는 `internal`인 `*AccessKeyT
 Text(
     modifier = Modifier
         .background(
-            shape = ShapeAccessKeyToken.Small.value,
+            shape = RoundedCornerShape(8.dp),
             color = ColorAccessKeyToken.BackgroundNormalNormal.value,
         )
         .padding(4.dp),
@@ -232,7 +238,7 @@ Text(
 
 시맨틱 이름은 원시값이 아니라 **용도**(`LabelNormal`, `FillStrong` 등)를 따른다. 반투명 시맨틱은 `AtomicOpacityToken`의 알파를 곱해 만든다 — `AtomicColorToken.CoolNeutral50.copy(alpha = AtomicOpacityToken.Opacity22)`.
 
-typography·shape·shadow도 **`Atomic → Tokens → AccessKeyToken(enum + when) → Holder(프로퍼티/copy/fromToken)`** 순서로 똑같이 진행한다. 단, 새 `CompositionLocal`을 추가하면 루트 `lint.xml`의 `ComposeCompositionLocalUsage` allowlist에도 등록한다.
+typography·shadow도 **`Atomic → Tokens → AccessKeyToken(enum + when) → Holder(프로퍼티/copy/fromToken)`** 순서로 똑같이 진행한다. 단, 새 `CompositionLocal`을 추가하면 루트 `lint.xml`의 `ComposeCompositionLocalUsage` allowlist에도 등록한다.
 
 ### 4.5 토큰 규칙
 
@@ -281,17 +287,11 @@ Icon(
 
 변환 가능한 SVG 조건: 단색 fill(stroke·transform·그라데이션 불가), viewBox 원점 0,0. 조건을 벗어나면 스크립트가 에러로 알려주며, 그 경우 Figma에서 패스를 병합(flatten)해 다시 export한다.
 
-### 5.3 래스터 이미지 에셋
-
-`ImageVector`로 변환할 수 없는 사진·일러스트 등 래스터 이미지는 **WebP**로 저장한다(PNG·JPEG 등 다른 래스터 포맷 금지). Figma에서 export한 원본이 PNG여도 `cwebp -lossless -q 100 <원본>.png -o <대상>.webp`로 무손실 변환 후 커밋한다. 리소스 참조는 `R.drawable.<name>`으로 확장자와 무관해 코드 변경이 필요 없다. 배경은 [ADR](../../docs/adr/2026-08-01-webp-for-raster-images.md) 참고.
-
-밀도별로 `drawable-mdpi/xhdpi/xxhdpi/`에 나눠 배치한다(밀도 미구분 `drawable/`은 `IconLocation` 린트 경고 대상).
-
 ---
 
 ## 6. 컴포넌트 & UI 유틸
 
-재사용하는 Composable·`Modifier` 자산. 외부 모듈은 여기의 public API를 그대로 가져다 쓴다.
+디자인 시스템이 소유하는 Composable·`Modifier` 자산. 외부 모듈은 여기의 public API를 그대로 가져다 쓴다.
 
 ### 6.1 컴포넌트 구현 패턴 — Material3 관례
 
@@ -304,11 +304,12 @@ Icon(
 | `Mino<Name>` Composable | 공개 API. 셰이프·색·패딩 등 커스터마이징 파라미터의 디폴트는 전부 `Mino<Name>Defaults`에서 공급 | `Button` |
 | `Mino<Name>Defaults` object | 기본값 프로퍼티·상수와 `...colors()` 팩토리. 파일이 커지면 별도 파일로 분리 | `ButtonDefaults` |
 | `Mino<Name>Colors` 클래스 | 상태(enabled 등)별 색 슬롯. `@Immutable`, `Color.Unspecified`를 "원본 유지"로 해석하는 `copy`, `@Stable internal` 상태 해석 함수, equals/hashCode. 기본 인스턴스는 `ColorScheme`의 `internal var default<Name>ColorsCached`에 캐시 | `ButtonColors` |
-| `token/<Name>Tokens` object | `internal`. 컴포넌트 슬롯 → 디자인 토큰 키(`*AccessKeyToken`) 매핑만 담고, 값 해석은 `*AccessKeyToken.value`가 담당 | `tokens/FilledButtonTokens` |
+| `token/<Name>Tokens` object | `internal`. 컴포넌트 슬롯 → 디자인 토큰 키(`*AccessKeyToken`) 매핑 + 대응 토큰이 없는 실측 치수(모서리·간격 등). 토큰 키의 값 해석은 `*AccessKeyToken.value`가 담당 | `tokens/FilledButtonTokens` |
 
 - 상태 없는 컴포넌트는 Colors 클래스 없이 Defaults의 단일 값 프로퍼티로 둔다(M3 `BadgeDefaults.containerColor` 방식).
 - **클릭은 M3처럼 `Surface(onClick)`을 쓰지 않고** [6.3 클릭·선택 Modifier 유틸](#63-클릭선택-modifier-유틸)로 처리한다.
-- 아직 동작하지 않는 기능의 파라미터는 미리 만들지 않는다 — 이후 기능은 디폴트 파라미터로 소스 호환 추가한다.
+
+> 컴포넌트를 새로 만들지 기존 것을 확장할지, 파라미터를 언제 늘릴지는 [`component-asset-placement.md` §3](../../docs/conventions/component-asset-placement.md#3-컴포넌트-신설-vs-기존-확장)이 소유한다.
 
 ### 6.2 Modifier 확장 구현 규칙
 

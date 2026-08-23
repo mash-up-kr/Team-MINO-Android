@@ -1,33 +1,89 @@
 <!--
 Sync Impact Report
-- 버전 변경: (없음) → 1.0.0
-- 최초 제정: `mino-sdd/template/constitution-template.md`에서 초기화
-- 수정된 원칙: 없음 (최초 제정)
-- 추가된 섹션:
-  - 핵심 원칙 I. 단일 출처 문서화
-  - 핵심 원칙 II. 레이어 경계와 의존 방향
-  - 핵심 원칙 III. 결정과 실패는 기록으로 남는다
-  - 핵심 원칙 IV. 명세가 구현에 선행한다
-  - 핵심 원칙 V. 컨벤션은 권고가 아니라 게이트
-  - 기술 표준과 제약
-  - 개발 워크플로와 품질 게이트
-  - Governance
+
+이 파일은 1.0.0에서 2.1.0으로 올라간다. 아래 세 개정을 순서대로 기록한다.
+
+## 1.0.0 → 2.0.0 (MAJOR)
+- 수정된 섹션: 기술 표준과 제약 §스택과 구조 — 디자인 토큰 조항 재정의
+- 수정된 원칙: 없음
+- 옛 조항: "색·치수·타이포는 `../core/design-system/README.md`의 토큰 체계로만 접근한다. 하드코딩 값을
+  쓰지 않으며, 디자인 시스템 컴포넌트 API는 Material3 컴포넌트 패턴을 따른다."
+- 새 조항: 축에 그림자를 더하고, 강제 기준을 **존재**에서 **값 일치**로 바꿨다. 값이 일치하는 토큰이
+  있으면 반드시 토큰, 없으면 실측값을 그대로 쓴다. 토큰 신설은 구현의 선행 조건이 아니다.
+- MAJOR 판정 근거: "하드코딩 값을 쓰지 않으며"가 삭제됐다. 토큰이 없으면 구현을 멈추던 기존 작업
+  방식이 무효화되고, 실측 raw가 조건부로 **허용**으로 뒤집힌다. Governance §버저닝 정책의 "기존 작업
+  방식을 무효화하는 재정의"에 해당한다.
+- 함께 제거된 문장: "디자인 시스템 컴포넌트 API는 Material3 컴포넌트 패턴을 따른다." 토큰 조항과 한
+  문장에 묶여 있던 탓에 재작성에 휩쓸린 것으로, 의도한 폐지가 아니다. 2.0.1에서 별도 줄로 복원했다.
+- 근거 ADR: `adr/2026-08-13-design-token-when-value-matches.md` ·
+  `adr/2026-08-13-no-shape-token-foundation.md`
+
+## 2.0.0 → 2.0.1 (PATCH)
+- 수정된 섹션: 기술 표준과 제약 §스택과 구조 — 디자인 토큰 조항에 판정·대조 절차 문서 지목 추가,
+  2.0.0이 휩쓸어 지운 Material3 컴포넌트 패턴 조항을 별도 줄로 복원
+- 수정된 원칙: 없음
+- 추가된 섹션: 없음
 - 제거된 섹션: 없음
 - 유예된 플레이스홀더: 없음
+- PATCH 판정 근거: 2.0.0이 정한 강제 기준("값이 일치하는 토큰이 있으면 토큰, 없으면 실측값")과 검증
+  방식("Figma 원본과의 대조로 판정")이 그대로다. 그 판정·대조를 실제로 어떻게 수행하는지를 소유한
+  문서로 가는 링크만 덧붙였다. 무효화되는 기존 작업 방식이 없고 규정 범위도 넓어지지 않는다. M3 조항
+  복원도 1.0.0에 있던 규칙을 되돌리는 것이라 새 규정이 아니다.
+- 개정 경위: 2.0.0이 남긴 TODO(TOKEN_DECISION_PROCEDURE)를 닫는 과정에서, 판정 절차의 소유자를
+  `../core/design-system/README.md`가 아니라 새 규약 문서로 정했다. 그 절차를 따르는 주체가 대부분
+  `:core:design-system` 밖(feature UI·감사)에 있어, 모듈 README에 두면 지켜야 할 주체가 `../CLAUDE.md`
+  네비게이션 표에서 그 문서에 도달하지 못하기 때문이다. 조항의 배경·근거는 계속 ADR이 소유한다 —
+  `adr/2026-08-13-no-shape-token-foundation.md` · `adr/2026-08-13-design-token-when-value-matches.md`.
+- 해소된 TODO:
+  - TODO(TOKEN_DECISION_PROCEDURE): `conventions/figma-design-fidelity.md`를 판정 절차의 소유자로 정하고
+    작성 완료했다. TODO가 포함을 요구한 다크 모드 단서("모드에 따라 달라져야 하는 색은 raw로 표현할 수
+    없으므로 디자이너에게 변수 바인딩을 요청한다")는 그 문서 §2.1이 소유한다.
+  - TODO(SPEC_RECHECK): `group-room-form` 기능의 Constitution Check를 2.0.0 기준으로 재판정했다. "디자인
+    토큰만 사용" 항목이 "토큰·실측값 판정" 게이트로 대체됐다.
+  - TODO(AGENT_RULE_DUPLICATION): `../.claude/agents/ui-developer.md`가 복제하던 구 조항 본문을
+    `conventions/figma-design-fidelity.md` 링크 참조로 교체했다.
 - 후속 TODO:
   - TODO(SDD_PIPELINE_SOURCE): 원칙 IV는 SDD 단계의 순서와 게이트만 규정하고, 단계별 산출물·도구 구성의
-    단일 출처를 지목하지 않는다. 이슈 #124 SDD 개편이 파이프라인 문서를 확정하면 원칙 IV의 출처에 그 문서를
-    추가하고 MINOR 개정한다. (현재 파이프라인 문서 자체가 없어 `../CLAUDE.md` 네비게이션 표에도
-    해당 줄이 없다.)
+    단일 출처를 지목하지 않는다. 이슈 #124 SDD 개편이 파이프라인 문서를 확정하면 원칙 IV의 출처에 그
+    문서를 추가하고 MINOR 개정한다. (현재 파이프라인 문서 자체가 없어 `../CLAUDE.md` 네비게이션 표에도
+    해당 줄이 없다. 후속 범위는 `adr/2026-08-07-sdd-single-skill-per-stage.md` §결과가 함께 든다.)
+
+## 2.0.1 → 2.1.0 (MINOR)
+- 수정된 섹션: 기술 표준과 제약 §스택과 구조 — 이미지 에셋·UI 컴포넌트의 소속 모듈 조항 추가
+- 수정된 원칙: 없음
+- 추가된 섹션: 없음
+- 제거된 섹션: 없음
+- 유예된 플레이스홀더: 없음
+- MINOR 판정 근거: Governance §버저닝 정책의 "원칙·섹션의 추가, 또는 실질적으로 범위가 넓어진 규정"에
+  해당한다. 헌법이 규율하지 않던 축(자산의 소속 모듈)이 하나 늘었을 뿐, 기존 조항의 의미가 바뀌거나
+  무효화되는 작업 방식이 없다. 지금까지의 관행(기본은 그것을 쓰는 feature, 공유가 실제로 생기면 공용
+  모듈로 승격)을 성문화한 것이라 MAJOR가 아니다.
+- 개정 경위: 컴포넌트·이미지를 어느 모듈에 만드는지의 판정 기준이 `../core/common/ui/README.md` §5와
+  ADR 여러 건에 흩어져 있었고, 정작 그 판정을 하는 주체(feature UI를 구현하는 사람·에이전트)가 모듈
+  README에 도달하지 못했다. 2.0.1이 Figma 판정 절차를 모듈 README 대신 규약 문서로 옮긴 것과 같은
+  이유로, 판정의 소유자를 새 규약 문서 `conventions/component-asset-placement.md`로 정했다. 그 문서를
+  만들면서 `../core/common/ui/README.md` §4·§5와 `../core/design-system/README.md` §6.1의 해당 규칙을
+  이관하고, 두 README에는 링크만 남겼다.
+- 판정 대상에서 제외한 것: 아이콘은 `../core/design-system/README.md` §5가 이미 소유하므로 조항에 넣지
+  않았다. 디자인 토큰과 `Modifier` 확장도 같은 이유로 제외했고, 새 문서의 경계표가 그 소유자를 지목한다.
+- 조항에 담지 않은 것: 규약 §1.2의 예외(`AtomicColorToken`의 원시 색을 직접 참조해야 해서 다른 모듈에서
+  만들 수 없는 컴포넌트)는 규약 문서가 소유한다. 예외의 조건과 가드를 헌법이 다시 쓰면 SSOT가 갈린다.
+  조항 본문은 Figma 디자인 시스템 컴포넌트(사용처 수와 무관하게 `:core:design-system`)와 그 밖의 것
+  (feature에 두었다가 승격) 두 갈래만 규정한다.
+- 근거 ADR: `adr/2026-08-14-room-color-palette-in-design-system.md` ·
+  `adr/2026-08-03-category-item-dedicated-chip.md` · `adr/2026-07-31-common-shell-mino-scaffold.md`
+  (이번 조항 전용 ADR은 만들지 않았다 — 실질 근거를 위 세 건이 이미 소유한다)
+- 해소된 TODO: 없음
+- 후속 TODO: 없음
 -->
 
 # MinoAndroid 헌법(Constitution)
 
 | 항목 | 내용 |
 |---|---|
-| **버전** | 1.0.0 |
+| **버전** | 2.1.0 |
 | **제정일** | 2026-08-07 |
-| **최종 개정일** | 2026-08-07 |
+| **최종 개정일** | 2026-08-19 |
 | **최초 제정자** | Jaesung Lee |
 | **최종 개정자** | Jaesung Lee |
 
@@ -145,8 +201,19 @@ Sync Impact Report
 - feature는 단일 모듈이며 진입형·탭 두 종류로 나뉜다. 골격·공개 범위·Route↔Screen 연결은
   [`architecture/feature-module.md`](architecture/feature-module.md), 화면 전환은
   [`architecture/feature-navigation.md`](architecture/feature-navigation.md)를 따른다.
-- 색·치수·타이포는 [`../core/design-system/README.md`](../core/design-system/README.md)의 토큰 체계로만 접근한다.
-  하드코딩 값을 쓰지 않으며, 디자인 시스템 컴포넌트 API는 Material3 컴포넌트 패턴을 따른다.
+- 색·치수·타이포·그림자는 [`../core/design-system/README.md`](../core/design-system/README.md)의 토큰 체계를
+  단일 접근점으로 한다. 디자인 값과 일치하는 토큰이 있으면 반드시 토큰으로 접근하고, 없으면 디자인
+  실측값을 직접 쓴다. 토큰이 없다는 이유로 구현을 멈추거나 토큰 신설을 선행 조건으로 삼지 않으며,
+  준수 여부는 코드에 적힌 근거가 아니라 Figma 원본과의 대조로 판정한다. 그 판정과 대조를 수행하는
+  절차는 [`conventions/figma-design-fidelity.md`](conventions/figma-design-fidelity.md)를 따른다.
+- 이미지 에셋과 UI 컴포넌트가 feature와 `:core:common:ui`·`:core:design-system` 중 어느 모듈에
+  속하는지는 [`conventions/component-asset-placement.md`](conventions/component-asset-placement.md)를
+  단일 출처로 한다. Figma 디자인 시스템에 컴포넌트로 존재하는 것은 사용처 수와 무관하게
+  `:core:design-system`이 소유하고, 그 밖의 것은 그것을 쓰는 feature에 두었다가 같은 문서의 승격 기준을
+  충족할 때 `:core:common:ui`로 옮긴다.
+- 디자인 시스템 컴포넌트 API는 Material3 컴포넌트 패턴(Defaults·Colors·컴포넌트 토큰)을 따른다. 본문은
+  [`../core/design-system/README.md`](../core/design-system/README.md), 근거는
+  [`adr/2026-07-25-design-system-component-m3-pattern.md`](adr/2026-07-25-design-system-component-m3-pattern.md)가 소유한다.
 
 **검증 장치의 한계 — 이 저장소가 스스로 잡아 주지 못하는 것**
 

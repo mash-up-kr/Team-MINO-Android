@@ -17,7 +17,7 @@ Jetpack Compose 코드 품질을 [Slack Compose Lint](https://slackhq.github.io/
 ## ComposeCompositionLocalUsage 운영
 
 - 룰 자체는 `error`로 활성화돼 있고, `allowed-composition-locals`에 예외를 **개별 등재**해야 통과한다.
-- 등재 기준은 **화면의 도메인 입력이 아니라 셸·테마 환경**일 것 — 트리 어디서 읽든 같은 값이고, 파라미터로 관통시키면 중간 컴포저블 전부에 노이즈가 되는 값. 디자인 토큰(`LocalColorScheme`·`LocalTypography`·`LocalShapes`·`LocalShadows`)과 셸이 소유한 `LocalSnackbarHostState`가 여기 해당한다.
+- 등재 기준은 **화면의 도메인 입력이 아니라 셸·테마 환경**일 것 — 트리 어디서 읽든 같은 값이고, 파라미터로 관통시키면 중간 컴포저블 전부에 노이즈가 되는 값. 디자인 토큰(`LocalColorScheme`·`LocalTypography`·`LocalShadows`)과 셸이 소유한 `LocalSnackbarHostState`가 여기 해당한다.
 - 그 외(화면 상태·ViewModel·콜백)는 등재하지 않는다 — 파라미터로 넘긴다.
 
 ```xml

@@ -234,7 +234,7 @@
         <text x="484" y="116" fill="#fbbf24" font-size="10" font-weight="600">전문가 서브에이전트 — 서로 직접 통신하지 않는다</text>
 
         <!-- 게이트 그룹 -->
-        <rect x="180" y="540" width="290" height="200" rx="8" fill="transparent" stroke="#fb7185" stroke-width="1" stroke-dasharray="4,4"/>
+        <rect x="180" y="540" width="290" height="216" rx="8" fill="transparent" stroke="#fb7185" stroke-width="1" stroke-dasharray="4,4"/>
         <text x="190" y="558" fill="#fb7185" font-size="8">게이트 — 지적만, 수정 권한 없음</text>
 
         <!-- =========================== ARROWS (behind boxes) =========================== -->
@@ -253,8 +253,8 @@
 
         <!-- 리드 ↔ 게이트 -->
         <line x1="240" y1="376" x2="240" y2="536" stroke="#fb7185" stroke-width="1.5" marker-end="url(#arrow-rose)"/>
-        <text x="250" y="440" fill="#94a3b8" font-size="8">Phase 종료마다 ·</text>
-        <text x="250" y="452" fill="#94a3b8" font-size="8">완료 검증(8단계)</text>
+        <text x="250" y="440" fill="#94a3b8" font-size="8">완성되는 즉시 ·</text>
+        <text x="250" y="452" fill="#94a3b8" font-size="8">완료 검증(7단계)</text>
         <line x1="370" y1="536" x2="370" y2="378" stroke="#fb7185" stroke-width="1.5" marker-end="url(#arrow-rose)"/>
         <text x="360" y="470" fill="#94a3b8" font-size="8" text-anchor="end">실패 분류 ·</text>
         <text x="360" y="482" fill="#94a3b8" font-size="8" text-anchor="end">위반 지적</text>
@@ -265,14 +265,14 @@
 
         <!-- 게이트 → 진행 로그 -->
         <line x1="474" y1="588" x2="556" y2="588" stroke="#fb923c" stroke-width="1.5" stroke-dasharray="5,4" marker-end="url(#arrow-orange)"/>
-        <text x="515" y="581" fill="#fb923c" font-size="7" text-anchor="middle">append</text>
+        <text x="515" y="581" fill="#fb923c" font-size="7" text-anchor="middle">append (qg · ca)</text>
 
         <!-- 진행 로그 → Monitor -->
         <line x1="685" y1="618" x2="685" y2="656" stroke="#fb923c" stroke-width="1.5" stroke-dasharray="5,4" marker-end="url(#arrow-orange)"/>
 
         <!-- Monitor → 사용자 -->
         <path d="M 685 686 L 685 754 Q 685 770 669 770 L 96 770 Q 80 770 80 754 L 80 332" fill="none" stroke="#fb923c" stroke-width="1.5" stroke-dasharray="5,4" marker-end="url(#arrow-orange)"/>
-        <text x="400" y="762" fill="#fb923c" font-size="8" text-anchor="middle">진행 상황 실시간 알림 (보고를 대체하지 않는다)</text>
+        <text x="620" y="762" fill="#fb923c" font-size="8" text-anchor="middle">진행 상황 실시간 알림 (보고를 대체하지 않는다)</text>
 
         <!-- =========================== COMPONENTS =========================== -->
 
@@ -292,13 +292,13 @@
         <text x="305" y="314" fill="#94a3b8" font-size="8" text-anchor="middle">· 산출물 확인 → [X] 마킹</text>
         <text x="305" y="330" fill="#94a3b8" font-size="8" text-anchor="middle">· blocked 재배정</text>
         <text x="305" y="346" fill="#94a3b8" font-size="8" text-anchor="middle">· 진행 로그 Monitor 개통·종료</text>
-        <text x="305" y="364" fill="#22d3ee" font-size="7" text-anchor="middle">1 · 4 · 5 · 7 · 8 단계 소유</text>
+        <text x="305" y="364" fill="#22d3ee" font-size="7" text-anchor="middle">1 · 4 · 5 · 6 · 7 단계 소유</text>
 
         <!-- context-analyst -->
         <rect x="490" y="132" width="220" height="54" rx="6" fill="#0f172a"/>
         <rect x="490" y="132" width="220" height="54" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
         <text x="600" y="154" fill="white" font-size="11" font-weight="600" text-anchor="middle">context-analyst</text>
-        <text x="600" y="172" fill="#94a3b8" font-size="8" text-anchor="middle">2단계 · 산출물 → 브리프 (읽기 전용)</text>
+        <text x="600" y="172" fill="#94a3b8" font-size="8" text-anchor="middle">2단계 · 브리프 + Figma 값 시트</text>
 
         <!-- build-setup-engineer -->
         <rect x="730" y="132" width="220" height="54" rx="6" fill="#0f172a"/>
@@ -338,22 +338,28 @@
 
         <!-- 동시 배정 규칙 주석 -->
         <text x="840" y="428" fill="#fbbf24" font-size="9" font-weight="600" text-anchor="middle">동시 배정 규칙</text>
-        <text x="840" y="444" fill="#94a3b8" font-size="8" text-anchor="middle">[P] + 파일 경로 비겹침일 때만</text>
-        <text x="840" y="458" fill="#94a3b8" font-size="8" text-anchor="middle">한 번에 최대 3종</text>
+        <text x="840" y="444" fill="#94a3b8" font-size="8" text-anchor="middle">조건은 파일 경로 비겹침 하나</text>
+        <text x="840" y="458" fill="#94a3b8" font-size="8" text-anchor="middle">동시 최대 5 인스턴스 · 배정당 파일 3개</text>
 
         <!-- quality-gate-runner -->
-        <rect x="200" y="574" width="250" height="52" rx="6" fill="#0f172a"/>
-        <rect x="200" y="574" width="250" height="52" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
-        <text x="325" y="596" fill="white" font-size="11" font-weight="600" text-anchor="middle">quality-gate-runner</text>
-        <text x="325" y="613" fill="#94a3b8" font-size="8" text-anchor="middle">빌드 · 테스트 · Lint 실행 · 실패 분류</text>
-
-        <text x="325" y="650" fill="#fb7185" font-size="7" text-anchor="middle">8단계에서 병렬 실행</text>
+        <rect x="200" y="568" width="250" height="52" rx="6" fill="#0f172a"/>
+        <rect x="200" y="568" width="250" height="52" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="325" y="590" fill="white" font-size="11" font-weight="600" text-anchor="middle">quality-gate-runner</text>
+        <text x="325" y="607" fill="#94a3b8" font-size="8" text-anchor="middle">빌드 · 테스트 · Lint 실행 · 실패 분류</text>
 
         <!-- constitution-auditor -->
-        <rect x="200" y="666" width="250" height="52" rx="6" fill="#0f172a"/>
-        <rect x="200" y="666" width="250" height="52" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
-        <text x="325" y="688" fill="white" font-size="11" font-weight="600" text-anchor="middle">constitution-auditor</text>
-        <text x="325" y="705" fill="#94a3b8" font-size="8" text-anchor="middle">헌법 · 컨벤션 · ADR 위반 지적</text>
+        <rect x="200" y="628" width="250" height="52" rx="6" fill="#0f172a"/>
+        <rect x="200" y="628" width="250" height="52" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="325" y="650" fill="white" font-size="11" font-weight="600" text-anchor="middle">constitution-auditor</text>
+        <text x="325" y="667" fill="#94a3b8" font-size="8" text-anchor="middle">헌법 · 컨벤션 · ADR 위반 지적</text>
+
+        <!-- design-auditor -->
+        <rect x="200" y="688" width="250" height="52" rx="6" fill="#0f172a"/>
+        <rect x="200" y="688" width="250" height="52" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="325" y="710" fill="white" font-size="11" font-weight="600" text-anchor="middle">design-auditor</text>
+        <text x="325" y="727" fill="#94a3b8" font-size="8" text-anchor="middle">Figma 원본 대조 · 값 불일치 지적</text>
+
+        <text x="325" y="752" fill="#fb7185" font-size="7" text-anchor="middle">대상이 완성되는 즉시 · 7단계는 교차 감사 · 통합 대조</text>
 
         <!-- PROGRESS_LOG -->
         <rect x="560" y="560" width="250" height="56" rx="6" fill="#0f172a"/>
