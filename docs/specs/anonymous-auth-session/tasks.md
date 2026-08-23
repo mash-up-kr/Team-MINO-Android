@@ -33,8 +33,8 @@
 
 **목적**: 이후 모든 코드가 컴파일되기 위한 의존성과 실행 환경을 갖춘다
 
-- [ ] T001 [P] `gradle/libs.versions.toml`에 `firebase-auth`(버전 없이 `firebase-bom`으로 정렬)와 `kotlinx-coroutines-play-services`(`coroutines` 버전 참조) 라이브러리 별칭 추가 — 근거 [research.md](./research.md) R-002 · R-003
-- [ ] T002 `core/data/build.gradle.kts`에 `implementation(platform(libs.firebase.bom))` · `libs.firebase.auth` · `libs.kotlinx.coroutines.play.services` 추가 (T001 에 의존). `:core:domain`·`:core:error-handling`의 빌드 스크립트는 건드리지 않는다 — 헌법 원칙 II
+- [X] T001 [P] `gradle/libs.versions.toml`에 `firebase-auth`(버전 없이 `firebase-bom`으로 정렬)와 `kotlinx-coroutines-play-services`(`coroutines` 버전 참조) 라이브러리 별칭 추가 — 근거 [research.md](./research.md) R-002 · R-003
+- [X] T002 `core/data/build.gradle.kts`에 `implementation(platform(libs.firebase.bom))` · `libs.firebase.auth` · `libs.kotlinx.coroutines.play.services` 추가 (T001 에 의존). `:core:domain`·`:core:error-handling`의 빌드 스크립트는 건드리지 않는다 — 헌법 원칙 II
 - [ ] T003 [P] Firebase 콘솔에서 이 프로젝트의 익명 인증 제공자가 사용 설정되어 있고 `app/google-services.json`의 flavor별 applicationId(`team.mino.qa`·`team.mino`)가 등록되어 있는지 확인 — [quickstart.md](./quickstart.md) §1 P-1 · P-2. 코드 변경 없음
 
 **체크포인트**: `./gradlew :core:data:assembleQaDebug`가 통과하고 Firebase Auth 타입을 `:core:data`에서 참조할 수 있다
@@ -47,15 +47,15 @@
 
 **⚠️ 중요**: T004는 US1·US3의 실패 표현이 공통으로 참조한다. T005는 US1이, T006은 US3이 쓴다. 실행 순서는 단계가 아니라 이 의존 관계가 정한다(아래 [의존성 및 실행 순서](#의존성-및-실행-순서))
 
-- [ ] T004 [P] `core/error-handling/src/main/kotlin/team/mino/core/errorhandling/MinoDomainException.kt`에 리프 `class Auth(cause: Throwable)` 추가 — 선언 형태는 [contracts/domain-exception-auth-leaf.md](./contracts/domain-exception-auth-leaf.md) §1이 소유한다. 기존 리프·생성자는 손대지 않는다
-- [ ] T005 [P] `core/data/src/main/java/team/mino/core/data/auth/AnonymousAuthProvider.kt`에 `internal interface AnonymousAuthProvider`(`currentUserId()` · `signInAnonymously()`) 선언 — 시그니처는 [contracts/identity-proof-attachment.md](./contracts/identity-proof-attachment.md) §1이 소유한다
-- [ ] T006 [P] `core/data/src/main/java/team/mino/core/data/auth/IdTokenProvider.kt`에 `internal interface IdTokenProvider`(`getIdToken()`) 선언 — 같은 계약 §1
-- [ ] T007 `core/data/src/test/java/team/mino/core/data/auth/FirebaseAuthExceptionMappingTest.kt` 작성 — 연결 실패 → `Network`, 발급 실패 → `Auth`, 열거 밖 예외 → 원본 그대로, `CancellationException` → 원본 그대로. 네 케이스는 [quickstart.md](./quickstart.md) §2 표가 소유한다 (T004 에 의존, T008 보다 먼저 작성하고 실패를 확인한다)
-- [ ] T008 `core/data/src/main/java/team/mino/core/data/auth/extension/`에 `Task<T>.awaitDomain()`과 그것이 호출하는 매핑 함수 구현(파일명은 이 작업에서 확정한다 — 계약이 디렉터리까지만 지목한다) — 화이트리스트 분류 기준은 [contracts/identity-proof-attachment.md](./contracts/identity-proof-attachment.md) §2, 매핑의 성질(열거 밖 rethrow · `CancellationException` 보존)은 [`error_handling.md`](../../conventions/error_handling.md) §3이 소유한다. 각 갈래의 SDK 예외 클래스 목록을 이 작업에서 확정하고, 열거를 넓히는 상위 타입 분기를 두지 않는다. 매핑 함수는 T007이 `Task` 없이 단위 검증할 수 있도록 `internal`로 분리한다 (T004 · T007 에 의존)
-- [ ] T009 [P] `core/data/src/main/java/team/mino/core/data/auth/AnonymousAuthProviderImpl.kt` 구현 — `FirebaseAuth`의 현재 사용자 조회(왕복 없음)와 익명 로그인을 T008을 통과시켜 노출한다 (T005 · T008 에 의존)
-- [ ] T010 [P] `core/data/src/main/java/team/mino/core/data/auth/IdTokenProviderImpl.kt` 구현 — 현재 세션의 ID 토큰을 강제 갱신 없이 획득하고, 세션이 없으면 `null`을 반환한다. 토큰을 앱 저장소에 쓰지 않는다 — [research.md](./research.md) R-010 (T006 · T008 에 의존)
-- [ ] T011 [P] `core/data/src/main/java/team/mino/core/data/auth/di/FirebaseAuthModule.kt`에 `FirebaseAuth` 인스턴스를 `@Provides`로 제공 (T002 에 의존)
-- [ ] T012 `core/data/src/main/java/team/mino/core/data/auth/di/AuthProviderModule.kt`에 두 원천 접근자의 `@Binds` 바인딩 추가 — 구현체는 `internal`로 닫는다. 바인딩 소유 규칙은 [`dependency-injection.md`](../../conventions/dependency-injection.md) (T009 · T010 에 의존)
+- [X] T004 [P] `core/error-handling/src/main/kotlin/team/mino/core/errorhandling/MinoDomainException.kt`에 리프 `class Auth(cause: Throwable)` 추가 — 선언 형태는 [contracts/domain-exception-auth-leaf.md](./contracts/domain-exception-auth-leaf.md) §1이 소유한다. 기존 리프·생성자는 손대지 않는다
+- [X] T005 [P] `core/data/src/main/java/team/mino/core/data/auth/AnonymousAuthProvider.kt`에 `internal interface AnonymousAuthProvider`(`currentUserId()` · `signInAnonymously()`) 선언 — 시그니처는 [contracts/identity-proof-attachment.md](./contracts/identity-proof-attachment.md) §1이 소유한다
+- [X] T006 [P] `core/data/src/main/java/team/mino/core/data/auth/IdTokenProvider.kt`에 `internal interface IdTokenProvider`(`getIdToken()`) 선언 — 같은 계약 §1
+- [X] T007 `core/data/src/test/java/team/mino/core/data/auth/FirebaseAuthExceptionMappingTest.kt` 작성 — 연결 실패 → `Network`, 발급 실패 → `Auth`, 열거 밖 예외 → 원본 그대로, `CancellationException` → 원본 그대로. 네 케이스는 [quickstart.md](./quickstart.md) §2 표가 소유한다 (T004 에 의존, T008 보다 먼저 작성하고 실패를 확인한다)
+- [X] T008 `core/data/src/main/java/team/mino/core/data/auth/extension/`에 `Task<T>.awaitDomain()`과 그것이 호출하는 매핑 함수 구현(파일명은 이 작업에서 확정한다 — 계약이 디렉터리까지만 지목한다) — 화이트리스트 분류 기준은 [contracts/identity-proof-attachment.md](./contracts/identity-proof-attachment.md) §2, 매핑의 성질(열거 밖 rethrow · `CancellationException` 보존)은 [`error_handling.md`](../../conventions/error_handling.md) §3이 소유한다. 각 갈래의 SDK 예외 클래스 목록을 이 작업에서 확정하고, 열거를 넓히는 상위 타입 분기를 두지 않는다. 매핑 함수는 T007이 `Task` 없이 단위 검증할 수 있도록 `internal`로 분리한다 (T004 · T007 에 의존)
+- [X] T009 [P] `core/data/src/main/java/team/mino/core/data/auth/AnonymousAuthProviderImpl.kt` 구현 — `FirebaseAuth`의 현재 사용자 조회(왕복 없음)와 익명 로그인을 T008을 통과시켜 노출한다 (T005 · T008 에 의존)
+- [X] T010 [P] `core/data/src/main/java/team/mino/core/data/auth/IdTokenProviderImpl.kt` 구현 — 현재 세션의 ID 토큰을 강제 갱신 없이 획득하고, 세션이 없으면 `null`을 반환한다. 토큰을 앱 저장소에 쓰지 않는다 — [research.md](./research.md) R-010 (T006 · T008 에 의존)
+- [X] T011 [P] `core/data/src/main/java/team/mino/core/data/auth/di/FirebaseAuthModule.kt`에 `FirebaseAuth` 인스턴스를 `@Provides`로 제공 (T002 에 의존)
+- [X] T012 `core/data/src/main/java/team/mino/core/data/auth/di/AuthProviderModule.kt`에 두 원천 접근자의 `@Binds` 바인딩 추가 — 구현체는 `internal`로 닫는다. 바인딩 소유 규칙은 [`dependency-injection.md`](../../conventions/dependency-injection.md) (T009 · T010 에 의존)
 
 **체크포인트**: T009까지 끝나면 US1을, T010까지 끝나면 US3을 시작할 수 있다. 다만 T018을 만든 뒤에는 T012의 바인딩이 있어야 `:core:data`가 컴파일된다
 
@@ -71,16 +71,16 @@
 
 > **이 테스트들을 먼저 작성하고, 구현 전에 실패하는지 반드시 확인한다**
 
-- [ ] T013 [P] [US1] `core/data/src/test/java/team/mino/core/data/auth/FakeAnonymousAuthProvider.kt` 작성 — 현재 사용자 유무를 조작할 수 있고 `signInAnonymously()` 호출 횟수를 세며, 지정한 예외를 던질 수 있다 (T005 에 의존)
-- [ ] T014 [US1] `core/data/src/test/java/team/mino/core/data/repository/AnonymousAuthRepositoryImplTest.kt` 작성 — 최초 확보 · 재호출 무왕복(TS-004 · SC-001) · 동시 호출 1회 발급(TS-003 · SC-004) · 실패 시 도메인 예외 전파. 동시성 검증은 `kotlinx-coroutines-test`를 쓴다. T018이 없는 동안에는 컴파일 실패가 red다 (T013 · T016 에 의존)
+- [X] T013 [P] [US1] `core/data/src/test/java/team/mino/core/data/auth/FakeAnonymousAuthProvider.kt` 작성 — 현재 사용자 유무를 조작할 수 있고 `signInAnonymously()` 호출 횟수를 세며, 지정한 예외를 던질 수 있다 (T005 에 의존)
+- [X] T014 [US1] `core/data/src/test/java/team/mino/core/data/repository/AnonymousAuthRepositoryImplTest.kt` 작성 — 최초 확보 · 재호출 무왕복(TS-004 · SC-001) · 동시 호출 1회 발급(TS-003 · SC-004) · 실패 시 도메인 예외 전파. 동시성 검증은 `kotlinx-coroutines-test`를 쓴다. T018이 없는 동안에는 컴파일 실패가 red다 (T013 · T016 에 의존)
 
 ### 사용자 스토리 1 구현
 
-- [ ] T015 [P] [US1] `core/domain/src/main/kotlin/team/mino/core/domain/model/AnonymousSession.kt`에 `data class AnonymousSession(val userId: String)` 선언 — 필드 의미·수명은 [data-model.md](./data-model.md) §1. 앱 측 값 검증을 넣지 않는다
-- [ ] T016 [US1] `core/domain/src/main/kotlin/team/mino/core/domain/repository/AnonymousAuthRepository.kt`에 `suspend fun ensureSession(): AnonymousSession` 선언 — 동작·실패 계약은 [contracts/anonymous-auth-repository.md](./contracts/anonymous-auth-repository.md) §2 (T015 에 의존)
-- [ ] T017 [US1] `core/domain/src/main/kotlin/team/mino/core/domain/usecase/EnsureAnonymousSessionUseCase.kt` 작성 — Repository로의 위임만 하고 규칙을 더하지 않는다. 형태는 같은 계약 §3 (T016 에 의존)
-- [ ] T018 [US1] `core/data/src/main/java/team/mino/core/data/repository/AnonymousAuthRepositoryImpl.kt` 구현 — 잠금 밖 현재 사용자 선확인(빠른 경로) → 없을 때만 `Mutex` 획득 → 잠금 안 재확인 → 익명 로그인. 구조와 그 이유는 [research.md](./research.md) R-004. 스스로 타임아웃·재시도를 두지 않는다(R-011) (T005 · T008 · T016 에 의존)
-- [ ] T019 [US1] `core/data/src/main/java/team/mino/core/data/repository/di/AnonymousAuthRepositoryModule.kt`에 `@Binds` 바인딩 추가 (T018 에 의존)
+- [X] T015 [P] [US1] `core/domain/src/main/kotlin/team/mino/core/domain/model/AnonymousSession.kt`에 `data class AnonymousSession(val userId: String)` 선언 — 필드 의미·수명은 [data-model.md](./data-model.md) §1. 앱 측 값 검증을 넣지 않는다
+- [X] T016 [US1] `core/domain/src/main/kotlin/team/mino/core/domain/repository/AnonymousAuthRepository.kt`에 `suspend fun ensureSession(): AnonymousSession` 선언 — 동작·실패 계약은 [contracts/anonymous-auth-repository.md](./contracts/anonymous-auth-repository.md) §2 (T015 에 의존)
+- [X] T017 [US1] `core/domain/src/main/kotlin/team/mino/core/domain/usecase/EnsureAnonymousSessionUseCase.kt` 작성 — Repository로의 위임만 하고 규칙을 더하지 않는다. 형태는 같은 계약 §3 (T016 에 의존)
+- [X] T018 [US1] `core/data/src/main/java/team/mino/core/data/repository/AnonymousAuthRepositoryImpl.kt` 구현 — 잠금 밖 현재 사용자 선확인(빠른 경로) → 없을 때만 `Mutex` 획득 → 잠금 안 재확인 → 익명 로그인. 구조와 그 이유는 [research.md](./research.md) R-004. 스스로 타임아웃·재시도를 두지 않는다(R-011) (T005 · T008 · T016 에 의존)
+- [X] T019 [US1] `core/data/src/main/java/team/mino/core/data/repository/di/AnonymousAuthRepositoryModule.kt`에 `@Binds` 바인딩 추가 (T018 에 의존)
 
 **체크포인트**: 세션 확보가 계약대로 동작하고 단위 테스트가 green이다. 이 시점의 호출자는 테스트뿐이다(N-1)
 
@@ -94,8 +94,8 @@
 
 ### 사용자 스토리 2 구현
 
-- [ ] T020 [P] [US2] `app/src/main/res/xml/backup_rules.xml`에서 `sharedpref` 도메인을 통째로 제외 (API 30 이하 경로) — 파일 단위가 아니라 도메인 단위로 제외하는 이유는 [research.md](./research.md) R-012. `android:allowBackup`은 그대로 둔다
-- [ ] T021 [P] [US2] `app/src/main/res/xml/data_extraction_rules.xml`의 `cloud-backup`·`device-transfer` **양쪽**에서 `sharedpref` 도메인 제외 (API 31 이상 경로) — 한쪽만 고치면 반대 구간이 뚫린다(R-012)
+- [X] T020 [P] [US2] `app/src/main/res/xml/backup_rules.xml`에서 `sharedpref` 도메인을 통째로 제외 (API 30 이하 경로) — 파일 단위가 아니라 도메인 단위로 제외하는 이유는 [research.md](./research.md) R-012. `android:allowBackup`은 그대로 둔다
+- [X] T021 [P] [US2] `app/src/main/res/xml/data_extraction_rules.xml`의 `cloud-backup`·`device-transfer` **양쪽**에서 `sharedpref` 도메인 제외 (API 31 이상 경로) — 한쪽만 고치면 반대 구간이 뚫린다(R-012)
 
 **체크포인트**: 두 파일 모두에서 `sharedpref`가 제외되어 `minSdk 29`~`targetSdk 36` 전 구간이 덮인다
 
@@ -111,13 +111,13 @@
 
 > **이 테스트들을 먼저 작성하고, 구현 전에 실패하는지 반드시 확인한다**
 
-- [ ] T022 [P] [US3] `core/data/src/test/java/team/mino/core/data/network/FakeIdTokenProvider.kt` 작성 — 반환할 토큰과 `null`, 예외를 지정할 수 있다 (T006 에 의존)
-- [ ] T023 [US3] `core/data/src/test/java/team/mino/core/data/network/IdentityProofAttachmentTest.kt` 작성 — Mino host 첨부(TS-013) · 외부 host 미첨부(TS-016 · FR-011) · 헤더·본문·쿼리에 앱 생성 식별자 없음(TS-014 · FR-009) · Mino host인데 토큰이 `null`이면 요청이 나가지 않고 예외가 전파됨(A-3). 기준 host는 `BuildConfig.API_BASE_URL`에서 얻는다. 기존 `DomainExceptionMappingTest`의 `ktor-client-mock` 구성을 따른다. T024가 없는 동안에는 컴파일 실패가 red다 (T022 에 의존, T024 보다 먼저 작성한다)
+- [X] T022 [P] [US3] `core/data/src/test/java/team/mino/core/data/network/FakeIdTokenProvider.kt` 작성 — 반환할 토큰과 `null`, 예외를 지정할 수 있다 (T006 에 의존)
+- [X] T023 [US3] `core/data/src/test/java/team/mino/core/data/network/IdentityProofAttachmentTest.kt` 작성 — Mino host 첨부(TS-013) · 외부 host 미첨부(TS-016 · FR-011) · 헤더·본문·쿼리에 앱 생성 식별자 없음(TS-014 · FR-009) · Mino host인데 토큰이 `null`이면 요청이 나가지 않고 예외가 전파됨(A-3). 기준 host는 `BuildConfig.API_BASE_URL`에서 얻는다. 기존 `DomainExceptionMappingTest`의 `ktor-client-mock` 구성을 따른다. T024가 없는 동안에는 컴파일 실패가 red다 (T022 에 의존, T024 보다 먼저 작성한다)
 
 ### 사용자 스토리 3 구현
 
-- [ ] T024 [US3] `core/data/src/main/java/team/mino/core/data/network/plugin/`에 `createClientPlugin` 기반 첨부 플러그인 구현(파일명은 이 작업에서 확정한다) — 요청 host와 `BuildConfig.API_BASE_URL`의 host를 비교해 일치할 때만 `Authorization: Bearer`를 붙인다. 계약 A-1~A-6은 [contracts/identity-proof-attachment.md](./contracts/identity-proof-attachment.md) §3이 소유한다. A-3 위반은 도메인 예외로 감싸지 않는다 (T006 · T023 에 의존)
-- [ ] T025 [US3] `core/data/src/main/java/team/mino/core/data/network/di/NetworkModule.kt` 수정 — `provideHttpClient`가 `IdTokenProvider`를 주입받아 T024의 플러그인을 설치한다. 기존 `convertDomainException`·`ContentNegotiation`·`Logging` 구성은 그대로 둔다 (T012 · T024 에 의존)
+- [X] T024 [US3] `core/data/src/main/java/team/mino/core/data/network/plugin/`에 `createClientPlugin` 기반 첨부 플러그인 구현(파일명은 이 작업에서 확정한다) — 요청 host와 `BuildConfig.API_BASE_URL`의 host를 비교해 일치할 때만 `Authorization: Bearer`를 붙인다. 계약 A-1~A-6은 [contracts/identity-proof-attachment.md](./contracts/identity-proof-attachment.md) §3이 소유한다. A-3 위반은 도메인 예외로 감싸지 않는다 (T006 · T023 에 의존)
+- [X] T025 [US3] `core/data/src/main/java/team/mino/core/data/network/di/NetworkModule.kt` 수정 — `provideHttpClient`가 `IdTokenProvider`를 주입받아 T024의 플러그인을 설치한다. 기존 `convertDomainException`·`ContentNegotiation`·`Logging` 구성은 그대로 둔다 (T012 · T024 에 의존)
 
 **체크포인트**: 첨부·비첨부가 단위 테스트로 판정되고, `ApiService`·feature 어느 쪽도 인증 코드를 갖지 않는다(SC-006)
 
@@ -127,10 +127,10 @@
 
 **목적**: 대체 경로가 선 뒤에 옛 경로를 걷어내고, 이 설계로 어긋나게 된 문서를 맞춘다
 
-- [ ] T026 기기 식별자 기반 경로 삭제 — 대상 13개 파일 목록은 [research.md](./research.md) R-013 표가 소유한다(`:core:domain` 2 · `:core:data` 8 · `:core:data` 테스트 3). `storage/DataStoreModule.kt`와 `androidx.datastore.preferences` 의존은 **남긴다**. 삭제 후 [quickstart.md](./quickstart.md) §2 V-10의 `grep`이 빈 결과인지 확인한다(TS-007 · FR-015) (T019 · T025 에 의존 — 대체 경로가 선 뒤에 지운다)
-- [ ] T027 [P] [`docs/conventions/error_handling.md`](../../conventions/error_handling.md) §2·§3 갱신 — 매핑 지점이 Ktor validator 하나라는 서술에 인증 제공자 지점을 더한다. 근거는 plan §복잡도 추적 V-1 (T008 에 의존)
-- [ ] T028 [P] [`core/error-handling/README.md`](../../../core/error-handling/README.md) §4 갱신 — "리프는 `:core:data`의 validator 화이트리스트와 짝으로 추가한다"의 짝이 둘이 된다 (T004 · T008 에 의존)
-- [ ] T029 [P] [`core/data/README.md`](../../../core/data/README.md) §3·§5 갱신 — 디렉터리 트리·패키지 역할 표에서 `device/`를 지우고 `auth/`를 넣는다 (T026 에 의존)
+- [X] T026 기기 식별자 기반 경로 삭제 — 대상 13개 파일 목록은 [research.md](./research.md) R-013 표가 소유한다(`:core:domain` 2 · `:core:data` 8 · `:core:data` 테스트 3). `storage/DataStoreModule.kt`와 `androidx.datastore.preferences` 의존은 **남긴다**. 삭제 후 [quickstart.md](./quickstart.md) §2 V-10의 `grep`이 빈 결과인지 확인한다(TS-007 · FR-015) (T019 · T025 에 의존 — 대체 경로가 선 뒤에 지운다)
+- [X] T027 [P] [`docs/conventions/error_handling.md`](../../conventions/error_handling.md) §2·§3 갱신 — 매핑 지점이 Ktor validator 하나라는 서술에 인증 제공자 지점을 더한다. 근거는 plan §복잡도 추적 V-1 (T008 에 의존)
+- [X] T028 [P] [`core/error-handling/README.md`](../../../core/error-handling/README.md) §4 갱신 — "리프는 `:core:data`의 validator 화이트리스트와 짝으로 추가한다"의 짝이 둘이 된다 (T004 · T008 에 의존)
+- [X] T029 [P] [`core/data/README.md`](../../../core/data/README.md) §3·§5 갱신 — 디렉터리 트리·패키지 역할 표에서 `device/`를 지우고 `auth/`를 넣는다 (T026 에 의존)
 - [ ] T030 [quickstart.md](./quickstart.md) §2 검증 실행 — `:app:assembleQaDebug` · `:core:data:testQaDebugUnitTest` · `:core:data:lintQaDebug`·`:app:lintQaDebug`. Lint 데몬이 죽는 경우의 판정은 헌법 §검증 장치의 한계를 따른다 (T026 에 의존)
 
 ---
