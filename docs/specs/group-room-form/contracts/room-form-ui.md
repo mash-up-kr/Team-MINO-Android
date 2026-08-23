@@ -32,7 +32,8 @@ RoomFormActivity          extra 복원 → RoomFormShell(startDestination) · �
 - `MinoTopNavigation`은 화면 고유 chrome이라 셸의 슬롯이 아니라 화면이 직접 배치한다([`feature-module.md`](../../../architecture/feature-module.md) 4장).
 - **두 입력 필드의 상한을 자르는 주체가 다르다** — 방 이름은 ViewModel의 `NameChanged`, 방 설명은 `MinoTextArea`가 자른다. 근거와 대가는 [research.md](../research.md) R-019가 소유한다. 이 문서가 그 규칙의 계약이며, 다른 산출물은 여기를 지목한다.
 - **방 설명 30자는 UI 차단이 유일한 강제 지점이다.** 도메인·Repository는 길이를 재검증하지 않는다 — 방 이름의 15자를 `ValidateRoomNameUseCase`가 판정하지 않는 것과 같은 이유다([contracts/room-repository.md](./room-repository.md) §2).
-- `[TBD]` **방 설명의 글자 수 세는 단위가 spec 가정과 어긋난다.** spec §4 가정은 "사용자가 보는 문자 단위"를 요구하는데 `MinoTextArea`는 `state.text.length`(코드 유닛)로 세고 자른다. 방 설명에는 문자 종류 제한이 없어(EC-006) 이모지가 들어올 수 있고, 그때 `n/30` 카운터와 실제 차단 지점이 사용자가 보는 글자 수와 갈린다. 디자인 시스템 컴포넌트를 고칠지 편차를 받아들일지는 설계가 임의로 정하지 않는다.
+- **방 설명의 글자 수는 grapheme으로 센다.** `MinoTextArea`가 상한과 카운터를 모두 그 단위로 처리하므로 spec §4 가정("사용자가 보는 문자 단위")을 만족한다 — 경위는 [research.md](../research.md) R-022.
+- **방 이름은 `length`로 세도 된다.** FR-004의 허용 문자가 전부 코드 유닛 1개라 화면 글자와 항상 1:1이다 — 근거는 [research.md](../research.md) R-022. FR-004가 넓어지면 재검토하며, 그 조건은 [plan.md](../plan.md) §복잡도 추적 G가 추적한다.
 - `RoomFormScreen`은 상태와 콜백만 받는다. `descriptionState`는 Route가 소유하므로 stateless는 유지된다.
 
 ```

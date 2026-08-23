@@ -99,7 +99,7 @@ fun MinoRoomColorChip(
 
 `MinoTextArea`는 방 설명을 `maxLength = 30` · `showCounter = true`로 그대로 받는다. FR-005의 `n/30`은 디자인에도 있어 유효하다.
 
-**이 컴포넌트는 `TextFieldState`를 받는다**(`MinoTextField`의 `value: String`과 다르다). 상한도 컴포넌트가 걸므로 호출부가 다시 자르지 않는다 — 그 API 계약은 `MinoTextArea`의 KDoc이 소유한다. state를 누가 드는지는 [contracts/room-form-ui.md](./room-form-ui.md) §4가 정한다.
+**이 컴포넌트는 `TextFieldState`를 받는다**(`MinoTextField`의 `value: String`과 다르다). 상한도 컴포넌트가 걸므로 호출부가 다시 자르지 않는다 — 그 API 계약은 `MinoTextArea`의 KDoc이 소유한다. state를 누가 드는지는 [contracts/room-form-ui.md](./room-form-ui.md) §4가 정한다. 세는 단위를 grapheme으로 바꾼 경위는 [research.md](../research.md) R-022.
 
 > **편집 보드와의 불일치**: `2542-125922`·`2792-151339`는 방 이름을 `Textinput/Textarea`로 그렸다. FR-013("생성과 동일한 폼")과 명세 보드 `2314-95301`을 근거로 **`MinoTextField`를 따르고**, 불일치는 디자이너 확인 대상으로 보고한다([plan.md](../plan.md) §복잡도 추적 C).
 
