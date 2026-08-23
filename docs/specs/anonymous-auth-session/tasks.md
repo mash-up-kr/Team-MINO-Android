@@ -35,7 +35,7 @@
 
 - [X] T001 [P] `gradle/libs.versions.toml`에 `firebase-auth`(버전 없이 `firebase-bom`으로 정렬)와 `kotlinx-coroutines-play-services`(`coroutines` 버전 참조) 라이브러리 별칭 추가 — 근거 [research.md](./research.md) R-002 · R-003
 - [X] T002 `core/data/build.gradle.kts`에 `implementation(platform(libs.firebase.bom))` · `libs.firebase.auth` · `libs.kotlinx.coroutines.play.services` 추가 (T001 에 의존). `:core:domain`·`:core:error-handling`의 빌드 스크립트는 건드리지 않는다 — 헌법 원칙 II
-- [ ] T003 [P] Firebase 콘솔에서 이 프로젝트의 익명 인증 제공자가 사용 설정되어 있고 `app/google-services.json`의 flavor별 applicationId(`team.mino.qa`·`team.mino`)가 등록되어 있는지 확인 — [quickstart.md](./quickstart.md) §1 P-1 · P-2. 코드 변경 없음
+- [ ] T003 [P] Firebase 콘솔에서 이 프로젝트의 익명 인증 제공자가 사용 설정되어 있고 `app/google-services.json`의 flavor별 applicationId(`com.mino.gguk.qa`·`com.mino.gguk`)가 등록되어 있는지 확인 — [quickstart.md](./quickstart.md) §1 P-1 · P-2. 코드 변경 없음
 
 **체크포인트**: `./gradlew :core:data:assembleQaDebug`가 통과하고 Firebase Auth 타입을 `:core:data`에서 참조할 수 있다
 

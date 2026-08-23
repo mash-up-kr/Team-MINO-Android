@@ -15,7 +15,7 @@
 | # | 조건 | 확인 방법 |
 |---|---|---|
 | P-1 | Firebase 콘솔에서 이 프로젝트의 **익명 인증 제공자가 사용 설정**되어 있다 | 콘솔 → Authentication → Sign-in method. 꺼져 있으면 세션 확보가 항상 "그 밖의 실패"로 떨어진다 |
-| P-2 | `app/google-services.json`이 그 프로젝트의 것이다 | 이미 저장소에 있다. flavor별 applicationId(`team.mino.qa`·`team.mino`)가 콘솔에 등록되어 있어야 한다 |
+| P-2 | `app/google-services.json`이 그 프로젝트의 것이다 | 이미 저장소에 있다. flavor별 applicationId(`com.mino.gguk.qa`·`com.mino.gguk`)가 콘솔에 등록되어 있어야 한다 |
 
 P-1·P-2는 §3을 실행할 때 필요하다. §2의 자동 검증은 Firebase를 띄우지 않으므로(R-015) 이 조건 없이도 돌아간다.
 
@@ -76,7 +76,7 @@ grep -ril "ANDROID_ID\|ensureDeviceId\|DeviceRepository\|DeviceIdLocalDataSource
 
 ### V-1. 최초 실행 세션 생성 — TS-001 · SC-003
 
-1. 앱을 완전히 삭제한다 (`adb uninstall team.mino.qa`)
+1. 앱을 완전히 삭제한다 (`adb uninstall com.mino.gguk.qa`)
 2. 네트워크 연결 상태로 설치·실행한다
 3. 확보된 `userId`를 확인하고, Firebase 콘솔 → Authentication → Users에 익명 사용자가 1명 늘었는지 확인한다
 
@@ -139,7 +139,7 @@ grep -ril "ANDROID_ID\|ensureDeviceId\|DeviceRepository\|DeviceIdLocalDataSource
    ```
 2. 세션 확보 상태에서 백업을 수행한다
    ```bash
-   adb shell bmgr backupnow team.mino.qa
+   adb shell bmgr backupnow com.mino.gguk.qa
    ```
 3. 백업 세트 토큰을 확인한다
    ```bash
@@ -147,7 +147,7 @@ grep -ril "ANDROID_ID\|ensureDeviceId\|DeviceRepository\|DeviceIdLocalDataSource
    ```
 4. 앱을 삭제하고 재설치한 뒤 복원한다
    ```bash
-   adb shell bmgr restore <token> team.mino.qa
+   adb shell bmgr restore <token> com.mino.gguk.qa
    ```
 5. 앱을 실행해 `userId`를 확인한다
 
