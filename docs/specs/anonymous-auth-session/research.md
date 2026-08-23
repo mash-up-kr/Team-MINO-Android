@@ -6,6 +6,14 @@
 
 각 항목은 **어느 plan 버전에서 결정되었는지**를 함께 적는다. 뒤집힌 결정은 지우지 않고 취소선과 `재검토됨(plan X.Y.Z)` 표시를 남긴다.
 
+**ADR로 승격된 결정 (plan 1.1.0)**: 아래 결정들은 이 feature 밖에도 구속력을 가져 ADR이 소유하게 되었다. 이 문서의 항목은 그대로 두되, 다른 feature가 따라야 하는 규칙으로 읽을 때는 ADR을 본다.
+
+| ADR | 흡수한 항목 |
+|---|---|
+| [비회원 사용자 구분은 Firebase 익명 인증이 소유하고, 앱은 세션·신원 증명을 저장하지 않는다](../../adr/2026-08-22-firebase-anonymous-auth-session.md) | R-001 · R-002 · R-008 · R-009 · R-010 · R-012 · R-013 · R-016 |
+| [도메인 예외 매핑 지점은 원천마다 하나씩 두고, 인증 실패용 `Auth` 리프를 추가한다](../../adr/2026-08-22-domain-exception-mapping-per-source.md) | R-006 · R-007 |
+| [익명 세션 확보의 재시도·지연 판정은 호출 화면이 소유하고, 데이터 레이어는 멱등한 1회 확보만 제공한다](../../adr/2026-08-22-session-retry-owned-by-caller.md) | R-011 (· R-004 멱등 구현) |
+
 ---
 
 ## R-001. 인증 제공자 — Firebase Authentication 익명 인증 (plan 1.0.0)
@@ -152,7 +160,7 @@
 
 - FR-011·TS-016: Mino 서버가 아닌 호스트로 신원 증명이 나가면 안 된다. baseUrl 상대 경로만으로 판정하면 절대 URL 호출·리다이렉트가 새는 구멍이 된다.
 - `API_BASE_URL`은 이미 존재한다 — `build-logic`의 `configureFlavors(LibraryExtension)`이 flavor별 `buildConfigField`로 심고 `:core:data`가 `mino.android.flavor`를 적용하고 있다. 판정 기준을 새로 만들지 않고 flavor 단일 출처를 그대로 쓴다.
-- **구현 주의**: `NetworkModule`의 현재 baseUrl은 데모용 GitHub API 하드코딩이며([`core/data/README.md`](../../../core/data/README.md) §4의 NOTE), 이를 `API_BASE_URL`로 교체하는 것은 이 스펙의 범위가 아니다. 그때까지는 판정이 항상 불일치라 실제로 첨부되는 요청이 없다 — 계약과 구조는 성립하고, spec §4 가정대로 서버 전환 시점에 baseUrl 교체와 함께 발효된다.
+- **구현 주의** *(서술 정정 — plan 1.1.0. 결정 자체는 바뀌지 않았다)*: `NetworkModule`은 이미 `BuildConfig.API_BASE_URL`을 쓰고 있다. 다만 그 값이 `build-logic`의 `Flavor.apiBaseUrl`에 들어 있는 플레이스홀더(`https://qa-api.example.com/`)이고([`core/data/README.md`](../../../core/data/README.md) §4의 NOTE), 실서버 도메인을 넣는 것은 이 스펙의 범위가 아니다. 그때까지는 판정이 항상 불일치라 실제로 첨부되는 요청이 없다 — 계약과 구조는 성립하고, spec §4 가정대로 서버 전환 시점에 발효된다.
 
 **Alternatives considered**
 
