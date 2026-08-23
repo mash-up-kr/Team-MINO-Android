@@ -91,7 +91,18 @@
 
 **근거**: 디자인 시스템에 이미 존재하는 컴포넌트다. 스플래시 전용 토스트를 만들면 헌법 §기술 표준과 제약(디자인 시스템 단일 접근점)에 어긋난다.
 
-**[TBD-P3]**: Figma 012-3·012-4의 토스트가 `MinoSnackbar` 컴포넌트셋과 같은 것인지 디자인 대조가 필요하다. 절차는 [figma-design-fidelity.md](../../conventions/figma-design-fidelity.md)를 따른다.
+**대조 결과 (plan 2.1.0에서 TBD-P3 해소)**: Figma 012-3(`3798-166743`)·012-4(`3798-166766`) 모두 토스트가 `Snackbar/Snackbar` **컴포넌트 인스턴스**다 — 디자인 시스템 컴포넌트가 맞고 `MinoSnackbar`가 대응한다.
+
+실측(375×812 프레임 기준, 두 노드 동일):
+
+| 항목 | 값 |
+|---|---|
+| 위치·크기 | `x=20, y=724, w=335, h=48` |
+| 화면 하단 여백 | `812 − (724+48)` = **40** → UX-003의 근거를 실측으로 확인 |
+| 좌우 여백 | 각 **20** |
+
+- 배치는 `Modifier.fillMaxWidth().padding(horizontal = 20.dp)` + 하단 40dp로 잡는다. `MinoSnackbar`의 `MaxWidth = 420.dp`는 상한이라 375 화면에서 걸리지 않는다.
+- **남은 확인 1건(이 스펙 범위 밖)**: Figma 인스턴스 높이 48과 `MinoSnackbar` 토큰 조합(`VerticalPadding 11×2 + MinContentHeight 32 = 54`)이 어긋나 보인다. 인스턴스 리사이즈인지 컴포넌트 자체 값인지에 따라 갈리며, 어느 쪽이든 `:core:design-system` 소관이다(같은 파일 KDoc에 이미 `TODO(#77)`가 있다). 스플래시는 컴포넌트를 그대로 쓰므로 이 plan의 결정에 영향이 없다.
 
 ---
 
