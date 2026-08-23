@@ -8,9 +8,9 @@
 
 **최초 작성일**: 2026-08-21
 
-**최종 수정일**: 2026-08-21
+**최종 수정일**: 2026-08-23
 
-**버전**: 1.2.0
+**버전**: 1.3.0
 
 **참고**: 이 템플릿은 `/mino-plan` 명령으로 채워지며, 해당 명령의 정의가 실행 워크플로우를 설명한다.
 
@@ -65,7 +65,7 @@
 | G1 | **원칙 I — SSOT.** 이 계획이 규약 본문을 복제하지 않고 링크로 지목하는가 | PASS | PASS | 모듈 골격·에러 처리·토큰 판정 절차를 본문에 옮기지 않고 소유 문서를 링크한다. 새 규칙을 만들지 않는다 |
 | G2 | **원칙 II — 레이어 경계.** feature→feature 의존이 없고, feature가 `:core:data`를 직접 의존하지 않으며, DI 바인딩을 구현 소유 모듈이 갖는가 | PASS | PASS | 진입·복귀는 `RoomFormLauncher` 계약 한 겹. `:feature:roomform`은 `:core:domain`만 안다. `@Binds`는 `:core:data`와 `:feature:roomform`의 각 `di/`가 소유한다([contracts/room-form-launcher.md](./contracts/room-form-launcher.md) §4) |
 | G3 | **원칙 II — Android 의존 방향.** `:core:domain`이 Android를 알지 않는가 | PASS | PASS | 도메인 모델·Repository·UseCase 모두 순수 Kotlin. `RoomColor`는 `Color`가 아니라 enum이다([data-model.md](./data-model.md) §2) |
-| G4 | **원칙 III — 기록.** 되돌리기 어려운 결정이 ADR 후보로 식별되었는가 | PASS | PASS | R-002(mock 데이터 레이어 전략)·R-006(디자인 시스템 컴포넌트 판정)이 다른 feature를 구속한다. 완료 보고에서 ADR 승격을 제안한다 |
+| G4 | **원칙 III — 기록.** 되돌리기 어려운 결정이 ADR 후보로 식별되었는가 | PASS | PASS | R-002(mock 데이터 레이어 전략)·R-006(디자인 시스템 컴포넌트 판정)·**R-022(DS 컴포넌트의 글자 수 단위)**가 다른 feature를 구속한다. 완료 보고에서 ADR 승격을 제안한다 |
 | G5 | **원칙 IV — Spec-First.** plan에만 있고 spec에 근거가 없는 요구사항이 없는가 | PASS | PASS | 모든 설계 항목이 FR/UX/EC/TS 번호로 역추적된다. **1.1.0에서 유일하게 spec을 벗어나 있던 지점(FR-003 카운터)이 spec 3.0.0으로 해소돼 이제 어긋남이 0건이다** |
 | G6 | **원칙 V — 에러 처리 규약.** 실패가 2단 분류를 따르는가 | PASS | PASS | 편집 진입 로드 실패는 State(주 데이터), 생성·편집 요청 실패는 `DomainErrorEmitter`(액션 일회성). `launchSafely`·`runCatchingDomain`·`onDomainFailure`만 쓴다([error_handling.md](../../conventions/error_handling.md) §5) |
 | G7 | **기술 표준 — 디자인 토큰 판정.** 값이 일치하는 토큰이 있으면 토큰, 없으면 실측값 규칙을 따르는가 | PASS | PASS | 판정은 구현 착수 시 노드 대조로 수행한다([figma-design-fidelity.md](../../conventions/figma-design-fidelity.md) §2). 계획은 토큰 신설을 선행 조건으로 삼지 않는다 |
@@ -131,12 +131,18 @@ core/design-system/src/main/java/team/mino/core/designsystem/component/
 │   ├── MinoTopNavigationDefaults.kt
 │   ├── TopNavigationPreview.kt
 │   └── token/TopNavigationTokens.kt
+├── textinput/                        # [완료] R-022 — 상한·카운터를 grapheme 기준으로
+│   ├── MinoTextArea.kt               # [수정] 카운터·InputTransformation 교체
+│   └── MaxGraphemeLengthTransformation.kt  # [신규]
 └── roomcolorchip/                    # [신규] ADR 2026-08-14 지정 위치
     ├── MinoRoomColor.kt              # 팔레트 12항목 enum (도메인 규칙 없음)
     ├── MinoRoomColorChip.kt
     ├── MinoRoomColorChipDefaults.kt
     ├── RoomColorChipPreview.kt
     └── token/RoomColorChipTokens.kt
+
+core/design-system/src/main/java/team/mino/core/designsystem/util/
+└── text/GraphemeLength.kt            # [신규] grapheme 단위 글자 수 (R-022)
 
 feature/roomform/                     # [신규] 진입형 feature 모듈
 ├── build.gradle.kts
@@ -185,7 +191,11 @@ spec §3.2가 이미 범위 밖으로 둔 것 외에, **도착점 feature가 존
 
 > **헌장 준수 확인에서 정당화가 필요한 위반이 있는 경우에만 작성**
 
-정당화가 필요한 위반은 없다.
+| 위반 사항 | 필요한 이유 | 더 단순한 대안을 기각한 이유 |
+|---|---|---|
+| **plan 단계에서 프로덕션 코드를 냈다.** `:core:design-system`의 `MinoTextArea` 동작을 고쳤다(R-022). 헌법 원칙 IV의 단계 순서(명세 → 설계 → 구현)와 열린 항목 F가 적었던 "구현 착수 전에 닫는다"를 함께 어긴다 | 2026-08-23 사용자 지시. F는 **어느 쪽을 고를지**의 문제였고(편차 수용 vs 컴포넌트 수정), 고르는 순간 그 결정의 실체가 코드 몇 줄이라 문서로만 남기면 다음 단계가 같은 판단을 다시 해야 했다 | **`/mino-task`로 미루기** — 이 변경은 `:feature:roomform`이 아니라 `:core:design-system`의 것이라 이 feature의 작업 목록에 자연스럽게 들어가지 않는다. 그 모듈의 별도 이슈로 떼는 편이 정석이나, 그러면 F가 이 계획의 열린 항목으로 무기한 남는다 |
+
+**이 위반의 대가**: 이 델타의 코드는 `tasks.md`를 거치지 않았으므로 `/mino-task`가 만들 작업 목록에 **다시 등장하면 안 된다.** 트리에 `[완료]`로 표기한 이유다.
 
 ### 1.0.0이 남긴 미확정 4건 — 전부 해소 *(1.1.0)*
 
@@ -206,12 +216,13 @@ spec §3.2가 이미 범위 밖으로 둔 것 외에, **도착점 feature가 존
 
 ### 이 계획 밖에서 닫히는 것
 
-설계가 확정하지 못하고 남긴 지점은 C 하나이며, 그것은 설계 선택이 아니라 **디자인 산출물 사이의 불일치**다. 그 밖에 만료 조건을 가진 결정이 둘 더 있다 — plan만 읽는 사람에게도 보이도록 여기 모은다.
+열린 것은 **C·D·G 셋이다.** C(디자인 불일치)와 D(서버 계약)는 이 계획이 닫을 수 없고, G는 조건이 올 때까지 닫지 않는다. E·F는 닫힌 이력을 남겨 둔다.
 
 | # | 무엇 | 닫는 조건 |
 |---|---|---|
 | D | swagger 초안이 spec과 세 지점에서 어긋난다([research.md](./research.md) R-003) | 서버팀이 계약을 확정하면 닫힌다. 확정 표현이 달라도 고칠 곳은 `RoomMapper` 한 파일이다 |
 | ~~E~~ | ~~방 이름의 자모 단독 허용 여부~~ | **해소(1.2.0).** spec 3.1.0이 FR-004를 `한글(완성형·자모)`로 고치고 EC-025를 신설했다 → [research.md](./research.md) R-021 |
-| F | **방 설명의 글자 수 세는 단위가 spec 가정과 어긋난다**([contracts/room-form-ui.md](./contracts/room-form-ui.md) §1의 `[TBD]`) | `MinoTextArea`가 코드 유닛으로 세고 자르는데 spec §4 가정은 사용자가 보는 문자 단위를 요구한다. 방 설명엔 문자 제한이 없어 이모지가 들어올 수 있다. 디자인 시스템을 고칠지 편차를 받아들일지 정해 닫는다 — 구현 착수 전 |
+| ~~F~~ | ~~방 설명의 글자 수 세는 단위가 spec 가정과 어긋난다~~ | **해소(1.3.0).** `MinoTextArea`의 상한·카운터를 grapheme 기준으로 고쳤다 → [research.md](./research.md) R-022 |
+| G | `graphemeLength`가 `:core:design-system`의 `internal`이라 feature에서 보이지 않는다 | 방 이름은 FR-004의 허용 문자가 전부 코드 유닛 1개라 지금은 승격이 필요 없다. **FR-004의 허용 문자가 넓어지거나 두 번째 사용처가 생길 때** `:core:common:kotlin`으로 올린다 — 그때 `java.text.BreakIterator`의 JVM/Android 규칙 차이를 함께 판정한다(R-022) |
 
 **규약 충돌은 열린 항목이 아니다.** 1.1.0이 R-008에서 "규약 충돌"로 보고한 것(Figma 컴포넌트셋 vs 이미지 에셋)은 [래스터 이미지 배치·포맷 ADR](../../adr/2026-08-19-raster-image-placement-and-format.md)이 이미 닫아 둔 문제이므로, 그 ADR을 근거로 지목하는 것으로 끝난다.
