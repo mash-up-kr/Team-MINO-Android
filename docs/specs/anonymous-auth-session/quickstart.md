@@ -4,7 +4,9 @@
 
 **소속 문서**: [plan.md](./plan.md) — 부속 산출물이며 독자 버전을 갖지 않는다.
 
-구현이 엔드투엔드로 동작함을 증명하는 절차다. 계약 본문은 [contracts/](./contracts/), 모델은 [data-model.md](./data-model.md)가 소유하며 여기서 복제하지 않는다.
+구현이 계약대로 동작함을 증명하는 절차다. 계약 본문은 [contracts/](./contracts/), 모델은 [data-model.md](./data-model.md)가 소유하며 여기서 복제하지 않는다.
+
+> **이번 범위의 판정선**: plan 1.1.0에서 검증용 임시 배선을 만들지 않기로 했으므로, `ensureSession()`을 부르는 프로덕션 코드가 없다. 따라서 이번 범위에서 실행할 수 있는 것은 §2뿐이고, 앱을 띄워야 판정되는 절차는 §3으로 분리해 실행 조건과 함께 남긴다. 근거는 [plan.md](./plan.md) §세션 확보의 호출자·§전제와 이연 항목.
 
 ---
 
@@ -14,11 +16,12 @@
 |---|---|---|
 | P-1 | Firebase 콘솔에서 이 프로젝트의 **익명 인증 제공자가 사용 설정**되어 있다 | 콘솔 → Authentication → Sign-in method. 꺼져 있으면 세션 확보가 항상 "그 밖의 실패"로 떨어진다 |
 | P-2 | `app/google-services.json`이 그 프로젝트의 것이다 | 이미 저장소에 있다. flavor별 applicationId(`team.mino.qa`·`team.mino`)가 콘솔에 등록되어 있어야 한다 |
-| P-3 | 검증용 임시 배선이 되어 있다 — `:feature:main`의 `MainActivity`가 첫 데이터 요청 전에 세션 확보를 호출하고 QA 빌드 한정 로그를 남긴다 | `adb logcat`에 확보·실패 로그가 찍히는지로 확인. 배선의 범위·성격은 [plan.md](./plan.md) §검증용 임시 배선이 소유한다 |
+
+P-1·P-2는 §3을 실행할 때 필요하다. §2의 자동 검증은 Firebase를 띄우지 않으므로(R-015) 이 조건 없이도 돌아간다.
 
 ---
 
-## 2. 빌드·자동 검증
+## 2. 이번 범위에서 실행하는 검증
 
 ```bash
 # 빌드 게이트 (헌법 §품질 게이트)
@@ -51,17 +54,31 @@
 
 `ktor-client-mock`으로 요청을 가로채 헤더를 확인한다. 기존 `DomainExceptionMappingTest`가 같은 도구를 쓴다.
 
+### V-10. 기기 식별자 경로 소멸 — TS-007 · FR-015
+
+앱을 띄우지 않고 판정할 수 있어 이번 범위에 포함한다.
+
+```bash
+# 결과가 비어 있어야 한다 (문서·기록은 제외)
+grep -ril "ANDROID_ID\|ensureDeviceId\|DeviceRepository\|DeviceIdLocalDataSource\|DeviceInfoProvider" \
+  --include="*.kt" --include="*.kts" --include="*.xml" . | grep -v "/build/"
+```
+
+**기대**: 출력 없음. 사용자 구분의 경로가 익명 세션 하나만 남는다.
+
 ---
 
-## 3. 수동 검증 — 실기기·에뮬레이터
+## 3. 진입 화면 구현 이후로 이연된 검증
 
-단위 테스트로 판정할 수 없는 시나리오다. QA 빌드(`assembleQaDebug`) 기준.
+아래는 **앱이 세션 확보를 실제로 호출해야** 판정되는 절차다. 이번 범위에는 그 호출자가 없으므로 실행하지 않는다.
+
+**실행 조건**: 진입 화면(PRD [SCR-001])이 [contracts/anonymous-auth-repository.md](./contracts/anonymous-auth-repository.md) §4의 C-1~C-8을 구현한 시점. 절차는 그때 그대로 쓰이므로 지우지 않고 남긴다. QA 빌드(`assembleQaDebug`) 기준이며, `userId` 확인은 그 화면이 남기는 로그나 디버거로 한다.
 
 ### V-1. 최초 실행 세션 생성 — TS-001 · SC-003
 
 1. 앱을 완전히 삭제한다 (`adb uninstall team.mino.qa`)
 2. 네트워크 연결 상태로 설치·실행한다
-3. 확보된 `userId`를 로그로 확인하고, Firebase 콘솔 → Authentication → Users에 익명 사용자가 1명 늘었는지 확인한다
+3. 확보된 `userId`를 확인하고, Firebase 콘솔 → Authentication → Users에 익명 사용자가 1명 늘었는지 확인한다
 
 **기대**: 새 사용자 1명. 진입 화면이 대기 없이 다음 화면으로 넘어간다(UX-003).
 
@@ -113,6 +130,8 @@
 
 ### V-9. 백업에 세션이 실리지 않는다 — TS-011 · SC-008 · FR-007
 
+백업 규칙 자체는 이번 범위에서 발효되지만(`res/xml/backup_rules.xml`·`res/xml/data_extraction_rules.xml`), 그것이 동작하는지 보려면 세션이 확보된 앱을 백업해야 한다.
+
 1. 백업 매니저를 켜고 transport를 확인한다
    ```bash
    adb shell bmgr enable true
@@ -132,17 +151,7 @@
    ```
 5. 앱을 실행해 `userId`를 확인한다
 
-**기대**: 복원 후에도 이전 `userId`가 살아나지 않고 새 세션이 발급된다. 백업 규칙(`res/xml/backup_rules.xml`·`res/xml/data_extraction_rules.xml`)의 `sharedpref` 제외가 동작한 것이다 — [research.md](./research.md) R-012.
-
-### V-10. 기기 식별자 경로 소멸 — TS-007 · FR-015
-
-```bash
-# 결과가 비어 있어야 한다 (문서·기록은 제외)
-grep -ril "ANDROID_ID\|ensureDeviceId\|DeviceRepository\|DeviceIdLocalDataSource\|DeviceInfoProvider" \
-  --include="*.kt" --include="*.kts" --include="*.xml" . | grep -v "/build/"
-```
-
-**기대**: 출력 없음. 사용자 구분의 경로가 익명 세션 하나만 남는다.
+**기대**: 복원 후에도 이전 `userId`가 살아나지 않고 새 세션이 발급된다. `sharedpref` 제외가 동작한 것이다 — [research.md](./research.md) R-012.
 
 ---
 
@@ -151,6 +160,6 @@ grep -ril "ANDROID_ID\|ensureDeviceId\|DeviceRepository\|DeviceIdLocalDataSource
 | 항목 | 이유 |
 |---|---|
 | 서버의 신원 증명 검증·데이터 소유권 판정 (TS-015) | spec §3.2 비목표 — 서버가 소유한다. 앱 측 검증은 §2의 헤더 첨부까지다 |
-| 실제 Mino 서버 요청에 헤더가 실려 나가는 것 | baseUrl이 아직 데모용이라 첨부 판정이 항상 불일치다 — [contracts/identity-proof-attachment.md](./contracts/identity-proof-attachment.md) §3 구현 주의 |
+| 실제 Mino 서버 요청에 헤더가 실려 나가는 것 | `Flavor.apiBaseUrl`이 아직 플레이스홀더라 첨부 판정이 항상 불일치다 — [plan.md](./plan.md) §전제와 이연 항목 |
 | 장기 미사용 후 재실행 (TS-019 · FR-017) | 무효화 경로를 **두지 않는** 것이 요구사항이라 코드로 검증할 대상이 없다. V-2가 복원 경로를 대신 덮는다 |
 | 지연 상태의 표현과 임계 시간 (TS-022 · FR-019) | 진입 화면 구현이 없어 검증할 대상이 없다. 지연이 임계를 넘었을 때의 합류 조건은 계약 C-7이 소유하고, 구체값은 spec §3.2에 따라 진입 화면 스펙 소관이다 |
