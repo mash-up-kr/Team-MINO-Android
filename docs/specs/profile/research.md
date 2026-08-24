@@ -54,7 +54,9 @@ Phase 0 산출물. `plan.md`에서 내린 설계 결정을 누적한다. 항목�
 - **Alternatives considered**: (a) `MinoAvatarSize`에 70·120dp를 추가하고 `MinoAvatar`에 로컬 아바타 파라미터를 더한다 — 하나의 컴포넌트가 URL 아바타와 번들 캐릭터 두 축을 갖게 되어 API가 갈라진다. 기각. (b) feature 안에서 `Image` + `Modifier.clip`으로 직접 조립 — 에셋이 디자인 시스템에 있는데 그리는 방법만 feature에 흩어져, 두 번째 소비 화면에서 복제된다. 기각.
 - (plan 1.0.0에서 결정)
 
-## D6. 상단 내비게이션 — `:core:design-system`에 `MinoTopNavigation` 신설
+## ~~D6. 상단 내비게이션 — `:core:design-system`에 `MinoTopNavigation` 신설~~ — 부분 재검토됨(plan 3.0.0)
+
+> **컴포넌트를 `:core:design-system`에 신설한다는 결정은 유효하다.** 뒤집힌 것은 두 가지다 — (a) "나머지 variant(액션 아이콘·검색 등)"라는 서술이 사실과 다르다. 컴포넌트셋 `16215-20432`의 축은 `Platform`(iOS·Android·Web) 하나뿐이다. (b) 어느 variant를 구현하는가가 [D27](#d27-상단-바는-화면-목업이-쓰는-ios-variant를-따른다)로 확정됐다. 본문의 나머지는 그대로 유효하다.
 
 - **Decision**: 뒤로가기 버튼과 가운데 제목으로 이루어진 상단 바를 `:core:design-system`에 `MinoTopNavigation`으로 신설한다. 이번 범위에서는 이 화면이 쓰는 구성(뒤로가기 + 제목, 뒤로가기 비활성 가능)만 만든다.
 - **Rationale**: Figma 010-1이 이 자리에 `Top Navigation/Top Navigation` **컴포넌트 인스턴스**를 쓰고 있어 디자이너가 이미 공용 컴포넌트로 배포한 자산이다. 코드에는 대응물이 없다. 화면 고유 chrome은 화면이 직접 배치한다는 규약([feature-module.md](../../architecture/feature-module.md) 4장)은 **어디에 두는가**가 아니라 **셸이 아닌 화면이 배치한다**는 규칙이므로, 컴포넌트 자체를 디자인 시스템이 소유하는 것과 충돌하지 않는다.
@@ -247,3 +249,75 @@ Phase 0 산출물. `plan.md`에서 내린 설계 결정을 누적한다. 항목�
 - **Rationale**: 항목이 12개로 고정이고 서버에서 내려받지 않으므로(spec §4) 지연 로딩이 얻을 것이 없다. 반대로 잃는 것은 있다 — 화면 전체가 세로 스크롤 하나로 흐르는 구조(상단 바 → 안내 문구 → 썸네일 → 입력 필드 → 그리드 → 액션)에서 `LazyVerticalGrid`를 중첩하면 높이 제약이 무한대가 되어 크래시하거나 고정 높이를 억지로 지정해야 한다.
 - **Alternatives considered**: (a) `FlowRow`로 열 수를 폭에 맡긴다 — 디자인이 4열을 고정하고 있어 폭에 따라 3열·5열이 되는 것은 원본과의 대조를 깨뜨린다. 기각. (b) `LazyVerticalGrid`를 화면 최상위로 올리고 나머지 요소를 `span`으로 얹는다 — 12칸 때문에 화면 전체 구조를 그리드에 맞추는 역전이다. 기각.
 - (plan 2.0.0에서 결정)
+
+---
+
+## D27. 상단 바는 화면 목업이 쓰는 iOS variant를 따른다
+
+- **Decision**: `MinoTopNavigation`이 Figma 컴포넌트셋 `16215-20432`의 **`Platform=iOS` variant**(`16215-20433`)를 구현한다. 바 높이 44dp, 제목 가운데 정렬, 뒤로가기 아이콘은 셰브런(`MinoIcons.ChevronLeft`), 타이포는 `Headline 2/Bold`(17/24)다.
+- **Rationale**: 프로필 화면 목업 010-1·010-2·010-3이 실제로 붙이고 있는 인스턴스(`2314-95704`)가 iOS variant다. 디자인 검수가 두 파일을 열어 확인했고, 화면 인스턴스와 DS iOS variant의 Bar 하위 구조·치수가 완전히 일치했다. **사용자가 "화면 목업을 따른다"로 확정했다** — 코드를 Android variant로 두고 디자이너에게 인스턴스 교체를 요청하는 갈래를 택하지 않았다.
+- **상태 표시줄 인셋은 가져오지 않는다**: iOS variant의 `Spacing/Status`(54)는 `Bar`와 **형제 노드**이고 iOS 상태바 높이다. 이 컴포넌트는 인셋을 갖지 않으므로([design-system 계약](contracts/design-system-contract.md) §2) 44만 취한다.
+- **결과로 생기는 위험**: iOS variant는 Title 양쪽 Filler 폭이 0이고 Leading·Trailing이 절대배치라, **제목이 바 전폭 기준 중앙이고 뒤로가기가 그 위에 겹친다.** 긴 제목은 뒤로가기 아래로 흘러 들어간 뒤 말줄임된다. 원본 구조 그대로이며 임의로 여백을 넣어 고치지 않았다. `프로필 설정` 넉 자에서는 드러나지 않지만 긴 제목을 쓰는 화면이 이 컴포넌트를 재사용하면 문제가 된다.
+- **Alternatives considered**: Android variant를 유지하고 화면 목업의 인스턴스 교체를 요청한다 — plan 2.0.0 시점의 [D6](#d6-상단-내비게이션--coredesign-system에-minotopnavigation-신설) 해석이자 사용자에게 먼저 제시한 안이다. 앱이 Android인데 iOS chrome을 쓰는 어색함과 DS가 Android variant를 따로 둔다는 점이 근거였으나, **사용자가 목업을 기준으로 삼기로 했다.** 기각 이력으로 남긴다.
+- **ADR 승격 후보**: 아니다. 이 화면이 어느 variant를 쓰는가는 이 feature의 선택이다. 다만 **다른 화면이 상단 바를 쓸 때 같은 판단이 반복된다** — 앱 전체가 iOS variant를 쓰는지가 정해지면 그때 ADR 대상이다.
+- (plan 3.0.0에서 결정)
+
+## D28. 아바타 선택 상태의 시각 표시를 만들지 않는다
+
+- **Decision**: `MinoProfileAvatarImage`의 `selected`는 접근성 시맨틱(`Modifier.rippleSingleSelectable`)만 싣고 **테두리·체크마크 등 시각 표시를 그리지 않는다.** 선택은 상단 썸네일이 바뀌는 것으로만 드러난다.
+- **Rationale**: Figma 원본 어디에도 선택된 칸을 구별하는 표현이 없다. 디자인 검수가 010-1·010-2·그리드 노드를 독립적으로 열어 확인했고, 그리드 프레임의 변수 전수가 12칸 모두 같은 4개(`Label/Normal`·`Background/Normal/Normal`·`Static/White`·`Line/Normal/Alternative`)뿐이라 **선택 칸만 쓰는 색이 아예 없다.** 기기 검증에서도 선택 전후 그리드 영역의 픽셀 차이가 없음을 확인했다. **사용자가 "선택 표시를 만들지 않는다"로 확정했다.**
+- **spec 미충족**: FR-003의 "그 아바타만 선택 상태로 표시"와 TS-003·TS-004의 육안 판정은 **충족되지 않는다.** 원본에 근거가 없는 것을 지어내지 않는다는 판단이며([헌법](../../constitution.md) 원칙 IV), 미충족 사실을 [quickstart.md §4](quickstart.md)가 든다.
+- **Alternatives considered**: (a) Primary 토큰으로 선택 테두리를 임의 결정한다 — FR-003은 충족하지만 대조할 원본이 없어 검수가 미검증으로 남고, 디자이너 확인 시 재작업 위험이 있다. 기각. (b) 컴포넌트 정의 노드 링크를 받아 selected variant 유무를 확인한다 — 사용자에게 제시했으나 채택되지 않았다.
+- (plan 3.0.0에서 결정)
+
+## D29. 온보딩 진입에서 뒤로가기를 노출하지 않는다
+
+- **Decision**: 온보딩 진입(`ProfileEntryPoint.Onboarding`)에서 상단 바의 뒤로가기 버튼을 **아예 숨긴다** — `MinoTopNavigation(onBackClick = null)`이며 leading 슬롯 24dp 자리는 남는다. 시스템 back은 `BackHandler(enabled = true) {}`로 계속 삼킨다(EC-001).
+- **Rationale**: spec FR-010은 "온보딩 진입에서는 뒤로가기를 **비활성으로 두어** 화면을 벗어나지 못하게" 한다고 적었으나, 그 비활성 상태의 시각을 담은 노드가 컴포넌트 정의 노드 제약으로 열리지 않아 **디자인 근거 없는 값을 그려야 하는 상황**이었다. **사용자가 "아예 숨긴다"로 확정했다.**
+- **spec과의 어긋남**: FR-010의 "노출하되 비활성"과 다르다. 화면을 벗어나지 못하게 한다는 **목적은 그대로 충족**되며, 달라지는 것은 버튼이 보이느냐다.
+- **결과**: [D34](#d34-minotopnavigation에-backenabled-파라미터를-두지-않는다)가 이 결정에서 파생된다 — 비활성 경로의 호출자가 사라졌다.
+- (plan 3.0.0에서 결정)
+
+## D30. 로컬 저장 실패용 도메인 예외 리프를 추가하지 않는다
+
+- **Decision**: `MinoDomainException`에 로컬 저장 실패용 리프를 추가하지 않는다. `ProfileLocalDataSourceImpl`·`ProfileRepositoryImpl`은 DataStore 예외를 잡아 변환하지 않고 그대로 전파한다.
+- **Rationale**: [`core:error-handling` README](../../../core/error-handling/README.md) §4가 "리프는 `:core:data`의 **매핑 지점 화이트리스트와 짝으로** 추가한다"·"**탈출구 리프 금지** — 매핑 규칙에 걸리지 않는 예외는 버그이며 CEH 소관"으로 정한다. 로컬 DataStore 쓰기 실패에는 매핑 지점이 없고, [에러 처리 규약](../../conventions/error_handling.md) §1의 분류에서 디스크 이상은 버그 갈래다. [D25](#d25-저장-실패-경로--통로는-지금-배선하고-발화-원천은-후속-작업에-남긴다)가 "통로는 지금 배선하고 발화 원천은 후속 작업에 남긴다"로 예고한 상태와 같다.
+- **남는 어긋남**: `ProfileRepository.saveProfile`의 실패 계약은 `MinoDomainException`인데 이번 범위에 그것을 만드는 지점이 없다. 규범 감사가 SHOULD로 지적했고, **계약을 지우지 않고 "지금은 발화 원천이 없다"를 KDoc에 덧붙여** 닫았다. 원격 연동에서 매핑 지점이 생길 때 함께 닫힌다.
+- **Alternatives considered**: `Storage` 리프를 추가한다 — 매핑 지점 없이 리프만 늘리면 README §4의 두 규칙을 동시에 어긴다. 기각.
+- (plan 3.0.0에서 결정)
+
+## D31. ViewModel 단위 테스트는 `isReturnDefaultValues`로 열고, 진입점은 통제하지 않는다
+
+- **Decision**: `feature/profile/build.gradle.kts`에 `testOptions { unitTests { isReturnDefaultValues = true } }`를 둔다. 그 결과 **JVM 테스트에서 `savedStateHandle.toRoute<ProfileMain>()`이 항상 `null`을 돌려주므로 `ProfileViewModel.entryPoint`는 늘 `MyPage`다.** 진입점별 분기는 ViewModel을 거치지 않고 `ProfileUiState(entryPoint = ...)`를 직접 세워 검증한다.
+- **Rationale**: `androidx.lifecycle 2.10.0`·`savedstate 1.4.0`에서 `SavedState`가 `Bundle` 기반으로 바뀌어, `toRoute`가 `android.os.Bundle.putCharSequence`를 타고 스텁 `android.jar`에서 예외로 죽는다. **ViewModel을 생성조차 할 수 없었다.** `:core:data`에 같은 블록·같은 사유의 선례가 있고, 이 파일은 이번 범위에서 새로 만든 것이라 plan이 열거한 "기존 파일 변경"에도 해당하지 않는다.
+- **덮이는 범위**: US1·US2·US3의 케이스는 어느 것도 진입점을 읽지 않아 전부 성립한다. 성립하지 않는 유일한 종류가 진입점별 분기이며, 그것은 파생 프로퍼티라 UiState 직접 구성으로 검증된다.
+- **Alternatives considered**: (a) Robolectric 도입 — [D12](#d12-테스트-범위--jvm-단위-테스트만)의 "테스트 인프라 도입은 범위 밖"을 뒤집고 버전 카탈로그에 항목을 더해야 한다. 기각. (b) `toRoute` 대신 `savedStateHandle.get<String>()`으로 복원 — [feature-navigation.md](../../architecture/feature-navigation.md) 2장이 `toRoute` 복원을 명시 규정한다. 기각. (c) Route 인자에 기본값을 주어 `contains` 경로로 우회 — 메커니즘은 성립하지만 프로덕션 시그니처를 테스트 편의로 바꾸는 것이라 불필요해진 시점에 폐기.
+- **후속 제안**: 이 블록은 `:feature:profile`만의 문제가 아니다. `toRoute`를 쓰는 모든 feature의 ViewModel 테스트가 같은 벽을 만나므로 `AndroidFeatureConventionPlugin`으로 올릴 후보다.
+- (plan 3.0.0에서 결정)
+
+## D32. 화면은 상단 바와 액션 영역을 고정하고 본문만 스크롤한다
+
+- **Decision**: `ProfileScreen`은 바깥 `Column`에 `MinoTopNavigation`을 고정으로 두고, 본문(안내 문구 → 썸네일 → 입력 필드 → 그리드)만 `weight(1f)` + `verticalScroll`로 감싸며, `MinoActionArea`를 마지막에 둔다.
+- **Rationale**: plan 2.0.0의 [screen 계약](contracts/profile-screen-contract.md)이 "화면 전체가 세로 스크롤 하나로 흐른다"고 적었으나, 그대로 만들면 원본과 두 곳이 어긋난다 — 콘텐츠가 넘칠 때 상단 바가 밀려 올라가고(원본 y=0 고정), 화면이 원본(812)보다 길 때 액션 영역이 바닥에 붙지 않는다(원본 bottom=0 고정). [figma-design-fidelity.md](../../conventions/figma-design-fidelity.md)가 산문과 노드가 어긋나면 노드를 따르도록 정한다. 계약의 문장은 **그리드가 중첩 스크롤을 만들지 않게 하려는 것**이었고, 이 구조가 그 조건도 함께 만족한다([D26](#d26-아바타-그리드의-배치--화면이-소유하고-lazyverticalgrid를-쓰지-않는다)).
+- **하단 간격**: 원본 `Frame 102`가 자식 합계 630 > 높이 612로 **18px 오버플로**한 상태라 렌더 간격 22는 디자이너 의도가 아니다. **사용자가 20dp 유지를 확정했다** — 본문 하단 패딩 0 + 액션 영역 상단 패딩 20이다.
+- (plan 3.0.0에서 결정)
+
+## D33. 진입점 값 상수는 `ExtraTag.kt`가 아니라 전환 계약 파일이 갖는다
+
+- **Decision**: `PROFILE_ENTRY_POINT_ONBOARDING`·`PROFILE_ENTRY_POINT_EDIT`를 `activity/launcher/ProfileLauncher.kt`에 둔다. 키 `EXTRA_PROFILE_ENTRY_POINT`는 `ExtraTag.kt`에 남는다.
+- **Rationale**: [`core:navigation` README](../../../core/navigation/README.md) §3이 `ExtraTag.kt`를 **"Intent extra 키"** 전용으로 정의하고 §4 표가 `activity/launcher` 패키지를 "feature별 전환 계약 — `XLauncher` 인터페이스와 Intent extra 키"로 정의한다. **제약은 패키지가 아니라 파일 수준**이므로, 값 상수를 같은 패키지의 계약 파일로 옮기면 두 규칙을 다 지키면서 "호출자와 화면이 같은 문자열을 본다"는 원래 목적도 유지된다. Kotlin 최상위 상수의 import는 패키지 기준이라 소비처 수정도 필요 없다.
+- **Alternatives considered**: feature 모듈 내부로 옮긴다 — 호출자 feature가 값을 실어야 하는데 대상 feature에 두면 [단일 모듈 전환 계약 ADR](../../adr/2026-08-01-single-module-navigation-contract.md)이 막는 feature 간 순환이 된다. 기각.
+- (plan 3.0.0에서 결정)
+
+## D34. `MinoTopNavigation`에 `backEnabled` 파라미터를 두지 않는다
+
+- **Decision**: `backEnabled` 파라미터와 그에 딸린 `DisabledBackIconColor` 토큰·`disabledBackIconColor` Defaults를 만들지 않는다.
+- **Rationale**: 이 파라미터의 유일한 근거였던 "온보딩 진입의 뒤로가기 비활성"이 [D29](#d29-온보딩-진입에서-뒤로가기를-노출하지-않는다)로 사라져 **호출부가 하나도 없다.** [component-asset-placement.md](../../conventions/component-asset-placement.md) §3이 "아직 동작하지 않는 기능의 파라미터를 미리 만들지 않는다. 실제 호출부가 생길 때 **디폴트 인자로 소스 호환 추가**한다"로 정하므로 되돌리기 비용도 낮다. 비활성 시각은 컴포넌트 정의 노드(`16215-20537`) 차단으로 **한 번도 대조된 적이 없는 잠정값**이었고, 제거로 이 컴포넌트의 미대조 표면이 0이 됐다.
+- (plan 3.0.0에서 결정)
+
+## D35. 아바타 12종의 소유 결정을 ADR로 승격했다
+
+- **Decision**: [D4](#d4-아바타-12종의-소유--coredesign-system)를 [ADR — 프로필 아바타 12종의 에셋과 컴포넌트는 `:core:design-system`이 소유한다](../../adr/2026-08-25-profile-avatar-assets-in-design-system.md)로 승격했다. D4는 이 feature의 근거로 남고, 구속력을 갖는 결정은 ADR이 소유한다.
+- **Rationale**: [헌법](../../constitution.md) Governance가 "예외를 ADR로 기록한다. 기록 없는 예외는 없다"로 정하는데, 이 배치는 [component-asset-placement.md](../../conventions/component-asset-placement.md) §1의 "design-system은 이미지 에셋을 받지 않는다"와 문면상 충돌하는 예외다. plan 2.0.0의 Constitution Check가 이미 원칙 III를 "승격 대상 1건"으로 표시해 두었다.
+- **D4보다 세워진 근거**: D4는 "소비자가 여럿이고 spec이 지정했다"를 들었으나 그것만으로는 `:core:common:ui`도 만족한다. ADR이 1순위로 세운 것은 **컴포넌트와 에셋의 불가분성**이다 — 모듈 그래프가 `ui --> design` 방향이라 에셋만 `:core:common:ui`로 보내면 `:core:design-system`이 자기가 그릴 그림의 `R`을 참조하지 못해 **컴파일되지 않는다.**
+- (plan 3.0.0에서 결정)

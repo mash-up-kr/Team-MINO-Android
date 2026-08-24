@@ -61,6 +61,10 @@ Android SDK 기반 공용 유틸리티 (Context 확장, Intent 헬퍼 등).
 앱의 진입 feature. BottomNavigation 탭 셸을 소유하고 탭 feature의 그래프를 조립한다.
 → Android Library (Compose)
 
+### `:feature:profile` (진입형)
+프로필 설정·수정 화면. 온보딩과 마이페이지가 `ProfileLauncher`로 함께 여는 단일 화면을 소유한다.
+→ Android Library (Compose)
+
 ### `:feature:sample` (진입형)·`:feature:home` (탭)
 데모 feature(추후 제거 가능).
 → Android Library (Compose)
