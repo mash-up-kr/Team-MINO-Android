@@ -23,6 +23,7 @@ interface ProfileRepository {
 - 구현체는 `:core:data`의 `internal class ProfileRepositoryImpl`이고 바인딩은 그 모듈의 `repository/di/`가 소유한다([DI 규칙](../../../conventions/dependency-injection.md)).
 - 예외를 잡아 `Result`로 바꾸지 않는다. 소비는 ViewModel의 `runCatchingDomain`이 한다([에러 처리 규약](../../../conventions/error_handling.md) §3).
 - 로컬 단독 구간에서 `saveProfile`의 실패는 디스크 이상 같은 예외 상황뿐이다. 통로를 지금 배선하는 이유는 [research.md D25](../research.md#d25-저장-실패-경로--통로는-지금-배선하고-발화-원천은-후속-작업에-남긴다)에 있다.
+- **다만 이번 범위에는 `MinoDomainException`을 만드는 지점이 없다.** DataStore는 이 변경으로 처음 소비되는 원천인데 매핑 지점을 두지 않기로 했으므로([research.md D30](../research.md#d30-로컬-저장-실패용-도메인-예외-리프를-추가하지-않는다)), 실제 저장 실패는 도메인 예외가 아니라 CEH까지 간다. 위 표의 실패 계약은 **원격 연동에서 매핑 지점이 생길 때 실제로 성립**하며, 그 사실을 인터페이스 KDoc이 함께 든다.
 
 ## UseCase (`core:domain/usecase/`)
 
@@ -65,6 +66,12 @@ internal interface ProfileLocalDataSource {
     suspend fun saveProfile(profile: Profile)
 }
 ```
+
+> **미해결 — 규약과 충돌한다.** 아래 형태(로컬 DataSource가 도메인 모델을 반환하고 `Preferences → Profile` 변환을 직접 한다)는 [`core:data` README](../../../../core/data/README.md) §5("반환 타입: DTO만 반환, 도메인 모델 반환 금지" · "책임: 변환 없음")·§2("변환은 `RepositoryImpl` 안에서 끝난다")와 정면으로 어긋난다. 로컬 DataSource도 §5가 "작성 규칙: 원격과 동일"로 못박아 같은 규칙이 걸린다.
+>
+> **어느 쪽으로도 규약을 다 지킬 수 없다.** Preferences에는 자연적 DTO가 없고(원시 형태가 `Preferences` 자체), README가 "키 상수는 DataSource 구현체 안에 둔다"고 정해 변환을 `RepositoryImpl`로 옮기면 키가 밖으로 새어 같은 README를 다시 위반한다. `ProfileEntry`를 끼워도 DataSource의 "변환 없음"은 못 지키고 문면만 만족한다.
+>
+> 해소는 둘 중 하나이며 **이 문서가 임의로 정하지 않는다**: (a) README에 "DTO 없는 로컬 DataSource" 갈래를 보완한다, (b) 이 계약을 바꿔 `ProfileEntry`를 도입한다.
 
 - DataStore 키와 미저장 판정은 [`data-model.md` §3](../data-model.md)이 소유한다.
 - 원격이 없어 DTO가 없으므로 이번 범위에는 **매퍼가 없다.** `ProfileLocalDataSourceImpl`이 `Preferences`에서 `Profile`을 직접 조립한다 — 중간 형태(`ProfileEntry`)를 두면 필드가 같은 타입을 한 겹 더 만드는 것뿐이다. 원격이 붙어 DTO가 생기면 그때 `mapper/`가 필요해진다.
