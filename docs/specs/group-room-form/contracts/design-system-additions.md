@@ -101,7 +101,9 @@ fun MinoRoomColorChip(
 
 **이 컴포넌트는 `TextFieldState`를 받는다**(`MinoTextField`의 `value: String`과 다르다). 상한도 컴포넌트가 걸므로 호출부가 다시 자르지 않는다 — 그 API 계약은 `MinoTextArea`의 KDoc이 소유한다. state를 누가 드는지는 [contracts/room-form-ui.md](./room-form-ui.md) §4가 정한다. 세는 단위를 grapheme으로 바꾼 경위는 [research.md](../research.md) R-022.
 
-> **편집 보드와의 불일치**: `2542-125922`·`2792-151339`는 방 이름을 `Textinput/Textarea`로 그렸다. FR-013("생성과 동일한 폼")과 명세 보드 `2314-95301`을 근거로 **`MinoTextField`를 따르고**, 불일치는 디자이너 확인 대상으로 보고한다([plan.md](../plan.md) §복잡도 추적 C).
+> **편집 보드와의 불일치 — 해소**: 편집 명세 보드 `2542-125922`가 방 이름을 `Textinput/Textfield`(`4170-140432`)로 갈아 끼웠다. 위 표의 세 단과 문자열이 생성 보드 `2314-95310`과 같고 카운터도 없어, **두 보드가 같은 컴포넌트를 지목한다.** `MinoTextField`를 따르는 이 절의 결정이 이제 양쪽 보드의 지지를 받는다 — 대조 결과는 [research.md](../research.md) R-023.
+>
+> 남은 불일치는 User Flow 보드 `2792-151339` 하나이며, 이 보드는 편집 화면인데 타이틀이 `공동방 만들기`라 FR-025와도 어긋난다. 명세 보드와 User Flow 보드가 어긋나면 명세 보드를 따른다는 [spec.md](../spec.md) §4 가정에 따라, 이 절은 명세 보드를 근거로 삼는다.
 
 ---
 
