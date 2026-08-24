@@ -2,17 +2,17 @@
 
 **대상 스펙 경로**: `docs/specs/room-list`
 
-**기준 PRD 버전**: 4.2.0
+**기준 PRD 버전**: 5.0.0
 
 **최초 작성일**: 2026-08-17
 
-**최종 수정일**: 2026-08-20
+**최종 수정일**: 2026-08-24
 
 **상태**: CREATED
 
-**버전**: 2.1.4
+**버전**: 2.1.5
 
-**입력**: 사용자 설명: "스펙 출처에 피그마링크가 없어 다시 스펙 생성해줘. https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2370-114745&m=dev https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-157242&m=dev https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-157338&m=dev https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-157259&m=dev https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2392-123138&m=dev https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-158108&m=dev https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-158144&m=dev https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-159182&m=dev https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-158125&m=dev" (원본 기능 설명: "room-list — [SCR-004] 방 리스트 탭. 이슈 #154, 브랜치 feature/154-room-list/base. 지도 위 3단 바텀시트로 내 방 전체를 훑고, 방을 골라 상세로 들어가거나 새 공동방을 만든다. PRD business-context.md 3.1.0 [SCR-004] 절 + 「3단 바텀시트」·[SYS-001]·[SYS-004]·[SYS-005]·[SYS-009] 정의 기준.", 2026-08-17)
+**입력**: 사용자 설명: "룸 리스트 지금 prd 변경으로 스펙 재업로드가 필요해! 다시 /mino-spec https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2370-114745&m=dev https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-157242&m=dev https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-157338&m=dev https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-157259&m=dev https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2392-123138&m=dev https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-158108&m=dev https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-159182&m=dev https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-158125&m=dev" (2026-08-24, PRD 4.2.0→5.0.0 개정 반영 재검증: PRD diff(commit c6c7fed..8ab1d05) 대조 결과 [SCR-004] 방 리스트 탭 섹션 자체는 요구사항 경계 변경 없음 — 기준 PRD 버전만 갱신. 사용자가 누락 지적한 node-id 2661-158144(003-2-2 half_공동방 1개)는 사용자 확인 후 유지)
 
 ---
 
