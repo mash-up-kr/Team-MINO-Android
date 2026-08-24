@@ -2,7 +2,7 @@
 
 **대상 스펙 경로**: `docs/specs/room-list`
 
-**기준 PRD 버전**: 6.0.0
+**기준 PRD 버전**: 5.0.0
 
 **최초 작성일**: 2026-08-17
 
@@ -10,9 +10,9 @@
 
 **상태**: CREATED
 
-**버전**: 2.1.6
+**버전**: 2.1.5
 
-**입력**: 사용자 설명: "room-list PRD 6.0.0 개정 반영 재검증. PR #227에서 \"PRD가 6.0.0으로 크게 바뀌었습니다(이 스펙 기준 5.0.0) — 스펙 재작성 필요\"로 플래그된 것에 대응. 특히 [SYS-004] 중복 장소 마커 클릭 동작이 5.0.0(모달+시트 겹침)에서 5.1.0/6.0.0(모달 제거, 저장된 방 시트로 이관)으로 재정의된 부분이 room-list([SCR-004]) 범위에 영향을 주는지 확인할 것." (2026-08-24, PR #227이 남긴 미해결 체크 항목 해소 목적. `origin/develop`의 PRD 6.0.0을 직접 대조(로컬 `docs/prd/business-context.md`는 이 브랜치에 develop 최신본이 병합되지 않아 5.0.0에 머물러 있어, `git show origin/develop:docs/prd/business-context.md`로 확인) — [SCR-004] 방 리스트 탭 섹션 자체는 5.0.0 이후로도 문구 변경 없음. 유일한 관련 변경은 [SYS-004] Flow B(중복 마커 색상 판별 기준이 "최근 저장" → "최초 저장"으로 재정의)이며, §3.2에서 이미 SYS-004 소유로 위임돼 있고 spec 본문이 그 세부 규칙을 인용하지 않아 영향 없음. 기준 PRD 버전만 갱신)
+**입력**: 사용자 설명: "룸 리스트 지금 prd 변경으로 스펙 재업로드가 필요해! 다시 /mino-spec https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2370-114745&m=dev https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-157242&m=dev https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-157338&m=dev https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-157259&m=dev https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2392-123138&m=dev https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-158108&m=dev https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-159182&m=dev https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2661-158125&m=dev" (2026-08-24, PRD 4.2.0→5.0.0 개정 반영 재검증: PRD diff(commit c6c7fed..8ab1d05) 대조 결과 [SCR-004] 방 리스트 탭 섹션 자체는 요구사항 경계 변경 없음 — 기준 PRD 버전만 갱신. 사용자가 누락 지적한 node-id 2661-158144(003-2-2 half_공동방 1개)는 사용자 확인 후 유지)
 
 ---
 
