@@ -110,7 +110,7 @@ HttpClient(OkHttp) {
 | `minoIdentityProofPlugin` | 신원 증명 첨부를 클라이언트 한 곳에 모음 — Service마다 헤더를 손으로 붙이지 않는다. 설치 위치·판정 근거는 플러그인 KDoc이 지목하는 계약 문서가 단일 출처 |
 
 > [!NOTE]
-> `API_BASE_URL`은 `build-logic`의 [`ProductFlavors.kt`](../../build-logic/convention/src/main/kotlin/team/mino/buildlogic/ProductFlavors.kt)가 flavor별 `buildConfigField`로 생성한다. 서버 주소가 바뀌면 `NetworkModule`이 아니라 `Flavor` 열거형의 `apiBaseUrl`을 고친다. 현재 값은 실서버 도메인 확정 전까지의 플레이스홀더다.
+> `API_BASE_URL`은 `build-logic`의 [`ProductFlavors.kt`](../../build-logic/convention/src/main/kotlin/team/mino/buildlogic/ProductFlavors.kt)가 flavor별 `buildConfigField`로 생성한다. 서버 주소가 바뀌면 `NetworkModule`이 아니라 `Flavor` 열거형의 `apiBaseUrl`을 고친다.
 
 ### 예외 → 도메인 예외 매핑 (`convertDomainException`)
 
