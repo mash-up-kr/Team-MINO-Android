@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="profile_error_network">네트워크 연결을 확인한 뒤 다시 시도해주세요.</string>
+    <string name="profile_error_save_failed">프로필을 저장하지 못했어요. 잠시 후 다시 시도해주세요.</string>
+    <string name="profile_error_auth_expired">로그인이 만료되어 저장하지 못했어요. 다시 로그인해주세요.</string>
+</resources>
