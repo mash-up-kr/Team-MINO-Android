@@ -5,15 +5,17 @@
 ## 계약 (`:core:navigation`)
 
 ```kotlin
-// activity/launcher/ProfileLauncher.kt
+// activity/launcher/ProfileLauncher.kt — 전환 계약과 그 진입점 값
 interface ProfileLauncher : ActivityLauncher
-
-// activity/launcher/ExtraTag.kt — 기존 파일에 추가
-const val EXTRA_PROFILE_ENTRY_POINT = "profile_entry_point"
 
 const val PROFILE_ENTRY_POINT_ONBOARDING = "onboarding"
 const val PROFILE_ENTRY_POINT_EDIT = "edit"
+
+// activity/launcher/ExtraTag.kt — 기존 파일에 키만 추가
+const val EXTRA_PROFILE_ENTRY_POINT = "profile_entry_point"
 ```
+
+- **키와 값이 다른 파일에 있다.** `ExtraTag.kt`는 `core/navigation/README.md` §3이 "Intent extra 키" 전용으로 정의한 자리라 값 상수를 담지 않는다. 값은 전환 계약의 일부이므로 계약 파일이 갖는다([research.md D33](../research.md#d33-진입점-값-상수는-extratagkt가-아니라-전환-계약-파일이-갖는다)). 같은 패키지라 소비처의 import는 달라지지 않는다.
 
 - 진입점 값은 두 상수 중 하나다. 호출자와 화면이 같은 문자열을 보게 상수로 공유한다.
 - 값이 없거나 두 상수 중 어느 것도 아니면 화면은 `edit`(뒤로가기 가능)으로 해석한다([data-model.md §5](../data-model.md)).
@@ -67,6 +69,6 @@ profileLauncher.launch(this) {
 
 | 파일 | 모듈 |
 |---|---|
-| `activity/launcher/ProfileLauncher.kt` · `ExtraTag.kt`(추가) | `:core:navigation` |
+| `activity/launcher/ProfileLauncher.kt`(계약 + 진입점 값) · `ExtraTag.kt`(키 추가) | `:core:navigation` |
 | `ProfileActivity` · `di/ProfileLauncherImpl` · `di/ProfileNavigationModule` | `:feature:profile` |
 | `implementation(project(":feature:profile"))` | `:app` |

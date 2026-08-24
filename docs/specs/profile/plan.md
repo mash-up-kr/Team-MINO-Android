@@ -8,9 +8,9 @@
 
 **최초 작성일**: 2026-08-18
 
-**최종 수정일**: 2026-08-21
+**최종 수정일**: 2026-08-25
 
-**버전**: 2.0.0
+**버전**: 3.0.0
 
 **참고**: 이 템플릿은 `/mino-plan` 명령으로 채워지며, 해당 명령의 정의가 실행 워크플로우를 설명한다.
 
@@ -20,7 +20,7 @@
 
 **이번 범위는 UI와 도메인 모델까지다 — 원격 API는 연결하지 않는다.** 데이터는 `:core:domain`의 `Profile` 모델과 `ProfileRepository`(`observeProfile(): Flow<Profile?>` + `saveProfile(Profile)`) 두 멤버로 경계를 긋고, `:core:data`가 공유 Preferences DataStore 하나로 그것을 구현한다. plan 1.1.0이 설계했던 원격 계층(DTO·`ApiService`·`RemoteDataSource`·flavor 소스셋 목 엔진)은 전부 후속 작업으로 물러난다(research.md D22). 그 이연이 나중에 무엇을 고치고 무엇을 고치지 않는지는 research.md D24가 표로 고정한다. 닉네임 규칙(앞뒤 공백 제외, 한글 음절·영문만 2자 이상, 클라이언트 상한 없음)은 화면이 아니라 `ValidateNicknameUseCase`·`SaveProfileUseCase`가 소유한다.
 
-`:core:design-system`에는 아바타 12종(`MinoProfileAvatar` + `MinoProfileAvatarImage`)과 상단 바(`MinoTopNavigation`)를 신설한다. 아바타 소유 위치는 [방 대표 색상 팔레트 ADR](../../adr/2026-08-14-room-color-palette-in-design-system.md)이 세운 경계를 그대로 따른다. 설계 근거는 [`research.md`](research.md), 데이터·상태는 [`data-model.md`](data-model.md), 계약 표면은 [`contracts/`](contracts/), 검증 절차와 **이번 범위가 확인할 수 없는 것**은 [`quickstart.md`](quickstart.md)에 있다.
+`:core:design-system`에는 아바타 12종(`MinoProfileAvatar` + `MinoProfileAvatarImage`)과 상단 바(`MinoTopNavigation`), 그리고 상단 바가 쓰는 `MinoIcons.ChevronLeft`를 신설한다. 아바타 소유 위치는 [전용 ADR](../../adr/2026-08-25-profile-avatar-assets-in-design-system.md)이 소유하고, 상단 바는 화면 목업이 쓰는 **`Platform=iOS` variant**를 구현한다([D27](research.md#d27-상단-바는-화면-목업이-쓰는-ios-variant를-따른다)). 아바타 칸의 선택 표시는 원본에 없어 만들지 않는다([D28](research.md#d28-아바타-선택-상태의-시각-표시를-만들지-않는다)). 설계 근거는 [`research.md`](research.md), 데이터·상태는 [`data-model.md`](data-model.md), 계약 표면은 [`contracts/`](contracts/), 검증 절차와 **이번 범위가 확인할 수 없는 것**은 [`quickstart.md`](quickstart.md)에 있다.
 
 ## 기술 컨텍스트 (Technical Context)
 
@@ -32,7 +32,7 @@
 
 **외부 계약**: 없음. 꾹 API 초안은 존재하지만 이번 범위가 소비하지 않는다 — 계약 스냅숏(plan 1.1.0의 `contracts/profile-api-contract.md`)은 이번 개정에서 지웠고, 원격 연동 작업이 git 이력(`e1ac7a0`)에서 되살린다(research.md D24). 앱 밖으로 여는 표면은 `:core:navigation`의 `ProfileLauncher` 하나뿐이다
 
-**테스트**: JUnit4 + Fake 구현체 JVM 단위 테스트. 검증 규칙·저장 왕복·ViewModel 상태 전이를 덮는다. Compose UI 테스트는 저장소에 선례가 없어 도입하지 않는다(research.md D12)
+**테스트**: JUnit4 + Fake 구현체 JVM 단위 테스트. 검증 규칙·저장 왕복·ViewModel 상태 전이를 덮는다. Compose UI 테스트는 저장소에 선례가 없어 도입하지 않는다(research.md D12). `:feature:profile`은 `testOptions { unitTests { isReturnDefaultValues = true } }`가 있어야 ViewModel이 생성되고, 그 대가로 진입점이 테스트에서 통제되지 않는다([D31](research.md#d31-viewmodel-단위-테스트는-isreturndefaultvalues로-열고-진입점은-통제하지-않는다))
 
 **대상 플랫폼**: Android minSdk 29 / targetSdk 36
 
@@ -42,7 +42,18 @@
 
 **제약 조건**: 온보딩 진입에서는 화면을 벗어날 수 없고 저장 후 되돌아올 수도 없다(FR-010, EC-001, TS-018, EC-013). 저장 실패 시 입력값을 보존한다(FR-012, SC-006) — 통로는 만들되 로컬 단독 구간에서는 발화 원천이 없다(research.md D25). 프로필 표기는 앱 전체에서 하나다(FR-007). 오프라인 저장·나중에 동기화는 다루지 않는다(spec §4). **spec §4의 "저장은 서버 반영을 포함한다" 가정과 FR-008의 개인방 생성은 이번 범위가 충족하지 않는다** — 부정하지 않고 후속 작업으로 미룬다(research.md D22)
 
-**규모/범위**: 화면 1개, 신규 도메인 모델 1·Repository 1·UseCase 2, 신규 로컬 저장 계층(DataSource·RepositoryImpl) 1벌, 신규 design-system 컴포넌트 2, 신규 전환 계약 1. 기존 파일 변경은 `settings.gradle.kts`·`:app` build 스크립트·`ExtraTag.kt` 세 곳뿐이다
+**규모/범위**: 화면 1개, 신규 도메인 모델 1·Repository 1·UseCase 2, 신규 로컬 저장 계층 1벌, 신규 design-system 컴포넌트 2 + 아이콘 1, 신규 전환 계약 1.
+
+**기존 파일 변경은 여섯 곳이다** — plan 2.0.0이 "세 곳뿐"이라 적은 것은 구현에서 틀린 것으로 드러났다:
+
+| 파일 | 사유 |
+|---|---|
+| `settings.gradle.kts` | 모듈 등록 |
+| `app/build.gradle.kts` | 진입형 feature 의존 |
+| `core/navigation/.../ExtraTag.kt` | extra 키 추가 |
+| `core/domain/build.gradle.kts` | `testImplementation(libs.junit)` — 이 모듈에 junit이 없어 도메인 테스트가 돌지 않았다 |
+| `core/design-system/.../MinoIconsPreview.kt` | `ChevronLeft` 카탈로그 등록 |
+| `docs/architecture/modularization.md` | 신규 모듈을 모듈 목록 SSOT에 등록([헌법](../../constitution.md) §기술 표준) |
 
 ## 헌법 준수 확인 게이트 (Constitution Check)
 
@@ -98,10 +109,14 @@ feature/profile/                                     # 신규 — 진입형 feat
     │   ├── ProfileLauncherImpl.kt
     │   └── ProfileNavigationModule.kt
     └── main/
-        ├── screen/     ProfileRoute.kt · ProfileScreen.kt
+        ├── screen/     ProfileRoute.kt · ProfileScreen.kt · ProfileScreenPreview.kt
         ├── vm/         ProfileViewModel · ProfileUiState · ProfileIntent · ProfileSideEffect
-        ├── model/      ProfileEntryPoint.kt         # 진입 인자이자 UiState 구성요소 → model/ (feature-module.md 2장)
-        └── component/  아바타 그리드 · 상단 썸네일 조립 조각
+        ├── model/      ProfileEntryPoint.kt · ProfileAvatarId.kt   # 진입 인자·enum↔id 매핑 (feature-module.md 2장)
+        └── component/  ProfileAvatarGrid.kt
+feature/profile/src/main/res/values/strings.xml       # 신규 — 도메인 에러 문구(feature-module.md 4장 스켈레톤)
+feature/profile/src/test/java/team/mino/feature/profile/
+├── fake/FakeProfileRepository.kt
+└── main/vm/ProfileViewModelTest.kt
 
 core/navigation/src/main/java/team/mino/core/navigation/activity/launcher/
 ├── ProfileLauncher.kt                               # 신규 — 전환 계약
@@ -120,10 +135,13 @@ core/data/src/main/java/team/mino/core/data/
                                                      # network/ 아래는 손대지 않는다. DTO·매퍼·목 엔진·
                                                      # flavor 소스셋은 원격 연동 작업의 몫이다(research.md D22·D24)
 
-core/design-system/src/main/java/team/mino/core/designsystem/component/
-├── profileavatar/  MinoProfileAvatar.kt · MinoProfileAvatarImage.kt · MinoProfileAvatarDefaults.kt · token/ProfileAvatarTokens.kt   # 신규
-└── topnavigation/  MinoTopNavigation.kt · MinoTopNavigationDefaults.kt · token/TopNavigationTokens.kt                              # 신규
-core/design-system/src/main/res/                     # 변경 — 아바타 12종 에셋(벡터 또는 밀도별 WebP)
+core/design-system/src/main/java/team/mino/core/designsystem/
+├── component/profileavatar/  MinoProfileAvatar.kt · MinoProfileAvatarImage.kt · MinoProfileAvatarDefaults.kt
+│                             · token/ProfileAvatarTokens.kt · ProfileAvatarPreview.kt        # 신규
+├── component/topnavigation/  MinoTopNavigation.kt · MinoTopNavigationDefaults.kt
+│                             · token/TopNavigationTokens.kt · TopNavigationPreview.kt        # 신규 — Platform=iOS variant
+└── foundation/icons/icons/   ChevronLeft.kt                                                  # 신규 (+ MinoIconsPreview 등록)
+core/design-system/src/main/res/drawable-{mdpi,xhdpi,xxhdpi}/   # 변경 — 아바타 12종 WebP (12 × 3밀도)
 
 app/build.gradle.kts                                 # 변경 — implementation(project(":feature:profile"))
 settings.gradle.kts                                  # 변경 — include(":feature:profile")
@@ -134,6 +152,20 @@ settings.gradle.kts                                  # 변경 — include(":feat
 원격이 붙을 때 이 그림에 원격 DataSource가 `ProfileRepositoryImpl`과 로컬 사이로 들어오고 로컬은 캐시로 내려간다. **그때 바뀌는 파일과 바뀌지 않는 파일의 전체 목록은 research.md D24가 표로 들고 있다.** 이 표가 이연을 안전하게 만드는 장치이므로, 이번 범위의 구현이 표를 벗어나면(예: 화면이 저장 경로를 아는 상태를 갖게 되면) 그 자체가 설계 위반이다.
 
 **구조 결정**: 프로필 설정은 **진입형** feature다 — 탭 셸의 그래프에 편입되는 화면이 아니라 온보딩·마이페이지 양쪽이 Activity로 여는 독립 플로우이고, 바텀 네비게이션을 노출하지 않는다(UX-006). 따라서 `ProfileActivity`·`ProfileShell`·`ProfileNavHost`·`di/`(Launcher) 골격을 모두 갖는다([feature-module.md](../../architecture/feature-module.md) 1장). 화면이 하나여도 NavHost를 유지하는 이유는 인자 복원과 화면 조회 로깅이 거기 딸려 오기 때문이다(research.md D11). 온보딩·마이페이지 feature는 이번 범위 밖이며, 이 계획은 그들이 호출할 계약([profile-launcher-contract.md](contracts/profile-launcher-contract.md))까지만 확정한다.
+
+**Phase 1 설계 후 재평가(3.0.0)**: 이번 개정은 설계가 아니라 **구현이 드러낸 사실**로 촉발됐다. 게이트 판정이 실제로 바뀐 곳은 셋이다.
+
+| 원칙/기준 | 2.0.0 판정 | 3.0.0 판정 | 무엇이 바뀌었나 |
+|---|---|---|---|
+| III. 결정과 실패는 기록으로 남는다 | PASS, 승격 대상 1건 | **PASS** | D4가 [ADR](../../adr/2026-08-25-profile-avatar-assets-in-design-system.md)로 승격돼 승격 대상이 남지 않는다. 헌법 Governance의 "기록 없는 예외는 없다" 요건도 함께 충족됐다([D35](research.md#d35-아바타-12종의-소유-결정을-adr로-승격했다)) |
+| IV. 명세가 구현에 선행한다 | PASS, 미충족 2건·어긋남 1건 | **PASS, 미충족 4건·어긋남 2건** | 원격 이연분(spec §4 서버 반영·FR-008 개인방)은 그대로다. 여기에 **FR-003의 칸 단위 선택 표시**([D28](research.md#d28-아바타-선택-상태의-시각-표시를-만들지-않는다))와 **FR-010의 "노출하되 비활성"**([D29](research.md#d29-온보딩-진입에서-뒤로가기를-노출하지-않는다))이 더해졌다. 둘 다 원본에 근거가 없거나 사용자가 다른 쪽을 확정한 것이며, 설계로 봉합하지 않고 [quickstart.md §4](quickstart.md)와 계약이 미충족을 든다 |
+| V. 컨벤션은 게이트다 | PASS | **FAIL — MUST 위반 1건이 남는다** | 아래 참조 |
+
+**원칙 V가 뒤집힌 이유 — 규약과 계약이 정면 충돌한다.** [`core:data` README](../../../core/data/README.md) §5·§2가 "DataSource는 DTO만 반환하고 변환하지 않는다"로 정하는데, [repository 계약](contracts/profile-repository-contract.md) §저장 계층이 "원격이 없어 DTO가 없으니 `ProfileLocalDataSourceImpl`이 `Preferences`에서 `Profile`을 직접 조립한다"를 명시 지시했다. **어느 쪽으로도 규약을 다 지킬 수 없다** — Preferences에는 자연적 DTO가 없고, README가 키 상수를 DataSource에 두게 해서 변환을 `RepositoryImpl`로 옮기면 키가 밖으로 샌다.
+
+이 plan은 그 충돌을 **설계로 봉합하지 않는다.** 해소는 (a) README에 "DTO 없는 로컬 DataSource" 갈래를 보완하거나 (b) 계약을 바꿔 `ProfileEntry`를 도입하는 것이며, 규약 문서는 이 스킬이 고치지 않으므로 **판단을 사용자에게 남긴다.** 같은 성격의 규약 충돌 하나(아바타 에셋 배치)는 [ADR](../../adr/2026-08-25-profile-avatar-assets-in-design-system.md)로 예외 기록을 남겨 닫았고, 그 ADR이 §1 규약 정리를 후속 과제로 든다.
+
+**판정이 바뀌지 않은 것**: 원칙 I·II와 기술 표준은 그대로다. 규범 감사가 레이어 경계·가시성·DI 소유·패키지 구조·M3 패턴·에러 처리 배선·원격 이연 범위(D24)·에셋 포맷·Compose Lint를 전수 확인해 위반 없음을 보고했다. `Complexity Tracking`에 올릴 항목은 없다.
 
 ## 복잡도 추적 (Complexity Tracking)
 

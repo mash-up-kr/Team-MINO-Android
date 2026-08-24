@@ -57,9 +57,10 @@ flowchart LR
 enum class MinoProfileAvatar { /* 12항목 */ }   // :core:design-system
 ```
 
-- 12항목의 이름과 에셋 대응은 구현 단계에서 Figma [프로필 이미지 선택 그리드](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2314-95672&m=dev) 대조로 확정한다.
+- 12항목은 **`Person1`~`Person12`**이고 드로어블은 `profile_avatar_person_01`~`_12`다. 선언 순서는 Figma [그리드](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2314-95672&m=dev)의 좌→우·상→하 배치 순서이며, 디자인 검수가 12칸을 한 장씩 대조해 확인했다.
 - **기본 아바타**는 목록의 첫 항목이다. 미선택 상태의 상단 썸네일과 미선택 저장 값(EC-002)이 모두 이 값을 쓴다.
-- enum은 그림과 크기만 안다. 저장 식별자·"미선택"·그리드 배치는 갖지 않는다([방 색상 팔레트 ADR](../../adr/2026-08-14-room-color-palette-in-design-system.md)의 경계를 따른다).
+- enum은 그림만 안다. 저장 식별자·"미선택"·그리드 배치는 갖지 않는다. 소유 근거는 [ADR — 프로필 아바타 12종의 에셋과 컴포넌트는 `:core:design-system`이 소유한다](../../adr/2026-08-25-profile-avatar-assets-in-design-system.md)이다.
+- **선택 상태의 시각 표시는 없다.** 원본에 표현이 없어 `selected`는 접근성 시맨틱만 싣는다([research.md D28](research.md#d28-아바타-선택-상태의-시각-표시를-만들지-않는다)).
 
 ### enum ↔ `avatarId`(Int) 매핑 — `:feature:profile`이 소유
 
@@ -89,7 +90,7 @@ data class ProfileUiState(
 | `저장` 활성 | `isNicknameValid && !isSaving` | FR-004, UX-003 |
 | `지우기` 활성 | `isNicknameValid && selectedAvatar != null && !isSaving` | FR-005, EC-012 |
 | 오류 표시 | `isNicknameTouched && !isNicknameValid` | FR-011, TS-001 |
-| 뒤로가기 노출·동작 | `entryPoint == MyPage` | FR-010, EC-001 |
+| 뒤로가기 노출 | `entryPoint == MyPage` — **거짓이면 버튼을 그리지 않는다**(비활성이 아니라 숨김) | FR-010, EC-001, [D29](research.md#d29-온보딩-진입에서-뒤로가기를-노출하지-않는다) |
 
 - `selectedAvatar`의 `null`은 "고르지 않음"이다. 기본 아바타로 초기화하지 않는다 — 그러면 `지우기` 활성 조건(FR-005)이 첫 화면부터 참이 된다.
 - `isNicknameTouched`는 진입 직후(TS-001)에 오류 문구가 뜨지 않게 하는 값이다. 첫 입력에서 참이 되고 `지우기`로 거짓으로 돌아간다.
@@ -100,6 +101,8 @@ data class ProfileUiState(
 ```kotlin
 enum class ProfileEntryPoint { Onboarding, MyPage }
 ```
+
+> **JVM 단위 테스트에서 `entryPoint`는 통제되지 않는다.** `savedStateHandle.toRoute<ProfileMain>()`이 스텁 `android.jar`에서 항상 `null`을 돌려주므로 ViewModel의 진입점은 늘 `MyPage`다([research.md D31](research.md#d31-viewmodel-단위-테스트는-isreturndefaultvalues로-열고-진입점은-통제하지-않는다)). 진입점별 분기는 위 파생 값이 순수 계산이므로 `ProfileUiState(entryPoint = ...)`를 직접 세워 검증한다.
 
 - Intent extra 문자열(`onboarding` / `edit`)과의 변환은 `:feature:profile`이 갖는다. 알 수 없는 값은 **`MyPage`로 해석한다** — 뒤로가기를 막는 쪽이 더 강한 제약이라, 잘못된 값 때문에 사용자가 화면에 갇히는 것을 피한다.
 
