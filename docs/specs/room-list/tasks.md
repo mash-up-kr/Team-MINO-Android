@@ -122,6 +122,11 @@
 
 > **구현 편차 기록(T029)**: spec.md FR-001이 요구하는 지도 마커는 개별 장소(Place) 좌표가 있어야 하는데, `Room` 도메인 모델·`data-model.md` 어디에도 `Place`·좌표 계약이 없다(spec.md §3.2가 Place 자체를 이 spec 범위 밖으로 명시). 사용자 확인 하에 방 ID 해시로 파생한 **임시 목데이터 좌표**(강남역 주변, `RoomListMap.kt`의 `mockMarkerCenter()`)로 마커를 얹었다 — 실제 장소 좌표 계약이 생기면 이 함수를 지우고 교체해야 한다. `OnMapSortSelected`·`OnCategoryFilterSelected`(T038)도 마커 자체에 카테고리·좌표 정보가 없어 상태 갱신 이상의 실질적 필터링은 하지 못한다.
 > **구현 편차 기록**: `DefaultMapCenter`(EC-002 기본 디폴트 좌표)는 PRD [SYS-004] Flow A "현재 강남역으로 임시 지정"에 맞춰 강남역 좌표(37.4979, 127.0276)로 설정했다(최초 구현 중 서울시청으로 잘못 넣었던 것을 정정).
+> **버그 수정(2026-08-25, 실기기 검증 중 발견 — T031~T033·T039 모두 `[X]` 완료 처리됐음에도 실제로는 동작하지 않았다)**: 세 가지가 함께 있어야 FR-001·UX-002가 실제로 성립하는데 그중 하나라도 빠지면 증상이 "위치가 안 바뀐다"로 동일하게 보여 순서대로 발견했다.
+>   1. **`AndroidManifest.xml`에 `ACCESS_FINE_LOCATION`·`ACCESS_COARSE_LOCATION` 선언이 아예 없었다** — 매니페스트에 없는 권한은 런타임에 요청해도 시스템이 다이얼로그를 띄우지 않고 조용히 거부 처리된다(T033이 권한 런처를 연결해놔도 애초에 뜰 수 없었음). `app/src/main/AndroidManifest.xml`에 두 줄 추가로 해결.
+>   2. **`currentDeviceLocation()`이 `LocationManager.getLastKnownLocation()`만 조회**해 다른 앱이 최근 위치를 요청한 적 없는 기기에서는 모든 provider가 `null`을 반환하고, 권한을 허용했는데도 조용히 `DefaultMapCenter`로 폴백했다. 캐시가 없으면 활성화된 provider로 `requestSingleUpdate`(최대 10초)를 능동적으로 요청하도록 수정.
+>   3. **`RoomListMap`의 `rememberMinoCameraState`가 최초 컴포지션 시점의 `center`만 초기값으로 쓸 뿐, 이후 `mapCenter`가 바뀌어도 카메라를 옮기지 않았다** — 위 두 가지를 고쳐도 이 문제 때문에 지도가 여전히 안 움직였다. `LaunchedEffect(mapCenter) { cameraPositionState.animate(...) }`로 수정. **세 버그 중 실제 증상의 최종 원인은 이것**이었다.
+>   T031~T033·T039의 `[X]` 표시는 "코드가 작성됨"을 의미할 뿐 "실기기에서 검증됨"을 보장하지 않는다는 사례로 남긴다 — 후속 유사 작업은 완료 처리 전 실기기·에뮬레이터 수동 검증을 병행할 것.
 
 **체크포인트**: 이 시점에서 지도·3단 시트·필터가 독립적으로 동작하고 검증 가능해야 한다.
 
