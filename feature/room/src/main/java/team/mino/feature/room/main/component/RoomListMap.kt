@@ -2,7 +2,9 @@ package team.mino.feature.room.main.component
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.maps.android.compose.GoogleMapComposable
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.rememberUpdatedMarkerState
@@ -40,6 +42,14 @@ internal fun RoomListMap(
         center = mapCenter ?: DefaultMapCenter,
         zoom = DEFAULT_ZOOM,
     )
+
+    // rememberMinoCameraState는 최초 컴포지션 시점의 center만 반영한다 — 권한 허용·현재 위치
+    // 버튼 클릭으로 mapCenter가 바뀔 때마다 카메라를 그 위치로 옮기려면 별도로 반응해야 한다.
+    LaunchedEffect(mapCenter) {
+        mapCenter?.let { center ->
+            cameraPositionState.animate(CameraUpdateFactory.newLatLngZoom(center.toLatLng(), DEFAULT_ZOOM))
+        }
+    }
 
     MinoMap(
         cameraPositionState = cameraPositionState,
