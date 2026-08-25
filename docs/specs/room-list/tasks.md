@@ -128,6 +128,11 @@
 >   3. **`RoomListMap`의 `rememberMinoCameraState`가 최초 컴포지션 시점의 `center`만 초기값으로 쓸 뿐, 이후 `mapCenter`가 바뀌어도 카메라를 옮기지 않았다** — 위 두 가지를 고쳐도 이 문제 때문에 지도가 여전히 안 움직였다. `LaunchedEffect(mapCenter) { cameraPositionState.animate(...) }`로 수정. **세 버그 중 실제 증상의 최종 원인은 이것**이었다.
 >   T031~T033·T039의 `[X]` 표시는 "코드가 작성됨"을 의미할 뿐 "실기기에서 검증됨"을 보장하지 않는다는 사례로 남긴다 — 후속 유사 작업은 완료 처리 전 실기기·에뮬레이터 수동 검증을 병행할 것.
 
+> **크로스 feature 블로커 2건(2026-08-25, base를 develop과 동기화한 뒤 실기기 검증 중 발견 — room-list 자체의 결함이 아니다)**: 위 3개 버그를 고친 뒤에도 T013~T019(데이터 레이어) 종단 검증이 막힌다. 둘 다 room-list 범위 밖 소유자가 있다.
+>   1. **익명 세션 미확보(`IllegalStateException: Mino 서버 요청에 실을 신원 증명이 없다`)** — `docs/specs/anonymous-auth-session/tasks.md`의 기지정 공백 **N-1**: "세션 확보를 호출하는 코드가 없다 ... 호출자 계약은 진입 화면 스펙(PRD [SCR-001] 스플래시)이 소유한다." 스플래시가 아직 구현되지 않아 앱 전체에서 Mino API를 부르는 어떤 기능도 지금은 실제 데이터를 받을 수 없다. room-list가 그 공백에 걸린 첫 완성 기능일 뿐이다. **조치 없음 — [SCR-001] 스플래시 구현을 기다린다.**
+>   2. **Google Maps 인증 실패로 지도가 렌더링되지 않는다** — `applicationId`가 `team.mino.qa` → `com.mino.gguk.qa`로 바뀌었는데, Google Cloud Console의 Maps API 키 앱 제한(패키지명+서명 인증서 지문) 목록에 새 조합이 등록돼 있지 않다. 코드가 아니라 Google Cloud Console 설정 소관 — **Firebase/GCP 프로젝트 관리자가 키 제한에 `com.mino.gguk`·`com.mino.gguk.qa`를 추가해야 해소된다.**
+>   두 블로커 모두 실기기 종단 검증(T055 quickstart)을 막지만, room-list 자체 구현(도메인·데이터·ViewModel·UI·테스트)의 정합성 판정과는 무관하다.
+
 **체크포인트**: 이 시점에서 지도·3단 시트·필터가 독립적으로 동작하고 검증 가능해야 한다.
 
 ---
