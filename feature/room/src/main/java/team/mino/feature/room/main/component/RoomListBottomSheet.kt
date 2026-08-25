@@ -1,6 +1,7 @@
 package team.mino.feature.room.main.component
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -21,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -53,6 +56,12 @@ private object RoomListBottomSheetTokens {
     val HandleHeight = 4.dp
     val DragThreshold = 24.dp
     val RoomCardHorizontalPadding = 20.dp
+
+    // Figma `Button/Icon/Outlined`(node 2661-157264/157265/157266) — 아이콘 20dp + 둘레 패딩 10dp로
+    // 전체 40dp 원형. 헤더의 +(방 추가)·X(닫기) 버튼이 같은 스펙을 공유한다.
+    val HeaderIconButtonSize = 40.dp
+    val HeaderIconButtonIconSize = 20.dp
+    val HeaderIconButtonBorderWidth = 1.dp
 }
 
 private fun halfHeight(groupRoomCount: Int): Dp =
@@ -179,26 +188,39 @@ private fun RoomListBottomSheetHeader(
                 style = MinoAndroidTheme.typography.title3Bold,
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Icon(
-                    modifier = Modifier
-                        .size(24.dp)
-                        .rippleSingleClickable(onClick = onAddRoomClick),
-                    imageVector = MinoIcons.Plus,
-                    contentDescription = null,
-                    tint = MinoAndroidTheme.colors.labelNormal,
-                )
+                RoomListHeaderIconButton(icon = MinoIcons.Plus, onClick = onAddRoomClick)
                 if (sheetLevel == BottomSheetLevel.FULL) {
-                    Icon(
-                        modifier = Modifier
-                            .size(24.dp)
-                            .rippleSingleClickable(onClick = onDraggedDown),
-                        imageVector = MinoIcons.Close,
-                        contentDescription = null,
-                        tint = MinoAndroidTheme.colors.labelNormal,
-                    )
+                    RoomListHeaderIconButton(icon = MinoIcons.Close, onClick = onDraggedDown)
                 }
             }
         }
+    }
+}
+
+/** Figma `Button/Icon/Outlined` — 헤더의 +(방 추가)·X(닫기) 버튼이 공유하는 40dp 원형 아웃라인 버튼. */
+@Composable
+private fun RoomListHeaderIconButton(
+    icon: ImageVector,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .size(RoomListBottomSheetTokens.HeaderIconButtonSize)
+            .border(
+                width = RoomListBottomSheetTokens.HeaderIconButtonBorderWidth,
+                color = MinoAndroidTheme.colors.lineNormalNeutral,
+                shape = CircleShape,
+            ).clip(CircleShape)
+            .rippleSingleClickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            modifier = Modifier.size(RoomListBottomSheetTokens.HeaderIconButtonIconSize),
+            imageVector = icon,
+            contentDescription = null,
+            tint = MinoAndroidTheme.colors.labelNormal,
+        )
     }
 }
 
