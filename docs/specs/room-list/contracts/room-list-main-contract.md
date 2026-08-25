@@ -6,7 +6,7 @@
 
 ```kotlin
 data class RoomListUiState(
-    val sheetLevel: BottomSheetLevel = BottomSheetLevel.HALF,   // 진입 기본값(FR-001), EC-007 예외는 시작 인자로 override
+    val sheetLevel: BottomSheetLevel = BottomSheetLevel.HALF,   // 진입 기본값(FR-001). EC-007은 시작 인자가 아니라 NavHost 백스택 보존으로 해결(data-model.md §2, research.md D13)
     val personalRoom: Room? = null,
     val groupRooms: ImmutableList<Room> = persistentListOf(),
     val roomListSort: RoomListSortOption = RoomListSortOption.ALL,
@@ -52,7 +52,7 @@ sealed interface RoomListIntent : Intent {
 ```kotlin
 sealed interface RoomListSideEffect : SideEffect {
     data object RequestLocationPermission : RoomListSideEffect   // Route가 launcher.launch([FINE, COARSE]) 호출 (D8)
-    data class NavigateToRoomDetail(val roomId: String) : RoomListSideEffect   // RoomDetailLauncher 호출 (D5)
+    data class NavigateToRoomDetail(val roomId: String) : RoomListSideEffect   // Route가 navController.navigate(RoomDetailMain(roomId)) 호출 — feature 내부 Route 전환([room-list/research.md](../research.md) D13, [room-detail/plan.md](../../room-detail/plan.md))
     data object NavigateToRoomForm : RoomListSideEffect            // RoomFormLauncher 호출 (D6), 결과는 OnRoomFormResult로 수신
 }
 ```
@@ -69,10 +69,10 @@ sealed interface RoomListSideEffect : SideEffect {
 
 ## 분기 규칙 — 진입 시 초기 `sheetLevel` (FR-001, EC-007)
 
-| 시작 인자 `sheetLevelOverride` | 결정된 `sheetLevel` |
+| 상황 | 결정된 `sheetLevel` |
 |---|---|
-| `null`(일반 진입) | `HALF`, 높이는 공동방 수로 결정(FR-002) |
-| `HALF`/`FULL`([SCR-005] 방 상세 `[X]` 복귀) | 전달받은 값 그대로 — 규칙 소유는 `room-detail` spec FR-004([spec.md §3.2](../spec.md)) |
+| 탭 최초 진입(콜드 스타트) | `HALF`, 높이는 공동방 수로 결정(FR-002) |
+| [SCR-005] 방 상세 `[X]` 복귀 | 방 상세 진입 전 `RoomListViewModel`이 갖고 있던 값 그대로 — `RoomListMain`이 백스택에 남아 있어 NavHost가 UiState를 보존하므로 시작 인자·별도 override 없이 자연히 유지된다([data-model.md](../data-model.md) §2, [research.md D13](../research.md)). 상태 유지 규칙 자체의 소유는 여전히 `room-detail` spec FR-004([spec.md §3.2](../spec.md)) |
 
 ## 분기 규칙 — 위치 권한 요청 (D8, FR-001, EC-002)
 
