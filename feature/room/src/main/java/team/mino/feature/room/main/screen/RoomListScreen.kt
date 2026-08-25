@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -194,7 +195,18 @@ private fun RoomListMapControls(
     }
 }
 
-/** [FR-011] 정렬 드롭다운. `:core:design-system`의 [MinoMenu]를 트리거 + 인라인 패널로 조립한다(D11). */
+/** Figma(node 2542-125408) 실측값 — 정렬 드롭다운 패널 고정 폭. */
+private val SortDropdownMenuWidth = 140.dp
+
+/**
+ * [FR-011] 정렬 드롭다운. `:core:design-system`의 [MinoMenu]를 트리거 + 인라인 패널로 조립한다(D11).
+ *
+ * [MinoMenu]는 폭을 `widthIn(min = ...)`로만 제한해 카드형 콘텐츠에 맞춰 넓어질 수 있게 여지를 두는데,
+ * [MinoMenuItem] 내부가 `fillMaxWidth()`를 쓴다 — 이 컴포저블이 이 화면의 상위 `Row`에서
+ * `weight` 없는 첫 자식이라 나머지(카테고리 칩)에 폭을 나눠주기 전 전체 `Row` 폭으로 측정돼, 그
+ * `fillMaxWidth()`가 화면 폭 전체로 번져버린다. Figma가 이 메뉴를 고정 140dp로 그리므로 그 값을
+ * 그대로 강제해야 실제로 좁게 잡힌다.
+ */
 @Composable
 private fun RoomListSortDropdown(
     selected: MapMarkerSortOption,
@@ -227,7 +239,7 @@ private fun RoomListSortDropdown(
         }
 
         if (expanded) {
-            MinoMenu(modifier = Modifier.fillMaxWidth()) {
+            MinoMenu(modifier = Modifier.width(SortDropdownMenuWidth)) {
                 MapMarkerSortOption.entries.forEach { option ->
                     MinoMenuItem(
                         text = option.label(),
