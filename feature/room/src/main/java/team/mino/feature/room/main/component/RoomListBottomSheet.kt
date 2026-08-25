@@ -48,6 +48,7 @@ private object RoomListBottomSheetTokens {
     val HalfHeightOneGroupRoom = 360.dp
     val HalfHeightManyGroupRooms = 380.dp
     val Shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+    val FullShape = RoundedCornerShape(0.dp)
     val HandleWidth = 36.dp
     val HandleHeight = 4.dp
     val DragThreshold = 24.dp
@@ -100,12 +101,19 @@ internal fun RoomListBottomSheet(
         BottomSheetLevel.HALF -> Modifier.height(halfHeight(groupRoomCount))
         BottomSheetLevel.FULL -> Modifier.fillMaxSize()
     }
+    // Full은 화면 전체를 덮어 뒤 배경(지도)이 보이지 않으므로 둥근 모서리를 두지 않는다(Figma
+    // 003-1-3/003-2-3 대조) — Peek/Half만 지도 위에 떠 있는 카드 형태라 위쪽 모서리를 둥글린다.
+    val shape = if (sheetLevel == BottomSheetLevel.FULL) {
+        RoomListBottomSheetTokens.FullShape
+    } else {
+        RoomListBottomSheetTokens.Shape
+    }
 
     Column(
         modifier = modifier
             .fillMaxWidth()
             .then(heightModifier)
-            .clip(RoomListBottomSheetTokens.Shape)
+            .clip(shape)
             .background(MinoAndroidTheme.colors.backgroundElevatedNormal),
     ) {
         RoomListBottomSheetHeader(

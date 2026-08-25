@@ -97,12 +97,12 @@ internal fun RoomListScreen(
             modifier = Modifier.align(Alignment.BottomCenter),
         ) {
             Column {
-                if (state.sheetLevel == BottomSheetLevel.FULL) {
-                    RoomListSortChipRow(
-                        selected = state.roomListSort,
-                        onSelected = { onIntent(RoomListIntent.OnRoomListSortSelected(it)) },
-                    )
-                }
+                // Figma 003-1-2(half)·003-2-3(full) 대조 — 정렬 칩은 Full 전용이 아니라 Half에서도
+                // 보인다(FR-005). Peek는 헤더만 그리므로 content() 자체가 호출되지 않아 자동으로 숨는다.
+                RoomListSortChipRow(
+                    selected = state.roomListSort,
+                    onSelected = { onIntent(RoomListIntent.OnRoomListSortSelected(it)) },
+                )
                 RoomListRoomCardList(
                     personalRoom = state.personalRoom,
                     groupRooms = state.groupRooms,
