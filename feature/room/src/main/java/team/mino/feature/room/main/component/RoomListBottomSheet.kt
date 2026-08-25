@@ -66,7 +66,10 @@ private fun halfHeight(groupRoomCount: Int): Dp =
  * Figma 003-2-1/003-1-2/003-2-2 대조 결과 현재 위치 버튼이 이 높이 + 20dp 위에 뜬다 — [RoomListScreen]이
  * 버튼 위치를 시트 높이에 맞춰 띄우도록 이 값을 공유한다.
  */
-internal fun bottomSheetHeightOrNull(sheetLevel: BottomSheetLevel, groupRoomCount: Int): Dp? =
+internal fun bottomSheetHeightOrNull(
+    sheetLevel: BottomSheetLevel,
+    groupRoomCount: Int,
+): Dp? =
     when (sheetLevel) {
         BottomSheetLevel.PEEK -> RoomListBottomSheetTokens.PeekHeight
         BottomSheetLevel.HALF -> halfHeight(groupRoomCount)
