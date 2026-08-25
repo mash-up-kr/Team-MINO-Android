@@ -27,9 +27,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
 import kotlinx.collections.immutable.toImmutableList
 import team.mino.core.designsystem.component.category.MinoCategory
 import team.mino.core.designsystem.component.chip.ChipSize
+import team.mino.core.designsystem.component.chip.ChipVariant
 import team.mino.core.designsystem.component.chip.MinoChip
 import team.mino.core.designsystem.component.menu.MinoMenu
 import team.mino.core.designsystem.component.menu.MinoMenuItem
@@ -146,6 +149,11 @@ private object RoomListNudgeOverlayTokens {
  * Figma `Category/Resource/Chip/Normal/Small`(node 2661-157350) 실측값 — radius 8dp·패딩
  * 8h/6v·`Label 1/Normal - Medium`(14sp) 모두 [ChipSize.Small]과 일치한다. `Medium`(radius 10dp)을
  * 쓰면 모서리·패딩이 실제보다 커 보인다.
+ *
+ * `variant`도 선택 여부에 따라 갈린다 — Figma 렌더링을 직접 대조해보면 선택된 칩(`Active=True`)만
+ * 검정 배경·흰 글자([ChipVariant.Solid])이고, 나머지는 흰 배경에 옅은 테두리·회색 글자
+ * ([ChipVariant.Outlined])다. 전부 `Solid`로 두면 비선택 칩에 테두리 없이 회색 틴트만 채워져
+ * Figma와 달라진다.
  */
 @Composable
 private fun RoomListSortChipRow(
@@ -158,11 +166,13 @@ private fun RoomListSortChipRow(
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         items(RoomListSortOption.entries.toList()) { option ->
+            val active = option == selected
             MinoChip(
                 text = option.label(),
                 onClick = { onSelected(option) },
                 size = ChipSize.Small,
-                active = option == selected,
+                variant = if (active) ChipVariant.Solid else ChipVariant.Outlined,
+                active = active,
             )
         }
     }
@@ -214,13 +224,14 @@ private val SortDropdownTriggerShape = RoundedCornerShape(10.dp)
 private val SortDropdownTriggerBorderWidth = 1.dp
 
 /**
- * [FR-011] 정렬 드롭다운. `:core:design-system`의 [MinoMenu]를 트리거 + 인라인 패널로 조립한다(D11).
+ * [FR-011] 정렬 드롭다운. `:core:design-system`의 [MinoMenu]를 트리거 + [Popup] 패널로 조립한다(D11).
  *
- * [MinoMenu]는 폭을 `widthIn(min = ...)`로만 제한해 카드형 콘텐츠에 맞춰 넓어질 수 있게 여지를 두는데,
- * [MinoMenuItem] 내부가 `fillMaxWidth()`를 쓴다 — 이 컴포저블이 이 화면의 상위 `Row`에서
- * `weight` 없는 첫 자식이라 나머지(카테고리 칩)에 폭을 나눠주기 전 전체 `Row` 폭으로 측정돼, 그
- * `fillMaxWidth()`가 화면 폭 전체로 번져버린다. Figma가 이 메뉴를 고정 140dp로 그리므로 그 값을
- * 그대로 강제해야 실제로 좁게 잡힌다.
+ * Figma는 이 메뉴를 `position: absolute`로 띄운다(node 2542-125408) — 옆 카테고리 칩과 무관하게
+ * 지도 위에 얹힌다는 뜻이다. 이전엔 [Column]으로 트리거 아래에 메뉴를 이어 그렸는데, 그러면 펼쳤을 때
+ * 이 컴포저블의 측정 높이 자체가 늘어나 상위 `Row`(→ [RoomListMapControls])가 옆 카테고리 칩을
+ * `CenterVertically`로 그 늘어난 높이 가운데로 밀어버렸다(실기기에서 재현된 버그). [Popup]은 부모
+ * 레이아웃 트리에 참여하지 않아 이 문제가 근본적으로 생기지 않는다 — [MinoChipRoom]의
+ * `SortDropdown`(같은 Figma 패턴)과 동일한 해법이다.
  */
 @Composable
 private fun RoomListSortDropdown(
@@ -230,7 +241,7 @@ private fun RoomListSortDropdown(
 ) {
     var expanded by remember { mutableStateOf(false) }
 
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Box(modifier = modifier) {
         Row(
             modifier = Modifier
                 .border(
@@ -258,16 +269,22 @@ private fun RoomListSortDropdown(
         }
 
         if (expanded) {
-            MinoMenu(modifier = Modifier.width(SortDropdownMenuWidth)) {
-                MapMarkerSortOption.entries.forEach { option ->
-                    MinoMenuItem(
-                        text = option.label(),
-                        active = option == selected,
-                        onClick = {
-                            onSelected(option)
-                            expanded = false
-                        },
-                    )
+            Popup(
+                alignment = Alignment.BottomStart,
+                onDismissRequest = { expanded = false },
+                properties = PopupProperties(focusable = true),
+            ) {
+                MinoMenu(modifier = Modifier.width(SortDropdownMenuWidth)) {
+                    MapMarkerSortOption.entries.forEach { option ->
+                        MinoMenuItem(
+                            text = option.label(),
+                            active = option == selected,
+                            onClick = {
+                                onSelected(option)
+                                expanded = false
+                            },
+                        )
+                    }
                 }
             }
         }
