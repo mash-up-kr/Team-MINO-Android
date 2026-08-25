@@ -34,6 +34,7 @@ private const val MOCK_MARKER_OFFSET_DEGREES = 0.003
 @Composable
 internal fun RoomListMap(
     mapCenter: GeoPoint?,
+    mapCenterRequestId: Int,
     personalRoom: Room?,
     groupRooms: ImmutableList<Room>,
     modifier: Modifier = Modifier,
@@ -45,7 +46,10 @@ internal fun RoomListMap(
 
     // rememberMinoCameraState는 최초 컴포지션 시점의 center만 반영한다 — 권한 허용·현재 위치
     // 버튼 클릭으로 mapCenter가 바뀔 때마다 카메라를 그 위치로 옮기려면 별도로 반응해야 한다.
-    LaunchedEffect(mapCenter) {
+    // mapCenter "값"이 아니라 mapCenterRequestId로 키를 잡는다 — GeoPoint는 데이터 클래스라 사용자가
+    // 지도를 옮긴 뒤 같은 위치로 되돌리는 버튼을 다시 누르면 값 자체는 이전과 같아서, mapCenter만
+    // 키로 쓰면 LaunchedEffect가 재실행되지 않아 카메라가 안 움직인다(실기기에서 재현된 버그).
+    LaunchedEffect(mapCenterRequestId) {
         mapCenter?.let { center ->
             cameraPositionState.animate(CameraUpdateFactory.newLatLngZoom(center.toLatLng(), DEFAULT_ZOOM))
         }
