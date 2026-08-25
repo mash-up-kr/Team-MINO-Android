@@ -10,3 +10,5 @@ package team.mino.core.navigation.activity.launcher
 const val EXTRA_SAMPLE_GREETING = "sample_greeting"
 const val EXTRA_SAMPLE_FROM_HOME = "sample_from_home"
 const val EXTRA_SAMPLE_RESULT_CONFIRMED = "sample_result_confirmed"
+
+const val EXTRA_PROFILE_ENTRY_POINT = "profile_entry_point"
