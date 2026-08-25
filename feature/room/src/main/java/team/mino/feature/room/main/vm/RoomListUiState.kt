@@ -25,4 +25,12 @@ data class RoomListUiState(
     val showNudge: Boolean = false,
     val showGhostCard: Boolean = false,
     val mapCenter: GeoPoint? = null,
+    /**
+     * `mapCenter`가 갱신될 때마다 1씩 증가하는 값. 값이 아니라 "이동 요청이 있었다는 사실" 자체를
+     * 신호로 써야 해서 둔다 — `GeoPoint`는 데이터 클래스라 좌표가 이전과 같으면(예: 사용자가 지도를
+     * 수동으로 옮긴 뒤 같은 위치로 되돌리는 현재 위치 버튼을 다시 누른 경우) `mapCenter` 값 자체는
+     * 안 바뀌어서, 이 값이 없으면 `LaunchedEffect(mapCenter)`가 재실행되지 않아 카메라가 움직이지
+     * 않는다.
+     */
+    val mapCenterRequestId: Int = 0,
 ) : UiState

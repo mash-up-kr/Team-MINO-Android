@@ -128,6 +128,30 @@ class RoomListViewModelTest {
             assertEquals(DefaultMapCenter, viewModel.state.value.mapCenter)
         }
 
+    /**
+     * 실기기에서 재현된 버그: 사용자가 지도를 수동으로 옮긴 뒤 같은 위치로 돌아가려고 현재 위치
+     * 버튼을 다시 누르면, `currentDeviceLocation()`이 이전과 같은 좌표를 돌려줘 `mapCenter` 값
+     * 자체는 안 바뀐다. `RoomListMap`의 `LaunchedEffect`가 `mapCenter` 값으로만 키를 잡으면
+     * 재실행되지 않아 카메라가 안 움직인다 — `mapCenterRequestId`가 매 클릭마다 증가해야
+     * `LaunchedEffect(mapCenterRequestId)`가 값이 같아도 다시 실행된다.
+     */
+    @Test
+    fun `현재 위치 버튼을 연속으로 눌러도 mapCenter 값이 같으면 mapCenterRequestId는 매번 증가한다`() =
+        runTest {
+            val viewModel = createViewModel(permissionGranted = true)
+
+            viewModel.processIntent(RoomListIntent.OnCurrentLocationClick)
+            advanceUntilIdle()
+            val firstRequestId = viewModel.state.value.mapCenterRequestId
+
+            viewModel.processIntent(RoomListIntent.OnCurrentLocationClick)
+            advanceUntilIdle()
+
+            val state = viewModel.state.value
+            assertEquals(DefaultMapCenter, state.mapCenter)
+            assertEquals(firstRequestId + 1, state.mapCenterRequestId)
+        }
+
     @Test
     fun `시트를 위로 드래그하면 Half에서 Full로 승격된다`() =
         runTest {

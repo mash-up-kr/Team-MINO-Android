@@ -122,7 +122,7 @@ class RoomListViewModel @Inject constructor(
         if (hasLocationPermission()) {
             launchSafely {
                 val center = resolveMapCenter(granted = true)
-                updateState { copy(mapCenter = center) }
+                updateState { copy(mapCenter = center, mapCenterRequestId = mapCenterRequestId + 1) }
             }
         } else {
             launchSafely { postSideEffect(RoomListSideEffect.RequestLocationPermission) }
@@ -138,7 +138,7 @@ class RoomListViewModel @Inject constructor(
     private fun onLocationPermissionResult(granted: Boolean) {
         launchSafely {
             val center = resolveMapCenter(granted)
-            updateState { copy(mapCenter = center) }
+            updateState { copy(mapCenter = center, mapCenterRequestId = mapCenterRequestId + 1) }
         }
     }
 
@@ -147,7 +147,7 @@ class RoomListViewModel @Inject constructor(
         if (!hasLocationPermission()) return
         launchSafely {
             val center = resolveMapCenter(granted = true)
-            updateState { copy(mapCenter = center) }
+            updateState { copy(mapCenter = center, mapCenterRequestId = mapCenterRequestId + 1) }
         }
     }
 

@@ -62,6 +62,7 @@ internal fun RoomListScreen(
     Box(modifier = modifier.fillMaxSize()) {
         RoomListMap(
             mapCenter = state.mapCenter,
+            mapCenterRequestId = state.mapCenterRequestId,
             personalRoom = state.personalRoom,
             groupRooms = state.groupRooms,
             modifier = Modifier.fillMaxSize(),
