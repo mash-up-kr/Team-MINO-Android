@@ -12,3 +12,13 @@ const val EXTRA_SAMPLE_FROM_HOME = "sample_from_home"
 const val EXTRA_SAMPLE_RESULT_CONFIRMED = "sample_result_confirmed"
 
 const val EXTRA_PROFILE_ENTRY_POINT = "profile_entry_point"
+
+const val EXTRA_ROOM_FORM_ROOM_ID = "room_form_room_id"
+const val EXTRA_ROOM_FORM_ONBOARDING = "room_form_onboarding"
+const val EXTRA_ROOM_FORM_RESULT_OUTCOME = "room_form_result_outcome"
+const val EXTRA_ROOM_FORM_RESULT_ROOM_ID = "room_form_result_room_id"
+
+// EXTRA_ROOM_FORM_RESULT_OUTCOME에 실리는 값. 폼과 호출자가 같은 문자열을 보도록 계약 자리에서 공유한다.
+const val ROOM_FORM_OUTCOME_CREATED = "created"
+const val ROOM_FORM_OUTCOME_UPDATED = "updated"
+const val ROOM_FORM_OUTCOME_SKIPPED = "skipped"
