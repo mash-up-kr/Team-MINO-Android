@@ -10,7 +10,7 @@
 
 **사전 조건**: [plan.md](./plan.md)(필수), [spec.md](./spec.md)(사용자 스토리), [research.md](./research.md), [data-model.md](./data-model.md), [contracts/](./contracts/), [ADR 2026-08-18](../../adr/2026-08-18-room-card-components-in-design-system.md)
 
-**테스트**: 자동 테스트 작업을 포함하지 않는다. `spec.md`가 테스트를 명시적으로 요청하지 않고 사용자도 TDD를 요청하지 않았다 — plan.md Technical Context가 이 판단을 tasks.md로 위임했으므로 여기서 "미도입"으로 확정한다(근거는 완료 보고 참고). 검증은 [quickstart.md](./quickstart.md)의 수동 시나리오와 최소 게이트(`./gradlew :app:assembleQaDebug`, `docs/constitution.md` 「검증 장치의 한계」)로 한다.
+**테스트**: 최초 작성 시 "자동 테스트 작업을 포함하지 않는다"로 확정했었다 — 이 저장소에 CI가 없고 Compose 테스트 관행이 정립되지 않았다는 게 근거였다. **2026-08-25 정정**: 같은 날 merge된 [PR #231](https://github.com/mash-up-kr/Team-MINO-Android/pull/231)([SYS-011] 프로필)이 도메인 UseCase·데이터 레이어·ViewModel 단위 테스트를 포함해 merge되며 그 전제가 깨졌다. room-list도 뒤늦게 `RoomListViewModelTest`(21케이스)·`RoomMapperTest`(8케이스)·`RoomRepositoryImplTest`(3케이스)를 추가했다. 검증은 여전히 [quickstart.md](./quickstart.md)의 수동 시나리오와 최소 게이트(`./gradlew :app:assembleQaDebug`, `docs/constitution.md` 「검증 장치의 한계」)를 병행한다.
 
 **구성 방식**: `spec.md`의 유저 플로우 4개를 사용자 스토리(US1~US4)로 그대로 매핑해 각 스토리를 독립적으로 구현·검증할 수 있게 묶는다.
 
