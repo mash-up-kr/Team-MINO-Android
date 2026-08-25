@@ -1,5 +1,6 @@
 package team.mino.core.designsystem.component.menu
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,7 +33,9 @@ import team.mino.core.designsystem.util.modifier.surface.surface
  *
  * [variant]는 선택 상태를 무엇으로 나타낼지 가른다. [MenuItemVariant.Normal]은 라벨 자체가 강조
  * 스타일로 바뀌고, [MenuItemVariant.Radio]·[MenuItemVariant.Checkbox]는 라벨 앞에 표식이 붙는다.
- * 셋 다 [active]가 선택 여부이며, 접근성 시맨틱에도 `selected`로 실린다.
+ * 셋 다 [active]가 선택 여부이며, 접근성 시맨틱에도 `selected`로 실린다. [active]면 variant와
+ * 무관하게 셀 배경에 옅은 딤(Figma `Menu/Resource/Item/Cell`의 `Active` 속성, `colors.activeBackgroundColor`)이
+ * 항상 함께 깔린다.
  *
  * @param active 현재 선택된 값 표시.
  * @param caption 본문 아래 보조 설명. `null`이면 표시하지 않는다.
@@ -61,6 +64,7 @@ fun MinoMenuItem(
         modifier = modifier
             .fillMaxWidth()
             .clip(MenuTokens.ItemShape)
+            .then(if (active) Modifier.background(colors.activeBackgroundColor) else Modifier)
             .rippleSingleSelectable(
                 selected = active,
                 enabled = enabled,

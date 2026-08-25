@@ -1,6 +1,7 @@
 package team.mino.feature.room.main.screen
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -139,7 +140,13 @@ private object RoomListNudgeOverlayTokens {
     val Shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
 }
 
-/** [FR-005] 정렬 칩(전체/최근 저장 순/코멘트 순). `:core:design-system`의 [MinoChip]을 재사용한다. */
+/**
+ * [FR-005] 정렬 칩(전체/최근 저장 순/코멘트 순). `:core:design-system`의 [MinoChip]을 재사용한다.
+ *
+ * Figma `Category/Resource/Chip/Normal/Small`(node 2661-157350) 실측값 — radius 8dp·패딩
+ * 8h/6v·`Label 1/Normal - Medium`(14sp) 모두 [ChipSize.Small]과 일치한다. `Medium`(radius 10dp)을
+ * 쓰면 모서리·패딩이 실제보다 커 보인다.
+ */
 @Composable
 private fun RoomListSortChipRow(
     selected: RoomListSortOption,
@@ -148,13 +155,13 @@ private fun RoomListSortChipRow(
 ) {
     LazyRow(
         modifier = modifier.padding(horizontal = 20.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         items(RoomListSortOption.entries.toList()) { option ->
             MinoChip(
                 text = option.label(),
                 onClick = { onSelected(option) },
-                size = ChipSize.Medium,
+                size = ChipSize.Small,
                 active = option == selected,
             )
         }
@@ -199,6 +206,14 @@ private fun RoomListMapControls(
 private val SortDropdownMenuWidth = 140.dp
 
 /**
+ * Figma `Button/Button`(node 2542-125408, componentId 1247:76920) 실측값 — 정렬 드롭다운 트리거.
+ * 이전엔 `CircleShape`(완전 원형)로 그려서 실제보다 훨씬 둥글게 나왔다 — 실제론 10dp 라운드에 1px
+ * 테두리가 있는 사각형이다.
+ */
+private val SortDropdownTriggerShape = RoundedCornerShape(10.dp)
+private val SortDropdownTriggerBorderWidth = 1.dp
+
+/**
  * [FR-011] 정렬 드롭다운. `:core:design-system`의 [MinoMenu]를 트리거 + 인라인 패널로 조립한다(D11).
  *
  * [MinoMenu]는 폭을 `widthIn(min = ...)`로만 제한해 카드형 콘텐츠에 맞춰 넓어질 수 있게 여지를 두는데,
@@ -218,17 +233,21 @@ private fun RoomListSortDropdown(
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(
             modifier = Modifier
-                .clip(CircleShape)
-                .background(MinoAndroidTheme.colors.backgroundElevatedNormal)
+                .border(
+                    width = SortDropdownTriggerBorderWidth,
+                    color = MinoAndroidTheme.colors.lineNormalNeutral,
+                    shape = SortDropdownTriggerShape,
+                ).clip(SortDropdownTriggerShape)
+                .background(MinoAndroidTheme.colors.backgroundNormalNormal)
                 .rippleSingleClickable(onClick = { expanded = !expanded })
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                .padding(horizontal = 16.dp, vertical = 9.dp),
+            horizontalArrangement = Arrangement.spacedBy(5.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = selected.label(),
                 color = MinoAndroidTheme.colors.labelNormal,
-                style = MinoAndroidTheme.typography.label1NormalMedium,
+                style = MinoAndroidTheme.typography.body2NormalMedium,
             )
             Icon(
                 modifier = Modifier.size(16.dp),
