@@ -4,12 +4,17 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
+import android.location.Location
+import android.location.LocationListener
 import android.location.LocationManager
+import android.os.Looper
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeoutOrNull
 import team.mino.core.common.android.architecture.MviContainer
 import team.mino.core.common.android.architecture.mviContainer
 import team.mino.core.common.android.extension.launchSafely
@@ -22,6 +27,8 @@ import team.mino.core.navigation.activity.launcher.RoomFormLauncher
 import team.mino.feature.room.main.component.DefaultMapCenter
 import team.mino.feature.room.main.model.BottomSheetLevel
 import javax.inject.Inject
+import kotlin.coroutines.resume
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
@@ -113,7 +120,10 @@ class RoomListViewModel @Inject constructor(
      */
     private fun onScreenEntered() {
         if (hasLocationPermission()) {
-            updateState { copy(mapCenter = resolveMapCenter(granted = true)) }
+            launchSafely {
+                val center = resolveMapCenter(granted = true)
+                updateState { copy(mapCenter = center) }
+            }
         } else {
             launchSafely { postSideEffect(RoomListSideEffect.RequestLocationPermission) }
         }
@@ -126,17 +136,23 @@ class RoomListViewModel @Inject constructor(
 
     /** [EC-002] 거부 시 기본 디폴트 좌표, 허용 시 실제 위치로 `mapCenter`를 설정한다. */
     private fun onLocationPermissionResult(granted: Boolean) {
-        updateState { copy(mapCenter = resolveMapCenter(granted)) }
+        launchSafely {
+            val center = resolveMapCenter(granted)
+            updateState { copy(mapCenter = center) }
+        }
     }
 
     /** [research.md D10] 현재 위치 버튼 최소 구현 — `mapCenter`만 갱신한다. */
     private fun onCurrentLocationClick() {
         if (!hasLocationPermission()) return
-        updateState { copy(mapCenter = resolveMapCenter(granted = true)) }
+        launchSafely {
+            val center = resolveMapCenter(granted = true)
+            updateState { copy(mapCenter = center) }
+        }
     }
 
     /** 거부 시 기본 디폴트 좌표, 허용 시 실제 위치로 해석한다(EC-002). 세 호출부가 공유하는 단일 규칙. */
-    private fun resolveMapCenter(granted: Boolean): GeoPoint =
+    private suspend fun resolveMapCenter(granted: Boolean): GeoPoint =
         if (granted) currentDeviceLocation() ?: DefaultMapCenter else DefaultMapCenter
 
     /** [contracts/room-list-main-contract.md 「분기 규칙 — 시트 드래그 전이」] */
@@ -198,16 +214,53 @@ class RoomListViewModel @Inject constructor(
             PackageManager.PERMISSION_GRANTED
 
     /**
-     * 마지막으로 알려진 기기 위치. `:core:map`은 지도 렌더링만 담당하고 위치 조회 인프라가 없어(README
-     * 확인 완료) 프레임워크 `LocationManager`로 직접 조회한다 — 별도 SDK 의존을 새로 들이지 않는다.
+     * 기기 위치. `:core:map`은 지도 렌더링만 담당하고 위치 조회 인프라가 없어(README 확인 완료)
+     * 프레임워크 `LocationManager`로 직접 조회한다 — 별도 SDK 의존을 새로 들이지 않는다.
+     *
+     * 캐시된 마지막 위치(`getLastKnownLocation`)부터 확인하고, 없으면(다른 앱이 최근에 위치를 요청한
+     * 적이 없는 기기에서는 모든 provider가 `null`을 반환한다) 활성화된 provider로 새 위치를 능동적으로
+     * 요청한다. `LOCATION_FETCH_TIMEOUT`을 넘기면 [resolveMapCenter]가 기본 좌표로 폴백한다.
      */
     @SuppressLint("MissingPermission")
-    private fun currentDeviceLocation(): GeoPoint? {
+    private suspend fun currentDeviceLocation(): GeoPoint? {
         val locationManager = context.getSystemService(LocationManager::class.java) ?: return null
-        return locationManager.allProviders
+        val cached = locationManager.allProviders
             .mapNotNull { provider -> runCatching { locationManager.getLastKnownLocation(provider) }.getOrNull() }
             .maxByOrNull { it.time }
-            ?.let { GeoPoint(latitude = it.latitude, longitude = it.longitude) }
+        if (cached != null) return cached.toGeoPoint()
+
+        val provider = when {
+            locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) -> LocationManager.GPS_PROVIDER
+            locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER) -> LocationManager.NETWORK_PROVIDER
+            else -> return null
+        }
+        return withTimeoutOrNull(LOCATION_FETCH_TIMEOUT) { requestSingleLocationUpdate(locationManager, provider) }
+    }
+
+    /** [requestSingleUpdate]는 API 21부터 지원한다(minSdk 29) — `getCurrentLocation`(API 30+)보다 넓은 범위를 커버한다. */
+    private suspend fun requestSingleLocationUpdate(
+        locationManager: LocationManager,
+        provider: String,
+    ): GeoPoint? =
+        suspendCancellableCoroutine { continuation ->
+            val listener = object : LocationListener {
+                override fun onLocationChanged(location: Location) {
+                    locationManager.removeUpdates(this)
+                    if (continuation.isActive) continuation.resume(location.toGeoPoint())
+                }
+            }
+            continuation.invokeOnCancellation { locationManager.removeUpdates(listener) }
+            runCatching {
+                locationManager.requestSingleUpdate(provider, listener, Looper.getMainLooper())
+            }.onFailure {
+                if (continuation.isActive) continuation.resume(null)
+            }
+        }
+
+    private fun Location.toGeoPoint(): GeoPoint = GeoPoint(latitude = latitude, longitude = longitude)
+
+    private companion object {
+        val LOCATION_FETCH_TIMEOUT = 10.seconds
     }
 }
 
