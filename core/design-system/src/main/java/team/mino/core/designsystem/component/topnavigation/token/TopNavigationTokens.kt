@@ -1,5 +1,6 @@
 package team.mino.core.designsystem.component.topnavigation.token
 
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 import team.mino.core.designsystem.foundation.color.token.ColorAccessKeyToken
 import team.mino.core.designsystem.foundation.typography.token.TypographyAccessKeyToken
@@ -23,9 +24,22 @@ internal object TopNavigationTokens {
     val BackInteractionSize = 40.dp
     val BackIconPadding = 8.dp
 
+    /** 텍스트 액션이 놓이는 자리의 높이. 액션이 없어도 이 자리는 비워 둔 채 유지된다. */
+    val TrailingSlotHeight = 24.dp
+
+    /**
+     * 텍스트 액션 터치·리플 영역의 크기. 글자보다 위아래·좌우로 넘치며,
+     * 좌우로 넘치는 만큼은 [ActionInteractionOverhang]으로 되돌려 글자 자체는 자리 오른쪽 끝에 붙인다.
+     */
+    val ActionInteractionHeight = 28.dp
+    val ActionInteractionOverhang = 6.dp
+    val ActionInteractionShape = RoundedCornerShape(6.dp)
+
     val TitleHorizontalPadding = 4.dp
 
     val TitleFont = TypographyAccessKeyToken.Headline2Bold
     val TitleColor = ColorAccessKeyToken.LabelStrong
     val BackIconColor = ColorAccessKeyToken.LabelNormal
+    val ActionLabelFont = TypographyAccessKeyToken.Label1NormalMedium
+    val ActionLabelColor = ColorAccessKeyToken.LabelNormal
 }
