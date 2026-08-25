@@ -1,6 +1,6 @@
 # 래스터 이미지 리소스는 WebP 확장자를 사용한다
 
-- **상태**: Accepted
+- **상태**: Superseded by [공유 래스터 이미지는 `:core:common:ui`에 두고, WebP·밀도 규칙은 배치 규약이 소유한다](2026-08-19-raster-image-placement-and-format.md)
 - **작성일**: 2026-08-01
 - **작성자**: full_avocado
 
