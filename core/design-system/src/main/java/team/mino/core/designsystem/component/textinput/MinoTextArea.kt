@@ -12,10 +12,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.input.InputTransformation
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.TextFieldState
-import androidx.compose.foundation.text.input.maxLength
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -27,6 +25,7 @@ import team.mino.core.designsystem.component.textinput.token.TextInputTokens
 import team.mino.core.designsystem.foundation.typography.token.value
 import team.mino.core.designsystem.util.modifier.shadow.dropShadow
 import team.mino.core.designsystem.util.modifier.surface.surface
+import team.mino.core.designsystem.util.text.graphemeLength
 
 /**
  * TextArea의 높이 정책.
@@ -75,7 +74,8 @@ enum class MinoTextAreaStatus {
  * @param status 검증 상태([MinoTextAreaStatus]). TextInput과 달리 성공 상태가 없다.
  * @param label 필드 위 라벨. null이면 라벨 줄 자체를 그리지 않는다.
  * @param required 라벨 뒤에 필수 표시(`*`)를 붙인다(Figma `requiredBadge`). [label]이 있을 때만 보인다.
- * @param maxLength 최대 글자수. 카운터 분모이며 초과 입력은 [InputTransformation.maxLength]로 차단한다.
+ * @param maxLength 최대 글자수. 카운터 분모이며 초과 입력은 차단한다. 세는 단위는 코드 유닛이 아니라
+ *   사용자가 보는 글자(UAX #29 grapheme cluster)다.
  * @param resize 높이 정책([MinoTextAreaResize]).
  * @param showBottom 하단 영역 표시 여부(Figma `bottom`). false면 카운터·슬롯이 모두 사라진다.
  * @param showCounter 하단 좌측 글자수 카운터 표시 여부(Figma `leadingContent`).
@@ -113,7 +113,8 @@ fun MinoTextArea(
     // 입력 컴포넌트는 타자마다 재구성되므로 아래 넷을 매번 새로 만들지 않는다
     val inputTextStyle = remember(inputFont, contentColor) { inputFont.copy(color = contentColor) }
     val cursorBrush = remember(contentColor) { SolidColor(contentColor) }
-    val inputTransformation = remember(maxLength) { InputTransformation.maxLength(maxLength) }
+    val inputTransformation = remember(maxLength) { MaxGraphemeLengthTransformation(maxLength) }
+    val graphemeCount = remember(state.text) { state.text.graphemeLength() }
 
     // 줄 수로 높이를 제어한다. BasicTextField(state, scrollState)가 커서를 따라 스크롤을 내려준다.
     val lineLimits = remember(resize) {
@@ -186,7 +187,7 @@ fun MinoTextArea(
                     ) {
                         if (showCounter) {
                             Text(
-                                text = "${state.text.length}/$maxLength",
+                                text = "$graphemeCount/$maxLength",
                                 modifier = Modifier
                                     .padding(horizontal = TextInputTokens.AreaBottomSlotHorizontalPadding),
                                 style = TextInputTokens.CounterFont.value,

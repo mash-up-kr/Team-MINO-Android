@@ -36,5 +36,5 @@ fun Room.toRoomCardParams(): RoomCardUiModel =
         placeCountLabel = "장소 ${placeCount}개",
         participantImageUrls = memberSummary.visibleAvatarUrls.toImmutableList(),
         coverImageUrl = (thumbnail as? RoomThumbnail.Collage)?.imageUrls?.firstOrNull(),
-        memo = description,
+        memo = description.ifEmpty { null },
     )

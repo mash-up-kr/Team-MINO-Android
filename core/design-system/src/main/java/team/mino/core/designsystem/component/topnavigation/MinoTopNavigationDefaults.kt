@@ -19,4 +19,7 @@ object MinoTopNavigationDefaults {
 
     val backIconColor: Color
         @Composable @ReadOnlyComposable get() = TopNavigationTokens.BackIconColor.value
+
+    val actionLabelColor: Color
+        @Composable @ReadOnlyComposable get() = TopNavigationTokens.ActionLabelColor.value
 }

@@ -19,6 +19,7 @@ import org.junit.Test
 import team.mino.core.domain.model.MapMarkerSortOption
 import team.mino.core.domain.model.PlaceCategoryFilter
 import team.mino.core.domain.model.Room
+import team.mino.core.domain.model.RoomColor
 import team.mino.core.domain.model.RoomListSortOption
 import team.mino.core.domain.model.RoomMemberSummary
 import team.mino.core.domain.model.RoomThumbnail
@@ -357,8 +358,9 @@ class RoomListViewModelTest {
         Room(
             id = id,
             name = id,
-            description = null,
-            color = null,
+            description = "",
+            color = RoomColor.GRAY,
+            ownerId = "owner",
             isPersonal = isPersonal,
             placeCount = 0,
             thumbnail = RoomThumbnail.ColorAndCharacter(color = null),
