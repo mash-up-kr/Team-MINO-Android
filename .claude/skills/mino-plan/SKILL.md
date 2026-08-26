@@ -98,7 +98,7 @@ Phase 0/1이 만드는 `research.md`·`data-model.md`·`contracts/`·`quickstart
    - 헌법을 바탕으로 Constitution Check 섹션 채우기
    - 게이트 평가(정당화되지 않은 위반이 있으면 ERROR)
    - Phase 0: research.md 생성(모든 NEEDS CLARIFICATION 해소)
-   - Phase 1: data-model.md, contracts/, quickstart.md 생성
+   - Phase 1: data-model.md, contracts/, quickstart.md 생성(서버 엔드포인트를 쓰는 계약은 배포된 OpenAPI 문서와 대조)
    - 설계 이후 Constitution Check 재평가
    - 개정인 경우, 어떤 산출물을 어디까지 손댈지는 위 "부속 산출물 재생성 규칙"을 따른다
 4. **등급 확정 · 승인 게이트** (개정인 경우에만): Phase 1 설계와 Constitution Check 재평가가 끝난 뒤에 수행한다. 리서치와 설계를 마치기 전에는 설계가 얼마나 흔들리는지 알 수 없으므로, 이 게이트는 spec 스킬과 달리 워크플로 **뒤**에 온다.
@@ -118,6 +118,7 @@ Phase 0/1이 만드는 `research.md`·`data-model.md`·`contracts/`·`quickstart
 - Plan 파일 경로 및 버전 : `{SPEC_DIR}/plan.md`, [plan 버전]
 - 기준 spec 버전 : [이 plan이 근거로 삼은 `spec.md` 버전]
 - 생성·갱신된 산출물 : [research.md, data-model.md, contracts/*, quickstart.md 중 해당하는 것. 등급에 따라 손대지 않은 산출물이 있다면 그 사실도 함께 적는다]
+- API 대조 결과 : [조회한 OpenAPI 문서와 조회 시점. 대응 API가 없는 요구사항, spec과 어긋나 서버팀 협의가 필요한 지점. 조회에 실패했다면 그 사실과 미대조로 남은 계약. 서버 API를 쓰지 않는 feature면 이 줄을 생략한다]
 - ADR 승격 제안 : [리서치 결정 중 다른 feature에도 구속력을 갖는 것이 있다면 그 결정과 `/adr-writer` 사용 제안. 없으면 이 줄을 생략한다]
 - 개정된 Plan일 경우
   - 개정 내용 요약 : [어떤 설계가 바뀌었는지, 버전이 어떻게 올랐는지]
@@ -162,6 +163,7 @@ Phase 0/1이 만드는 `research.md`·`data-model.md`·`contracts/`·`quickstart
    - 프로젝트 유형에 적합한 계약 형식으로 문서화한다.
    - 예: 라이브러리의 공개 API, CLI 도구의 커맨드 스키마, 웹 서비스의 엔드포인트, 파서의 문법, 애플리케이션의 UI 계약
    - 순수하게 내부용인 프로젝트(빌드 스크립트, 일회성 도구 등)라면 건너뛴다.
+   - 서버 엔드포인트를 쓰는 계약이라면 아래 **서버 API 대조**를 먼저 수행하고 그 결과를 근거로 작성한다.
 
 3. **quickstart 검증 가이드 작성** → `quickstart.md`:
    - 기능이 엔드투엔드로 동작함을 증명하는, 실행 가능한 검증 시나리오를 문서화한다.
@@ -171,6 +173,41 @@ Phase 0/1이 만드는 `research.md`·`data-model.md`·`contracts/`·`quickstart
    - 이 산출물은 검증/실행 가이드로 유지한다. 구현 세부 사항은 `tasks.md`와 구현 단계에 속한다.
 
 **출력**: data-model.md, /contracts/*, quickstart.md
+
+#### 서버 API 대조
+
+서버 엔드포인트를 쓰는 계약은 추정으로 쓰지 않는다. 배포된 OpenAPI 문서를 실행 시점에 조회해 근거로 삼는다.
+
+**조회** — 조회할 문서의 출처와 조회 절차는 [`scripts/openapi_digest.py`](scripts/openapi_digest.py)가 담당한다. 문서 전체는 크고 한 spec이 쓰는 오퍼레이션은 그중 일부이므로, `index`로 후보를 좁힌 뒤 고른 것만 `show`로 펼친다. `show`는 대상을 여러 개 받으므로 계약 하나가 쓰는 엔드포인트를 한 번에 편다.
+
+```sh
+S="$(git rev-parse --show-toplevel)/.claude/skills/mino-plan/scripts/openapi_digest.py"
+DOC=$(mktemp -t openapi)   # 조회본은 임시 파일에 둔다. 저장소에 남기지 않는다
+
+python3 "$S" fetch "$DOC"                     # 조회 + 출처·조회 시점 출력
+python3 "$S" index "$DOC" --tag room          # 후보 좁히기(--tag 생략 시 전체)
+python3 "$S" show "$DOC" /api/v1/rooms:post "/api/v1/rooms/{roomId}:patch"
+```
+
+`show`는 요청·응답 스키마를 원문 그대로 낸다. 요약하거나 마크다운으로 옮기지 않는다 — 이 대조에서 값어치 있는 정보가 `maxLength`·`enum`·`required` 같은 스키마 제약인데, 변환에서 가장 먼저 뭉개지는 것이 그 제약이다.
+
+**판정** — spec의 각 요구사항을 세 갈래로 가른다.
+
+| 판정 | 계약에 쓰는 것 |
+|---|---|
+| 대응 API 있음 | 경로·메서드·스키마를 문서에서 인용한다 |
+| 대응 API 없음 | `index`가 `일치하는 오퍼레이션 없음`을 내면 이 갈래다. 서버 미구현임을 명시하고 완료 보고에 싣는다 |
+| 있으나 어긋남 | 어긋나는 지점을 표로 남기고 서버팀 협의 항목으로 세운다 |
+
+세 번째를 조용히 넘기지 않는다. spec을 따를지 서버 제약을 따를지는 설계가 혼자 정할 수 없다.
+
+**조회 시점 기록** — 이 조회는 실행할 때마다 결과가 달라질 수 있다. 같은 plan 버전이어도 어제 본 문서와 오늘 본 문서가 다르다. `fetch`가 출력한 출처와 조회 시점을 `plan.md` 기술 컨텍스트의 **참조 API 문서**에 그대로 옮긴다. 그 줄이 이 계약의 유일한 재현 근거다.
+
+**조회 실패** — `fetch`가 종료 코드 `3`으로 끝나면 조회에 실패한 것이다. 경고를 남기고 Plan을 계속 진행한다. 서버가 잠깐 닿지 않는다고 설계 전체를 멈추지 않는다. 대신 대조하지 못한 사실이 묻히지 않게 세 곳에 남긴다.
+
+- 기술 컨텍스트의 **참조 API 문서**에 조회 실패와 그 시점
+- 근거로 삼았어야 할 계약 문서 안에 미대조 표시
+- 완료 보고의 API 대조 결과
 
 ## 핵심 규칙
 
@@ -184,6 +221,8 @@ Phase 0/1이 만드는 `research.md`·`data-model.md`·`contracts/`·`quickstart
 - [ ] 헤더의 기준 spec 버전이 이번 실행에서 읽은 `spec.md` 버전과 일치한다
 - [ ] 부속 산출물을 등급별 처리 범위대로 다뤘고, `research.md`의 기존 결정 이력을 지우지 않았다
 - [ ] `contracts/`에서 사라진 계약이 있다면 파일을 정리하고 완료 보고에 실었다
+- [ ] 서버 엔드포인트를 쓰는 계약이 배포된 OpenAPI 문서에 근거해 작성되었고, 대응 API가 없거나 spec과 어긋나는 요구사항이 산출물에 드러나 있다
+- [ ] 기술 컨텍스트의 참조 API 문서에 출처와 조회 시점이 적혀 있다(조회에 실패했다면 그 사실과 시점)
 - [ ] 브랜치, 계획 경로와 버전, 기준 spec 버전, 생성된 산출물과 함께 완료가 사용자에게 보고되었다
 - [ ] plan에만 있고 spec에 근거가 없는 요구사항이 없다
 - [ ] 소스 코드·Gradle 스크립트를 만들거나 고치지 않았다
