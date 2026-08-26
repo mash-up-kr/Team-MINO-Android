@@ -253,7 +253,7 @@
 
         <!-- 리드 ↔ 게이트 -->
         <line x1="240" y1="376" x2="240" y2="536" stroke="#fb7185" stroke-width="1.5" marker-end="url(#arrow-rose)"/>
-        <text x="250" y="440" fill="#94a3b8" font-size="8">Phase 종료마다 ·</text>
+        <text x="250" y="440" fill="#94a3b8" font-size="8">완성되는 즉시 ·</text>
         <text x="250" y="452" fill="#94a3b8" font-size="8">완료 검증(7단계)</text>
         <line x1="370" y1="536" x2="370" y2="378" stroke="#fb7185" stroke-width="1.5" marker-end="url(#arrow-rose)"/>
         <text x="360" y="470" fill="#94a3b8" font-size="8" text-anchor="end">실패 분류 ·</text>
@@ -265,7 +265,7 @@
 
         <!-- 게이트 → 진행 로그 -->
         <line x1="474" y1="588" x2="556" y2="588" stroke="#fb923c" stroke-width="1.5" stroke-dasharray="5,4" marker-end="url(#arrow-orange)"/>
-        <text x="515" y="581" fill="#fb923c" font-size="7" text-anchor="middle">append</text>
+        <text x="515" y="581" fill="#fb923c" font-size="7" text-anchor="middle">append (qg · ca)</text>
 
         <!-- 진행 로그 → Monitor -->
         <line x1="685" y1="618" x2="685" y2="656" stroke="#fb923c" stroke-width="1.5" stroke-dasharray="5,4" marker-end="url(#arrow-orange)"/>
@@ -298,7 +298,7 @@
         <rect x="490" y="132" width="220" height="54" rx="6" fill="#0f172a"/>
         <rect x="490" y="132" width="220" height="54" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
         <text x="600" y="154" fill="white" font-size="11" font-weight="600" text-anchor="middle">context-analyst</text>
-        <text x="600" y="172" fill="#94a3b8" font-size="8" text-anchor="middle">2단계 · 산출물 → 브리프 (읽기 전용)</text>
+        <text x="600" y="172" fill="#94a3b8" font-size="8" text-anchor="middle">2단계 · 브리프 + Figma 값 시트</text>
 
         <!-- build-setup-engineer -->
         <rect x="730" y="132" width="220" height="54" rx="6" fill="#0f172a"/>
@@ -338,8 +338,8 @@
 
         <!-- 동시 배정 규칙 주석 -->
         <text x="840" y="428" fill="#fbbf24" font-size="9" font-weight="600" text-anchor="middle">동시 배정 규칙</text>
-        <text x="840" y="444" fill="#94a3b8" font-size="8" text-anchor="middle">[P] + 파일 경로 비겹침일 때만</text>
-        <text x="840" y="458" fill="#94a3b8" font-size="8" text-anchor="middle">한 번에 최대 3종</text>
+        <text x="840" y="444" fill="#94a3b8" font-size="8" text-anchor="middle">조건은 파일 경로 비겹침 하나</text>
+        <text x="840" y="458" fill="#94a3b8" font-size="8" text-anchor="middle">동시 최대 5 인스턴스 · 배정당 파일 3개</text>
 
         <!-- quality-gate-runner -->
         <rect x="200" y="568" width="250" height="52" rx="6" fill="#0f172a"/>
@@ -359,7 +359,7 @@
         <text x="325" y="710" fill="white" font-size="11" font-weight="600" text-anchor="middle">design-auditor</text>
         <text x="325" y="727" fill="#94a3b8" font-size="8" text-anchor="middle">Figma 원본 대조 · 값 불일치 지적</text>
 
-        <text x="325" y="752" fill="#fb7185" font-size="7" text-anchor="middle">7단계에서 병렬 실행 · design은 UI Phase에만</text>
+        <text x="325" y="752" fill="#fb7185" font-size="7" text-anchor="middle">대상이 완성되는 즉시 · 7단계는 교차 감사 · 통합 대조</text>
 
         <!-- PROGRESS_LOG -->
         <rect x="560" y="560" width="250" height="56" rx="6" fill="#0f172a"/>

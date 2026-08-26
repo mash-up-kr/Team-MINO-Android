@@ -37,6 +37,7 @@ import team.mino.core.designsystem.foundation.icons.icons.CaretDown
 import team.mino.core.designsystem.foundation.icons.icons.CaretUp
 import team.mino.core.designsystem.foundation.icons.icons.Check
 import team.mino.core.designsystem.foundation.icons.icons.CheckThick
+import team.mino.core.designsystem.foundation.icons.icons.ChevronLeft
 import team.mino.core.designsystem.foundation.icons.icons.CircleCheck
 import team.mino.core.designsystem.foundation.icons.icons.CircleCheckFill
 import team.mino.core.designsystem.foundation.icons.icons.CircleExclamation
@@ -211,6 +212,7 @@ private val iconCatalog: List<ImageVector> by lazy {
         MinoIcons.CaretUp,
         MinoIcons.Check,
         MinoIcons.CheckThick,
+        MinoIcons.ChevronLeft,
         MinoIcons.CircleCheck,
         MinoIcons.CircleCheckFill,
         MinoIcons.CircleExclamation,

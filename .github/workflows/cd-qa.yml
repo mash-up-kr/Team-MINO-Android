@@ -26,6 +26,11 @@ jobs:
           keystore-properties: ${{ secrets.KEYSTORE_PROPERTIES_B64 }}
           qa-keystore: ${{ secrets.KEYSTORE_QA_B64 }}
 
+      - name: Restore google-services.json
+        uses: ./.github/actions/restore-google-services
+        with:
+          google-services-json: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
+
       - name: Resolve version
         run: |
           version_name="${GITHUB_REF_NAME#release/}"

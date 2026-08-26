@@ -21,7 +21,7 @@ android {
     namespace = "team.mino"
 
     defaultConfig {
-        applicationId = "team.mino"
+        applicationId = "com.mino.gguk"
         versionCode = (project.findProperty("versionCode") as? String)?.toIntOrNull() ?: 1
         versionName = (project.findProperty("versionName") as? String) ?: "1.0"
 
@@ -48,6 +48,8 @@ dependencies {
     implementation(project(":core:common:ui"))
     // 진입형 feature만 등록한다. 탭 feature는 셸(:feature:main)을 통해 들어온다.
     implementation(project(":feature:sample"))
+    implementation(project(":feature:profile"))
+    implementation(project(":feature:roomform"))
     implementation(project(":feature:main"))
 
     implementation(libs.androidx.core.ktx)
