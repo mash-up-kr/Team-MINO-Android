@@ -179,7 +179,6 @@ internal fun RoomListScreen(
                         shape = RoomListNudgeOverlayTokens.Shape,
                     ),
                 onCreateClick = { onIntent(RoomListIntent.OnNudgeCreateClick) },
-                onDismissClick = { onIntent(RoomListIntent.OnNudgeDismissClick) },
             )
         }
 
@@ -209,11 +208,10 @@ internal fun RoomListScreen(
 }
 
 /**
- * [RoomNudgeSheet] 오버레이 배경 모서리. `spec.md` 유저 플로우 4가 Figma 노드를 달지 않아
- * 인접한 [RoomListBottomSheet]와 같은 모서리 반경([RoomListBottomSheetTokens.Shape])을 따른다.
+ * [RoomNudgeSheet] 오버레이 배경 모서리. Figma 넛지 카드(`2661-157272`)의 `borderRadius: 12px`.
  */
 private object RoomListNudgeOverlayTokens {
-    val Shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+    val Shape = RoundedCornerShape(12.dp)
 }
 
 /**

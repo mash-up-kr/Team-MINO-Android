@@ -1,46 +1,57 @@
 package team.mino.feature.room.main.component
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import team.mino.core.designsystem.component.actionarea.ActionAreaAction
-import team.mino.core.designsystem.component.actionarea.ActionAreaVariant
-import team.mino.core.designsystem.component.actionarea.MinoActionArea
+import team.mino.core.designsystem.component.button.ButtonSize
+import team.mino.core.designsystem.component.button.ButtonStyle
+import team.mino.core.designsystem.component.button.MinoButton
+import team.mino.core.designsystem.foundation.icons.MinoIcons
+import team.mino.core.designsystem.foundation.icons.icons.Plus
 import team.mino.core.designsystem.theme.MinoAndroidTheme
+import team.mino.feature.room.R
 
 /**
- * [RoomNudgeSheet] 치수 토큰. `spec.md` 유저 플로우 4는 이 화면에 별도 Figma 노드를 달지 않은
- * 텍스트 중심 화면이라([contracts/room-list-main-contract.md] Figma 절 참고) 실측 여백만 둔다.
+ * [RoomNudgeSheet] 치수 토큰. Figma `2661-157272`(방 리스트 화면 `2661-157259` 안의 넛지 카드) 대조.
  */
 private object RoomNudgeSheetTokens {
     val HorizontalPadding = 20.dp
-    val TopPadding = 32.dp
+    val VerticalPadding = 32.dp
+    val IllustrationTitleSpacing = 24.dp
     val TitleSubtitleSpacing = 8.dp
-    val SubtitleActionAreaSpacing = 24.dp
+    val SubtitleButtonSpacing = 24.dp
+
+    // Figma 일러스트(#2661:157273) 실측 크기.
+    val IllustrationWidth = 200.dp
+    val IllustrationHeight = 148.89.dp
 }
 
 /**
  * 공동방 0개 사용자에게 첫 공동방 생성을 유도하는 Nudge(FR-008, [research.md D9]).
  *
- * 이 화면은 별도 Figma 노드가 없어(spec.md 유저 플로우 4) 문구는 PRD 원문을 그대로 쓰고,
- * 버튼 두 개는 `:core:design-system`의 [MinoActionArea]를 `Strong` 배치로 재사용해 조립한다
- * (공용 컴포넌트가 없으면 만들지 않는다는 규칙에 맞춰, 이미 있는 액션 영역 컴포넌트를 쓴다).
+ * Figma `2661-157272`는 일러스트 + 문구 + 버튼 1개(`공동방 만들기`)만 있고 별도 닫기 버튼이 없다.
+ * 그래서 버튼은 `:core:design-system`의 [MinoButton]을 `SolidPrimary`·`Medium`으로 하나만 쓴다
+ * (Figma `Button/Button` 인스턴스와 크기·패딩·타이포가 일치).
  *
  * 재노출 여부는 이 컴포저블이 아니라 호출부의 `showNudge`(=`groupRooms.isEmpty()` 파생값)가
- * 결정한다 — [onDismissClick]은 그 상태를 로컬로 한 번 접을 뿐 재계산 로직은 갖지 않는다([TS-014]).
+ * 결정한다. 닫기 버튼이 Figma에 없으므로 별도 dismiss 콜백은 두지 않는다.
  *
  * @param onCreateClick [공동방 만들기] 클릭(FR-008) — `NavigateToRoomForm` 재사용.
- * @param onDismissClick [나중에 만들래요] 클릭 — `showNudge`만 로컬로 `false`로 접는다.
  */
 @Composable
 internal fun RoomNudgeSheet(
     onCreateClick: () -> Unit,
-    onDismissClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -48,30 +59,44 @@ internal fun RoomNudgeSheet(
             .fillMaxWidth()
             .padding(
                 horizontal = RoomNudgeSheetTokens.HorizontalPadding,
-                vertical = RoomNudgeSheetTokens.TopPadding,
+                vertical = RoomNudgeSheetTokens.VerticalPadding,
             ),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        Image(
+            painter = painterResource(id = R.drawable.room_nudge_illustration),
+            contentDescription = null,
+            contentScale = ContentScale.Fit,
+            modifier = Modifier.size(
+                width = RoomNudgeSheetTokens.IllustrationWidth,
+                height = RoomNudgeSheetTokens.IllustrationHeight,
+            ),
+        )
         Text(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = RoomNudgeSheetTokens.IllustrationTitleSpacing),
             text = "공동방을 생성해보세요!",
-            color = MinoAndroidTheme.colors.labelNormal,
-            style = MinoAndroidTheme.typography.title2Bold,
+            color = MinoAndroidTheme.colors.primaryNormal,
+            style = MinoAndroidTheme.typography.title3Bold,
             textAlign = TextAlign.Center,
         )
         Text(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = RoomNudgeSheetTokens.TitleSubtitleSpacing),
-            text = "\"저번에 말한 거기가 어디였지?\" 더 이상 묻지 마세요.",
+            text = "\"저번에 말한 거기가 어디였지?\"\n더 이상 묻지 마세요.",
             color = MinoAndroidTheme.colors.labelAlternative,
-            style = MinoAndroidTheme.typography.body2NormalRegular,
+            style = MinoAndroidTheme.typography.label1NormalRegular,
             textAlign = TextAlign.Center,
         )
-        MinoActionArea(
-            modifier = Modifier.padding(top = RoomNudgeSheetTokens.SubtitleActionAreaSpacing),
-            variant = ActionAreaVariant.Strong,
-            mainAction = ActionAreaAction(text = "공동방 만들기", onClick = onCreateClick),
-            subAction = ActionAreaAction(text = "나중에 만들래요", onClick = onDismissClick),
+        MinoButton(
+            modifier = Modifier.padding(top = RoomNudgeSheetTokens.SubtitleButtonSpacing),
+            text = "공동방 만들기",
+            onClick = onCreateClick,
+            size = ButtonSize.Medium,
+            style = ButtonStyle.SolidPrimary,
+            leadingIcon = { Icon(imageVector = MinoIcons.Plus, contentDescription = null) },
         )
     }
 }

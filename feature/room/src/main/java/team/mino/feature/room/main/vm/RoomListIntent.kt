@@ -31,8 +31,6 @@ sealed interface RoomListIntent : Intent {
 
     data object OnNudgeCreateClick : RoomListIntent
 
-    data object OnNudgeDismissClick : RoomListIntent
-
     data class OnRoomFormResult(val createdRoomId: String?) : RoomListIntent
 
     data object OnCurrentLocationClick : RoomListIntent

@@ -319,20 +319,6 @@ class RoomListViewModelTest {
             assertFalse(state.showGhostCard)
         }
 
-    @Test
-    fun `Nudge를 닫아도 공동방 목록은 그대로다`() =
-        runTest {
-            roomRepository.givenRooms(room(id = "personal", isPersonal = true))
-            val viewModel = createViewModel()
-            advanceUntilIdle()
-
-            viewModel.processIntent(RoomListIntent.OnNudgeDismissClick)
-
-            val state = viewModel.state.value
-            assertFalse(state.showNudge)
-            assertTrue(state.groupRooms.isEmpty())
-        }
-
     private fun createViewModel(permissionGranted: Boolean = true): RoomListViewModel =
         RoomListViewModel(
             context = FakeLocationContext(permissionGranted = permissionGranted),
