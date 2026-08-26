@@ -106,17 +106,13 @@ class RoomListViewModel @Inject constructor(
             RoomListIntent.OnGhostCardClick,
             RoomListIntent.OnNudgeCreateClick,
             -> onAddRoomClick()
-
-            RoomListIntent.OnNudgeDismissClick -> onNudgeDismissClick()
         }
     }
 
     /**
      * [D8] 상태 캐싱 없이 매 진입마다 OS 권한을 직접 조회한다.
      *
-     * [TS-014] `OnNudgeDismissClick`이 `showNudge`만 로컬로 접어도 `groupRooms`는 바뀌지 않으므로,
-     * 재진입마다 `groupRooms.isEmpty()`로 `showNudge`·`showGhostCard`를 다시 계산해 "닫힘을
-     * 기억하는 상태"를 두지 않는다([research.md D9]).
+     * 재진입마다 `groupRooms.isEmpty()`로 `showNudge`·`showGhostCard`를 다시 계산한다([research.md D9]).
      */
     private fun onScreenEntered() {
         if (hasLocationPermission()) {
@@ -127,11 +123,6 @@ class RoomListViewModel @Inject constructor(
         } else {
             launchSafely { postSideEffect(RoomListSideEffect.RequestLocationPermission) }
         }
-    }
-
-    /** [FR-008] Nudge [나중에 만들래요] — `showNudge`만 로컬로 접고 `groupRooms`는 불변 유지한다(TS-014). */
-    private fun onNudgeDismissClick() {
-        updateState { copy(showNudge = false) }
     }
 
     /** [EC-002] 거부 시 기본 디폴트 좌표, 허용 시 실제 위치로 `mapCenter`를 설정한다. */
