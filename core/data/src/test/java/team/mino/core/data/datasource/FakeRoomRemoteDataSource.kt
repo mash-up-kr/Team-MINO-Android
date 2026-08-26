@@ -10,8 +10,7 @@ internal class FakeRoomRemoteDataSource : RoomRemoteDataSource {
 
     override suspend fun getRooms(): List<RoomSummaryResponse> = rooms
 
-    override suspend fun getRoom(roomId: String): RoomResponse =
-        checkNotNull(room) { "room을 채운 뒤 getRoom을 부른다." }
+    override suspend fun getRoom(roomId: String): RoomResponse = checkNotNull(room) { "room을 채운 뒤 getRoom을 부른다." }
 
     override suspend fun createRoom(request: RoomRequest): RoomResponse =
         checkNotNull(room) { "room을 채운 뒤 createRoom을 부른다." }
