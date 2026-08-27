@@ -4,13 +4,13 @@
 
 **명세서**: [spec.md](../spec.md) · **계획**: [plan.md](../plan.md)
 
-방 선택 시트가 카드 목록을 그리기 위해 쓰는 계약(FR-005·FR-006). **현행 API로 대부분 충족되며, 썸네일 이미지 한 항목만 서버 확장을 요청한다.**
+방 선택 시트가 카드 목록을 그리기 위해 쓰는 계약(FR-005·FR-006). **현행 API가 필요한 필드를 전부 갖는다** — plan 2.x가 서버 확장으로 요청했던 썸네일 항목이 `thumbnailList`로 붙었다([research.md R-022](../research.md)). 이 feature는 이 엔드포인트를 실서버로 붙인다 — mock을 쓰지 않는 근거는 [research.md R-015](../research.md).
 
 ---
 
 ## 1. 현행 계약
 
-2026-08-26 `https://api.gguk.org/api-docs-json` 기준.
+2026-08-27 `https://api.gguk.org/api-docs-json`(`Team MINO API` 1.0.0) 기준. plan 1.0.0에서 확인한 스키마와 같다.
 
 ```
 GET /api/v1/rooms
@@ -24,11 +24,14 @@ Authorization: Bearer <익명 세션 ID 토큰>
       "type": "personal" | "shared",
       "name": "맛집 탐방",
       "description": string | null,
-      "color": "black",
+      "color": "red",                      // 13색 팔레트 키(snake_case), 개인방 기본 gray
       "ownerId": "<uuid>",
       "createdAt": "<date-time>",
       "pinCount": 12,
-      "memberCount": 3
+      "memberCount": 3,
+      "thumbnailList": ["<url>", ...],     // §2
+      "hasPlace": boolean | null,          // ?showHasPlaceId= 지정 시에만 — 쓰지 않는다(§3)
+      "users": [...] | null                // ?showUsers=true 지정 시에만 — 쓰지 않는다(§3)
     }
   ]
 }
@@ -36,7 +39,8 @@ Authorization: Bearer <익명 세션 ID 토큰>
 ```
 
 - 나간 방은 응답에서 제외된다.
-- `?showHasPlaceId=` · `?showUsers=true` 쿼리는 **쓰지 않는다** — 아래 §3 참고.
+- `?showHasPlaceId=` · `?showUsers=true` 쿼리는 **쓰지 않는다** — 아래 §3 참고. 붙이지 않으면 `hasPlace`·`users`가 응답에 포함되지 않는다.
+- `color`는 **13색 enum**(`red`·`red_orange`·`orange`·`lime`·`green`·`cyan`·`violet`·`pink`·`blue`·`brown`·`light_blue`·`purple`·`gray`)이며 `RoomMapper`의 기존 대응표와 일치한다. 실제 색 매핑은 클라이언트가 갖는다.
 
 ### 1.1 필드 대응
 
@@ -48,28 +52,29 @@ Authorization: Bearer <익명 세션 ID 토큰>
 | `type` | `type` (`personal`→`PERSONAL`, 그 외→`GROUP`) | FR-005 |
 | `color` | `color` | FR-006 (썸네일 폴백) |
 | `pinCount` | `placeCount` | FR-006 |
-| `ownerId` · `createdAt` · `memberCount` | **매핑하지 않는다** | 시트가 쓰지 않는다 |
+| `thumbnailList` | `thumbnailImageUrls` (**URL만 남기고 색상 키는 버린다** — §2) | FR-006 |
+| `ownerId` · `createdAt` · `memberCount` · `hasPlace` · `users` | **매핑하지 않는다** | 시트가 쓰지 않는다 |
 
 ---
 
-## 2. 서버 확장 요청 — 썸네일 이미지
+## 2. 썸네일 — `thumbnailList`는 두 가지를 담는다
 
-FR-006이 요구하는 방 썸네일 중 PRD 「방 썸네일」의 '장소 N개' 형태(콜라주)를 그릴 이미지가 현행 응답에 없다.
+FR-006이 요구하는 방 썸네일의 이미지가 이 필드로 온다. plan 2.x가 `thumbnailImageUrls`라는 이름으로 서버 확장을 요청했던 항목이며, **실제 이름과 의미가 다르다.**
 
 ```
-      "thumbnailImageUrls": ["<url>", "<url>", "<url>", "<url>"]   // 최대 4장
+thumbnailList: string[]
+  "최근 핀 최대 4개의 장소 대표 이미지 URL(최신순).
+   저장된 핀이 없으면 방장 아바타 색상 키 1개."
 ```
 
-| 항목 | 값 |
-|---|---|
-| 타입 | `string[]` |
-| 개수 | 0~4장. 방에 저장된 장소의 대표 이미지를 최신순으로 |
-| 장소 0개인 방 | 빈 배열 |
+| 방의 상태 | 서버가 주는 것 | 클라이언트 처리 |
+|---|---|---|
+| 저장된 핀이 있다 | 대표 이미지 URL 최대 4장(최신순) | 그대로 콜라주에 쓴다 |
+| 저장된 핀이 없다 | **색상 키 1개**(`red`·`gray` 같은 문자열) | **버린다.** 빈 목록이 되어 폴백이 그려진다 |
 
-- **선택 필드로 추가해도 된다.** `ignoreUnknownKeys = true`라 클라이언트는 필드가 없어도 파싱이 깨지지 않고, 빈 목록으로 읽어 대표 색상 폴백을 그린다([research.md R-003](../research.md)).
-- 4장을 넘겨 내려줘도 `RoomMapper`가 앞 4장만 쓴다.
-
----
+- **색상 키를 도메인으로 올리지 않는다.** URL이 아닌 문자열이 `MinoRoomThumbnail`에 닿으면 이미지로 로드하려 한다. 판정과 폐기는 `RoomSummaryMapper`가 하며, 판정 기준은 URL 스킴(`http://`·`https://`)이다 — 근거는 [research.md R-022](../research.md).
+- 색상 키를 버려도 정보가 사라지지 않는다. 같은 내용이 `color` 필드에 있고, 폴백은 그 값으로 그려진다([research.md R-019](../research.md)).
+- 4장을 넘겨 내려줘도 `RoomSummaryMapper`가 앞 4장만 쓴다.
 
 ## 3. 쓰지 않는 쿼리 파라미터와 그 이유
 
@@ -104,9 +109,19 @@ FR-006이 요구하는 방 썸네일 중 PRD 「방 썸네일」의 '장소 N개
 
 ## 6. 클라이언트 측 인터페이스
 
+계층별 작성 규칙은 [`core/data/README.md`](../../../../core/data/README.md) §4·§5가 소유한다. 이 계약이 확정하는 것은 시그니처뿐이다.
+
+응답은 `{ "data": [...] }`로 감싸여 온다. 봉투를 벗기는 자리는 `ApiService`이며, 그 위 계층은 봉투를 모른다([research.md R-018](../research.md)).
+
 ```
-// :core:data/datasource/RoomRemoteDataSource.kt (internal) — 함수 추가
+// :core:data/network/dto/response/RoomSummaryResponse.kt (@Serializable)
+// :core:data/network/service/RoomApiService.kt (internal)
+suspend fun listRooms(): List<RoomSummaryResponse>   // MinoResponse<List<RoomSummaryResponse>>.data
+
+// :core:data/datasource/RoomListRemoteDataSource.kt (internal)
 suspend fun listRooms(): List<RoomSummaryResponse>
 ```
 
-기존 `getRoom`·`createRoom`·`updateRoom`은 그대로 둔다. mock(`RoomMockRemoteDataSourceImpl`)에도 같은 함수를 더해 `RoomMockStore`가 보유한 방을 반환한다.
+**기존 `RoomRemoteDataSource`에 함수를 더하지 않는다.** 그쪽은 `group-room-form`이 확정한 mock 바인딩(`RoomMockRemoteDataSourceImpl`)을 물고 있어 `getRoom`·`createRoom`·`updateRoom`이 함께 실서버로 넘어가 버린다. 이 목록 조회만을 위한 DataSource를 따로 신설하는 근거는 [research.md R-015](../research.md).
+
+`RoomRepositoryImpl`은 과도기 동안 두 DataSource를 함께 주입받는다 — `getRooms()`는 실서버, 나머지 셋은 mock이다.
