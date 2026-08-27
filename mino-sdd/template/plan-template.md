@@ -43,6 +43,8 @@
 
 **규모/범위**: [도메인별로 작성, 예: 사용자 1만 명, 100만 LOC, 화면 50개 또는 NEEDS CLARIFICATION]
 
+**참조 API 문서**: [계약의 근거로 삼은 OpenAPI 문서의 출처와 조회 시점. 서버 API를 쓰지 않으면 N/A]
+
 ## 헌법 준수 확인 게이트 (Constitution Check)
 
 *게이트: Phase 0 리서치 전에 반드시 통과해야 한다. Phase 1 설계 후 재확인한다.*
