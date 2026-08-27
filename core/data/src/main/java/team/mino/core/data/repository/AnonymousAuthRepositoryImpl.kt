@@ -24,4 +24,8 @@ internal class AnonymousAuthRepositoryImpl @Inject constructor(
             AnonymousSession(userId = userId)
         }
     }
+
+    // 발급하지 않으므로 경합할 대상이 없다 — ensureSession의 빠른 경로와 같은 조회를 잠금 없이 그대로 쓴다.
+    override suspend fun currentSession(): AnonymousSession? =
+        anonymousAuthProvider.currentUserId()?.let { AnonymousSession(userId = it) }
 }

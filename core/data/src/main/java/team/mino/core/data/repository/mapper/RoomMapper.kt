@@ -62,4 +62,4 @@ internal fun RoomColor?.toIdentifier(): String = COLOR_IDENTIFIERS.getValue(this
  * 아는 식별자가 아니면 [RoomColor.GRAY]로 읽는다. 서버가 팔레트를 넓혔다는 이유로 방 조회가 실패하면 안 되고,
  * 색을 갖지 않은 방이 이미 [RoomColor.GRAY]로 보이므로 표현이 어긋나지 않는다.
  */
-private fun String.toRoomColor(): RoomColor = COLORS_BY_IDENTIFIER[this] ?: RoomColor.GRAY
+internal fun String.toRoomColor(): RoomColor = COLORS_BY_IDENTIFIER[this] ?: RoomColor.GRAY
