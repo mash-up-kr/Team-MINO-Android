@@ -67,6 +67,7 @@ object MinoMenuDefaults {
         activeControlColor: Color = Color.Unspecified,
         controlBorderColor: Color = Color.Unspecified,
         controlIconColor: Color = Color.Unspecified,
+        activeBackgroundColor: Color = Color.Unspecified,
     ): MinoMenuItemColors =
         MinoAndroidTheme.colors.defaultMenuItemColors.copy(
             textColor = textColor,
@@ -77,6 +78,7 @@ object MinoMenuDefaults {
             activeControlColor = activeControlColor,
             controlBorderColor = controlBorderColor,
             controlIconColor = controlIconColor,
+            activeBackgroundColor = activeBackgroundColor,
         )
 
     internal val ColorScheme.defaultMenuItemColors: MinoMenuItemColors
@@ -91,6 +93,8 @@ object MinoMenuDefaults {
                     activeControlColor = fromToken(MenuTokens.ControlActiveColor),
                     controlBorderColor = fromToken(MenuTokens.ControlBorderColor),
                     controlIconColor = fromToken(MenuTokens.ControlIconColor),
+                    activeBackgroundColor = fromToken(MenuTokens.ActiveBackgroundColor)
+                        .copy(alpha = MenuTokens.ActiveBackgroundOpacity),
                 ).also { defaultMenuItemColorsCached = it }
 }
 
@@ -107,6 +111,7 @@ class MinoMenuItemColors(
     val activeControlColor: Color,
     val controlBorderColor: Color,
     val controlIconColor: Color,
+    val activeBackgroundColor: Color,
 ) {
     fun copy(
         textColor: Color = this.textColor,
@@ -117,6 +122,7 @@ class MinoMenuItemColors(
         activeControlColor: Color = this.activeControlColor,
         controlBorderColor: Color = this.controlBorderColor,
         controlIconColor: Color = this.controlIconColor,
+        activeBackgroundColor: Color = this.activeBackgroundColor,
     ): MinoMenuItemColors =
         MinoMenuItemColors(
             textColor = textColor.takeOrElse { this.textColor },
@@ -127,6 +133,7 @@ class MinoMenuItemColors(
             activeControlColor = activeControlColor.takeOrElse { this.activeControlColor },
             controlBorderColor = controlBorderColor.takeOrElse { this.controlBorderColor },
             controlIconColor = controlIconColor.takeOrElse { this.controlIconColor },
+            activeBackgroundColor = activeBackgroundColor.takeOrElse { this.activeBackgroundColor },
         )
 
     /** 표식이 선택을 나타내는 변형은 라벨 색이 그대로다 — [MenuItemVariant] 참조. */
@@ -157,6 +164,7 @@ class MinoMenuItemColors(
         if (activeControlColor != other.activeControlColor) return false
         if (controlBorderColor != other.controlBorderColor) return false
         if (controlIconColor != other.controlIconColor) return false
+        if (activeBackgroundColor != other.activeBackgroundColor) return false
 
         return true
     }
@@ -171,5 +179,6 @@ class MinoMenuItemColors(
             activeControlColor,
             controlBorderColor,
             controlIconColor,
+            activeBackgroundColor,
         ).contentHashCode()
 }

@@ -1,11 +1,18 @@
+@file:OptIn(ExperimentalTime::class)
+
 package team.mino.feature.roomform.fake
 
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import team.mino.core.domain.model.Room
 import team.mino.core.domain.model.RoomColor
 import team.mino.core.domain.model.RoomDraft
+import team.mino.core.domain.model.RoomMemberSummary
+import team.mino.core.domain.model.RoomThumbnail
 import team.mino.core.domain.repository.RoomRepository
 import team.mino.core.errorhandling.MinoDomainException
+import kotlin.time.ExperimentalTime
 
 /**
  * `:feature:roomform` 테스트용 [RoomRepository] 테스트 더블.
@@ -81,6 +88,8 @@ internal class FakeRoomRepository : RoomRepository {
     /** 값이 있으면 [updateRoom]이 이것이 완료될 때까지 멈춘다. */
     var updateGate: CompletableDeferred<Unit>? = null
 
+    override fun observeMyRooms(): Flow<List<Room>> = flowOf(listOfNotNull(storedRoom))
+
     override suspend fun getRoom(roomId: String): Room {
         getCallCount++
         requestedRoomId = roomId
@@ -123,5 +132,11 @@ internal class FakeRoomRepository : RoomRepository {
             description = description,
             color = color ?: RoomColor.GRAY,
             ownerId = ownerId,
+            isPersonal = false,
+            placeCount = 0,
+            thumbnail = RoomThumbnail.ColorAndCharacter(color = null),
+            memberSummary = RoomMemberSummary(visibleAvatarUrls = emptyList(), overflowCount = 0),
+            lastPlaceSavedAt = null,
+            commentCount = 0,
         )
 }
