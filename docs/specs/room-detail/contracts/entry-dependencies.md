@@ -62,4 +62,10 @@ roomFormLauncher.launch(activity, resultLauncher = editRoomResultLauncher) {
 
 ## SYS-003 · SYS-006 · SYS-007 — Activity 계약 없음, 내부 컴포넌트로 대체
 
-방 선택 시트([SYS-003], [FR-009])·초대 시트([SYS-006], [FR-011])·나가기/위임 모달([SYS-007], [FR-013])은 모두 `:feature:room/detail/component/`의 내부 바텀시트·다이얼로그로 구현하며, 이 문서가 정의하는 크로스 feature 계약이 아니다([research.md D10·D11·D12](../research.md)). 각 컴포넌트가 실제로 소비할 데이터 계약(초대 링크 생성 API, 나가기·위임 API, 방 선택 후 복제 API)은 해당 시스템 전용 spec이 이 저장소에 아직 없어 [TBD]로 남는다 — [data-model.md §4](../data-model.md)·[contracts/place-repository.md](./place-repository.md) 참조.
+방 선택 시트([SYS-003], [FR-009])·초대 시트([SYS-006], [FR-011])·나가기/위임 모달([SYS-007], [FR-013])은 모두 `:feature:room/detail/component/`의 내부 바텀시트·다이얼로그로 구현하며, 이 문서가 정의하는 크로스 feature 계약이 아니다([research.md D10·D11·D12](../research.md)). 세 시스템 전용 spec은 여전히 이 저장소에 없지만, 실제 데이터 계약은 배포된 서버 API 대조로 대부분 확정됐다([research.md D14·D15·D16](../research.md)):
+
+- [SYS-003] 방 선택 후 복제 — `PlaceRepository.sharePlaces(pinId, targetRoomIds)`, 서버 `POST /pins/{pinId}/duplicate` ([contracts/place-repository.md](./place-repository.md))
+- [SYS-006] 초대 링크 생성 — `RoomRepository.createInvitation(roomId)`, 서버 `POST /rooms/{roomId}/invitations` ([contracts/place-repository.md](./place-repository.md) "`RoomRepository` 확장")
+- [SYS-007] 나가기·위임 — `RoomRepository.leaveRoom`·`transferOwner`, 서버 `DELETE /rooms/{roomId}/members/me`·`PUT /rooms/{roomId}/owner` (같은 절)
+
+남는 [TBD]는 `deletePlace`(서버 엔드포인트 자체가 없음)와 `Place.commentCount`·`isGgukPick`(서버 미노출 필드)뿐이다 — [data-model.md §4](../data-model.md) 참조.

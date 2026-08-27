@@ -21,16 +21,18 @@ data class RoomDetailUiState(
     val room: Room? = null,                                    // 헤더(제목·설명·장소 수·멤버 아바타, FR-001) — room-list의 Room 재사용
     val sheetLevel: BottomSheetLevel = BottomSheetLevel.HALF,   // 진입 기본값(FR-001, spec.md §4 — room-list와 우연히 같은 값)
     val places: ImmutableList<Place> = persistentListOf(),
-    val sortOption: MapMarkerSortOption = MapMarkerSortOption.GGUK_PICK,  // 표시 순서 근거는 FR-005, 초기값은 [TBD](표시 순서 1번째 항목을 기본 선택으로 볼지는 미확정)
+    val sortOption: MapMarkerSortOption = MapMarkerSortOption.GGUK_PICK,  // FR-005 표시 순서 1번째 항목을 기본값으로 확정(plan 2.0.1) — PRD가 정렬 드롭다운 펼침 순서 1번째로 "꾹 Pick"을 명시
     val categoryFilter: PlaceCategoryFilter = PlaceCategoryFilter.ALL,
-    val viewType: PlaceViewType = PlaceViewType.LIST,           // FR-007, 기본값은 [TBD](spec.md가 초기 선택값을 명시하지 않음)
+    val viewType: PlaceViewType = PlaceViewType.LIST,           // FR-007 "좌측 아이콘=리스트형"이 먼저 언급된 순서를 기본값으로 확정(plan 2.0.1)
     val isOwner: Boolean = false,                                // FR-012 방 편집 노출 여부(EC-006), FR-013 나가기 문구 분기(EC-005/개인방)
     val isPersonalRoom: Boolean = false,                         // EC-002·EC-005 — 나가기 메뉴 비노출 판정
     val showMoreMenu: Boolean = false,                           // 더보기[⋮] 메뉴 표출 여부(FR-013)
     val showRoomSelectSheet: Boolean = false,                    // SYS-003 방 선택 시트(FR-009)
     val showInviteSheet: Boolean = false,                        // SYS-006 초대 시트(FR-011)
+    val inviteCode: String? = null,                              // RoomRepository.createInvitation() 결과(research.md D16). null이면 미발급/로딩 중
+    val roomMembers: ImmutableList<RoomMember> = persistentListOf(),  // RoomRepository.getMembers() — 초대 참여자 목록 + 위임 대상 선택 공용(research.md D16)
     val placeToDelete: Place? = null,                            // FR-010 삭제 확인 모달 대상. null이면 모달 비표출
-    val leaveDialogState: LeaveDialogState = LeaveDialogState.None,  // SYS-007 나가기/위임 모달 상태(research.md D12)
+    val leaveDialogState: LeaveDialogState = LeaveDialogState.None,  // SYS-007 나가기/위임 모달 상태(research.md D12·D15)
 ) : UiState
 
 enum class LeaveDialogState { None, ConfirmMember, ConfirmOwnerSingle, DelegateOwner }
@@ -66,14 +68,14 @@ sealed interface RoomDetailIntent : Intent {
 
     data object OnMoreMenuClick : RoomDetailIntent            // 화면 더보기[⋮] — FR-013
     data object OnMoreMenuDismiss : RoomDetailIntent
-    data object OnInviteClick : RoomDetailIntent               // [친구 +] — FR-011 → showInviteSheet
+    data object OnInviteClick : RoomDetailIntent               // [친구 +] — FR-011 → showInviteSheet, RoomRepository.getMembers·createInvitation 호출(research.md D16)
     data object OnInviteSheetDismiss : RoomDetailIntent
     data object OnEditRoomClick : RoomDetailIntent             // 더보기 → [방 편집] — FR-012
-    data object OnLeaveClick : RoomDetailIntent                 // 더보기 → [나가기] — FR-013
+    data object OnLeaveClick : RoomDetailIntent                 // 더보기 → [나가기] — FR-013, RoomRepository.leaveRoom 호출(research.md D15)
     data object OnLeaveConfirm : RoomDetailIntent
     data object OnLeaveCancel : RoomDetailIntent
-    data class OnOwnerDelegateSelected(val memberId: String) : RoomDetailIntent   // SYS-007 Flow B
-    data object OnOwnerDelegateConfirm : RoomDetailIntent
+    data class OnOwnerDelegateSelected(val memberId: String) : RoomDetailIntent   // SYS-007 Flow B — roomMembers 중 선택
+    data object OnOwnerDelegateConfirm : RoomDetailIntent                          // RoomRepository.transferOwner 이어서 leaveRoom(research.md D15)
 }
 ```
 
@@ -117,20 +119,23 @@ room-list의 [분기 규칙](../../room-list/contracts/room-list-main-contract.m
 | `false` | `false` | 나가기 |
 | `true`/`false` | `true`(개인방) | (항목 없음 — 메뉴 자체를 비노출하거나 빈 상태로 둔다. 개인방은 방장 개념이 없어 `isOwner`도 의미가 없다) |
 
-## 분기 규칙 — 나가기 플로우 (SYS-007, research.md D12)
+## 분기 규칙 — 나가기 플로우 (SYS-007, research.md D12·D15)
 
-| `isOwner` | 방 멤버 수 | `leaveDialogState` 전이 |
-|---|---|---|
-| `false` | - | `None` → `ConfirmMember` → (확인) `NavigateToRoomList` |
-| `true` | 1인(본인만) | `None` → `ConfirmOwnerSingle` → (확인) 즉시 삭제 → `NavigateToRoomList` |
-| `true` | N인 | `None` → `ConfirmOwnerSingle`류 확인 모달 → (확인) `DelegateOwner` → 멤버 선택 → `NavigateToRoomList` |
+| `isOwner` | 방 멤버 수 | `leaveDialogState` 전이 | 서버 호출 |
+|---|---|---|---|
+| `false` | - | `None` → `ConfirmMember` → (확인) `NavigateToRoomList` | `RoomRepository.leaveRoom(roomId)` → `200` |
+| `true` | 1인(본인만) | `None` → `ConfirmOwnerSingle` → (확인) 즉시 삭제 → `NavigateToRoomList` | `leaveRoom(roomId)` → `200`(서버가 방을 자동 삭제) |
+| `true` | N인 | `None` → `ConfirmOwnerSingle`류 확인 모달 → (확인 시도) `leaveRoom(roomId)` 호출 → `409 OWNER_TRANSFER_REQUIRED` → `DelegateOwner` → 멤버 선택(`roomMembers`) → `OnOwnerDelegateConfirm` | `transferOwner(roomId, nextOwnerId)` → `200` → 이어서 `leaveRoom(roomId)` → `200` |
 
-- 실제 삭제·위임 API 응답 처리는 [TBD](data-model.md §4).
+- 클라이언트는 방 멤버 수를 사전에 세지 않는다 — `leaveRoom` 호출 자체의 성공/`409` 응답으로 서버가 이미 판정한 결과를 그대로 분기에 반영한다([research.md D15](../research.md)).
+- 위 표의 서버 계약은 [contracts/place-repository.md](./place-repository.md) "`RoomRepository` 확장" 절 참조.
 
 ## 재조회
 
 - `room`은 `RoomRepository.getRoom(roomId)`(room-list가 이미 정의, [room-list/contracts/room-repository.md](../../room-list/contracts/room-repository.md))로 단건 조회한다 — 목록 화면이 아니라 이 spec이 "캐시 미스 등 필요할 때" 케이스에 해당한다.
 - `places`는 `PlaceRepository.observePlaces(roomId)` `Flow` 구독으로 항상 최신 유지된다(다른 화면에서 장소가 추가·삭제돼도 재구독 없이 반영).
+- `roomMembers`는 `OnInviteClick`·`OnLeaveClick`(N인 방장 경로)에서 `RoomRepository.getMembers(roomId)`로 조회한다 — 1회성 요청이라 화면 진입 시 미리 구독하지 않는다([contracts/place-repository.md](./place-repository.md) "`RoomRepository` 확장").
+- `inviteCode`는 `OnInviteClick`에서 `RoomRepository.createInvitation(roomId)`로 발급한다(이미 발급했으면 서버가 같은 code를 재반환).
 
 ## Figma
 

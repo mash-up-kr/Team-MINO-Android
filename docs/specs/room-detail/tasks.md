@@ -2,11 +2,11 @@
 
 **대상 스펙 경로**: `docs/specs/room-detail`
 
-**기준 plan 버전**: 1.0.0
+**기준 plan 버전**: 2.0.0
 
 **최초 작성일**: 2026-08-27
 
-**최종 수정일**: 2026-08-27
+**최종 수정일**: 2026-08-27 (개정 — plan 2.0.0 서버 API 대조 반영)
 
 **사전 조건**: plan.md, spec.md, research.md, data-model.md, contracts/(`room-detail-main-contract.md`·`place-repository.md`·`entry-dependencies.md`), quickstart.md
 
@@ -24,13 +24,9 @@
 
 ## ⚠️ 착수 전 확인 — 순서 의존 (가용성, 헌법 위반 아님)
 
-이 tasks.md의 상당수 작업이 `feature/154-room-list/task-docs`(PR #228, 아직 `feature/154-room-list/base`에 미병합)가 만든 타입·컴포넌트를 재사용 대상으로 참조한다:
+~~이 tasks.md의 상당수 작업이 `feature/154-room-list/task-docs`(PR #228, 아직 `feature/154-room-list/base`에 미병합)가 만든 타입·컴포넌트를 재사용 대상으로 참조한다~~ — **해소됨**: PR #228이 `feature/154-room-list/base`에 병합되었고(2026-08-27), 이 브랜치도 그 base로 fast-forward 병합했다. `BottomSheetLevel.kt`·`MapMarkerSortOption.kt`·`PlaceCategoryFilter.kt`·`RoomMemberSummary.kt`·`RoomThumbnail.kt`·`RoomListRoute.kt`·`RoomListViewModel.kt`이 모두 이 브랜치에 존재한다. T004 이후 작업을 바로 시작할 수 있다.
 
-- `feature/room/main/model/BottomSheetLevel.kt`
-- `core/domain/model/MapMarkerSortOption.kt`·`PlaceCategoryFilter.kt`·`RoomMemberSummary.kt`·`RoomThumbnail.kt`
-- `feature/room/main/screen/RoomListRoute.kt`·`feature/room/main/vm/RoomListViewModel.kt`(T012~T017이 직접 수정 대상으로 삼음)
-
-이 브랜치(`feature/154-room-list/room-detail-task`)가 분기한 시점의 `feature/154-room-list/base`에는 위 파일들이 아직 없다(design-system `MinoMenu`·`MinoChip`, domain `Room`·`RoomRepository`·`RoomFormLauncher`는 이미 있음). **T004 이후 작업을 시작하기 전에 PR #228이 base에 병합되어 있어야 한다** — 그렇지 않으면 컴파일 자체가 안 된다. 이는 레이어 경계 위반이 아니라 다른 PR의 진행 상태에 대한 의존이다([plan.md 헌법 준수 확인 게이트 V](./plan.md)와 같은 성격).
+**(2026-08-27 추가)** plan 2.0.0이 배포된 서버 API를 대조해 `RoomRepository`(room-list 소유, `:core:domain`)에 `getMembers`·`createInvitation`·`leaveRoom`·`transferOwner` 4개 메서드를 추가하기로 했다([room-detail/research.md D15](./research.md), [room-list/research.md D15](../room-list/research.md)). room-list 쪽 계약 문서(`docs/specs/room-list/contracts/room-repository.md`)는 이미 갱신됐지만 **실제 `RoomRepository.kt` 인터페이스·`RoomRepositoryImpl`·테스트 더블(`FakeRoomRepository` 등)은 이 tasks.md의 T063~T068이 처음 반영한다.** room-list가 이미 merge된 상태라 그쪽 tasks.md는 다시 열지 않는다.
 
 ---
 
@@ -52,7 +48,7 @@
 
 - [ ] T004 `feature/room/src/main/java/team/mino/feature/room/RoomNavigation.kt`(기존 파일 병합)에 `internal data class RoomDetailMain(val roomId: String) : Route, ImmersiveRoute` 추가([contracts/room-detail-main-contract.md](./contracts/room-detail-main-contract.md), T003 의존)
 - [ ] T005 [P] `feature/room/src/main/java/team/mino/feature/room/detail/model/PlaceViewType.kt`에 `enum class PlaceViewType { LIST, CARD }` 작성([data-model.md §2](./data-model.md))
-- [ ] T006 [P] `feature/room/src/main/java/team/mino/feature/room/detail/vm/RoomDetailUiState.kt`에 `RoomDetailUiState`·`LeaveDialogState` 작성([contracts/room-detail-main-contract.md](./contracts/room-detail-main-contract.md), T001·T005 의존)
+- [ ] T006 [P] `feature/room/src/main/java/team/mino/feature/room/detail/vm/RoomDetailUiState.kt`에 `RoomDetailUiState`(`inviteCode`·`roomMembers` 필드 포함)·`LeaveDialogState` 작성([contracts/room-detail-main-contract.md](./contracts/room-detail-main-contract.md), T001·T005·T063 의존)
 - [ ] T007 [P] `feature/room/src/main/java/team/mino/feature/room/detail/vm/RoomDetailIntent.kt`에 `RoomDetailIntent` sealed interface 작성(전체 하위 타입, [contracts/room-detail-main-contract.md](./contracts/room-detail-main-contract.md))
 - [ ] T008 [P] `feature/room/src/main/java/team/mino/feature/room/detail/vm/RoomDetailSideEffect.kt`에 `RoomDetailSideEffect` sealed interface 작성([contracts/room-detail-main-contract.md](./contracts/room-detail-main-contract.md))
 - [ ] T009 `feature/room/src/main/java/team/mino/feature/room/detail/vm/RoomDetailViewModel.kt` 스켈레톤 작성 — `RoomRepository`·`PlaceRepository`·`RoomFormLauncher` 주입, 초기 상태 노출만(T002, T006~T008 의존)
@@ -71,15 +67,26 @@
 - [ ] T017 `feature/room/src/test/java/team/mino/feature/room/fake/FakeLaunchers.kt`·`RoomListViewModelTest.kt`에서 `RoomDetailLauncher` 관련 fake·주입 제거(T013 의존)
 - [ ] T018 `feature/main/src/main/java/team/mino/feature/main/MainShell.kt`에 `ImmersiveRoute` 판정 기반 `bottomBar` 슬롯 조건부 렌더링 추가([contracts/entry-dependencies.md](./contracts/entry-dependencies.md), T004 의존)
 
-### 데이터 레이어 (`:core:data`) — 백엔드 draft 갭은 [research.md D12](./research.md)와 동일 패턴
+### 데이터 레이어 (`:core:data`) — 배포된 서버 API 확정 반영 ([research.md D14](./research.md))
 
-- [ ] T019 [P] `core/data/src/main/java/team/mino/core/data/network/dto/response/PlaceResponse.kt` 작성 — draft 응답 필드 기준, spec이 요구하는 필드 중 draft에 없는 것은 T021에서 목데이터로 채움
-- [ ] T020 [P] `core/data/src/main/java/team/mino/core/data/network/service/PlaceApiService.kt` 작성 — Ktor `HttpClient` 호출(T019 의존)
+- [ ] T019 [P] `core/data/src/main/java/team/mino/core/data/network/dto/response/PinResponse.kt` 작성 — `id·roomId·place: PlaceResponse·images: List<String>·createdBy·createdAt`(서버 `Pin` 스키마 그대로), `PlaceResponse`(`id·provider·providerPlaceId·name·address·city·district·lat·lng·category·phone·mapUrl·createdAt·updatedAt`)도 같은 파일에 정의. `commentCount`·`isGgukPick`처럼 서버 응답에 없는 필드는 T023에서 목데이터로 채움
+- [ ] T020 [P] `core/data/src/main/java/team/mino/core/data/network/service/PlaceApiService.kt` 작성 — Ktor `HttpClient` 호출: `GET /api/v1/pins?roomId=`(목록)·`GET /api/v1/pins/{pinId}`(상세)·`POST /api/v1/pins/{pinId}/duplicate`(공유, body `{roomIds}`)(T019 의존)
 - [ ] T021 `core/data/src/main/java/team/mino/core/data/datasource/PlaceRemoteDataSource.kt`(+`Impl`) 작성 — `PlaceApiService` 호출 위임(T020 의존)
 - [ ] T022 [P] `core/data/src/main/java/team/mino/core/data/datasource/di/PlaceDataSourceModule.kt` — `@Binds @Singleton`(T021 의존)
-- [ ] T023 `core/data/src/main/java/team/mino/core/data/repository/mapper/PlaceMapper.kt` 작성 — `PlaceResponse.toDomain(): Place`, draft에 없는 필드는 임시 목데이터/플레이스홀더(T001, T019 의존)
-- [ ] T024 `core/data/src/main/java/team/mino/core/data/repository/PlaceRepositoryImpl.kt` 작성 — `observePlaces`·`sharePlaces`·`deletePlace` 구현. `sharePlaces`·`deletePlace`의 서버 요청 스키마는 [TBD]([contracts/place-repository.md](./contracts/place-repository.md))라 임시 목처리(T002, T021, T023 의존)
+- [ ] T023 `core/data/src/main/java/team/mino/core/data/repository/mapper/PlaceMapper.kt` 작성 — `PinResponse.toDomain(): Place`(`Place.id`는 `Pin.id`, `thumbnailUrl`은 `images.firstOrNull()`, `savedAt`은 `Pin.createdAt`, [data-model.md §1](./data-model.md) 매핑 그대로). `commentCount`·`isGgukPick`은 서버 미노출이라 임시 목데이터/플레이스홀더(T001, T019 의존)
+- [ ] T024 `core/data/src/main/java/team/mino/core/data/repository/PlaceRepositoryImpl.kt` 작성 — `observePlaces`·`sharePlaces(pinId, targetRoomIds)` 구현(`POST /pins/{pinId}/duplicate` 위임, `409 DUPLICATE_PIN_IN_ROOM`은 `MinoDomainException`으로 매핑). `deletePlace`는 서버에 대응 엔드포인트가 없어([research.md D14](./research.md)) 여전히 임시 목처리(T002, T021, T023 의존)
 - [ ] T025 [P] `core/data/src/main/java/team/mino/core/data/repository/di/PlaceRepositoryModule.kt` — `@Binds @Singleton`(T024 의존)
+
+### `RoomRepository` 확장 (`:core:domain`·`:core:data`) — [SYS-006]·[SYS-007], [research.md D15](./research.md)
+
+> room-list가 정의한 기존 `RoomRepository`(`:core:domain`)·`RoomRepositoryImpl`(`:core:data`)에 이 spec이 필요한 메서드 4개를 추가한다. room-list의 `tasks.md`는 이미 완료 상태라 다시 열지 않는다 — 이 섹션이 실제 반영을 담당한다([room-list/contracts/room-repository.md](../room-list/contracts/room-repository.md), [contracts/place-repository.md](./contracts/place-repository.md) "`RoomRepository` 확장").
+
+- [ ] T063 [P] `core/domain/src/main/kotlin/team/mino/core/domain/model/RoomMember.kt`에 `RoomMember` 데이터 클래스 작성([data-model.md §1](./data-model.md), research.md D16)
+- [ ] T064 `core/domain/src/main/kotlin/team/mino/core/domain/repository/RoomRepository.kt`(기존 파일 병합)에 `getMembers(roomId): List<RoomMember>`·`createInvitation(roomId): String`·`leaveRoom(roomId)`·`transferOwner(roomId, nextOwnerId)` 추가(T063 의존)
+- [ ] T065 [P] `core/data/src/main/java/team/mino/core/data/network/service/RoomApiService.kt`(기존 파일)에 `GET /rooms/{roomId}/members`·`POST /rooms/{roomId}/invitations`·`DELETE /rooms/{roomId}/members/me`·`PUT /rooms/{roomId}/owner` 호출 추가
+- [ ] T066 `core/data/src/main/java/team/mino/core/data/datasource/RoomRemoteDataSource.kt`(+`Impl`, 기존 파일)에 T065 대응 메서드 추가(T065 의존)
+- [ ] T067 `core/data/src/main/java/team/mino/core/data/repository/mapper/RoomMapper.kt`(기존 파일)에 멤버 응답 `toDomain(): RoomMember` 매핑 추가(T063 의존)
+- [ ] T068 `core/data/src/main/java/team/mino/core/data/repository/RoomRepositoryImpl.kt`(기존 파일)에 T064의 4개 메서드 구현 — `409 OWNER_TRANSFER_REQUIRED`·`403 PERSONAL_ROOM_NOT_ALLOWED` 등 에러코드를 `MinoDomainException`으로 매핑(`docs/conventions/error_handling.md`)(T064, T066, T067 의존)
 
 **체크포인트**: `:app:assembleQaDebug` 통과, 방 리스트 카드 클릭 시 방 상세(빈 화면이어도)로 nested Route 전환됨, 바텀 네비게이션 숨겨짐.
 
@@ -131,14 +138,14 @@
 
 **목표**: 장소 카드 더보기에서 다른 방에 공유하거나 삭제한다.
 
-**독립 테스트**: [quickstart.md 시나리오 4](./quickstart.md) — 방 선택 시트·삭제 확인 모달의 UI 골격까지 검증(실제 API는 [TBD]).
+**독립 테스트**: [quickstart.md 시나리오 4](./quickstart.md) — 공유는 실제 API까지, 삭제는 UI 골격까지 검증(`deletePlace` 서버 엔드포인트가 없음, [research.md D14](./research.md)).
 
 ### 사용자 스토리 3 구현
 
 - [ ] T042 [P] [US3] `feature/room/src/main/java/team/mino/feature/room/detail/component/PlaceActionMenu.kt` 작성 — 장소 카드 더보기, "다른 방에 공유"·"장소 삭제" 2항목만 고정(`MinoMenu`, EC-007)
 - [ ] T043 [US3] `RoomDetailViewModel`에 `OnPlaceMoreClick` 처리 추가(T009 의존)
 - [ ] T044 [P] [US3] `feature/room/src/main/java/team/mino/feature/room/detail/component/RoomSelectSheet.kt` 작성 — `Full` 676dp 고정, 슬라이드 영역 416dp, 방 다중 선택. `RoomRepository.observeMyRooms()` 재사용해 이미 저장된 방은 체크+비활성(EC-004)
-- [ ] T045 [US3] `RoomDetailViewModel`에 `OnShareToOtherRoomClick`/`OnRoomSelectConfirm`/`OnRoomSelectDismiss` 처리 추가 — `PlaceRepository.sharePlaces` 호출(서버 스키마 [TBD], [contracts/place-repository.md](./contracts/place-repository.md)), `ShowShareCompleteToast` 발행(FR-009, UX-002, T024 의존)
+- [ ] T045 [US3] `RoomDetailViewModel`에 `OnShareToOtherRoomClick`/`OnRoomSelectConfirm`/`OnRoomSelectDismiss` 처리 추가 — `PlaceRepository.sharePlaces(pinId, targetRoomIds)` 호출(`POST /pins/{pinId}/duplicate`, [contracts/place-repository.md](./contracts/place-repository.md)), `409 DUPLICATE_PIN_IN_ROOM` 도메인 예외 처리, 성공 시 `ShowShareCompleteToast` 발행(FR-009, UX-002, T024 의존)
 - [ ] T046 [P] [US3] `feature/room/src/main/java/team/mino/feature/room/detail/component/PlaceDeleteConfirmDialog.kt` 작성 — UX-001 문구(`이 장소를 삭제할까요?`/`장소에 등록된 사진과 댓글이 모두 삭제되며, 다시 되돌릴 수 없어요.`) 그대로 고정
 - [ ] T047 [US3] `RoomDetailViewModel`에 `OnPlaceDeleteClick`/`OnPlaceDeleteConfirm`/`OnPlaceDeleteCancel` 처리 추가 — `PlaceRepository.deletePlace` 호출, `places` 즉시 갱신(FR-010, SC-003, T024 의존)
 - [ ] T048 [US3] `RoomDetailScreen`에 `PlaceActionMenu`·`RoomSelectSheet`·`PlaceDeleteConfirmDialog` 조립(T042, T044, T046 의존)
@@ -151,19 +158,19 @@
 
 **목표**: 친구 초대, 방 편집(방장 전용), 나가기/위임을 호출한다.
 
-**독립 테스트**: [quickstart.md 시나리오 5](./quickstart.md) — 시트/모달 UI 골격과 화면 전환까지 검증(초대·나가기 실제 API는 [TBD], 방 편집은 `:feature:roomform` 구현 선행 필요).
+**독립 테스트**: [quickstart.md 시나리오 5](./quickstart.md) — 초대 코드 발급·나가기·위임은 실제 API까지 검증 가능([research.md D15·D16](./research.md)), 링크 조립·복사·공유는 여전히 UI 골격까지(SYS-006 spec 부재). 방 편집은 `:feature:roomform` 구현 선행 필요.
 
 ### 사용자 스토리 4 구현
 
 - [ ] T049 [P] [US4] `feature/room/src/main/java/team/mino/feature/room/detail/component/RoomMoreMenu.kt` 작성 — 화면 더보기[⋮], `isOwner`·`isPersonalRoom` 분기로 방 편집(방장 전용)/나가기 노출 결정(`MinoMenu`, [분기 규칙](./contracts/room-detail-main-contract.md))
 - [ ] T050 [US4] `RoomDetailViewModel`에 `OnMoreMenuClick`/`OnMoreMenuDismiss` 처리 추가(T009 의존)
-- [ ] T051 [P] [US4] `feature/room/src/main/java/team/mino/feature/room/detail/component/RoomInviteSheet.kt` 작성 — 424dp 고정, 참여자 목록 스크롤 288dp. 참여자 목록 타입·초대 링크 발급은 [TBD]([data-model.md §4](./data-model.md))라 UI 골격만
-- [ ] T052 [US4] `RoomDetailViewModel`에 `OnInviteClick`/`OnInviteSheetDismiss` 처리 추가(T009 의존)
+- [ ] T051 [P] [US4] `feature/room/src/main/java/team/mino/feature/room/detail/component/RoomInviteSheet.kt` 작성 — 424dp 고정, 참여자 목록(`roomMembers: List<RoomMember>`) 스크롤 288dp, `inviteCode` 기반 초대 링크(`gguk.org/r/{code}`) 표시(클립보드 복사·OS 공유 시트 연동은 [TBD], [research.md D16](./research.md))
+- [ ] T052 [US4] `RoomDetailViewModel`에 `OnInviteClick`/`OnInviteSheetDismiss` 처리 추가 — `RoomRepository.getMembers`·`createInvitation` 호출해 `roomMembers`·`inviteCode` 채움(T009, T068 의존)
 - [ ] T053 [US4] `RoomDetailViewModel`에 `OnEditRoomClick` 처리 추가 — `NavigateToRoomForm` SideEffect 발행(편집 모드 extra 키는 [TBD], [research.md D9](./research.md))(T009 의존)
 - [ ] T054 [US4] `RoomDetailRoute`에 `NavigateToRoomForm` 처리 연결 — `roomFormLauncher.launch(activity, resultLauncher = editRoomResultLauncher)` 호출, 완료 결과 수신 시 `ShowEditCompleteSnackbar`(FR-012, T053 의존)
 - [ ] T055 [P] [US4] `feature/room/src/main/java/team/mino/feature/room/detail/component/RoomLeaveConfirmDialog.kt` 작성 — [SYS-007] Flow A(일반 멤버 확인 모달)
 - [ ] T056 [P] [US4] `feature/room/src/main/java/team/mino/feature/room/detail/component/RoomOwnerLeaveDialog.kt` 작성 — [SYS-007] Flow B(방장 확인+위임 모달)
-- [ ] T057 [US4] `RoomDetailViewModel`에 `OnLeaveClick`/`OnLeaveConfirm`/`OnLeaveCancel`·`OnOwnerDelegateSelected`/`OnOwnerDelegateConfirm` 처리 추가 — [나가기 플로우 분기 규칙](./contracts/room-detail-main-contract.md)대로 `leaveDialogState` 전이(실제 나가기·위임 API는 [TBD], [research.md D12](./research.md)), 완료 시 `NavigateToRoomList` 발행(T009 의존)
+- [ ] T057 [US4] `RoomDetailViewModel`에 `OnLeaveClick`/`OnLeaveConfirm`/`OnLeaveCancel`·`OnOwnerDelegateSelected`/`OnOwnerDelegateConfirm` 처리 추가 — [나가기 플로우 분기 규칙](./contracts/room-detail-main-contract.md)대로 `leaveDialogState` 전이. `RoomRepository.leaveRoom` 호출 → `409 OWNER_TRANSFER_REQUIRED` 도메인 예외를 잡아 `DelegateOwner`로 전이(멤버 수 사전 조회 없음), `OnOwnerDelegateConfirm`은 `transferOwner` 성공 후 `leaveRoom` 재호출(research.md D15). 완료 시 `NavigateToRoomList` 발행(T009, T068 의존)
 - [ ] T058 [US4] `RoomDetailRoute`에 `NavigateToRoomList` 처리 연결 — `navController.popBackStackIfResumed(entry)`(T057, T011 의존)
 - [ ] T059 [US4] `RoomDetailScreen`에 `RoomMoreMenu`·`RoomInviteSheet`·`RoomLeaveConfirmDialog`·`RoomOwnerLeaveDialog` 조립(T049, T051, T055, T056 의존)
 
@@ -185,8 +192,8 @@
 
 ### 단계 간 의존성
 
-- **셋업(Phase 1)**: `feature/154-room-list/base`에 PR #228이 병합되어 있어야 시작 가능(위 "착수 전 확인" 참고). 그 외 의존성 없음.
-- **기반 작업(Phase 2)**: 셋업 완료에 의존. T012~T017(런처 정리)은 T011(nested Route 등록) 완료 후 진행 — 정리와 신설이 동시에 컴파일 불가 상태를 만들지 않기 위함.
+- **셋업(Phase 1)**: 의존성 없음(PR #228은 이미 병합됨, 위 "착수 전 확인" 참고).
+- **기반 작업(Phase 2)**: 셋업 완료에 의존. T012~T017(런처 정리)은 T011(nested Route 등록) 완료 후 진행 — 정리와 신설이 동시에 컴파일 불가 상태를 만들지 않기 위함. `RoomRepository` 확장(T063~T068)은 셋업과 독립적으로 아무 때나 시작 가능(다른 Phase 2 작업에 의존하지 않음).
 - **사용자 스토리(Phase 3 이후)**: 각 작업이 실제로 쓰는 기반 산출물에만 의존한다. Phase 2 전체 완료를 기다리지 않아도 되는 작업은 아래 "병렬 처리 기회" 참고.
 - **마무리(Phase 7)**: US1~US4 완료에 의존.
 
@@ -195,13 +202,13 @@
 - **US1**: T001~T011, T026~T033이 쓰는 기반만 있으면 시작 가능 — 다른 스토리 의존 없음.
 - **US2**: US1이 만든 `RoomDetailBottomSheet`·`RoomDetailViewModel` 위에 얹는다(T029, T009 의존) — US1과 동시 진행 시 같은 파일(`RoomDetailBottomSheet.kt`) 충돌 가능성 있어 US1의 T029 완료 후 T036·T037을 얹는 편이 충돌이 적다.
 - **US3**: T009·T024(데이터 레이어)만 있으면 독립적으로 진행 가능.
-- **US4**: T009 및 `RoomFormLauncher`(이미 room-list가 스텁으로 바인딩)만 있으면 독립적으로 진행 가능. 단 T054의 실제 값 채움 검증은 `:feature:roomform` 구현 선행 필요(quickstart.md 기대 결과).
+- **US4**: T009 및 `RoomFormLauncher`(이미 room-list가 스텁으로 바인딩)만 있으면 독립적으로 진행 가능. `OnInviteClick`(T052)·나가기/위임(T057)은 `RoomRepository` 확장(T063~T068)이 먼저 끝나야 한다. T054의 실제 값 채움 검증은 `:feature:roomform` 구현 선행 필요(quickstart.md 기대 결과).
 
 ### 병렬 처리 기회
 
 - [P]로 표시된 Phase 1 작업(T001~T003)은 모두 병렬 실행 가능.
-- [P]로 표시된 Phase 2 작업(T005~T008, T019, T020, T022, T025)은 각자의 의존 작업만 끝나면 병렬 실행 가능.
-- US2·US3·US4는 각자 쓰는 기반 산출물(T009, T024)이 준비되면 서로 다른 담당자가 병렬로 진행 가능 — 단 US2는 위 이유로 US1의 T029 완료를 기다리는 편이 안전하다.
+- [P]로 표시된 Phase 2 작업(T005~T008, T019, T020, T022, T025, T063, T065)은 각자의 의존 작업만 끝나면 병렬 실행 가능.
+- US2·US3·US4는 각자 쓰는 기반 산출물(T009, T024, T068)이 준비되면 서로 다른 담당자가 병렬로 진행 가능 — 단 US2는 위 이유로 US1의 T029 완료를 기다리는 편이 안전하다.
 
 ---
 
@@ -220,7 +227,7 @@ Task: "PlaceDeleteConfirmDialog.kt 작성 — 삭제 확인 모달"
 
 ### MVP 우선 (사용자 스토리 1만)
 
-1. Phase 1~2: 셋업 + 기반 작업 완료(PR #228 base 병합 선행)
+1. Phase 1~2: 셋업 + 기반 작업 완료
 2. Phase 3: US1 완료
 3. **중단하고 검증**: [quickstart.md 시나리오 1~2](./quickstart.md)로 독립 테스트
 4. 준비되면 배포/데모
@@ -231,7 +238,7 @@ Task: "PlaceDeleteConfirmDialog.kt 작성 — 삭제 확인 모달"
 2. US1 추가 → 독립 검증 → 데모(MVP)
 3. US2 추가 → 독립 검증(US1과 함께)
 4. US3 추가 → 독립 검증(방 선택 시트·삭제 모달 UI 골격까지)
-5. US4 추가 → 독립 검증(초대·나가기는 UI 골격까지, 방 편집은 `:feature:roomform` 대기)
+5. US4 추가 → 독립 검증(초대 코드 발급·나가기·위임은 실제 API까지, 링크 조립·공유는 UI 골격까지, 방 편집은 `:feature:roomform` 대기)
 
 ---
 
@@ -239,5 +246,7 @@ Task: "PlaceDeleteConfirmDialog.kt 작성 — 삭제 확인 모달"
 
 - 피해야 할 것: 모호한 작업, 동일 파일 충돌, 독립성을 깨뜨리는 스토리 간 의존성
 - 커밋 단위는 [`docs/conventions/commit-message.md`](../../docs/conventions/commit-message.md)의 쪼개기 원칙을 따른다
-- `RoomFormLauncher` 편집 모드의 extra 키·result 스키마([research.md D9](./research.md))·[SYS-003]·[SYS-006]·[SYS-007]의 실제 데이터 계약(research.md D10~D12)은 각각 `:feature:roomform`·해당 시스템 spec이 아직 없어 T045·T053·T057에서 임시 목데이터로 남는다 — 그 spec들이 생기면 이 tasks.md가 아니라 그쪽 작업 목록이 실제 계약 반영을 담당한다.
+- `RoomFormLauncher` 편집 모드의 extra 키·result 스키마([research.md D9](./research.md))는 `:feature:roomform`이 아직 없어 T053에서 임시 목데이터로 남는다 — 그 spec이 생기면 이 tasks.md가 아니라 그쪽 작업 목록이 실제 계약 반영을 담당한다.
+- **(2026-08-27 갱신)** [SYS-003]·[SYS-006]·[SYS-007]의 실제 데이터 계약은 배포된 서버 API 대조로 대부분 확정됐다([research.md D14~D16](./research.md)) — T045·T052·T057이 실제 API 호출을 담당한다. 여전히 서버에 없는 것은 `deletePlace` 엔드포인트(T024, [research.md D14](./research.md))뿐이다.
+- `RoomRepository` 확장(T063~T068)은 room-list가 소유한 인터페이스에 이 spec이 메서드를 추가하는 작업이다 — room-list의 `tasks.md`는 이미 완료 상태라 다시 열지 않고, 이 tasks.md가 실제 반영을 담당한다([room-list/contracts/room-repository.md](../room-list/contracts/room-repository.md), [research.md D15](./research.md)).
 - `ImmersiveRoute`(T003·T018)는 room-detail만을 위한 타입이 아니라 이후 몰입 화면을 만드는 모든 feature가 따라야 하는 공용 계약이다 — plan.md가 이미 ADR 승격을 제안해 뒀다([plan.md 헌법 준수 확인 게이트 III](./plan.md)).
