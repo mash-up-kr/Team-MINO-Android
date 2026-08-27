@@ -7,6 +7,7 @@ import org.junit.Test
 import team.mino.core.domain.model.Room
 import team.mino.core.domain.model.RoomColor
 import team.mino.core.domain.model.RoomDraft
+import team.mino.core.domain.model.RoomSummary
 import team.mino.core.domain.repository.RoomRepository
 import java.io.IOException
 
@@ -128,6 +129,8 @@ private class FakeRoomRepository : RoomRepository {
 
     /** 값이 있으면 [createRoom]이 생성 대신 이 예외를 던진다. */
     var createFailure: Throwable? = null
+
+    override suspend fun getRooms(): List<RoomSummary> = error("CreateRoomUseCase는 getRooms를 부르지 않는다.")
 
     override suspend fun getRoom(roomId: String): Room = error("CreateRoomUseCase는 getRoom을 부르지 않는다.")
 
