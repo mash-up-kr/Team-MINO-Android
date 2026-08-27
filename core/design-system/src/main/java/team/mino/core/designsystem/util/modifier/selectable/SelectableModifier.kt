@@ -4,8 +4,10 @@ import androidx.compose.foundation.IndicationNodeFactory
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.unit.Dp
 import team.mino.core.designsystem.util.modifier.clickable.DefaultRipple
 import team.mino.core.designsystem.util.modifier.clickable.MultipleEventsCutter
+import team.mino.core.designsystem.util.modifier.clickable.rippleOf
 import team.mino.core.designsystem.util.modifier.selectable.node.DebouncedSelectableElement
 
 fun Modifier.rippleSelectable(
@@ -41,12 +43,17 @@ fun Modifier.singleSelectable(
         onClick = onClick,
     )
 
+/**
+ * @param rippleRadius 지정하면 요소 경계 밖까지 번지는 원형 리플을 그 반경으로 그린다.
+ *   요소가 차지하는 자리와 탭 영역은 그대로다.
+ */
 fun Modifier.rippleSingleSelectable(
     selected: Boolean,
     enabled: Boolean = true,
     debounceIntervalMillis: Long = MultipleEventsCutter.DEFAULT_INTERVAL_MILLIS,
     onClickLabel: String? = null,
     role: Role? = null,
+    rippleRadius: Dp = Dp.Unspecified,
     onClick: () -> Unit,
 ): Modifier =
     debouncedSelectable(
@@ -55,7 +62,7 @@ fun Modifier.rippleSingleSelectable(
         debounceIntervalMillis = debounceIntervalMillis,
         onClickLabel = onClickLabel,
         role = role,
-        indication = DefaultRipple,
+        indication = rippleOf(rippleRadius),
         onClick = onClick,
     )
 
