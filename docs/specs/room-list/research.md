@@ -107,6 +107,14 @@
 - **다른 feature에도 구속력을 갖는 결정**: `ImmersiveRoute`는 `:core:navigation`의 신규 공개 API이자 이후 몰입 화면을 만드는 모든 feature가 따라야 하는 패턴이라 room-list 안에서만 유효한 선택이 아니다. room-detail 완료 보고에서 ADR 승격을 제안한다(`mino-plan` SKILL.md 「research.md와 ADR의 경계」).
 - **(room-detail plan 1.0.0에서 결정 — room-list D13과 짝을 이뤄 room-list 쪽 배경도 여기 함께 기록)**
 
+## D15. `RoomRepository`에 멤버·나가기·위임·초대 4개 메서드 추가 (room-detail plan 2.0.0 요청)
+
+- **Decision**: `RoomRepository`(`:core:domain`, 이 spec이 D3에서 정의)에 `getMembers(roomId): List<RoomMember>`·`createInvitation(roomId): String`·`leaveRoom(roomId)`·`transferOwner(roomId, nextOwnerId)` 4개 메서드를 추가한다. `RoomMember`([SYS-006]·[SYS-007] 참여자 전체 목록 + 위임 대상 선택 공용, `RoomMemberSummary`의 카드 미리보기 축약과는 별개 타입)도 함께 신설한다. 시그니처·서버 대응 엔드포인트는 [room-detail/contracts/place-repository.md](../room-detail/contracts/place-repository.md) "`RoomRepository` 확장" 절이 갖는다(이 문서는 여기서 중복 기술하지 않는다).
+- **Rationale**: 방 상세([SCR-005])의 [SYS-006]·[SYS-007](친구 초대·나가기·방장 위임)이 배포된 서버 API(`GET/POST /rooms/{roomId}/members`·`invitations`, `DELETE /rooms/{roomId}/members/me`, `PUT /rooms/{roomId}/owner`)를 대조해 확정한 계약이다([room-detail/research.md D15·D16](../room-detail/research.md)). 이 네 동작은 API tag가 `room`인 방 단위 동작이라, room-list가 정의한 `RoomRepository`가 SSOT를 유지하는 것이 room-detail이 별도 Repository를 또 만드는 것보다 헌법 원칙 I에 맞는다.
+- **Alternatives considered**: room-detail이 `RoomMembershipRepository` 같은 별도 Repository를 새로 정의 — 기각. 방 단위 데이터를 다루는 Repository가 두 개로 갈리면 "방 관련 동작은 어디를 봐야 하는지"가 모호해진다(`RoomRepository`가 이미 `observeMyRooms`·`getRoom`·`createRoom`·`updateRoom`으로 방 단위 동작의 SSOT 역할을 하고 있다).
+- **구현 영향**: 이 4개 메서드의 실제 Kotlin 인터페이스·`RoomRepositoryImpl`·`RoomRemoteDataSource` 반영은 room-detail의 `/mino-task`가 담당한다(room-list는 이미 구현·병합 완료 상태라 이 문서 갱신만으로 tasks.md를 다시 열지 않는다). 기존 `RoomRepository` 소비자(room-list `RoomListViewModel`, `FakeRoomRepository` 등)는 새 메서드를 호출하지 않으므로 이 갱신 자체가 기존 구현에 영향을 주지 않는다 — 실제 구현 시점에 인터페이스가 커지면서 기존 `RoomRepositoryImpl`·모든 테스트 더블이 새 메서드를 구현해야 하는 시점에만 영향이 생긴다.
+- **(plan 2.1.0에서 결정 — room-detail plan 2.0.0 요청 반영)**
+
 ---
 
 ## NEEDS CLARIFICATION 해소 현황

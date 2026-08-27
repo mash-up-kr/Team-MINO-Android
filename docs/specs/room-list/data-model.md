@@ -50,6 +50,7 @@ data class RoomMemberSummary(
 ```
 
 - PRD 「방 멤버 아바타」정의(4명 이하: 전부 표시·카운터 없음 / 5명 이상: 아바타 3개+카운터). `visibleAvatarUrls`가 4개면 카운터 없음(0), 3개면 `overflowCount > 0`.
+- **`RoomMember`(room-detail 소유, 혼동 주의)**: 방 카드 미리보기용인 이 타입과 달리, 이름·역할(`isOwner`)·가입일을 포함한 전체 참여자 목록 타입 `RoomMember`는 room-detail이 정의한다([room-detail/data-model.md](../room-detail/data-model.md), [research.md D15](./research.md)). 두 타입을 서로 파생시키지 않는다 — 응답 출처(카드 목록 API vs 멤버 목록 API)가 다르다.
 
 ### `RoomListSortOption` (enum) — [FR-005], `Full` 상태 방 카드 정렬
 
