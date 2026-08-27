@@ -17,7 +17,8 @@
 | Figma 노드 | 종류 | 소속 모듈 | 현황 |
 |---|---|---|---|
 | `Card_Room` | 인스턴스 | `:core:design-system` | `:feature:sample`에서 이관 |
-| `Room Thumbnail` | 인스턴스 | `:core:design-system` | 이관 중 분리 |
+| `Room Thumbnail` | 인스턴스 | `:core:design-system` | 이관 중 분리. **폴백은 갖지 않는다**(§2.2) |
+| `Room Thumbnail`의 색상 폴백(캐릭터 이미지) | 이미지 에셋 | `:core:common:ui` | `:feature:roomform`에서 승격 |
 | `Checkbox` | 인스턴스 | `:core:design-system` | 이관 중 분리 |
 | `Scroll Bar/Scroll Bar` | 인스턴스 | `:core:design-system` | 신설 |
 | `Action Area/Action Area` | 인스턴스 | `:core:design-system` | **이미 있음** (`component/actionarea`) |
@@ -25,6 +26,8 @@
 | 저장 완료 토스트 | 인스턴스 | `:core:design-system` | **이미 있음** (`component/snackbar`) |
 
 이관 대상 파일 목록과 근거는 [research.md R-010](../research.md)이 소유한다.
+
+**썸네일만 두 모듈로 갈린다.** Figma에서는 `Room Thumbnail` 하나지만, 그 폴백은 방 대표 색(도메인 값)과 캐릭터 래스터 이미지를 함께 요구한다. `:core:design-system`은 `:core:domain`을 의존하지 않고([방 색상 팔레트 ADR](../../../adr/2026-08-14-room-color-palette-in-design-system.md)) 이미지 에셋도 받지 않으므로([`component-asset-placement.md`](../../../conventions/component-asset-placement.md) §1), 컴포넌트가 폴백을 품을 수 없다. 콜라주는 디자인 시스템이, 폴백은 `:core:common:ui`가 갖고 둘을 슬롯으로 잇는다.
 
 ---
 
@@ -65,20 +68,35 @@ MinoRoomCheckBoxCard(
 ```
 MinoRoomThumbnail(
     imageUrls: ImmutableList<String>,
-    color: RoomColor,
     modifier: Modifier = Modifier,
+    fallback: @Composable () -> Unit,
 )
 ```
 
 | `imageUrls` | 표현 |
 |---|---|
-| 비어 있음 | `color`의 대표 색상 배경 + 캐릭터 글리프 |
+| 비어 있음 | `fallback()` |
 | 1~4장 | 콜라주 (1·2·3·4장 배치) |
-| 5장 이상 | 앞 4장만 |
 
-- PRD 「방 썸네일」의 두 형태를 그대로 옮긴다.
-- 서버가 이미지를 내려주기 전까지는 항상 빈 목록이 들어와 색상 폴백이 그려진다([research.md R-003](../research.md)).
-- `RoomColor`는 이미 `:core:domain`에 있고 팔레트는 `:core:design-system`이 소유한다(방 색상 팔레트 ADR).
+`imageUrls`가 4장을 넘는 경우는 다루지 않는다 — `RoomSummaryMapper`가 앞 4장으로 잘라 4장 이하를 보장한다([data-model.md §1.2](../data-model.md), [contracts/room-list-api.md §2](./room-list-api.md)).
+
+- PRD 「방 썸네일」의 두 형태 중 **콜라주만** 이 컴포넌트가 소유한다. 색도 캐릭터도 알지 않는다 — 이유는 §1 마지막 문단.
+- 이미지가 없을 때 무엇을 그릴지는 호출부가 정한다. `MinoRoomCheckBoxCard`가 `thumbnail` 슬롯을 받는 것(§2.1)과 같은 수법이며, 분기를 아는 쪽이 그린다.
+- 서버가 이미지를 내려주기 전까지는 항상 빈 목록이 들어와 폴백이 그려진다([research.md R-003](../research.md)).
+
+#### 2.2.1 폴백 — `:core:common:ui`
+
+```
+RoomThumbnailFallback(
+    color: MinoRoomColor?,
+    modifier: Modifier = Modifier,
+)
+```
+
+- **`null`은 회색 방이다.** 팔레트에 회색 항목을 두지 않고 소비처가 `MinoRoomColor?`의 `null`로 표현한다는 [방 색상 팔레트 ADR](../../../adr/2026-08-14-room-color-palette-in-design-system.md)의 규칙을 그대로 따른다.
+- 색 배경과 캐릭터가 한 장에 담긴 이미지 하나를 그린다. `:feature:roomform`의 `RoomPreviewCard`가 이미 같은 에셋을 그렇게 쓴다.
+- 에셋 13종(밀도 3벌)은 `:feature:roomform`에서 승격해 온다 — 두 번째 사용처가 이 시트이므로 승격 시점이 성립한다([`component-asset-placement.md`](../../../conventions/component-asset-placement.md) §2.1·§2.3).
+- 도메인 `RoomColor` → `MinoRoomColor?` 매핑은 **feature가 소유한다**(같은 ADR). 이 시트에서 그 자리는 [data-model.md §5.2](../data-model.md)의 `RoomPickerItem` 변환이다.
 
 ### 2.3 `component/checkbox/` — 신설
 
@@ -149,7 +167,9 @@ MinoScrollBar(
 | 문구 | `저장이 완료됐습니다.` | FR-010 |
 | 아이콘 | 체크 | UX-006 |
 | 위치 | 화면 하단에서 40dp | UX-006 |
-| 종료 | 사용자 조작 없이 사라진 뒤 `finish()` | FR-011 |
+| 지속 시간 | **3초** | UX-006(사용자 조작 없이 사라진다) |
+| 종료 | 3초가 지나면 사라지고 `finish()` | FR-011, TS-006 |
 
+- **시간을 세는 주체는 Activity다.** `MinoSnackbar`는 지속 시간 파라미터를 갖지 않으므로 호출부가 3초를 재고 종료까지 잇는다.
 - **시트가 닫힌 뒤에 뜬다.** 시트 안이 아니라 화면 하단이므로, Activity가 시트를 걷어내고 토스트만 남긴 상태로 잠시 유지한다.
 - 이 토스트는 저장 성공을 보장하지 않는다 — "요청을 접수했다"는 피드백이다(spec §4 가정). 실제 성패는 알림함으로 전달된다.
