@@ -10,11 +10,9 @@
 
 ## 선행 조건
 
-- `anonymous-auth-session`(#176) 머지 — `EnsureAnonymousSessionUseCase`가 없으면 세션 확보 경로를 실행할 수 없다. 미머지 동안은 Fake로 대체한다
-- [TBD-P2] 프로필 미생성 응답 확정 — 없으면 FR-003 분기를 검증할 수 없다
-- [TBD-P4] 온보딩 feature 존재 — 없으면 최초 실행 전환의 도착지가 없다
+선행 의존은 모두 `develop`에 들어와 있다 — `EnsureAnonymousSessionUseCase`·`MinoDomainException.Auth`(anonymous-auth-session), `ProfileLauncher`·`ProfileActivity`(profile). 별도 대기 없이 착수할 수 있다.
 
-위가 열린 동안에도 **아래 §2 JVM 테스트와 §3-A·B는 검증 가능하다**(Fake로 대체).
+서버 대조 기준: [Team MINO API 1.0.0](https://api.gguk.org/api-docs-json), 2026-08-27T20:19:22+09:00 조회.
 
 ## 빌드
 
@@ -44,10 +42,12 @@ adb shell cmd package resolve-activity -c android.intent.category.LAUNCHER com.m
 
 | 검증 | Given | 기대 | 대응 |
 |---|---|---|---|
-| 최초 실행 | 세션 확보 성공, 프로필 `null` | `SplashEntry.Onboarding` | FR-003 / TS-002 |
-| 재실행 | 세션 확보 성공, 프로필 존재 | `SplashEntry.Main` | FR-004 / TS-003 |
-| 프로필 조회 실패 분리 | 세션은 확보됨, 프로필 조회가 `Network` 던짐 | `Network`가 전파되고 `Onboarding`으로 오판하지 않는다 | EC-004 |
-| 그 밖의 실패 | 프로필 조회가 도메인 예외 던짐 | 그대로 전파된다 | FR-009 / TS-010 |
+| 최초 실행 | `isRegistered()`가 `false` | `SplashEntry.Onboarding` | FR-003 / TS-002 |
+| 재실행 | `isRegistered()`가 `true` | `SplashEntry.Main` | FR-004 / TS-003 |
+| 네트워크 실패 분리 | `isRegistered()`가 `Network` 던짐 | 전파되고 `Onboarding`으로 오판하지 않는다 | EC-004 |
+| 세션 실패 분리 | `isRegistered()`가 `Auth` 던짐 | 전파되고 `Onboarding`으로 오판하지 않는다 | FR-009 |
+
+`:core:data` 쪽은 `errorCode` 분기를 따로 검증한다 — `401`+`USER_NOT_REGISTERED`는 `false`, `401`+`UNAUTHORIZED`·`TOKEN_EXPIRED`는 `Auth` 예외여야 한다(SC-002).
 
 ## 3. 화면 동작 — 수동 시나리오
 

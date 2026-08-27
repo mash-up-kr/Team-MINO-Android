@@ -67,12 +67,12 @@ internal sealed interface SplashSideEffect {
 | 목적지 | 수단 | 상태 |
 |---|---|---|
 | 메인 탭 | `MainLauncher.launch(activity, withFinish = true)` | 계약 존재 ([MainLauncher.kt](../../../../core/navigation/src/main/java/team/mino/core/navigation/activity/launcher/MainLauncher.kt)) |
-| 온보딩(프로필 설정) | `OnboardingLauncher.launch(activity, withFinish = true)` | **[TBD-P4] 계약 없음** |
+| 온보딩(프로필 설정) | `ProfileLauncher.launch(activity, withFinish = true) { putExtra(EXTRA_PROFILE_ENTRY_POINT, PROFILE_ENTRY_POINT_ONBOARDING) }` | 계약 존재 ([ProfileLauncher.kt](../../../../core/navigation/src/main/java/team/mino/core/navigation/activity/launcher/ProfileLauncher.kt)) |
 
 - `withFinish = true`로 스플래시를 종료해 뒤로가기로 되돌아오지 못하게 한다.
 - `withFinish`와 `resultLauncher`는 함께 쓰지 않는다([core/navigation README §2.1](../../../../core/navigation/README.md)).
 
-**[TBD-P4]**: 온보딩/프로필 설정 feature 모듈이 아직 `develop`에 없다(`feature/194-onboarding-flow`·`feature/159-profile-setup` 미머지). 대상 Activity가 없어 `OnboardingLauncher` 계약을 만들 수 없다. 그 feature가 들어온 뒤 `:core:navigation`에 계약을 추가하고 이 표를 갱신한다.
+진입점 값(`PROFILE_ENTRY_POINT_ONBOARDING`)은 `:core:navigation`의 계약 자리에 상수로 놓여 있어 호출자와 화면이 같은 문자열을 본다. 스플래시는 새 계약을 만들지 않는다.
 
 ## 6. 상위 계약 준수 — `anonymous-auth-session` 호출자 계약
 
