@@ -71,7 +71,10 @@ core/data/src/main/java/team/mino/core/data/
 │   ├── ...            # core:domain Repository 인터페이스 구현 (internal)
 │   ├── di/            # Repository @Binds 모듈 (internal)
 │   └── mapper/        # DTO → 도메인 모델 Mapper (internal)
-└── storage/           # DataStore<Preferences> 단일 인스턴스 제공 (internal)
+├── storage/           # DataStore<Preferences> 단일 인스턴스 제공 (internal)
+└── work/
+    ├── ...            # WorkManager 워커 (internal)
+    └── di/            # WorkManager 인스턴스 제공 (internal)
 ```
 
 원격·로컬 DataSource는 출처만 다를 뿐 같은 레이어이므로 `datasource/` 하나에 둔다. 구분은 디렉터리가 아니라 이름(`XxxRemoteDataSource` / `XxxLocalDataSource`)이 한다.
@@ -129,12 +132,20 @@ internal class XxxApiService @Inject constructor(
     private val client: HttpClient,
 ) {
     suspend fun getSomething(id: String): XxxResponse =
-        client.get("endpoint/$id").body()
+        client.get("endpoint/$id").body<MinoResponse<XxxResponse>>().data
 
     suspend fun getList(page: Int): List<XxxResponse> =
         client.get("endpoint") {
             parameter("page", page)
-        }.body()
+        }.body<MinoResponse<List<XxxResponse>>>().data
+
+    // 본문 스키마가 없는 응답(202 등) — 봉투를 쓰지 않고 반환도 없다
+    suspend fun create(request: XxxRequest) {
+        client.post("endpoint") {
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }
+    }
 }
 ```
 
@@ -142,6 +153,9 @@ internal class XxxApiService @Inject constructor(
 - `@Inject constructor`로 Hilt 주입 대상으로 선언. 별도 `@Provides` 불필요.
 - 엔드포인트 경로는 `defaultRequest.url` 기준 상대 경로로 작성.
 - 예외를 잡지 않는다 — 도메인 예외 매핑은 `HttpClient`의 validator가 전역 수행한다 (`network/extension/HttpClientConfig.kt`의 `convertDomainException`).
+- **응답 봉투를 벗기는 유일한 지점이다.** 서버는 본문이 있는 성공 응답을 `{ "data": ... }`로 감싸므로 `body<MinoResponse<T>>().data`로 알맹이만 반환한다. 반환 타입에 `MinoResponse`가 드러나면 안 되며, `DataSource`·`RepositoryImpl`·`Mapper`는 봉투를 알지 못한다.
+- 봉투 DTO는 `network/dto/response/MinoResponse.kt` **하나뿐**이다. 엔드포인트별 래퍼 DTO(`XxxListResponse(val data: ...)`)를 새로 만들지 않는다. 결정 배경은 [응답 봉투 ADR](../../docs/adr/2026-08-27-response-envelope-unwrapped-in-apiservice.md) 참조.
+- **본문 스키마가 없는 응답(`202` 등)은 봉투 대상이 아니다.** 응답을 읽지 않으므로 `body()` 호출 없이 반환은 `Unit`이다.
 
 ---
 
@@ -254,8 +268,8 @@ internal fun XxxResponse.toDomain(): Xxx =
 
 ## 8. 새 API 엔드포인트 추가 절차
 
-1. **DTO** — `network/dto/response/XxxResponse.kt` 작성 (`@Serializable`)
-2. **ApiService** — 기존 `XxxApiService`에 함수 추가 또는 신규 파일 작성 (`internal`)
+1. **DTO** — `network/dto/response/XxxResponse.kt` 작성 (`@Serializable`). 봉투(`{ "data": ... }`)는 DTO에 넣지 않는다
+2. **ApiService** — 기존 `XxxApiService`에 함수 추가 또는 신규 파일 작성 (`internal`). 본문이 있는 응답이면 여기서 `body<MinoResponse<...>>().data`로 봉투를 벗긴다([§4](#apiservice-작성-규칙)) — 3번 이후 단계는 봉투를 고려하지 않는다
 3. **DataSource 인터페이스** — `datasource/XxxRemoteDataSource.kt` (없으면 신규)
 4. **DataSourceImpl** — `datasource/XxxRemoteDataSourceImpl.kt`
 5. **DataSource DI** — `datasource/di/XxxDataSourceModule.kt` (`@Binds`)
