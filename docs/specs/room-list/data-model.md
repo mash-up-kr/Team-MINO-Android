@@ -85,7 +85,7 @@ enum class PlaceCategoryFilter { ALL, CAFE, RESTAURANT }
 enum class BottomSheetLevel { PEEK, HALF, FULL }
 ```
 
-- **시작 인자**: 진입 Route는 `sheetLevelOverride: BottomSheetLevel?`를 선택적으로 받는다 — `null`이면 FR-001 기본값(`HALF`+공동방 수에 따른 높이), 값이 있으면 EC-007(방 상세 `[X]` 복귀) 케이스. 실제 `RoomListUiState` 필드·Intent·SideEffect·상태 전이 규칙은 [contracts/room-list-main-contract.md](./contracts/room-list-main-contract.md) 참조.
+- **EC-007(방 상세 `[X]` 복귀 시 시트 상태 유지)은 시작 인자가 아니라 NavHost 백스택 보존으로 자연히 해결된다** — 방 상세([SCR-005])가 `:feature:room` 내부 nested Route(`RoomDetailMain`)가 되면서([room-list/research.md D13](./research.md)), `RoomListMain`은 방 상세 진입 중에도 백스택에 그대로 남아 있고 그 화면의 `RoomListViewModel`(및 `sheetLevel`)도 NavHost가 보존한다. 별도 `sheetLevelOverride` 시작 인자나 result 계약이 필요 없다(2026-08-20 plan 1.2.0 설계였던 `sheetLevelOverride: BottomSheetLevel?` 시작 인자는 이 재검토로 폐기됐다). 실제 `RoomListUiState` 필드·Intent·SideEffect·상태 전이 규칙은 [contracts/room-list-main-contract.md](./contracts/room-list-main-contract.md) 참조.
 
 ---
 

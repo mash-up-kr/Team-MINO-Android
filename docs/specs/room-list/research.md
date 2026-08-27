@@ -31,12 +31,13 @@
 - **Rationale**: `docs/adr/2026-08-14-room-color-palette-in-design-system.md`가 이미 같은 논리로 방 색상 팔레트를 `:core:design-system`에 두기로 결정했다 — "소비자가 여럿이면 SSOT가 필요하다"는 근거가 `MinoRoomCard`에도 그대로 적용된다(room-list Full 방 카드, room-detail 헤더, home 방 변경 시트가 모두 유사한 방 카드/칩을 쓴다, [spec.md FR-004](./spec.md)). `core/common/ui/README.md` §5의 승격 기준("2개 이상의 feature가 실제로 공유", "특정 feature 도메인에 묶이지 않음")도 만족하되, **토큰(디자인 값) 성격이 강해 `core:common:ui`가 아니라 `core:design-system`**이 맞다(같은 README §4).
 - **Alternatives considered**: `:feature:room`에 새로 복제해서 만든다 — 기각. 이미 `:feature:sample`에 검증된 구현이 있는데 중복 구현하면 두 컴포넌트가 갈라지고(헌법 원칙 I), room-detail·home이 각자 또 만들게 된다.
 
-## D5. [SCR-005] 방 상세 전환은 Activity 기반 진입형 feature 계약으로 모델링
+## ~~D5. [SCR-005] 방 상세 전환은 Activity 기반 진입형 feature 계약으로 모델링~~ 재검토됨(plan 2.0.0)
 
-- **Decision**: 방 카드 선택 시([FR-006](./spec.md)) `:core:navigation`에 `RoomDetailLauncher` 인터페이스(+ `EXTRA_ROOM_DETAIL_ROOM_ID`)를 선언하고, `:feature:room`은 이 계약만 주입받아 호출한다. 구현체(`RoomDetailLauncherImpl`)는 `:feature:roomdetail`(가칭, 미구현)의 `di/`가 갖는다.
-- **Rationale**: `room-detail` spec의 화면 특성 — "몰입감을 위해 [SYS-005] 바텀 네비게이션 비노출"([room-detail/spec.md](../room-detail/spec.md) 시스템 연동) — 은 `feature-module.md` 1장이 구분한 "진입형 feature"(Activity 진입점, 독립 플로우) 특징과 일치한다. 탭 그래프에 중첩된 Route로 두면 `:feature:main`의 셸이 "이 목적지에서는 바텀바 숨김"이라는 예외를 알아야 해서, 탭 셸이 하위 feature의 화면 구성을 알게 되는 결합이 생긴다(`feature-module.md` 3장이 명시적으로 금지하는 패턴).
-- **미구현 의존성**: `:feature:roomdetail` 모듈은 아직 없다(이슈 #161, 별도 base 브랜치). 이 계약은 room-list 쪽에서 먼저 선언할 수 있지만, **Hilt 바인딩이 없으면 컴파일이 안 된다** — `/mino-task`가 이 작업을 room-detail 구현 이후로 순서를 매기거나, 임시 스텁 바인딩을 별도 작업으로 넣어야 한다. 완료 보고에서 이 사실을 다시 언급한다.
-- **Alternatives considered**: room-detail을 `:feature:room`의 nested Route(`detail/`)로 둔다 — 기각(위 근거). tab 내부에 두면 짧게는 구현이 빠르지만 바텀 네비게이션 숨김 예외가 셸에 새고, 두 spec(#154/#161)이 이미 별도 base 브랜치로 나뉘어 있어 한 모듈에 합치면 두 PR이 같은 파일을 두고 경합한다.
+- ~~**Decision**: 방 카드 선택 시([FR-006](./spec.md)) `:core:navigation`에 `RoomDetailLauncher` 인터페이스(+ `EXTRA_ROOM_DETAIL_ROOM_ID`)를 선언하고, `:feature:room`은 이 계약만 주입받아 호출한다. 구현체(`RoomDetailLauncherImpl`)는 `:feature:roomdetail`(가칭, 미구현)의 `di/`가 갖는다.~~
+- ~~**Rationale**: `room-detail` spec의 화면 특성 — "몰입감을 위해 [SYS-005] 바텀 네비게이션 비노출"([room-detail/spec.md](../room-detail/spec.md) 시스템 연동) — 은 `feature-module.md` 1장이 구분한 "진입형 feature"(Activity 진입점, 독립 플로우) 특징과 일치한다. 탭 그래프에 중첩된 Route로 두면 `:feature:main`의 셸이 "이 목적지에서는 바텀바 숨김"이라는 예외를 알아야 해서, 탭 셸이 하위 feature의 화면 구성을 알게 되는 결합이 생긴다(`feature-module.md` 3장이 명시적으로 금지하는 패턴).~~
+- ~~**미구현 의존성**: `:feature:roomdetail` 모듈은 아직 없다(이슈 #161, 별도 base 브랜치). 이 계약은 room-list 쪽에서 먼저 선언할 수 있지만, **Hilt 바인딩이 없으면 컴파일이 안 된다** — `/mino-task`가 이 작업을 room-detail 구현 이후로 순서를 매기거나, 임시 스텁 바인딩을 별도 작업으로 넣어야 한다. 완료 보고에서 이 사실을 다시 언급한다.~~
+- ~~**Alternatives considered**: room-detail을 `:feature:room`의 nested Route(`detail/`)로 둔다 — 기각(위 근거). tab 내부에 두면 짧게는 구현이 빠르지만 바텀 네비게이션 숨김 예외가 셸에 새고, 두 spec(#154/#161)이 이미 별도 base 브랜치로 나뉘어 있어 한 모듈에 합치면 두 PR이 같은 파일을 두고 경합한다.~~
+- **재검토 사유**: PR #186·#234 리뷰 중 사용자가 이 결정을 직접 뒤집었다 — "저장 탭 → 방 리스트 → 바텀시트로 방 상세 진입은 하나의 Activity여야 한다. 방 리스트와 방 상세는 별개 기능이 아니다." 대체 결정은 아래 [D13](#d13-scr-005-방-상세는-featureroom의-nested-route다-roomdetaillauncher-폐기)·[D14](#d14-바텀-네비게이션-숨김은-corenavigation의-immersiveroute-마커-인터페이스로-판정)를 참조.
 
 ## D6. [SYS-001] 공동방 생성 폼 진입도 Activity 기반 계약으로 모델링
 
@@ -91,6 +92,23 @@
 
 ---
 
+## D13. [SCR-005] 방 상세는 `:feature:room`의 nested Route다 (`RoomDetailLauncher` 폐기)
+
+- **Decision**: 방 카드 선택([FR-006](./spec.md)) 시 진입하는 방 상세([SCR-005], 이슈 #161)를 별도 진입형 feature/모듈이 아니라 **`:feature:room` 모듈 안의 nested Route**(`RoomDetailMain`, `detail/` 패키지)로 둔다. 전환은 `navController.navigate(RoomDetailMain(roomId))`(`feature-navigation.md` 2장 feature 내부 Route 패턴), `[X]` 복귀는 `popBackStackIfResumed(entry)`다. `:core:navigation`의 `RoomDetailLauncher` 인터페이스·`EXTRA_ROOM_DETAIL_ROOM_ID`는 폐기하고, [contracts/navigation-launchers.md](./contracts/navigation-launchers.md)에서 해당 섹션을 삭제했다. room-detail 쪽 상세 설계는 [room-detail/plan.md](../room-detail/plan.md)가 갖는다.
+- **Rationale**: 사용자가 PR #186·#234 리뷰에서 직접 확정한 결정이다 — 방 리스트와 방 상세는 저장 탭이라는 하나의 사용자 여정 안에 있는 같은 기능이지, "몰입 화면이라 바텀 네비게이션을 숨긴다"는 화면 특성 하나만으로 별도 Activity/모듈을 만들 근거가 되지는 않는다는 것이 재검토의 핵심이다. 부수 효과로 **EC-007(방 상세 `[X]` → 방 리스트 복귀 시 시트 상태 유지)이 사실상 공짜로 해결된다** — `RoomListMain`이 백스택에 남아 있는 동안 그 화면의 `RoomListViewModel`(및 `sheetLevel` 상태)은 NavHost가 그대로 보존하므로, 별도 result 계약이나 시작 인자로 상태를 되돌려 보낼 필요가 없다. 이전 D5가 걱정했던 "탭 셸이 하위 feature의 화면 구성을 안다"는 결합 문제는 [D14](#d14-바텀-네비게이션-숨김은-corenavigation의-immersiveroute-마커-인터페이스로-판정)의 마커 인터페이스로 별도 해소한다.
+- **Alternatives considered**: D5가 확정했던 Activity 기반 진입형 feature 유지 — 기각(사용자 결정으로 번복). 별도 진입형 모듈은 유지하되 `[X]` 복귀 시 시트 상태를 Activity result로 돌려받는다 — 기각. 같은 그래프 안에 두면 NavHost 백스택 보존만으로 해결되는 문제를 result 계약·시작 인자 설계로 다시 만드는 것이라 불필요한 복잡도다.
+- **(plan 2.0.0에서 결정)**
+
+## D14. 바텀 네비게이션 숨김은 `:core:navigation`의 `ImmersiveRoute` 마커 인터페이스로 판정
+
+- **Decision**: `:core:navigation`에 빈 마커 인터페이스 `ImmersiveRoute`를 신설한다. `RoomDetailMain`(D13)이 이 마커를 구현한다. `:feature:main`의 `MainShell`은 `navController.currentBackStackEntryAsState()`의 `destination`이 이 마커를 구현하는 목적지인지만 검사해 `MinoScaffold`의 `bottomBar` 슬롯을 조건부로 그린다.
+- **Rationale**: [UX-002](./spec.md)(`Full` 상태 시 현재 위치 버튼·바텀 네비게이션 숨김)와 `room-detail` spec [FR-003] 등은 몰입 화면을 요구하지만, `RoomDetailMain`이 `:feature:room`의 nested Route가 된 이상(D13) `MainShell`이 이 목적지를 알아야 바텀바를 숨길 수 있다. 구체 타입이나 feature 이름을 하드코딩하면 `feature-module.md` 3장이 금지하는 "탭 셸이 하위 feature 화면 구성을 아는" 결합이 되므로, `:core:navigation`(양쪽이 이미 의존하는 공용 모듈)의 빈 마커 인터페이스로 간접화한다 — `MainShell`은 `ImmersiveRoute` 타입만 알면 되고 `:feature:room` 모듈 자체를 몰라도 된다(Gradle 의존 방향도 그대로 유지).
+- **Alternatives considered**: `MainShell`이 `RoomDetailMain`(또는 `:feature:room`이 노출하는 구체 Route) 타입을 직접 참조해 분기 — 기각. 탭 셸이 하위 feature의 화면 구성을 알게 되는 결합이 그대로 재현된다. 몰입 화면 여부를 `UiState`나 SideEffect로 위로 전달 — 기각. 화면 전환마다 셸-화면 간 별도 통신 경로를 새로 만들어야 해서, 이미 셸이 구독 중인 `currentBackStackEntryAsState()` 목적지 판별보다 무겁다.
+- **다른 feature에도 구속력을 갖는 결정**: `ImmersiveRoute`는 `:core:navigation`의 신규 공개 API이자 이후 몰입 화면을 만드는 모든 feature가 따라야 하는 패턴이라 room-list 안에서만 유효한 선택이 아니다. room-detail 완료 보고에서 ADR 승격을 제안한다(`mino-plan` SKILL.md 「research.md와 ADR의 경계」).
+- **(room-detail plan 1.0.0에서 결정 — room-list D13과 짝을 이뤄 room-list 쪽 배경도 여기 함께 기록)**
+
+---
+
 ## NEEDS CLARIFICATION 해소 현황
 
-Technical Context에 남겼던 미확정 항목은 모두 위 결정으로 해소됐다. 남은 진짜 미확정은 D5·D6의 **미구현 크로스 feature 의존성**뿐이며, 이는 설계 공백이 아니라 다른 issue의 진행 상태에 대한 의존이다.
+Technical Context에 남겼던 미확정 항목은 모두 위 결정으로 해소됐다. D6의 **미구현 크로스 feature 의존성**(`RoomFormLauncher`)은 여전히 남아 있다 — 이는 설계 공백이 아니라 다른 issue의 진행 상태에 대한 의존이다. D5가 갖고 있던 같은 성격의 의존성(`RoomDetailLauncher`)은 D13으로 room-list 범위에서 제거됐다(room-detail이 `:feature:room` 내부로 들어오며 room-list의 몫이 아니게 됨).
