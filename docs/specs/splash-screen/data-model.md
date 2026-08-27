@@ -10,18 +10,11 @@
 
 ## 1. 도메인 모델 (`:core:domain`)
 
-### 1.1 `UserProfile`
+### 1.1 프로필 모델 — 이 스펙은 만들지 않는다
 
-`GET /api/v1/users/me`의 `User` 스키마 중 스플래시가 필요로 하는 것만 담는다. 스플래시는 **존재 여부**만 쓰지만, 같은 모델을 온보딩·마이페이지가 공유하므로 프로필의 최소 형태를 그대로 갖는다.
+스플래시는 프로필의 **존재 여부**만 쓰고 필드를 하나도 읽지 않는다. 그래서 전용 모델을 두지 않고 `ProfileRegistrationRepository.isRegistered(): Boolean`으로 받는다(→ [research.md R-014](./research.md)).
 
-| 필드 | 타입 | 설명 |
-|---|---|---|
-| `id` | `String` | 서버 발급 사용자 식별자 |
-| `nickname` | `String` | 닉네임 |
-| `avatar` | `String?` | 아바타 식별자. 미선택 가능 |
-
-- 스플래시는 이 모델의 필드를 읽지 않는다. `null` 여부만 FR-003·FR-004의 분기 근거로 쓴다.
-- 검증 규칙(닉네임 2~15자 등)은 온보딩·마이페이지의 몫이며 이 스펙의 범위가 아니다.
+프로필의 값 모델 [`Profile(nickname, avatarId)`](../../../core/domain/src/main/kotlin/team/mino/core/domain/model/Profile.kt)은 profile 스펙이 소유하며 이 스펙은 참조하지 않는다.
 
 ### 1.2 `SplashEntry`
 
@@ -91,19 +84,16 @@
 
 ### 3.1 DTO
 
-`UserResponse` — `GET /api/v1/users/me` 응답의 `data` 필드에 대응한다. 스웨거의 공통 래퍼 `{ "data": ... }`는 기존 네트워크 계층의 처리 방식을 따른다.
+응답 **본문을 도메인으로 옮기지 않는다.** `200`이면 `true`, `401` + `USER_NOT_REGISTERED`면 `false`이므로 필요한 것은 상태 코드와 `errorCode`뿐이다.
 
-| 필드 | 타입 |
+| 대상 | 형태 |
 |---|---|
-| `id` | `String` |
-| `nickname` | `String` |
-| `avatar` | `String?` |
+| 에러 응답 | `errorCode: String`, `message: String` — 공통 에러 포맷 |
+| 성공 응답 | 역직렬화하지 않는다 |
 
-### 3.2 Mapper
+`errorCode`의 `USER_NOT_REGISTERED` 판정은 `:core:data`에서 끝나고 도메인으로 새지 않는다.
 
-`UserResponse.toDomain(): UserProfile` — 필드 1:1 대응.
-
-### 3.3 저장소
+### 3.2 저장소
 
 | 대상 | 저장 위치 | 설명 |
 |---|---|---|
@@ -114,12 +104,9 @@
 
 ---
 
-## 4. 미확정 항목이 데이터 모델에 남긴 구멍
+## 4. 미확정 항목
 
-| ID | 구멍 | 막힌 요구사항 |
-|---|---|---|
-| **TBD-P2** | 프로필 미생성을 나타내는 응답이 정의되지 않아 `UserProfile?`의 `null` 조건을 확정할 수 없다 | FR-003 |
+**없다.** 이 데이터 모델의 모든 값이 확정된 근거를 갖는다.
 
-이 항목이 닫히기 전에는 `UserRepositoryImpl`을 구현할 수 없다. `:core:domain`의 인터페이스와 `:feature:splash`의 화면은 영향받지 않는다.
-
-> **TBD-P1(세션 발급 수단)은 plan 2.0.0에서 해소되었다.** → [research.md R-010](./research.md)
+- 프로필 등록 여부의 판정 근거 → 배포 OpenAPI의 `401` `errorCode` enum (plan 3.0.0에서 TBD-P2 해소)
+- 익명 세션의 발급·저장 → `anonymous-auth-session` 스펙 소유 (plan 2.0.0에서 TBD-P1 해소)

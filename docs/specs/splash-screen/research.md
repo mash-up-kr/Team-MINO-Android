@@ -43,13 +43,25 @@
 
 ## R-003. 프로필 존재 여부 판정 — `GET /api/v1/users/me`
 
+> **결정(서버를 단일 출처로 삼는다)은 plan 3.0.0에서도 유지된다.** 다만 아래 본문의 반환 형태 `UserProfile?`는 R-014에서 `Boolean`으로 좁혀졌다. 로컬 판정을 쓰지 않는 이유는 R-015가 이어받는다.
+
 **결정 (plan 1.0.0)**: `UserRepository.getMyProfile(): UserProfile?`로 감싸고, `null`이면 프로필 없음(최초 실행)으로 판정한다. HTTP 응답과 `null`의 대응은 `:core:data`가 흡수한다.
 
 **근거**:
 - 스웨거의 `GET /api/v1/users/me`가 유일한 프로필 조회 경로다. `200 → User`, `401 → Error`만 정의돼 있다.
 - 도메인은 HTTP 코드를 몰라야 한다(원칙 II). `UserProfile?`로 노출하면 feature는 "있음/없음"만 본다.
 
-**[TBD-P2]**: **프로필 미생성 사용자를 나타내는 응답이 스웨거에 정의돼 있지 않다.** `401`은 인증 실패이지 프로필 부재가 아니며, `404`는 이 엔드포인트에 없다. 세션은 확보됐지만 프로필이 없는 최초 실행 사용자에게 서버가 무엇을 돌려주는지 확정이 필요하다. 확정 전에는 FR-003(최초 실행 → 프로필 설정)의 판정 근거가 없다.
+**대조 결과 (plan 3.0.0에서 TBD-P2 해소)**: 배포된 OpenAPI(`https://api.gguk.org/api-docs-json`, 2026-08-27 조회)가 `401`의 `errorCode`를 enum으로 정의했다 — `UNAUTHORIZED` · `TOKEN_EXPIRED` · **`USER_NOT_REGISTERED`**. 마지막 값이 "세션은 유효하나 등록되지 않은 유저"를 나타낸다.
+
+따라서 판정은 HTTP 코드가 아니라 **errorCode**로 한다.
+
+| 응답 | 판정 |
+|---|---|
+| `200` | 프로필 있음 → `SplashEntry.Main` |
+| `401` + `USER_NOT_REGISTERED` | 프로필 없음 → `SplashEntry.Onboarding` |
+| `401` + `UNAUTHORIZED`·`TOKEN_EXPIRED` | 세션 문제 → 실패로 던진다. 최초 실행으로 오판하지 않는다 |
+
+세 번째 줄이 이 결정의 핵심이다. `401`을 통째로 "프로필 없음"으로 읽으면 세션이 깨진 기존 사용자가 온보딩으로 떨어진다(SC-002 위반).
 
 **Alternatives considered**:
 - *로컬 저장 여부로 판정* — 네트워크 없이 즉시 판정 가능하지만, 재설치 시 서버에 프로필이 있어도 없다고 오판한다. PRD 5.0.0이 "앱을 지웠다 다시 설치하면 이전 세션과 그 데이터로 돌아갈 수 없다"고 못박았으므로 재설치는 곧 새 세션이라 오판이 아니게 되지만, 세션 복원 경로(FR-011)와 판정 경로가 서로 다른 저장소를 보게 되어 어긋날 여지가 있다. 서버를 단일 출처로 두는 편이 안전해 보류.
@@ -124,7 +136,16 @@
 
 **근거**: `:core:navigation`에 `MainLauncher` 계약과 `:feature:main`의 `MainLauncherImpl`이 이미 있다. `withFinish`로 스플래시를 종료해 뒤로가기로 스플래시에 돌아오지 못하게 한다(FR-005·UX-001의 취지).
 
-**[TBD-P4]**: **온보딩/프로필 설정 feature 모듈이 아직 없다.** `feature/194-onboarding-flow`·`feature/159-profile-setup` 브랜치가 존재하나 `develop`에 머지되지 않았다. 따라서 `OnboardingLauncher` 계약의 대상 Activity가 없어 FR-003의 전환을 배선할 수 없다. 온보딩 feature가 들어온 뒤 계약을 추가한다.
+**해소 (plan 3.0.0)**: `:feature:profile`이 `develop`에 머지되어 `ProfileLauncher` 계약과 `ProfileActivity`가 존재한다. 새 계약을 만들 필요가 없다.
+
+```kotlin
+// core:navigation — profile 스펙 소유
+interface ProfileLauncher : ActivityLauncher
+const val PROFILE_ENTRY_POINT_ONBOARDING = "onboarding"
+const val PROFILE_ENTRY_POINT_EDIT = "edit"
+```
+
+스플래시는 `ProfileLauncher.launch(activity, withFinish = true) { putExtra(EXTRA_PROFILE_ENTRY_POINT, PROFILE_ENTRY_POINT_ONBOARDING) }` 로 연다. 진입점 값이 계약 자리에 상수로 놓여 있어 호출자와 화면이 같은 문자열을 본다.
 
 ---
 
@@ -208,3 +229,32 @@ SplashViewModel
 **근거**: `anonymous-auth-session`의 호출자 계약 **C-5**가 요구하는 조건이다. 예외 매핑은 화이트리스트라 열거 밖의 실패는 CEH로 가는데, 그때 재시도 루프가 `runCatchingDomain`의 실패 콜백에만 걸려 있으면 루프가 조용히 끝나고 스플래시가 영구히 멈춘다. FR-010(세션 확보까지 자동 재시도)과 SC-003(멈춘 것으로 오해할 여지 없음)이 함께 깨진다.
 
 **함께 지킬 것**: 13초 임계(FR-007)를 `withTimeout`으로 걸면 `TimeoutCancellationException`이 `CancellationException`이라 도메인 예외 경로를 타지 않고 CEH로 샌다. R-004가 이미 `withTimeout`을 기각했으므로 충돌하지 않는다.
+
+---
+
+## R-014. 프로필 존재 판정 계약을 `Boolean`으로 좁힌다
+
+**결정 (plan 3.0.0)**: 스플래시 전용 계약을 `suspend fun isRegistered(): Boolean` 하나로 두고, `UserProfile` 도메인 모델은 **만들지 않는다.**
+
+**근거**:
+- plan 2.1.0은 `UserProfile(id, nickname, avatar)`를 신설하려 했고, 그 근거는 "같은 모델을 온보딩·마이페이지가 공유하므로"였다. 그 전제가 사라졌다 — `:core:domain`에 이미 [`Profile(nickname, avatarId)`](../../../core/domain/src/main/kotlin/team/mino/core/domain/model/Profile.kt)이 있고 profile 스펙이 소유한다. 같은 개념의 모델을 둘 두면 헌법 원칙 I(SSOT)에 어긋난다.
+- 그렇다고 `Profile`을 반환 타입으로 재사용할 이유도 없다. **스플래시는 필드를 하나도 읽지 않는다**(plan 2.1.0부터 유지된 사실). 존재 여부만 쓰는 곳에 필드 3개짜리 모델을 실어 나르면 소비하지 않는 값에 계약이 묶인다.
+- `Boolean`이면 서버 응답(`200` / `401 USER_NOT_REGISTERED`)과 도메인 값이 1:1로 맞고, 그 밖의 실패는 예외로 갈린다.
+
+**Alternatives considered**:
+- *`Profile?`을 반환* — profile 스펙 소유 모델을 스플래시 계약이 참조하게 되어 두 스펙이 결합한다. 게다가 서버 응답에 있는 `id`·`createdAt`이 `Profile`에 없어 매핑에서 정보를 버리는 모양이 된다. 기각.
+- *`UserProfile` 신설* — plan 2.1.0의 안. `Profile`과 중복이라 기각. 이력은 위 R-003 참조.
+
+---
+
+## R-015. 로컬 `ProfileRepository`를 판정에 쓰지 않는다
+
+**결정 (plan 3.0.0)**: 프로필 존재 판정에 [`ProfileRepository.observeProfile()`](../../../core/domain/src/main/kotlin/team/mino/core/domain/repository/ProfileRepository.kt)를 쓰지 않는다. 서버 조회를 유지한다(R-003).
+
+**근거**:
+- 그 저장소는 profile 스펙이 **자기 화면의 표기·편집을 위해** 두는 로컬 캐시다. 문서에 "이번 범위는 로컬 저장소 단독", "도메인 실패를 정의하지 않는다 — 이 흐름은 오류로 끝나지 않는다"고 적혀 있다.
+- 스플래시가 그걸 쓰면 spec이 무너진다. spec §4 가정은 "프로필 판정은 세션이 확보된 뒤에 가능하다"이고 EC-004는 "세션은 성공했지만 프로필 조회가 실패"를 다룬다 — 둘 다 **네트워크 판정**을 전제한다. 실패하지 않는 로컬 흐름에서는 두 조항이 성립하지 않는다.
+- profile 스펙도 표기 목적의 매번 조회를 기각했을 뿐(그 스펙 research 120행), 스플래시의 **1회 존재 판정**까지 캐시로 대체하라고 정하지 않았다. `GET /api/v1/users/me`는 어느 스펙도 선점하지 않은 상태다.
+
+**Alternatives considered**:
+- *로컬 캐시로 판정하고 네트워크를 아예 안 탄다* — 3초 안에 끝나 빠르지만 위 두 조항이 죽고, 캐시가 비어 있는 재설치 사용자를 서버 상태와 무관하게 온보딩으로 보낸다. 기각.
