@@ -8,9 +8,9 @@
 
 **최초 작성일**: 2026-08-26
 
-**최종 수정일**: 2026-08-26
+**최종 수정일**: 2026-08-27
 
-**버전**: 1.0.0
+**버전**: 2.0.1
 
 **참고**: 이 템플릿은 `/mino-plan` 명령으로 채워지며, 해당 명령의 정의가 실행 워크플로우를 설명한다.
 
@@ -25,6 +25,7 @@
 - 공동방 생성 폼([SYS-001])은 room-list가 이미 선언한 `RoomFormLauncher`(`:core:navigation`)를 편집 모드로 재사용한다.
 - 다른 방에 공유([SYS-003])·초대 시트([SYS-006])·나가기·위임([SYS-007])은 Activity 전환이 아니라 `:feature:room/detail/component/`의 내부 바텀시트·다이얼로그다 — 셋 다 고정 높이 시트/모달로, 진입형 feature의 특징(독립 플로우·Activity 진입점)과 맞지 않는다. 각 시스템의 실제 저장·초대·나가기 로직(API 계약)은 이 spec 범위 밖(SYS-003·SYS-006·SYS-007 각각의 spec 소관)이라, UI 골격만 이 plan이 정의하고 데이터 계약은 [TBD]로 남긴다.
 - 신규 도메인: `:core:domain`에 `Place`(장소 카드/리스트 렌더링에 필요한 필드만)와 `PlaceRepository`를 처음 정의한다. 정렬 드롭다운([FR-005])과 카테고리 칩([FR-006])은 room-list가 이미 정의한 `MapMarkerSortOption`·`PlaceCategoryFilter`(`:core:domain`)를 그대로 재사용한다(PRD가 두 화면의 "공통 정렬 드롭다운"이라고 명시).
+- **(plan 2.0.0)** 배포된 서버 API(`https://api.gguk.org`)를 대조한 결과, [SYS-003]·[SYS-006]·[SYS-007]이 plan 1.0.0에서 `[TBD]`로 남겼던 데이터 계약 대부분이 이미 확정 스펙으로 존재했다([research.md D14~D16](./research.md)). `sharePlaces`는 `pinId` 기반으로 시그니처를 바로잡았고, `RoomRepository`(room-list 정의)에 `getMembers`·`createInvitation`·`leaveRoom`·`transferOwner`를 추가하며 신규 domain 타입 `RoomMember`를 도입한다. 여전히 서버에 없는 것은 `deletePlace` 엔드포인트와 `Place.commentCount`·`isGgukPick` 필드뿐이다.
 
 상세 근거는 [research.md](./research.md), 데이터 형태는 [data-model.md](./data-model.md), 계약은 [contracts/](./contracts/)를 참조.
 
@@ -34,7 +35,9 @@
 
 **주요 의존성**: Jetpack Compose · Hilt · `:core:map`(Google Maps Compose 래퍼, room-list와 공유) · `:core:design-system`(`MinoMenu`·`MinoChip`·room-list D4가 승격 제안한 방 카드류 재사용) · `:core:common:android`(MVI) · `:core:common:ui`(`MinoScaffold`) · `:core:navigation`(`ImmersiveRoute` 신설, `RoomFormLauncher` 재사용) · `:core:domain`(`Room`·`RoomRepository`는 room-list가 이미 정의, `Place`·`PlaceRepository`는 이 plan이 신규 정의) — 이 plan은 신규 Gradle 모듈을 추가하지 않는다. `:feature:room`은 이미 room-list plan이 만든다.
 
-**저장소**: 없음(이 spec 범위에서도 원격 조회만 — `PlaceRepository.observePlaces(roomId)`가 유일한 데이터 진입점). 로컬 영속화는 요구되지 않는다. 백엔드 API는 room-list와 마찬가지로 draft 단계라 필드 갭은 구현 단계의 임시 목데이터로 메운다([room-list/research.md D12](../room-list/research.md)와 동일한 사정 — 이 spec은 draft를 참고만 하고 계약을 거기 맞춰 축소하지 않는다).
+**저장소**: 없음(이 spec 범위에서도 원격 조회만 — `PlaceRepository.observePlaces(roomId)`가 유일한 데이터 진입점). 로컬 영속화는 요구되지 않는다. **(plan 2.0.0)** 배포된 라이브 API 대조 결과 `observePlaces`·`sharePlaces`(장소 공유)·`getMembers`·`createInvitation`·`leaveRoom`·`transferOwner`(방 멤버·나가기·위임)는 이미 확정 스펙이다([research.md D14~D16](./research.md)). `deletePlace`와 `Place.commentCount`·`isGgukPick`만 서버 미노출이라 구현 단계의 임시 목데이터로 남는다.
+
+**참조 API 문서**: `https://api.gguk.org/api-docs-json`(Team MINO API 1.0.0, 24 오퍼레이션), 조회 2026-08-27T20:54:28+09:00([`.claude/skills/mino-plan/scripts/openapi_digest.py`](../../../.claude/skills/mino-plan/scripts/openapi_digest.py) `fetch` 사용). 대조 상세는 [research.md D14~D16](./research.md).
 
 **테스트**: room-list와 동일하게 이 저장소에 확립된 자동 테스트 컨벤션이 없다(헌법 「검증 장치의 한계」). `tasks.md`가 ViewModel 단위 테스트 도입 여부를 정한다.
 
@@ -54,7 +57,7 @@
 
 | 원칙 | 판정 | 근거 |
 |---|---|---|
-| I. SSOT | PASS | `Place`·`PlaceRepository`는 이 spec이 최초 정의(중복 없음). 정렬·카테고리 필터는 room-list가 이미 정의한 `MapMarkerSortOption`·`PlaceCategoryFilter`를 그대로 재사용해 새로 만들지 않았다([research.md D4](./research.md)). `BottomSheetLevel`도 room-list가 정의한 `feature/room/main/model/BottomSheetLevel.kt`를 재사용한다(중복 정의 금지). |
+| I. SSOT | PASS | `Place`·`PlaceRepository`는 이 spec이 최초 정의(중복 없음). 정렬·카테고리 필터는 room-list가 이미 정의한 `MapMarkerSortOption`·`PlaceCategoryFilter`를 그대로 재사용해 새로 만들지 않았다([research.md D4](./research.md)). `BottomSheetLevel`도 room-list가 정의한 `feature/room/main/model/BottomSheetLevel.kt`를 재사용한다(중복 정의 금지). **(plan 2.0.0)** `RoomMember`는 초대 참여자 목록과 위임 대상 선택이 같은 서버 응답을 쓰므로 하나로 합쳐 신설했다 — `RoomMemberSummary`(카드 미리보기 축약, room-list 소유)와는 용도가 달라 중복이 아니다([research.md D16](./research.md)). |
 | II. 레이어 경계 | PASS (설계 후 재확인 필요) | `:feature:room`(`detail/`) → `:core:domain`/`:core:navigation`/`:core:design-system`/`:core:map` 방향만 있고 역방향·feature 간 직접 의존이 없다. `RoomFormLauncher` 재사용은 기존 계약을 그대로 쓰는 것이라 새 의존을 만들지 않는다. `ImmersiveRoute`는 `:core:navigation`(양쪽이 이미 의존하는 공용 모듈)에 두어 `:feature:main`이 `:feature:room`을 몰라도 되게 했다([research.md D3](./research.md)). |
 | III. 결정 기록 | 조건부 PASS | `ImmersiveRoute`는 다른 feature에도 구속력을 갖는 결정이라 ADR 후보 — 완료 보고에서 제안(이 plan이 직접 쓰지 않음, `mino-plan` SKILL.md 「research.md와 ADR의 경계」). |
 | IV. Spec-First | PASS | spec.md 컨펌(CREATED/PASS, 16/16 통과) 이후 이 plan을 시작했다. |
@@ -87,9 +90,11 @@ docs/specs/room-detail/
 
 core/domain/src/main/kotlin/team/mino/core/domain/
 ├── model/
-│   └── Place.kt                   # data-model.md §1 — 신규
+│   ├── Place.kt                   # data-model.md §1 — 신규
+│   └── RoomMember.kt              # data-model.md §1 — 신규(plan 2.0.0, research.md D16)
 └── repository/
-    └── PlaceRepository.kt         # contracts/place-repository.md — 신규
+    ├── PlaceRepository.kt         # contracts/place-repository.md — 신규
+    └── RoomRepository.kt          # room-list가 정의(기존 파일) — getMembers·createInvitation·leaveRoom·transferOwner 추가(plan 2.0.0, contracts/place-repository.md "RoomRepository 확장")
 
 core/navigation/src/main/java/team/mino/core/navigation/screen/
 └── ImmersiveRoute.kt              # 신규 — 빈 마커 인터페이스(research.md D3)
@@ -127,4 +132,5 @@ feature/main/src/main/java/team/mino/feature/main/
 |---|---|---|
 | `RoomFormLauncher`를 편집 모드로 재사용하려면 `:feature:roomform`(미구현)의 구현이 먼저 필요 | [FR-012]가 방 편집 폼 호출을 요구하는데 그 폼 자체는 room-list D6이 이미 미구현 의존성으로 남긴 모듈이다 | room-detail이 편집 폼을 로컬로 또 구현 — 기각(중복 구현, `spec.md §3.2`가 이미 범위 밖으로 뺌). `/mino-task`가 room-list와 순서를 맞춰야 한다. |
 | `:core:navigation`에 `ImmersiveRoute` 신설 + `:feature:main`의 `MainShell` 수정 | 방 상세가 nested Route가 되며 몰입 화면 판정을 셸이 해야 한다([research.md D3](./research.md)) | `MainShell`이 `RoomDetailMain` 구체 타입을 직접 참조 — 기각(탭 셸이 하위 feature 화면 구성을 아는 결합, `feature-module.md` 3장 금지). `/mino-task`는 이 작업을 room-detail의 다른 화면 작업과 별개로 `:core:navigation`·`:feature:main` 양쪽에 걸친 작업으로 인지해야 한다. |
-| [SYS-003]·[SYS-006]·[SYS-007]의 실제 데이터 계약(방 선택 후 복제 API, 초대 링크 생성·공유, 나가기·위임 API)이 미확정 | 세 시스템 모두 전용 spec이 아직 이 저장소에 없다([research.md D10·D11·D12](./research.md)) | 계약을 지금 추측해서 확정 — 기각(헌법 원칙 IV, 근거 없는 빈틈을 지어내지 않는다). UI 골격(바텀시트·모달 컴포넌트)만 이 plan이 정의하고, 데이터 계약은 [TBD]로 남겨 후속 spec/plan이 채우게 한다. |
+| **(plan 2.0.0)** `RoomRepository`(room-list가 정의·소유)에 room-detail이 4개 메서드를 추가해야 함 | [SYS-006]·[SYS-007]이 쓰는 `getMembers`·`createInvitation`·`leaveRoom`·`transferOwner`가 API tag상 방 단위 동작이라 `PlaceRepository`가 아니라 `RoomRepository`에 속한다([research.md D15](./research.md)) | room-detail 전용 별도 Repository로 분리 — 기각(같은 방 단위 개념을 두 Repository가 나눠 가지면 헌법 원칙 I 위반 소지). 다만 `RoomRepository`의 계약 문서(`room-list/contracts/room-repository.md`)는 room-list plan 소유라 **이 plan은 그 문서를 갱신하지 못한다** — `/mino-task` 실행 전에 room-list 담당자가 그 문서에 이 4개 메서드를 반영해야 한다(완료 보고 참고). |
+| ~~[SYS-003]·[SYS-006]·[SYS-007]의 실제 데이터 계약(방 선택 후 복제 API, 초대 링크 생성·공유, 나가기·위임 API)이 미확정~~ | ~~세 시스템 모두 전용 spec이 아직 이 저장소에 없다~~ | **재검토됨(plan 2.0.0)** — 배포된 서버 API 대조로 세 계약 모두 확정([research.md D14~D16](./research.md)). 남는 미확정은 `deletePlace` 엔드포인트 부재와 `Place.commentCount`·`isGgukPick` 필드 부재뿐(둘 다 서버 미구현, 설계 공백 아님). |

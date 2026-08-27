@@ -102,14 +102,36 @@
 - **Alternatives considered**: room-detail 전용 메뉴 컴포넌트를 새로 만든다 — 기각(위 근거, room-list D11과 동일).
 - **(plan 1.0.0에서 결정)**
 
+## D14. 배포된 서버 API 대조 — `Pin`이 `Place`를 감싸는 실제 응답 구조, `sharePlaces` 계약 확정
+
+- **Decision**: 배포된 라이브 API(`https://api.gguk.org`, `GET /api-docs-json`, 조회 2026-08-27T20:54:28+09:00)를 대조한 결과, 서버는 `Place`를 단독으로 내려주지 않고 `Pin { id, roomId, place: Place, images: string[], createdBy, createdAt }`이 감싼다(`GET /api/v1/pins?roomId=`·`GET /api/v1/pins/{pinId}`, tag `pin`). `Place`에는 `id·provider·providerPlaceId·name·address·city·district·lat·lng·category·phone·mapUrl·createdAt·updatedAt`이 있고 `images`는 없다(핀으로 이동). `data-model.md`의 `Place.thumbnailUrl`은 `Pin.images.firstOrNull()`에서, `Place.savedAt`은 `Pin.createdAt`에서 온다 — **domain `Place`는 서버 `Place`가 아니라 `Pin`+`Place`를 합쳐 만든다.**
+  `PlaceRepository.sharePlaces`의 서버 계약도 확정됐다: `POST /api/v1/pins/{pinId}/duplicate`, body `{ roomIds: string[] (minItems 1) }`, 대상 방 중 하나라도 같은 장소가 이미 저장돼 있으면 `409 DUPLICATE_PIN_IN_ROOM`으로 전체 거절. **호출 식별자는 `placeId`가 아니라 `pinId`다**(엔드포인트가 `/pins/{pinId}/...`) — D8·[contracts/place-repository.md](./contracts/place-repository.md)의 시그니처를 이에 맞춰 개정한다(plan 2.0.0).
+  `deletePlace`에 대응하는 `DELETE /api/v1/pins/{pinId}` 같은 엔드포인트는 이 API 문서에 **없다** — D10이 남긴 "복제 실행 API는 TBD"라는 문장은 해소됐지만, 삭제 쪽은 여전히 서버 미구현이라 `[TBD]`로 남는다.
+- **Rationale**: `mino-plan` SKILL.md 「서버 API 대조」— 서버 엔드포인트를 쓰는 계약은 추정하지 않고 배포된 문서를 조회해 근거로 삼는다. D8·D10 작성 시점에는 이 저장소의 정적 draft(`docs/swagger.yaml`, room-list D12)만 참고했는데, 그 사이 서버가 실제로 `pin` 태그 5개 엔드포인트를 배포해 draft보다 앞서 있었다.
+- **Alternatives considered**: 기존 `Place`·`sharePlaces(placeId, ...)` 시그니처를 그대로 두고 Mapper에서만 흡수 — 기각. `sharePlaces`가 호출하는 실제 엔드포인트가 `pinId`를 요구하므로 Repository 계약 자체가 `pinId`를 받아야 한다(Mapper로 가릴 수 있는 표현 차이가 아니라 계약의 식별자 차이).
+- **(plan 2.0.0에서 결정 — D8·D10의 TBD를 부분 해소)**
+
+## D15. `RoomRepository` 확장 — 멤버 목록·나가기·방장 위임 API 확정 ([SYS-007])
+
+- **Decision**: 같은 API 대조에서 `GET /api/v1/rooms/{roomId}/members`(방 멤버 목록, `{userId, nickname, avatar, isOwner, joinedAt}[]`, tag `room`)·`DELETE /api/v1/rooms/{roomId}/members/me`(방 나가기 — 방장+다른 멤버 존재 시 `409 OWNER_TRANSFER_REQUIRED`, 방장+마지막 멤버면 방 자동 삭제)·`PUT /api/v1/rooms/{roomId}/owner`(방장 위임, body `{ nextOwnerId: uuid }`)가 이미 배포돼 있는 것을 확인했다. D12가 "[SYS-007] 나가기·권한 위임 API 계약은 TBD"로 남긴 지점이 해소됐다 — [contracts/room-detail-main-contract.md](./contracts/room-detail-main-contract.md)의 나가기 흐름 분기 규칙(일반 멤버/1인 방장/N인 방장)이 이 세 엔드포인트의 상태 코드(`200`/`409 OWNER_TRANSFER_REQUIRED`)와 그대로 맞아떨어진다 — **설계를 바꿀 필요 없이 API 근거만 채운다.**
+  이 세 메서드는 방 단위 동작(API tag도 `room`)이라 D8이 그은 "방 단위는 `RoomRepository`, 장소 단위는 `PlaceRepository`" 경계를 따라 **room-list가 정의한 `RoomRepository`(`:core:domain`)에 추가한다** — 새 Repository를 만들지 않는다.
+- **크로스 spec 영향**: `RoomRepository`의 계약 문서(`docs/specs/room-list/contracts/room-repository.md`)는 room-list plan이 소유한다. 이 plan(room-detail)은 그 인터페이스에 메서드를 추가해야 하지만, `mino-plan` SKILL.md 범위 가드가 다른 spec 디렉터리 수정을 막는다 — **room-list 쪽 계약 문서 갱신은 이 plan이 하지 못하고, 완료 보고에서 후속 조치로 남긴다.** `:core:domain`의 실제 인터페이스 파일 자체는 room-detail의 `/mino-task`가 손대되, 계약 문서의 정합성은 room-list 담당자가 별도로 반영해야 한다.
+- **Rationale**: PRD [SYS-007]이 요구하는 동작(위임 없이 나가기 시도 시 막힘, 마지막 1인 방장은 방 삭제)이 서버 에러 코드로 이미 표현돼 있어, 클라이언트는 `409 OWNER_TRANSFER_REQUIRED`를 `LeaveDialogState.DelegateOwner`로 분기하면 된다(별도 사전 조회로 멤버 수를 세지 않아도 서버가 상태를 판정해 준다 — 클라이언트 로직 단순화).
+- **Alternatives considered**: 멤버 수·방장 여부를 클라이언트가 미리 계산해 분기 — 기각. 서버가 나가기 시도 자체에 대해 `409`로 판정 결과를 내려주므로 클라이언트가 같은 규칙을 중복 구현할 이유가 없다(SSOT는 서버).
+- **(plan 2.0.0에서 결정 — D12의 TBD를 해소)**
+
+## D16. 초대 링크 발급 API 확정 ([SYS-006]) — `RoomMember` 신규 도입
+
+- **Decision**: `POST /api/v1/rooms/{roomId}/invitations`(멤버당 1개, 이미 발급했으면 같은 `code` 재반환, `code`는 대문자+숫자 6자 `^[A-Z0-9]{6}$`, 클라이언트가 `gguk.org/r/{code}`로 조립. 개인방은 `403 PERSONAL_ROOM_NOT_ALLOWED`)이 이미 배포돼 있다. D11이 "초대 링크 생성 API·참여자 목록 타입은 TBD"로 남긴 두 지점 중 API는 해소됐다. 참여자 전체 목록은 D15가 확인한 `GET /api/v1/rooms/{roomId}/members` 응답(`{userId, nickname, avatar, isOwner, joinedAt}`)을 그대로 쓸 수 있어, `data-model.md §4`가 가칭으로 남겼던 `RoomMember`를 이 스키마로 확정한다(`RoomMemberSummary`와는 별개 타입 — 후자는 카드 미리보기 4개 한정용).
+- **Rationale**: `RoomMember`는 `RoomInviteSheet`(초대 참여자 목록)와 D15의 위임 대상 선택 모달(`OnOwnerDelegateSelected`)이 공유하는 개념이라 — 이미 D15가 같은 `GET /members` 응답을 근거로 삼았으므로 domain 타입도 하나로 합친다(헌법 원칙 I).
+- **Alternatives considered**: `RoomMemberSummary`를 확장해 `isOwner`·`joinedAt`을 추가 — 기각. `RoomMemberSummary`는 "최대 4개 아바타 + overflow count"라는 카드 미리보기 전용 축약 표현이라(room-list 계약) 전체 목록과 필드 의미가 다르다. 하나의 타입에 두 용도를 억지로 합치면 카드 미리보기 소비자가 안 쓰는 필드를 받게 된다.
+- **(plan 2.0.0에서 결정 — D11의 TBD를 해소)**
+
 ---
 
-## NEEDS CLARIFICATION 해소 현황
+## NEEDS CLARIFICATION 해소 현황 (plan 2.0.0 기준)
 
-Technical Context에 남았던 미확정 항목은 위 결정으로 해소됐다. 진짜 미확정은 아래 세 가지이며, 모두 이 spec 범위 밖(다른 시스템 spec이 아직 없음)의 데이터 계약이다 — 설계 공백이 아니라 다른 spec의 부재에 대한 의존이다.
+plan 1.0.0이 남겼던 미확정 항목은 D14~D16의 서버 API 대조로 대부분 해소됐다. 남는 진짜 미확정은 다음 두 가지뿐이다.
 
-- [SYS-003] 다른 방에 공유 — 복제 실행 API 계약 ([D10](#d10-sys-003-다른-방에-공유-시트는-featureroomdetailcomponent의-내부-바텀시트다))
-- [SYS-006] 초대 링크 생성·공유 API 계약 + 참여자 목록 타입 ([D11](#d11-sys-006-초대-시트는-featureroomdetailcomponent의-내부-바텀시트다))
-- [SYS-007] 나가기·권한 위임 API 계약 ([D12](#d12-sys-007-나가기위임은-featureroomdetailcomponent의-내부-확인위임-모달이다))
-
-`RoomFormLauncher` 편집 모드의 extra 키·result 스키마([D9](#d9-sys-001-방-편집은-roomformlauncher를-편집-모드로-재사용한다))도 `:feature:roomform`의 plan이 아직 없어 확정할 수 없다.
+- **`deletePlace`([FR-010] 장소 삭제) 서버 계약** — 배포된 API에도 `DELETE /pins/{pinId}` 같은 엔드포인트가 없다(D14). 서버 미구현이 확인된 것이지 설계 공백이 아니다.
+- **`RoomFormLauncher` 편집 모드의 extra 키·result 스키마**([D9](#d9-sys-001-방-편집은-roomformlauncher를-편집-모드로-재사용한다)) — 서버 쪽 `PATCH /api/v1/rooms/{roomId}`(name·description·color)는 이미 있지만(room-list의 `RoomRepository.updateRoom`이 이미 이 엔드포인트를 쓴다), 이건 서버 API 문제가 아니라 **클라이언트 크로스 feature 계약**(Activity result 스키마) 문제라 `:feature:roomform`의 plan이 아직 없어 계속 확정할 수 없다.
