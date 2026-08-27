@@ -8,9 +8,9 @@
 
 **최초 작성일**: 2026-08-18
 
-**최종 수정일**: 2026-08-26
+**최종 수정일**: 2026-08-27
 
-**버전**: 2.0.0
+**버전**: 2.1.0
 
 **참고**: 이 템플릿은 `/mino-plan` 명령으로 채워지며, 해당 명령의 정의가 실행 워크플로우를 설명한다.
 
@@ -19,6 +19,8 @@
 방 리스트 탭([SCR-004])은 바텀 네비게이션 `저장` 탭에 해당하는 신규 tab feature다. 지도 위 3단(`Peek`/`Half`/`Full`) 바텀시트로 내가 속한 모든 방의 장소 마커를 훑고, `Full`에서 방 카드 목록(개인방 고정 + 공동방)을 정렬해 방 상세로 진입하거나 새 공동방을 만든다. 신규 tab feature 모듈 `:feature:room`을 만들고, `Room` 도메인 모델과 `RoomRepository`를 `:core:domain`에 처음 정의하며, 공동방 생성 폼([SYS-001])으로의 전환은 아직 존재하지 않는 다른 feature 모듈을 향한 `:core:navigation` 계약으로 미리 선언한다(구현은 그 모듈의 몫).
 
 > **2.0.0 재검토**: 방 상세([SCR-005], 이슈 #161)는 더 이상 별도 진입형 feature/모듈이 아니다 — 사용자가 PR #186·#234 리뷰에서 "저장 탭 → 방 리스트 → 방 상세는 하나의 Activity"로 결정을 뒤집으면서, `:feature:room` 모듈 안의 nested Route(`RoomDetailMain`, `detail/` 패키지)로 재설계됐다. `RoomDetailLauncher`·`EXTRA_ROOM_DETAIL_ROOM_ID` 계약은 폐기했고, 바텀 네비게이션 숨김은 `:core:navigation`의 `ImmersiveRoute` 마커 인터페이스로 다시 모델링했다. 상세 설계는 [room-detail/plan.md](../room-detail/plan.md)가 갖는다. 상세 근거는 [research.md](./research.md) D13·D14, 데이터 형태는 [data-model.md](./data-model.md), 계약은 [contracts/](./contracts/)를 참조.
+>
+> **2.1.0 추가**: room-detail plan 2.0.0이 서버 API 대조로 [SYS-006]·[SYS-007](친구 초대·나가기·방장 위임)의 데이터 계약을 확정하면서, 그 동작이 API tag상 방 단위라 이 spec이 정의한 `RoomRepository`에 `getMembers`·`createInvitation`·`leaveRoom`·`transferOwner` 4개 메서드를 추가한다([research.md D15](./research.md), [contracts/room-repository.md](./contracts/room-repository.md)). room-list 자신의 화면·태스크는 이 메서드를 쓰지 않으므로 `tasks.md`는 다시 열지 않는다 — 실제 구현은 room-detail의 `/mino-task`가 담당한다.
 
 ## 기술 컨텍스트 (Technical Context)
 
