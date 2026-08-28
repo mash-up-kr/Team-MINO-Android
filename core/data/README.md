@@ -121,7 +121,9 @@ Ktor 예외를 `MinoDomainException`으로 바꾸는 유일한 지점이다. 분
 
 - `Service`·`DataSource`·`RepositoryImpl`은 예외를 잡지 않는다 — 매핑은 원천마다 정해진 지점이 전역 수행하고(HTTP 원천은 이 validator다), 실패는 throw로 전파된다.
 - `MinoDomainException`에 새 리프를 추가하면 **짝이 되는 매핑 지점의 `when` 분기를 함께** 추가한다. 지점은 원천마다 다르므로 HTTP 리프만 이 파일이고, 어느 원천의 지점인지는 [`docs/conventions/error_handling.md`](../../docs/conventions/error_handling.md) §3이 정한다.
-- 엔드포인트별 특수 정책(예: 특정 API의 404를 빈 결과로 취급)이 필요한 지점만 해당 DataSource에서 지역 catch를 병용한다.
+- 엔드포인트별 특수 정책(예: 특정 API의 404를 빈 결과로 취급)이 필요한 지점만 지역 catch를 병용한다. **자리는 그 정책이 무엇을 보는지가 정한다.**
+  - **상태 코드만 보면 되는 정책** → 해당 `DataSource`. `MinoDomainException.Http`의 `code`만 있으면 되므로 HTTP 세부가 필요 없다.
+  - **실패 응답 본문(`errorCode`)을 읽어야 하는 정책** → 그 `ApiService`. 본문을 다시 읽으려면 원본 `ResponseException`이 들고 있는 응답이 필요한데, 그것을 `DataSource`로 넘기면 Ktor 타입을 다루는 일이 §5의 "데이터 출처 호출만"을 넘어선다. 배경과 판정 근거는 [에러 본문 ADR](../../docs/adr/2026-08-28-error-body-type-and-no-error-code-leaf.md) 참조.
 
 ### ApiService 작성 규칙
 

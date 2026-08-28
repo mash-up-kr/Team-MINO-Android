@@ -28,14 +28,15 @@ import team.mino.core.errorhandling.MinoDomainException
 import team.mino.feature.profile.fake.FakeProfileRepository
 import team.mino.feature.profile.main.model.DefaultProfileAvatar
 import team.mino.feature.profile.main.model.ProfileEntryPoint
-import team.mino.feature.profile.main.model.avatarId
+import team.mino.feature.profile.main.model.profileAvatar
 import java.io.IOException
 
 /**
  * 프로필 설정 화면의 인텐트 처리를 판정한다.
  *
  * 계약은 `contracts/profile-screen-contract.md` §Intent·§실패 통로가 소유하고,
- * 상태의 필드·파생 값은 `data-model.md` §5가 소유한다.
+ * 상태의 필드·파생 값은 `data-model.md` §5가 소유한다. 프리필과 갱신의 순서·가드는
+ * `research.md` D45가 단일 출처다.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class ProfileViewModelTest {
@@ -93,7 +94,7 @@ class ProfileViewModelTest {
             viewModel.processIntent(ProfileIntent.SaveClicked)
             advanceUntilIdle()
 
-            assertEquals(Profile(nickname = "민호", avatarId = avatar.avatarId), profileRepository.savedProfile)
+            assertEquals(Profile(nickname = "민호", avatar = avatar.profileAvatar), profileRepository.savedProfile)
             assertEquals(listOf(ProfileSideEffect.SaveCompleted), sideEffects)
             assertFalse(viewModel.state.value.isSaving)
         }
@@ -146,7 +147,7 @@ class ProfileViewModelTest {
     fun `저장된 프로필이 있으면 진입 시 닉네임과 아바타가 채워진다`() =
         runTest {
             val avatar = MinoProfileAvatar.entries[4]
-            profileRepository.givenProfile(Profile(nickname = "민호", avatarId = avatar.avatarId))
+            profileRepository.givenProfile(Profile(nickname = "민호", avatar = avatar.profileAvatar))
 
             val viewModel = createViewModel()
             advanceUntilIdle()
@@ -163,7 +164,9 @@ class ProfileViewModelTest {
     @Test
     fun `프리필은 입력으로 치지 않아 오류 문구를 띄우지 않는다`() =
         runTest {
-            profileRepository.givenProfile(Profile(nickname = "민호", avatarId = MinoProfileAvatar.entries[4].avatarId))
+            profileRepository.givenProfile(
+                Profile(nickname = "민호", avatar = MinoProfileAvatar.entries[4].profileAvatar),
+            )
 
             val viewModel = createViewModel()
             advanceUntilIdle()
@@ -189,25 +192,10 @@ class ProfileViewModelTest {
             assertFalse(state.isSaveEnabled)
         }
 
-    /** 저장된 식별자가 목록을 벗어나도 화면이 비지 않아야 한다 — `profileAvatarOf`의 대체 경로다. */
-    @Test
-    fun `저장된 아바타 식별자가 목록 밖이면 기본 아바타로 채운다`() =
-        runTest {
-            profileRepository.givenProfile(Profile(nickname = "민호", avatarId = OUT_OF_RANGE_AVATAR_ID))
-
-            val viewModel = createViewModel()
-            advanceUntilIdle()
-
-            val state = viewModel.state.value
-            assertEquals("민호", state.nickname)
-            assertEquals(DefaultProfileAvatar, state.selectedAvatar)
-            assertEquals(DefaultProfileAvatar, state.displayedAvatar)
-        }
-
     @Test
     fun `프리필된 닉네임을 모두 지우면 오류가 되고 저장된 프로필은 그대로다`() =
         runTest {
-            val saved = Profile(nickname = "민호", avatarId = MinoProfileAvatar.entries[4].avatarId)
+            val saved = Profile(nickname = "민호", avatar = MinoProfileAvatar.entries[4].profileAvatar)
             profileRepository.givenProfile(saved)
             val viewModel = createViewModel()
             advanceUntilIdle()
@@ -220,6 +208,163 @@ class ProfileViewModelTest {
             assertTrue(state.isNicknameErrorVisible)
             assertFalse(state.isSaveEnabled)
             assertEquals(saved, profileRepository.savedProfile)
+        }
+
+    /**
+     * 진입 시 갱신은 한 번뿐이다 — 흐름을 계속 구독하지 않으므로 재요청도 없다
+     * (screen 계약 §Intent, `research.md` D45).
+     */
+    @Test
+    fun `마이페이지로 진입하면 갱신을 정확히 한 번 요청한다`() =
+        runTest {
+            createViewModel()
+            advanceUntilIdle()
+
+            assertEquals(1, profileRepository.refreshCallCount)
+        }
+
+    /**
+     * 근거는 [ProfileEntryPoint.needsRefresh]가 소유한다.
+     *
+     * 진입점을 ViewModel로 통제할 수 없어(`createViewModel` 참고) 판정 자체를 직접 본다 —
+     * `뒤로가기는 마이페이지 진입에서만 활성이다`와 같은 방식이다. **`init`이 그 판정을 실제로 읽는다는 것은
+     * 여기서 고정되지 않는다.**
+     */
+    @Test
+    fun `갱신이 필요한 진입점은 마이페이지뿐이다`() {
+        assertTrue(ProfileEntryPoint.MyPage.needsRefresh)
+        assertFalse(ProfileEntryPoint.Onboarding.needsRefresh)
+    }
+
+    /**
+     * 미등록은 실패가 아니다. 갱신이 예외 없이 끝나므로 온보딩 사용자는 진입 직후 오류를 보지 않는다
+     * (repository 계약 `refreshProfile`, screen 계약 §Intent).
+     */
+    @Test
+    fun `미등록이라 갱신이 캐시를 비워도 오류를 방출하지 않는다`() =
+        runTest {
+            profileRepository.givenProfile(null)
+            profileRepository.givenRefreshedProfile(null)
+
+            val viewModel = createViewModel()
+            val domainErrors = collectDomainErrors(viewModel)
+            advanceUntilIdle()
+
+            assertTrue(domainErrors.isEmpty())
+            val state = viewModel.state.value
+            assertEquals("", state.nickname)
+            assertNull(state.selectedAvatar)
+            assertFalse(state.isNicknameErrorVisible)
+        }
+
+    /**
+     * 갱신이 실패해도 화면은 캐시 값으로 계속 선다 — 별도 로딩 상태가 없으므로 프리필이 되돌려지지도 않는다
+     * (FR-012·SC-006, `data-model.md` §5). 실패 자체는 실패 통로로 나간다(screen 계약 §Intent).
+     */
+    @Test
+    fun `진입 갱신이 실패해도 화면은 캐시 값으로 계속 선다`() =
+        runTest {
+            val avatar = MinoProfileAvatar.entries[4]
+            profileRepository.givenProfile(Profile(nickname = "민호", avatar = avatar.profileAvatar))
+            val failure = MinoDomainException.Network(IOException("갱신 실패"))
+            profileRepository.refreshFailure = failure
+
+            val viewModel = createViewModel()
+            val domainErrors = collectDomainErrors(viewModel)
+            advanceUntilIdle()
+
+            val state = viewModel.state.value
+            assertEquals("민호", state.nickname)
+            assertEquals(avatar, state.selectedAvatar)
+            assertTrue(state.isNicknameValid)
+            assertFalse(state.isNicknameTouched)
+            assertEquals(1, domainErrors.size)
+            assertSame(failure, domainErrors.first())
+        }
+
+    /**
+     * 갱신이 캐시를 고치면 화면이 그 값으로 다시 채워진다. `observeProfile().first()`는 갱신된 값을
+     * 저절로 흘리지 않으므로, 갱신이 성공한 그 시점에 한 번 더 읽어야만 성립한다(`research.md` D45 ②).
+     */
+    @Test
+    fun `갱신이 새 값을 캐시에 쓰면 화면이 그 값으로 다시 채워진다`() =
+        runTest {
+            val cached = MinoProfileAvatar.entries[2]
+            val refreshed = MinoProfileAvatar.entries[7]
+            profileRepository.givenProfile(Profile(nickname = "민호", avatar = cached.profileAvatar))
+            profileRepository.givenRefreshedProfile(Profile(nickname = "지민", avatar = refreshed.profileAvatar))
+
+            val viewModel = createViewModel()
+            advanceUntilIdle()
+
+            val state = viewModel.state.value
+            assertEquals("지민", state.nickname)
+            assertEquals(refreshed, state.selectedAvatar)
+            assertTrue(state.isNicknameValid)
+            assertFalse(state.isNicknameTouched)
+        }
+
+    /**
+     * 사용자가 이미 타이핑을 시작했으면 갱신 값이 그것을 덮어쓰지 않는다 — `isNicknameTouched` 가드다(`research.md` D45).
+     * 갱신 응답이 입력보다 늦게 도착하는 순서를 게이트로 고정한다.
+     */
+    @Test
+    fun `사용자가 이미 입력했으면 갱신 값이 덮어쓰지 않는다`() =
+        runTest {
+            val gate = CompletableDeferred<Unit>()
+            profileRepository.refreshGate = gate
+            profileRepository.givenRefreshedProfile(
+                Profile(nickname = "지민", avatar = MinoProfileAvatar.entries[7].profileAvatar),
+            )
+            val viewModel = createViewModel()
+
+            viewModel.processIntent(ProfileIntent.NicknameChanged("민호"))
+            gate.complete(Unit)
+            advanceUntilIdle()
+
+            val state = viewModel.state.value
+            assertEquals("민호", state.nickname)
+            assertNull(state.selectedAvatar)
+            assertTrue(state.isNicknameTouched)
+        }
+
+    /**
+     * 저장 왕복 중에 갱신 응답이 도착해도 화면을 건드리지 않는다 — `isSaving` 가드다(`research.md` D45).
+     *
+     * 캐시 프리필로 저장을 활성시켜 `isNicknameTouched`는 거짓으로 둔다. 그래야 이 케이스가
+     * 위의 입력 가드가 아니라 저장 가드만 판정한다.
+     */
+    @Test
+    fun `저장 중이면 갱신 값이 프리필을 덮어쓰지 않는다`() =
+        runTest {
+            val cached = MinoProfileAvatar.entries[2]
+            profileRepository.givenProfile(Profile(nickname = "민호", avatar = cached.profileAvatar))
+            profileRepository.givenRefreshedProfile(
+                Profile(nickname = "지민", avatar = MinoProfileAvatar.entries[7].profileAvatar),
+            )
+            val refreshGate = CompletableDeferred<Unit>()
+            val saveGate = CompletableDeferred<Unit>()
+            profileRepository.refreshGate = refreshGate
+            profileRepository.saveGate = saveGate
+
+            val viewModel = createViewModel()
+            advanceUntilIdle()
+            assertEquals("민호", viewModel.state.value.nickname)
+            assertFalse(viewModel.state.value.isNicknameTouched)
+
+            viewModel.processIntent(ProfileIntent.SaveClicked)
+            advanceUntilIdle()
+            assertTrue(viewModel.state.value.isSaving)
+
+            refreshGate.complete(Unit)
+            advanceUntilIdle()
+
+            val state = viewModel.state.value
+            assertEquals("민호", state.nickname)
+            assertEquals(cached, state.selectedAvatar)
+
+            saveGate.complete(Unit)
+            advanceUntilIdle()
         }
 
     @Test
@@ -361,6 +506,10 @@ class ProfileViewModelTest {
         return collected
     }
 
+    /**
+     * 진입 시 갱신이 내는 오류는 ViewModel 생성 시점에 이미 나갔을 수 있다. 채널이 `BUFFERED`라
+     * 뒤늦게 걸어도 버퍼에 쌓인 값을 받는다.
+     */
     private fun TestScope.collectDomainErrors(viewModel: ProfileViewModel): List<MinoDomainException> {
         val collected = mutableListOf<MinoDomainException>()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.domainErrors.toList(collected) }
@@ -369,12 +518,12 @@ class ProfileViewModelTest {
 
     private companion object {
         /**
-         * `ProfileMain(entryPoint)`의 인자 이름. 라우트 복원의 형태를 맞추기 위한 것일 뿐,
-         * 여기 실린 값은 ViewModel에 도달하지 않는다 — `createViewModel` 참고.
+         * `ProfileMain(entryPoint)`의 인자 이름. **지우면 모든 케이스가 깨진다.**
+         *
+         * `RouteDecoder`는 핸들에 키가 없으면 그 필드를 기본값에 맡기는데 `ProfileMain.entryPoint`에는 기본값이
+         * 없어 `MissingFieldException`이 난다. 반대로 키에 **실은 값은 도달하지 않는다** — 스텁 `Bundle`이
+         * 비어 있어 언제나 `MyPage`로 복원된다(`createViewModel` 참고). 즉 필요한 것은 키의 존재뿐이다.
          */
         const val ENTRY_POINT_ARG = "entryPoint"
-
-        /** 아바타 목록의 어떤 항목도 가리키지 않는 식별자. */
-        const val OUT_OF_RANGE_AVATAR_ID = 99
     }
 }

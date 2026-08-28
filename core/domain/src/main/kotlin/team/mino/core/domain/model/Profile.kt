@@ -6,10 +6,9 @@ package team.mino.core.domain.model
  * [nickname]은 앞뒤 공백이 제거된 값만 담는다. 값의 유효성(한글 음절·영문 알파벳, 2자 이상)은 생성자가 강제하지 않는다 —
  * 판정은 `ValidateNicknameUseCase`, 정규화는 `SaveProfileUseCase`가 소유한다.
  *
- * [avatarId]는 아바타 목록의 한 항목을 가리키는 식별자이며 서버 계약(`Avatar { id: integer }`)의 타입을 그대로 따른다.
- * 식별자와 그림의 대응은 이 모델이 알지 않는다.
+ * [avatar]는 항상 값이 있다. 사용자가 고르지 않은 채로 저장하면 기본 아바타가 채워져 들어온다.
  */
 data class Profile(
     val nickname: String,
-    val avatarId: Int,
+    val avatar: ProfileAvatar,
 )
