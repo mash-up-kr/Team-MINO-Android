@@ -16,22 +16,12 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import team.mino.core.common.ui.architecture.CollectSideEffect
 import team.mino.core.common.ui.scaffold.LocalBottomNavVisibility
+import team.mino.core.navigation.activity.launcher.EXTRA_ROOM_FORM_RESULT_ROOM_ID
 import team.mino.feature.room.detail.screen.RoomDetailRoute
 import team.mino.feature.room.detail.vm.RoomDetailViewModel
 import team.mino.feature.room.main.vm.RoomListIntent
 import team.mino.feature.room.main.vm.RoomListSideEffect
 import team.mino.feature.room.main.vm.RoomListViewModel
-
-/**
- * `RoomFormLauncher` 결과에서 생성된 방 id를 담는 extra 키.
- *
- * `:feature:roomform`이 아직 없어 결과 계약(extra 키)이 확정 전이다
- * (`docs/specs/room-list/contracts/navigation-launchers.md`) — room-list는 "결과를 받는 호출자"
- * 역할만 못박혀 있으므로, roomform 쪽 계약이 정해질 때까지 쓸 임시 키를 이 파일 안에서만
- * 정의한다. `:core:navigation`의 `ExtraTag.kt`는 roomform이 실제로 존재해야 정식 계약을
- * 확정할 수 있어 지금 손대지 않는다.
- */
-private const val EXTRA_ROOM_FORM_CREATED_ROOM_ID = "room_form_created_room_id"
 
 /**
  * 방 리스트 탭 그래프의 진입 Route — 유일한 화면.
@@ -62,7 +52,7 @@ internal fun RoomListRoute(
     val roomFormResultLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult(),
     ) { result ->
-        val createdRoomId = result.data?.getStringExtra(EXTRA_ROOM_FORM_CREATED_ROOM_ID)
+        val createdRoomId = result.data?.getStringExtra(EXTRA_ROOM_FORM_RESULT_ROOM_ID)
         viewModel.processIntent(RoomListIntent.OnRoomFormResult(createdRoomId))
     }
 
