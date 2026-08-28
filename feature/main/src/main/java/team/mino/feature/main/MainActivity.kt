@@ -18,19 +18,12 @@ import team.mino.core.navigation.activity.launcher.EXTRA_ROOM_FORM_ONBOARDING
 import team.mino.core.navigation.activity.launcher.EXTRA_ROOM_FORM_RESULT_OUTCOME
 import team.mino.core.navigation.activity.launcher.EXTRA_ROOM_FORM_RESULT_ROOM_ID
 import team.mino.core.navigation.activity.launcher.EXTRA_ROOM_FORM_ROOM_ID
-import team.mino.core.navigation.activity.launcher.EXTRA_SAMPLE_FROM_HOME
-import team.mino.core.navigation.activity.launcher.EXTRA_SAMPLE_GREETING
-import team.mino.core.navigation.activity.launcher.EXTRA_SAMPLE_RESULT_CONFIRMED
 import team.mino.core.navigation.activity.launcher.RoomFormLauncher
-import team.mino.core.navigation.activity.launcher.SampleLauncher
 import team.mino.feature.main.placeholder.RoomFormEntryPoint
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    @Inject
-    lateinit var sampleLauncher: SampleLauncher
-
     // 실제 진입점 feature가 생기면 폼 진입·결과 수신 배선을 그쪽으로 옮기고 여기서 걷어낸다
     // (→ docs/specs/group-room-form/plan.md §범위 경계).
     @Inject
@@ -40,12 +33,6 @@ class MainActivity : ComponentActivity() {
 
     /** 폼이 마지막으로 돌려준 방 id. 편집 경로는 이 방을 연다. */
     private var lastRoomId by mutableStateOf<String?>(null)
-
-    private val sampleResultLauncher =
-        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            val confirmed = result.data?.getBooleanExtra(EXTRA_SAMPLE_RESULT_CONFIRMED, false) ?: false
-            Toast.makeText(this, "Sample 결과: confirmed=$confirmed", Toast.LENGTH_SHORT).show()
-        }
 
     private val roomFormResultLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -60,14 +47,14 @@ class MainActivity : ComponentActivity() {
         setContent {
             MinoAndroidAppTheme {
                 MainShell(
-                    onNavigateToSample = {
-                        sampleLauncher.launch(this) { putExtra(EXTRA_SAMPLE_FROM_HOME, true) }
+                    // [SCR-006] 장소 상세 feature가 아직 없다. 그 모듈이 생기면 런처 호출로 바꾼다
+                    // (→ docs/specs/home-deck-exploration/spec.md FR-007).
+                    onNavigateToPlaceDetail = { pinId ->
+                        Toast.makeText(this, "장소 상세: pinId=$pinId", Toast.LENGTH_SHORT).show()
                     },
-                    onRequestSampleResult = {
-                        sampleLauncher.launch(this, resultLauncher = sampleResultLauncher) {
-                            putExtra(EXTRA_SAMPLE_GREETING, "결과를 부탁해요")
-                        }
-                    },
+                    onNavigateToRoomForm = { launchRoomForm() },
+                    // 결과가 바뀔 때만 새로 만든다. 매 리컴포지션마다 새 묶음을 넘기면 셸 아래의
+                    // `NavHost`가 그래프 생성 키를 잃어 그래프를 통째로 다시 만든다.
                     roomFormEntryPoint =
                         RoomFormEntryPoint(
                             lastResult = roomFormResult,

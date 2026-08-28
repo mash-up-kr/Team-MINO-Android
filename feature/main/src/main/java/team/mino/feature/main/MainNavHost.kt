@@ -14,8 +14,8 @@ import team.mino.feature.main.placeholder.screen.RoomFormEntryPlaceholderScreen
 @Composable
 internal fun MainNavHost(
     navController: NavHostController,
-    onNavigateToSample: () -> Unit,
-    onRequestSampleResult: () -> Unit,
+    onNavigateToPlaceDetail: (pinId: String) -> Unit,
+    onNavigateToRoomForm: () -> Unit,
     roomFormEntryPoint: RoomFormEntryPoint,
     modifier: Modifier = Modifier,
 ) {
@@ -25,8 +25,12 @@ internal fun MainNavHost(
         modifier = modifier,
     ) {
         homeGraph(
-            onNavigateToSample = onNavigateToSample,
-            onRequestSampleResult = onRequestSampleResult,
+            onNavigateToPlaceDetail = onNavigateToPlaceDetail,
+            onNavigateToRoomForm = onNavigateToRoomForm,
+            // 빈 상태 CTA도 지금은 같은 폼으로 보낸다. [SYS-009] 공동방 생성 유도 화면이 생기면 여기서만
+            // 갈라 주면 된다 — 홈은 두 갈래를 따로 내보낸다
+            // (→ docs/specs/home-deck-exploration/contracts/home-ui.md §1).
+            onCreateRoomFromEmpty = onNavigateToRoomForm,
         )
         // 저장 탭 자리는 방 폼을 눌러 볼 임시 검증 진입점이 빌려 쓴다. 폼을 여는 경로가 아직 저장소 어디에도
         // 없기 때문이다. 진입점 feature가 생기면 아래 placeholder들과 같은 모양으로 되돌린다
