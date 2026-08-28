@@ -23,6 +23,8 @@ import team.mino.core.domain.model.RoomColor
 import team.mino.core.domain.model.RoomListSortOption
 import team.mino.core.domain.model.RoomMemberSummary
 import team.mino.core.domain.model.RoomThumbnail
+import team.mino.core.domain.usecase.EnsureAnonymousSessionUseCase
+import team.mino.feature.room.fake.FakeAnonymousAuthRepository
 import team.mino.feature.room.fake.FakeLocationContext
 import team.mino.feature.room.fake.FakeRoomFormLauncher
 import team.mino.feature.room.fake.FakeRoomRepository
@@ -328,6 +330,7 @@ class RoomListViewModelTest {
         RoomListViewModel(
             context = FakeLocationContext(permissionGranted = permissionGranted),
             roomRepository = roomRepository,
+            ensureAnonymousSessionUseCase = EnsureAnonymousSessionUseCase(FakeAnonymousAuthRepository()),
             roomFormLauncher = FakeRoomFormLauncher(),
         )
 

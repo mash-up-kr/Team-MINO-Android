@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!--
+        Android 12+가 콜드 스타트마다 띄우는 시스템 스플래시. 끄는 API가 없으므로 SplashActivity가
+        그리는 첫 화면과 같은 배경만 남기고 아이콘을 지운다 — 런처 아이콘이 가운데 떴다 사라지면
+        스플래시가 두 번 뜬 것처럼 보인다.
+
+        아이콘 배경 원·브랜딩 이미지는 지정하지 않으면 그려지지 않아 따로 끄지 않는다.
+
+        API 31 미만에는 시스템 스플래시 자체가 없어 이 한정 리소스가 필요 없다. 이 스타일은
+        values/themes.xml의 같은 이름을 통째로 덮으므로 windowBackground를 여기에도 적는다.
+    -->
+    <style name="Theme.MinoAndroid" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/splash_background</item>
+        <item name="android:windowSplashScreenBackground">@color/splash_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@android:color/transparent</item>
+    </style>
+</resources>

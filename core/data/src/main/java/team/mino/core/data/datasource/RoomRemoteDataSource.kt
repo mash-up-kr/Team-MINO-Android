@@ -8,17 +8,24 @@ import team.mino.core.data.network.dto.response.RoomSummaryResponse
 
 /**
  * 방의 원격 출처. [getRoom]·[createRoom]·[updateRoom]의 계약은
- * `docs/specs/group-room-form/contracts/room-api-mock.md` §3이 소유한다. [getMembers]·[createInvitation]·
+ * `docs/specs/group-room-form/contracts/room-api.md` §4가 소유한다. [getMembers]·[createInvitation]·
  * [leaveRoom]·[transferOwner]의 계약은 `docs/specs/room-detail/contracts/place-repository.md`
  * "RoomRepository 확장"이 소유한다.
  *
- * 유일한 구현([RoomRemoteDataSourceImpl])이 [getRooms]·[getMembers]·[createInvitation]·[leaveRoom]·
- * [transferOwner]는 실서버(`RoomApiService`)에, [getRoom]·[createRoom]·[updateRoom]은
- * mock(`RoomMockStore`)에 위임한다 — 실서버가 단건 조회·생성·수정까지 갖추면 그 구현 하나만 바뀐다.
+ * 같은 `room` 리소스를 다루던 `RoomListRemoteDataSource`가 이 인터페이스로 합쳐졌다 —
+ * 근거는 `docs/specs/group-room-form/research.md` R-032.
+ *
+ * 유일한 구현([RoomRemoteDataSourceImpl])은 모든 멤버를 실서버(`RoomApiService`)에 위임한다.
  */
 internal interface RoomRemoteDataSource {
-    /** 방 리스트 조회. `GET /api/v1/rooms`. */
-    suspend fun getRooms(): List<RoomSummaryResponse>
+    /**
+     * 참여 중인 방 목록을 조회한다. 나간 방은 서버가 제외한다.
+     *
+     * 세션이 없거나(`401`) 네트워크·서버 오류면 `MinoDomainException`이 전파된다.
+     * 그 셋을 빈 목록으로 수렴시키는 것은 화면의 몫이다. 이 함수의 시그니처·실패 계약은
+     * 자리를 옮긴 뒤에도 `docs/specs/shared-link-receiver/contracts/room-list-api.md` §6이 소유한다.
+     */
+    suspend fun listRooms(): List<RoomSummaryResponse>
 
     /** 없는 `roomId`면 `MinoDomainException.Http(404, ...)`가 전파된다. */
     suspend fun getRoom(roomId: String): RoomResponse

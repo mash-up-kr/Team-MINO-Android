@@ -1,6 +1,5 @@
 package team.mino.feature.roomform.form.component
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -14,17 +13,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import team.mino.core.common.ui.component.RoomThumbnailFallback
 import team.mino.core.designsystem.theme.MinoAndroidAppTheme
 import team.mino.core.designsystem.theme.MinoAndroidTheme
 import team.mino.core.designsystem.util.modifier.surface.surface
 import team.mino.core.designsystem.util.preview.UiModePreviews
 import team.mino.core.domain.model.RoomColor
 import team.mino.feature.roomform.R
-import team.mino.feature.roomform.form.model.thumbnailRes
+import team.mino.feature.roomform.form.model.chip
 
 /**
  * 폼 위쪽에서 현재 입력값을 그대로 보여주는 미리보기 카드.
@@ -55,9 +54,8 @@ internal fun RoomPreviewCard(
         horizontalArrangement = Arrangement.spacedBy(ThumbnailSpacing),
         verticalAlignment = Alignment.Top,
     ) {
-        Image(
-            painter = painterResource(color.thumbnailRes),
-            contentDescription = null,
+        RoomThumbnailFallback(
+            color = color?.chip,
             modifier = Modifier
                 .size(ThumbnailSize)
                 .clip(ThumbnailShape),

@@ -92,6 +92,8 @@ sealed interface RoomListSideEffect : SideEffect {
 
 `OnNudgeDismissClick`은 `showNudge`만 로컬로 `false`로 접어 시트를 닫되, `groupRooms`는 바꾸지 않는다 — 그래서 다음 `OnScreenEntered`(탭 재진입)에서 `groupRooms.isEmpty()`가 여전히 `true`면 `showNudge`가 다시 `true`로 재계산된다(TS-014).
 
+**렌더링은 `showNudge` 단독이 아니라 `showNudge && sheetLevel == FULL`을 본다** — `showNudge` 자체(상태값)는 위 표대로 `sheetLevel`과 무관하게 계산되지만(단일 진실 공급원 유지), Nudge 오버레이는 시트 높이에 맞춰 잘리지 않고 자기 콘텐츠 크기만큼 커서 Peek·Half에서 띄우면 개인방 카드·현재 위치 버튼을 뒤덮는다(Figma `003-1-3` — 넛지는 Full에서 개인방 카드 아래에 함께 뜬다). 이 조건은 `RoomListScreen`(뷰) 소관이라 `RoomListUiState`엔 반영하지 않는다.
+
 ## 재조회
 
 - `personalRoom`·`groupRooms`는 `RoomRepository.observeMyRooms()`([contracts/room-repository.md](./room-repository.md)) `Flow` 구독으로 항상 최신 유지된다 — `Intent`로 명시적 재조회를 트리거하지 않는다(다른 화면에서 방 정보가 바뀌어도 재구독 없이 반영, [spec.md 유저 플로우 3](../spec.md)).

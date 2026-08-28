@@ -8,7 +8,9 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.plugins.logging.ANDROID
 import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
@@ -34,6 +36,8 @@ internal object NetworkModule {
                 json(Json { ignoreUnknownKeys = true })
             }
             install(Logging) {
+                // SLF4J 프로바이더가 없는 Android에서 기본 Logger.DEFAULT는 NOPLogger로 떨어져 아무것도 남지 않는다.
+                logger = Logger.ANDROID
                 level = if (BuildConfig.FLAVOR == "qa") LogLevel.BODY else LogLevel.NONE
             }
             // defaultRequest가 Before 단계에서 base URL을 채운 뒤 이 플러그인의 host 판정이 돈다

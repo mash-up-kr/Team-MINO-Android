@@ -10,6 +10,7 @@ import team.mino.core.domain.model.RoomColor
 import team.mino.core.domain.model.RoomDraft
 import team.mino.core.domain.model.RoomMember
 import team.mino.core.domain.model.RoomMemberSummary
+import team.mino.core.domain.model.RoomSummary
 import team.mino.core.domain.model.RoomThumbnail
 import team.mino.core.domain.repository.RoomRepository
 import team.mino.core.errorhandling.MinoDomainException
@@ -26,7 +27,7 @@ import kotlin.time.ExperimentalTime
  * 이 타입만 담고, 제출 실패는 ViewModel의 `runCatchingDomain`이 이 타입만 잡는다 — 다른 예외를 주입하면
  * 판정하려던 통로가 아니라 CEH로 빠진다.
  *
- * `:core:data`의 mock DataSource에는 실패 주입 스위치가 없다(research.md R-002). 실패 경로의 검증은
+ * `:core:data`의 실서버 DataSource에는 실패 주입 스위치가 없다(research.md R-002). 실패 경로의 검증은
  * 프로덕션 분기가 아니라 이 더블의 몫이다.
  */
 internal class FakeRoomRepository : RoomRepository {
@@ -90,6 +91,13 @@ internal class FakeRoomRepository : RoomRepository {
     var updateGate: CompletableDeferred<Unit>? = null
 
     override fun observeMyRooms(): Flow<List<Room>> = flowOf(listOfNotNull(storedRoom))
+
+    /**
+     * 이 모듈의 테스트는 방 목록을 쓰지 않는다. 조용히 빈 목록을 돌려주면 "방이 없다"와 구분되지 않으므로,
+     * 호출되면 그 자리에서 드러나도록 둔다.
+     */
+    override suspend fun getRooms(): List<RoomSummary> =
+        error("FakeRoomRepository는 목록 조회를 지원하지 않는다. 필요해지면 응답을 지정하는 자리를 먼저 만든다.")
 
     override suspend fun getRoom(roomId: String): Room {
         getCallCount++

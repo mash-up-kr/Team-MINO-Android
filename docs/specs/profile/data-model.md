@@ -1,8 +1,8 @@
 # 데이터 모델: 프로필 설정 및 수정
 
-Phase 1 산출물. 현재 설계 상태만 담는다(개정 시 이 파일은 통째로 대체된다). 결정의 근거는 [`research.md`](research.md), 도메인 표면은 [`contracts/profile-repository-contract.md`](contracts/profile-repository-contract.md)에 있다.
+Phase 1 산출물. 현재 설계 상태만 담는다(개정 시 이 파일은 통째로 대체된다). 결정의 근거는 [`research.md`](research.md), 도메인 표면은 [`contracts/profile-repository-contract.md`](contracts/profile-repository-contract.md), 서버 계약은 [`contracts/profile-api-contract.md`](contracts/profile-api-contract.md)에 있다.
 
-> **범위**: 이번 설계는 원격 API를 연결하지 않는다([research.md D22](research.md#d22-이번-범위의-저장소--로컬-datastore-단독-원격-연동은-후속-작업)). 아래의 모든 저장·조회는 로컬 DataStore 하나로 끝난다.
+> **범위**: 프로필의 원천은 서버이고 로컬 DataStore는 캐시다([research.md D36](research.md#d36-원격-연동-착수--원천은-서버-로컬-datastore는-캐시)).
 
 ## 1. 도메인 모델 (`core:domain/model/`)
 
@@ -11,65 +11,131 @@ Phase 1 산출물. 현재 설계 상태만 담는다(개정 시 이 파일은 �
 ```kotlin
 data class Profile(
     val nickname: String,
-    val avatarId: Int,
+    val avatar: ProfileAvatar,
 )
 ```
 
 | 필드 | 의미 | 규칙 |
 |---|---|---|
 | `nickname` | 다른 사람에게 보이는 이름 | 앞뒤 공백이 제거된 값만 담는다. 한글 음절·영문 알파벳만, 길이 2 이상, 클라이언트 상한 없음 (FR-002, EC-008) |
-| `avatarId` | 아바타 12종 중 하나를 가리키는 식별자 | 서버 계약(`Avatar { id: integer }`)의 타입을 그대로 따른다. 미선택 저장(EC-002)은 기본 아바타의 id로 채워져 들어온다 |
+| `avatar` | 고정 12종 중 하나 | 항상 값이 있다. 미선택 저장(EC-002)은 기본 아바타로 채워져 들어온다 |
 
 - 하나의 익명 세션(앱 설치)에 **하나만** 존재한다. 없는 상태는 `Profile?`의 `null`이며 "빈 프로필" 값을 따로 두지 않는다(spec §2.3).
 - 닉네임 유효성은 생성자에서 강제하지 않는다. 판정은 `ValidateNicknameUseCase`, 정규화(trim)는 `SaveProfileUseCase`가 한다([research.md D7](research.md#d7-닉네임-검증의-위치--coredomain의-usecase)).
-- `avatarId`가 `Int`인 것은 원격이 이연돼도 유지한다. 로컬 사정에 맞춰 타입을 바꿨다가 되돌리면 이미 저장된 값의 형식까지 흔들린다([research.md D18](research.md#d18-아바타-식별자--서버-계약을-따라-int)).
+- 서버 응답의 `id`(uuid)·`createdAt`은 도메인에 올리지 않는다. spec의 어느 요구사항도 그것을 쓰지 않으며, 필요해지는 화면이 생길 때 그 스펙이 판단한다.
 
-## 2. 저장 흐름
+### `ProfileAvatar`
+
+```kotlin
+enum class ProfileAvatar { /* 12항목 — 선언 순서는 디자인 목록의 좌→우·상→하 */ }
+```
+
+- **아바타는 도메인 개념이다** — spec §2.3이 "앱이 제공하는 고정 12종 캐릭터 이미지 중 하나. 프로필은 이 목록 중 하나를 가리킨다"로 정의하고, spec §4가 목록을 서버에서 내려받지 않는다고 확정했다.
+- 그림·에셋을 갖지 않는다. **무엇인지**만 알고 **어떻게 보이는지**는 `:core:design-system`의 `MinoProfileAvatar`가 안다([아바타 ADR](../../adr/2026-08-25-profile-avatar-assets-in-design-system.md)). 서버 문자열도 알지 않는다 — 그 표는 `:core:data`의 `ProfileMapper`가 소유한다.
+- 구조는 [`RoomColor`](../../../core/domain/src/main/kotlin/team/mino/core/domain/model/RoomColor.kt)와 동형이다(도메인 enum / 디자인 시스템 표현 / feature 대응 / 매퍼의 서버 표). 근거는 [research.md D37](research.md#d37-아바타-식별자--도메인-profileavatar-enum-서버-표현은-avatarcolor-문자열).
+- **기본 아바타**는 도메인이 `ProfileAvatar.Default`로 소유한다(목록의 첫 항목). 미선택 상태의 상단 썸네일, 미선택 저장 값(EC-002), 서버가 모르는 값이나 `null`을 보냈을 때의 대체값이 모두 이 값이며, 어느 레이어도 그 값을 다시 유도하지 않는다.
+
+## 2. 데이터 흐름
 
 ```mermaid
 flowchart LR
     UI["ProfileViewModel"] -->|"저장"| UC["SaveProfileUseCase"]
+    UI -->|"① 마이페이지 진입 시 갱신"| Repo
+    Local -.->|"② 갱신 성공 시 조건부 재프리필"| UI
     UC --> Repo["ProfileRepository"]
-    Repo --> Local["ProfileLocalDataSource<br/>(DataStore = 이번 범위의 원천)"]
+    Repo -->|"① 요청"| Remote["UserRemoteDataSource<br/>(원천)"]
+    Remote -->|"② 성공하면"| Local["ProfileLocalDataSource<br/>(캐시)"]
     Local -->|"observeProfile()"| UI
     Local -->|"observeProfile()"| Others["프로필을 표기하는 다른 화면"]
 ```
 
-- 이번 범위에서 **원천은 로컬 DataStore 하나**다. 앱 설치가 살아 있는 동안 값이 유지되고, 앱을 지우면 함께 사라진다(spec §4의 "세션은 앱 설치에 묶인다"와 결과가 같다).
-- 원격이 붙으면 이 그림에서 `ProfileRepository`와 `ProfileLocalDataSource` 사이에 원격 DataSource가 들어오고 로컬은 캐시로 내려간다. 그때 바뀌는 지점의 전체 목록은 [research.md D24](research.md#d24-원격-연동이-붙을-때-바뀌는-지점을-지금-고정한다)에 있다.
-- 오프라인 저장·나중에 동기화는 다루지 않는다(spec §4).
+- **원천은 서버, 로컬은 캐시다.** 저장은 `원격 성공 → 캐시 갱신` 순서이고, 원격이 실패하면 캐시를 건드리지 않는다([repository 계약 §저장의 불변식](contracts/profile-repository-contract.md)).
+- 읽기는 언제나 `observeProfile()` 하나다. 캐시가 있어 앱 재시작 후에도 프리필이 서고, 값이 바뀌면 표기 지점이 한꺼번에 갱신된다(SC-003, [D9](research.md#d9-앱-전체-즉시-반영--observeprofile-flowprofile)).
+- `refreshProfile()`은 **마이페이지 진입 시** 한 번 돈다. 프리필의 원천을 서버로 맞추고(FR-006), 등록 여부를 캐시에 확정한다([D38](research.md#d38-등록수정-분기--서버에-직접-묻고-캐시가-그-답을-들고-있는다)).
+- 온보딩 진입에서는 갱신하지 않는다. 스플래시가 같은 `GET /api/v1/users/me`로 미등록을 확정해 연 화면이라, 갱신은 같은 401을 한 번 더 받고 이미 빈 캐시를 다시 비우는 것으로 끝난다 — 앱 시작 경로에 결과가 0인 왕복이 얹힌다. 판정은 `ProfileEntryPoint.needsRefresh`가 소유한다.
+- **그때 캐시가 비어 있다는 것은 보장이다.** 스플래시의 `ProfileRegistrationRepository.isRegistered()`가 미등록으로 판정하며 캐시를 비운다 — 서버가 모르는 세션의 캐시는 정의상 맞지 않는 값이다. 이 보장이 없으면 위 등록·수정 분기가 낡은 캐시를 보고 `PATCH`로 갈라진다([D50](research.md#d50-진입-시-갱신--마이페이지-진입에서만-건다)).
+- 오프라인 저장·나중에 동기화는 다루지 않는다(spec §4). 네트워크가 없으면 저장은 실패하고 입력값은 화면에 남는다(FR-012).
+- **원천 자리의 `UserRemoteDataSource`는 이 feature가 만든 타입이 아니다.** splash-screen이 먼저 만들었고 이 feature가 세 함수를 더한다([D49](research.md#d49-develop-통합-재대조--user-태그-엔드포인트의-소유자는-userapiservice-하나다)). 같은 인터페이스의 `isRegistered()`는 스플래시의 진입 판정용이고 이 흐름에 끼지 않는다.
+
+### 등록·수정 판정
+
+| 캐시 상태 | 저장 시 호출 | 어떻게 그 상태가 됐나 |
+|---|---|---|
+| 비어 있음 | `POST /api/v1/users` (등록 + 개인방 생성) | `refreshProfile()`이 `401 USER_NOT_REGISTERED`를 받아 비웠거나, 스플래시의 `isRegistered()`가 미등록으로 판정하며 비웠다 |
+| 값 있음 | `PATCH /api/v1/users/me` (수정) | `refreshProfile()` 또는 직전 저장이 채웠다 |
+
+- 등록이 `409 USER_ALREADY_REGISTERED`로 실패하면 저장 실패로 다룬다. 다음 진입의 `refreshProfile()`이 캐시를 복구해 `PATCH`로 돌아온다.
+- 진입점(`ProfileEntryPoint`)은 이 판정에 쓰지 않는다. 뒤로가기와 저장 후 목적지에만 쓴다.
 
 ## 3. 저장 계층 (`core:data`)
+
+### 원격 DTO (`network/dto/`)
+
+| 타입 | 형태 | 비고 |
+|---|---|---|
+| `ProfileRequest` | `nickname: String` · `avatar: AvatarRequest(color: String)` | 등록·수정이 같은 본문을 쓴다. 언제나 두 값을 함께 보낸다 |
+| `ProfileResponse` | `id` · `nickname` · `avatar: AvatarResponse?(color)` · `createdAt` | `avatar`가 `null`일 수 있다(서버 문서상 nullable) |
+| `MinoResponse<T>` | `data: T` | **이미 있는 타입을 쓴다 — 만들지 않는다.** 봉투 해제는 `ApiService`에서 끝난다([ADR 2026-08-27](../../adr/2026-08-27-response-envelope-unwrapped-in-apiservice.md)) |
+| `ErrorResponse` | `errorCode: String` · `message: String?` | 공용. 읽는 곳은 `UserApiService`의 `401` 판정 헬퍼 하나이고 `hasProfile()`·`getMe()`가 공유한다 |
+
+원문 스키마와 협의 항목은 [API 계약](contracts/profile-api-contract.md)이 소유한다.
+
+**세 DTO를 부르는 서비스는 `UserApiService`다** — `ProfileApiService`를 만들지 않는다. `user` 태그 엔드포인트의 소유자가 이미 있고 splash-screen이 그것을 쓰고 있다([D49](research.md#d49-develop-통합-재대조--user-태그-엔드포인트의-소유자는-userapiservice-하나다) · [API 계약 §3](contracts/profile-api-contract.md)). DTO 자체의 형태는 이 결정에 영향받지 않는다.
+
+### 로컬 캐시 (`datasource/` + `storage/`)
 
 | 항목 | 내용 |
 |---|---|
 | 저장소 | 공유 `DataStore<Preferences>`(`storage/DataStoreModule`) — 새 인스턴스를 만들지 않는다 |
-| 키 | `profile_nickname`(String) · `profile_avatar_id`(Int) |
-| 미저장 판정 | 두 키 중 하나라도 없으면 프로필 없음(`null`) |
-| 갱신 시점 | `saveProfile()` 한 곳. 두 키를 같은 `edit {}` 블록에서 함께 쓴다 |
+| 키 | `profile_nickname`(String) · `profile_avatar`(String) |
+| 아바타 저장 값 | **`ProfileAvatar`의 이름**이지 서버 문자열이 아니다. 캐시가 서버 표현을 들면 서버가 표현을 바꿀 때 고칠 곳이 매퍼 밖으로 하나 더 생긴다 |
+| 미저장 판정 | 두 키 중 하나라도 없으면 캐시 없음(`null`) |
+| 갱신 시점 | `saveProfile()`(원격 성공 후)과 `refreshProfile()`(조회 성공 후) 두 곳. 두 키를 같은 `edit {}` 블록에서 함께 쓴다 |
+| 비움 | `refreshProfile()`이 미등록을 확인했을 때만. 두 키를 같은 `edit {}`에서 지운다 |
+| 마이그레이션 | 두지 않는다. 앱이 배포된 적이 없어 기기에 남은 `profile_avatar_id`(Int)를 지킬 이유가 없다 |
 
 - 두 키를 한 트랜잭션에서 쓰는 이유는 닉네임만 반영되고 아바타가 이전 값으로 남는 중간 상태를 만들지 않기 위해서다.
-- 키 이름에 `profile_` 접두어를 두는 것은 같은 DataStore를 쓰는 기존 값(`device_id`)과 섞이지 않게 하기 위해서다.
+- 키 이름의 `profile_` 접두어는 같은 DataStore를 쓰는 다른 값과 섞이지 않게 한다.
 
-## 4. 아바타 목록 (`core:design-system` + `:feature:profile`)
+### `ProfileEntry` (`:core:data` 내부 DTO)
+
+```kotlin
+internal data class ProfileEntry(val nickname: String, val avatarName: String)
+```
+
+- 로컬 DataSource가 도메인 모델을 반환하지 않게 하는 자리다. 이것으로 [`core:data` README](../../../core/data/README.md) §5·§2("DataSource는 DTO만 반환, 변환 없음")를 지킨다([D42](research.md#d42-로컬-캐시-datasource는-profileentry-dto를-반환한다)).
+- `ProfileEntry` ↔ `Profile` 변환은 `ProfileMapper`가 하고, 경계는 `ProfileRepositoryImpl`이다.
+
+### 아바타 문자열 표 — `ProfileMapper`가 소유
+
+서버가 `avatar.color`를 **13개 `enum`**으로 확정했고, 그 목록은 방 대표 색 팔레트와 같다. 12종 아바타는 그중 12색(`gray` 제외)에 1대1로 대응한다.
+
+> **값 표의 소유자는 [API 계약 §2 아바타 값 표](contracts/profile-api-contract.md) 하나다.** 여기에 옮겨 적지 않는다 — 서버가 색 하나를 바꿀 때 고칠 곳이 둘이 되면 반드시 갈라진다([헌법 원칙 I](../../constitution.md)).
+
+- 대응의 근거는 추정이 아니라 **에셋 실측**이다 — 아바타 배경 원 색 11개가 디자인 시스템 토큰과 hex 단위로 일치하고, 12개가 선택 가능한 12색을 중복 없이 덮는다([research.md D44](research.md#d44-아바타-서버-문자열--12종이-방-팔레트-12색에-1대1로-대응한다)). `Person10` → `brown`만 소거법이라 디자인 확인 항목으로 남아 있다.
+- **표를 선언 순서에서 파생하지 않는다.** 위 대응은 `RoomColor`의 선언 순서와 어긋나므로 `ordinal`로 이으면 조용히 틀린 값이 나간다. 도메인 이름이 바뀌었을 때 서버 계약이 따라 바뀌어서도 안 된다([`RoomMapper`](../../../core/data/src/main/java/team/mino/core/data/repository/mapper/RoomMapper.kt)와 같은 판단).
+- `gray`는 보내지 않는다 — 방에서 "색을 고르지 않음"을 뜻하는 값이고 프로필에는 그 상태가 없다.
+- **받는 쪽**: 표에 없는 문자열과 `null` 아바타는 기본 아바타로 읽는다. 서버가 팔레트를 넓혔다는 이유로 프로필 조회가 실패하면 안 된다.
+
+## 4. 아바타 그림 (`core:design-system` + `:feature:profile`)
 
 ```kotlin
 enum class MinoProfileAvatar { /* 12항목 */ }   // :core:design-system
 ```
 
-- 12항목은 **`Person1`~`Person12`**이고 드로어블은 `profile_avatar_person_01`~`_12`다. 선언 순서는 Figma [그리드](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2314-95672&m=dev)의 좌→우·상→하 배치 순서이며, 디자인 검수가 12칸을 한 장씩 대조해 확인했다.
-- **기본 아바타**는 목록의 첫 항목이다. 미선택 상태의 상단 썸네일과 미선택 저장 값(EC-002)이 모두 이 값을 쓴다.
-- enum은 그림만 안다. 저장 식별자·"미선택"·그리드 배치는 갖지 않는다. 소유 근거는 [ADR — 프로필 아바타 12종의 에셋과 컴포넌트는 `:core:design-system`이 소유한다](../../adr/2026-08-25-profile-avatar-assets-in-design-system.md)이다.
+- 12항목은 **`Person1`~`Person12`**이고 드로어블은 `profile_avatar_person_01`~`_12`다. 선언 순서는 Figma [그리드](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2314-95672&m=dev)의 좌→우·상→하 배치 순서다.
+- enum은 그림만 안다. 저장 식별자·"미선택"·그리드 배치를 갖지 않는다. 소유 근거는 [ADR](../../adr/2026-08-25-profile-avatar-assets-in-design-system.md)이다.
 - **선택 상태의 시각 표시는 없다.** 원본에 표현이 없어 `selected`는 접근성 시맨틱만 싣는다([research.md D28](research.md#d28-아바타-선택-상태의-시각-표시를-만들지-않는다)).
 
-### enum ↔ `avatarId`(Int) 매핑 — `:feature:profile`이 소유
+### `ProfileAvatar` ↔ `MinoProfileAvatar` 매핑 — `:feature:profile`이 소유
 
 | 방향 | 규칙 |
 |---|---|
-| enum → id | **선언 순서를 1부터 매긴 값**(임시). 서버 대응표가 나오면 이 매핑 한 곳만 고친다([research.md D18](research.md#d18-아바타-식별자--서버-계약을-따라-int)) |
-| id → enum | 목록에 없는 id는 기본 아바타로 대체한다 — 저장된 값이 목록을 벗어나더라도 화면이 비지 않는다 |
+| 도메인 → 그림 | 12항목을 전수 `when`으로 하나씩 적는다 |
+| 그림 → 도메인 | 같은 방식 |
 
-- 임시 매핑이라는 사실은 매핑을 소유한 파일에 주석으로 남긴다. 이 값이 서버와 맞춰지지 않았다는 것이 그 파일만 보고 드러나야 한다.
+- **선언 순서에서 파생하지 않는다.** `ordinal`로 이으면 어느 한쪽에 항목이 끼어들어도 컴파일이 통과해 그 지점부터 조용히 어긋난 그림이 나온다. 전수 `when`은 목록이 늘면 컴파일을 깨 두 목록을 함께 고치도록 강제한다(§4 서버 문자열 표와 같은 판단).
+- 이 매핑은 서버를 모른다. 서버 문자열은 `:core:data`에 갇혀 있고 feature까지 오지 않는다.
 
 ## 5. 화면 상태 (`:feature:profile`)
 
@@ -90,13 +156,17 @@ data class ProfileUiState(
 | `저장` 활성 | `isNicknameValid && !isSaving` | FR-004, UX-003 |
 | `지우기` 활성 | `isNicknameValid && selectedAvatar != null && !isSaving` | FR-005, EC-012 |
 | 오류 표시 | `isNicknameTouched && !isNicknameValid` | FR-011, TS-001 |
-| 뒤로가기 노출 | `entryPoint == MyPage` — **거짓이면 버튼을 그리지 않는다**(비활성이 아니라 숨김) | FR-010, EC-001, [D29](research.md#d29-온보딩-진입에서-뒤로가기를-노출하지-않는다) |
+| 뒤로가기 노출 | `entryPoint == MyPage` — **거짓이면 버튼을 그리지 않는다**(비활성이 아니라 숨김) | FR-010, [D29](research.md#d29-온보딩-진입에서-뒤로가기를-노출하지-않는다) |
 
+- **UiState의 필드는 원격이 붙어도 바뀌지 않는다.** 화면은 저장이 어디로 나가는지 모른다 — 등록인지 수정인지도, 서버가 응답했는지도 UiState에 흔적을 남기지 않는다.
 - `selectedAvatar`의 `null`은 "고르지 않음"이다. 기본 아바타로 초기화하지 않는다 — 그러면 `지우기` 활성 조건(FR-005)이 첫 화면부터 참이 된다.
 - `isNicknameTouched`는 진입 직후(TS-001)에 오류 문구가 뜨지 않게 하는 값이다. 첫 입력에서 참이 되고 `지우기`로 거짓으로 돌아간다.
-- 마이페이지 진입의 프리필(FR-006)은 `observeProfile()`의 첫 값으로 `nickname`·`selectedAvatar`를 채우고 `isNicknameValid=true`, `isNicknameTouched=false`로 둔다.
-- `isSaving`은 로컬 저장에서 눈에 보이는 시간이 거의 없다. 존재 이유와 검증 방법은 [research.md D25](research.md#d25-저장-실패-경로--통로는-지금-배선하고-발화-원천은-후속-작업에-남긴다)에 있다.
-- 화면은 저장이 어디로 나가는지 모른다. `SaveProfileUseCase` 뒤가 로컬인지 원격인지 UiState에 흔적을 남기지 않는다.
+- **프리필(FR-006)은 두 번 돈다**([research.md D45](research.md#d45-프리필과-갱신의-순서--캐시로-먼저-채우고-갱신이-성공하면-조건부로-한-번-더)).
+  1. 진입 즉시 `observeProfile()`의 **첫 값**(캐시)으로 `nickname`·`selectedAvatar`를 채우고 `isNicknameValid=true`, `isNicknameTouched=false`로 둔다.
+  2. 마이페이지 진입이라 `refreshProfile()`이 돌고 그것이 성공하면, **`isNicknameTouched == false && !isSaving`일 때만** 갱신된 캐시 값으로 한 번 더 채운다. 온보딩 진입에서는 1번만 돈다.
+- **흐름을 계속 구독하지 않는다.** 구독하면 저장 직후 흘러나온 값이 그 사이 사용자가 입력한 것을 덮어쓴다. 그래서 "계속 듣기"가 아니라 "갱신이 성공한 그 시점에 한 번 더 읽기"다. 두 가드는 각각 사용자가 이미 타이핑을 시작한 경우와 갱신 응답이 저장 왕복 중에 도착한 경우를 막는다.
+- **`isSaving`은 이제 눈에 보인다.** 네트워크 왕복만큼 지속되므로 중복 저장 차단(UX-003·EC-004)이 기기에서도 확인된다([D25](research.md#d25-저장-실패-경로--통로는-지금-배선하고-발화-원천은-후속-작업에-남긴다) 보정).
+- 진입 시 갱신이 도는 동안 별도 로딩 상태를 두지 않는다. 캐시가 있으면 그것이 즉시 프리필되고, 없으면 빈 화면이 정상 상태(온보딩)이기 때문이다. spec에 진입 로딩 표현이 없으므로 만들지 않는다 — 갱신을 기다렸다가 프리필하지 않는 이유도 같다.
 
 ```kotlin
 enum class ProfileEntryPoint { Onboarding, MyPage }
@@ -116,4 +186,4 @@ enum class ProfileEntryPoint { Onboarding, MyPage }
 | 공백만 입력 | 정규화 결과가 빈 문자열이므로 무효 | EC-009 |
 | 아바타 | 선택 입력. 미선택 저장은 기본 아바타로 보관 | FR-003, EC-002 |
 
-> **서버 규칙과 어긋나는 구간(이번 범위에서는 드러나지 않는다)**: 서버 `Nickname`은 `공백 포함 한글/영문 2~15자`다. 이번 범위에는 서버 거절 경로가 없으므로 16자 이상 닉네임도 그대로 저장되고 아무 실패가 나지 않는다. 어긋남이 사용자에게 처음 보이는 시점은 원격 연동 작업이며, 그전에 spec을 정리하는 편이 낫다([research.md D19](research.md#d19-닉네임-규칙-불일치--클라이언트는-spec을-따르고-서버-거절은-저장-실패로-받는다)).
+> **서버 규칙과 어긋나는 구간(이제 사용자에게 드러난다)**: 서버는 `minLength 2 · maxLength 15 · pattern ^[가-힣A-Za-z ]+$`다. **상한**(spec 없음 / 서버 15자)과 **공백**(spec 불가 / 서버 허용) 두 지점이 어긋나며, 16자 이상 닉네임은 서버가 거절해 FR-012의 저장 실패로 보인다. 거절 시의 상태 코드는 문서에 없다. 세 지점 모두 [API 계약 §2](contracts/profile-api-contract.md)가 서버팀 협의 항목으로 들고 있고, 결론에 따라 **spec부터** 고쳐야 한다([research.md D19](research.md#d19-닉네임-규칙-불일치--클라이언트는-spec을-따르고-서버-거절은-저장-실패로-받는다)).

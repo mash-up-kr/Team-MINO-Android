@@ -1,7 +1,9 @@
 package team.mino.feature.room.main.component
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -57,11 +59,15 @@ internal fun RoomNudgeSheet(
     Column(
         modifier = modifier
             .fillMaxWidth()
+            .fillMaxHeight()
             .padding(
                 horizontal = RoomNudgeSheetTokens.HorizontalPadding,
                 vertical = RoomNudgeSheetTokens.VerticalPadding,
             ),
         horizontalAlignment = Alignment.CenterHorizontally,
+        // Figma 2661:157272 — Nudge 프레임 자체가 justifyContent: center. 시트 남은 높이를 채우는
+        // 자리라 세로 가운데 정렬해야 그 안에서 콘텐츠가 위로 쏠리지 않는다.
+        verticalArrangement = Arrangement.Center,
     ) {
         Image(
             painter = painterResource(id = R.drawable.room_nudge_illustration),

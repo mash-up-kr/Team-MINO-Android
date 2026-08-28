@@ -121,6 +121,7 @@ core/common/ui/src/main/java/team/mino/core/common/ui/
 ├── architecture/
 │   ├── CollectFlowWithLifecycle.kt     # 수집 컴포저블 3종의 공통 골격 (internal)
 │   └── CollectSideEffect.kt            # SideEffect를 lifecycle 기준으로 수집하는 Composable
+├── component/                          # 여러 feature가 공유하는 Composable 컴포넌트
 ├── error/
 │   ├── CollectDomainError.kt           # DomainErrorEmitter 수집 (Route 선언)
 │   └── CollectUncaughtError.kt         # UncaughtErrorHandler 수집 (셸이 호출)

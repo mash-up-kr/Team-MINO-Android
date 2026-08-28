@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.MinoAndroid" parent="android:Theme.Material.Light.NoActionBar" />
+    <!--
+        windowBackground를 명시한다. 부모 테마의 기본값은 #FAFAFA라 스플래시가 그리는 흰 배경과
+        미세하게 어긋나고, 시스템 스플래시가 걷힌 뒤 Compose 첫 프레임까지 그 색이 보인다.
+        다크에서도 어긋나지 않도록 values-night/colors.xml이 짝을 갖는다.
+    -->
+    <style name="Theme.MinoAndroid" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/splash_background</item>
+    </style>
 </resources>

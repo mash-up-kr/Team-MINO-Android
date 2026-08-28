@@ -1,91 +1,90 @@
 package team.mino.core.data.repository.mapper
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Test
-import team.mino.core.data.network.dto.response.RoomSummaryResponse
-import team.mino.core.domain.model.RoomThumbnail
-import kotlin.time.ExperimentalTime
+import team.mino.core.data.network.dto.response.RoomResponse
+import team.mino.core.domain.model.RoomColor
+import team.mino.core.domain.model.RoomDraft
 
-@OptIn(ExperimentalTime::class)
+/**
+ * 색 식별자 표가 서버 `enum`과 어긋나지 않는지 확인한다.
+ *
+ * `enum` 밖의 값을 보내면 서버가 요청을 거절하므로 이 표의 어긋남은 컴파일이 아니라 런타임 실패로 나타난다.
+ * 아래 [SERVER_ENUM]은 `RoomMapper`의 표에서 파생하지 않고 contracts/room-api.md §2의 13색을 손으로 옮긴 것이다 —
+ * 두 표가 같은 출처를 보면 어긋남을 잡을 수 없다.
+ */
 class RoomMapperTest {
-    @Test
-    fun `type이 personal이면 isPersonal이 true다`() {
-        val room = response(type = "personal").toDomain()
-
-        assertTrue(room.isPersonal)
+    private companion object {
+        /** contracts/room-api.md §2 「색 어휘 (서버 `enum` · 확정)」 표. 서버 스키마의 선언 순서 그대로다. */
+        val SERVER_ENUM: List<Pair<RoomColor, String>> =
+            listOf(
+                RoomColor.RED to "red",
+                RoomColor.RED_ORANGE to "red_orange",
+                RoomColor.ORANGE to "orange",
+                RoomColor.LIME to "lime",
+                RoomColor.GREEN to "green",
+                RoomColor.CYAN to "cyan",
+                RoomColor.VIOLET to "violet",
+                RoomColor.PINK to "pink",
+                RoomColor.BLUE to "blue",
+                RoomColor.BROWN to "brown",
+                RoomColor.LIGHT_BLUE to "light_blue",
+                RoomColor.PURPLE to "purple",
+                RoomColor.GRAY to "gray",
+            )
     }
 
-    @Test
-    fun `type이 personal이 아니면 isPersonal이 false다`() {
-        val room = response(type = "group").toDomain()
+    private fun draft(color: RoomColor?) = RoomDraft(name = "맛집 탐방", description = "동네 맛집", color = color)
 
-        assertEquals(false, room.isPersonal)
-    }
-
-    @Test
-    fun `pinCount가 0이면 색상+캐릭터 썸네일이다`() {
-        val room = response(pinCount = 0, color = "RED").toDomain()
-
-        assertEquals(RoomThumbnail.ColorAndCharacter(color = "RED"), room.thumbnail)
-    }
-
-    @Test
-    fun `pinCount가 1 이상이면 콜라주 썸네일이고 최대 4장으로 잘린다`() {
-        val room = response(pinCount = 10).toDomain()
-
-        val thumbnail = room.thumbnail as RoomThumbnail.Collage
-        assertEquals(4, thumbnail.imageUrls.size)
-    }
-
-    @Test
-    fun `pinCount가 1이면 콜라주 이미지가 1장이다`() {
-        val room = response(pinCount = 1).toDomain()
-
-        val thumbnail = room.thumbnail as RoomThumbnail.Collage
-        assertEquals(1, thumbnail.imageUrls.size)
-    }
-
-    @Test
-    fun `멤버가 4명 이하면 전부 보이고 overflow가 없다`() {
-        val room = response(memberCount = 4).toDomain()
-
-        assertEquals(4, room.memberSummary.visibleAvatarUrls.size)
-        assertEquals(0, room.memberSummary.overflowCount)
-    }
-
-    @Test
-    fun `멤버가 5명 이상이면 아바타 3개와 overflow로 나뉜다`() {
-        val room = response(memberCount = 7).toDomain()
-
-        assertEquals(3, room.memberSummary.visibleAvatarUrls.size)
-        assertEquals(4, room.memberSummary.overflowCount)
-    }
-
-    @Test
-    fun `draft API에 없는 필드는 플레이스홀더로 채운다`() {
-        val room = response().toDomain()
-
-        assertEquals(null, room.lastPlaceSavedAt)
-        assertEquals(0, room.commentCount)
-    }
-
-    private fun response(
-        type: String = "group",
-        color: String? = null,
-        pinCount: Int = 0,
-        memberCount: Int = 1,
-    ): RoomSummaryResponse =
-        RoomSummaryResponse(
-            id = "room-1",
-            type = type,
-            name = "테스트 방",
-            description = null,
+    private fun response(color: String) =
+        RoomResponse(
+            id = "r1",
+            name = "맛집 탐방",
+            description = "동네 맛집",
             color = color,
-            ownerId = "owner-1",
-            inviteCode = "invite-1",
-            createdAt = "2026-08-25T00:00:00Z",
-            pinCount = pinCount,
-            memberCount = memberCount,
+            ownerId = "u1",
         )
+
+    @Test
+    fun `13색이 서버 enum과 같은 식별자로 나간다`() {
+        val actual = SERVER_ENUM.map { (color, _) -> color to draft(color).toRequest().color }
+
+        assertEquals(SERVER_ENUM, actual)
+    }
+
+    @Test
+    fun `표가 도메인 색 전부를 덮는다`() {
+        assertEquals(RoomColor.entries.toList(), SERVER_ENUM.map { it.first })
+    }
+
+    @Test
+    fun `식별자에 중복이 없다`() {
+        val identifiers = SERVER_ENUM.map { it.second }
+
+        assertEquals(identifiers.size, identifiers.toSet().size)
+    }
+
+    @Test
+    fun `색을 고르지 않으면 gray로 확정해 보낸다`() {
+        assertEquals("gray", draft(color = null).toRequest().color)
+    }
+
+    @Test
+    fun `13색을 서버 식별자에서 다시 읽는다`() {
+        val actual = SERVER_ENUM.map { (_, identifier) -> response(identifier).toDomain().color to identifier }
+
+        assertEquals(SERVER_ENUM, actual)
+    }
+
+    @Test
+    fun `모르는 식별자는 GRAY로 읽는다`() {
+        assertEquals(RoomColor.GRAY, response("#FF0000").toDomain().color)
+        assertEquals(RoomColor.GRAY, response("grey").toDomain().color)
+        assertEquals(RoomColor.GRAY, response("").toDomain().color)
+    }
+
+    @Test
+    fun `대소문자가 다른 식별자는 아는 색으로 치지 않는다`() {
+        assertEquals(RoomColor.GRAY, response("RED").toDomain().color)
+    }
 }

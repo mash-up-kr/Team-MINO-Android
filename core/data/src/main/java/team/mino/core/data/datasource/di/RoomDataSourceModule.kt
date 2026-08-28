@@ -9,13 +9,14 @@ import team.mino.core.data.datasource.RoomRemoteDataSourceImpl
 import javax.inject.Singleton
 
 /**
- * 실서버가 [team.mino.core.data.datasource.RoomRemoteDataSource.getRoom]·`createRoom`·`updateRoom`까지
- * 갖추면 갈아 끼우는 지점이 아래 `@Binds`의 인자 타입 하나다 —
- * `docs/specs/group-room-form/contracts/room-api-mock.md` §4가 적은 세 곳 중 마지막이다.
+ * 방 원격 출처의 바인딩. 구현체는 실서버를 무는 [RoomRemoteDataSourceImpl] 하나뿐이며,
+ * 레이어 구성은 `docs/specs/group-room-form/contracts/room-api.md` §4가 소유한다.
  *
- * `@Singleton`인 이유는 mock 저장소가 프로세스 수명 동안 만들어진 방을 들고 있어야 하기 때문이 아니다.
- * 그 상태는 `RoomMockStore`가 `@Singleton`으로 소유하며, 여기의 스코프는 실구현으로 바뀐 뒤에도
- * 유지되는 DataSource 공통 규칙(`core/data/README.md` §5)을 따른 것이다.
+ * 되돌릴 mock 구현도, 출처를 고르는 스위치도 두지 않는다 — 실행되지 않는 분기를 프로덕션에 남기지
+ * 않기 위해서다(`docs/specs/group-room-form/research.md` R-024).
+ *
+ * `@Singleton`은 DataSource 공통 규칙(`core/data/README.md` §5)을 따른 것으로, 이 구현체가 상태를
+ * 들고 있어서가 아니다.
  */
 @Module
 @InstallIn(SingletonComponent::class)

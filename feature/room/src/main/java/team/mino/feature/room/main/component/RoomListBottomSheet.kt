@@ -28,13 +28,19 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.toImmutableList
+import team.mino.core.common.ui.component.RoomThumbnailFallback
 import team.mino.core.designsystem.component.roomcard.MinoRoomCard
+import team.mino.core.designsystem.component.roomcolorchip.MinoRoomColor
+import team.mino.core.designsystem.component.roomthumbnail.MinoRoomThumbnail
+import team.mino.core.designsystem.component.roomthumbnail.MinoRoomThumbnailDefaults
 import team.mino.core.designsystem.foundation.icons.MinoIcons
 import team.mino.core.designsystem.foundation.icons.icons.Close
 import team.mino.core.designsystem.foundation.icons.icons.Plus
 import team.mino.core.designsystem.theme.MinoAndroidTheme
 import team.mino.core.designsystem.util.modifier.clickable.rippleSingleClickable
 import team.mino.core.domain.model.Room
+import team.mino.core.domain.model.RoomThumbnail
 import team.mino.feature.room.main.model.BottomSheetLevel
 import team.mino.feature.room.main.model.toRoomCardParams
 
@@ -229,42 +235,58 @@ private fun RoomListHeaderIconButton(
  * (FR-004). `Room` → `MinoRoomCard` 파라미터 매핑은 [toRoomCardParams]가 소유한다(T041, ADR
  * 2026-08-18 「결정」 — `MinoRoomCard`는 stateless라 도메인 모델을 모른다).
  *
+ * 공동방이 없을 때(EC-003)의 CTA는 목록 안에 별도 카드([RoomGhostCard], FR-009)로 두지 않는다 — Figma
+ * `003-1-3`엔 개인방 카드 다음에 곧바로 [RoomNudgeSheet]만 있고, 이 목록 안 카드에 대응하는 노드가 없다.
+ * `RoomGhostCard`를 함께 그리면 같은 "공동방 만들기" CTA가 두 번(목록 안 카드 + Nudge) 겹쳐 보인다.
+ *
+ * [showNudge]가 `true`면 [RoomNudgeSheet]를 개인방 카드 바로 아래, 시트의 남은 높이를 채우며 그린다
+ * (Figma `003-1-3` — Nudge 프레임 자체가 `vertical: fill`). 화면 하단에 별도 오버레이로 띄우면 개인방
+ * 카드와 Nudge 사이가 붕 뜬다 — 그래서 공동방이 없을 때는 (스크롤이 필요 없으므로) `LazyColumn` 대신
+ * 일반 `Column`으로 바꿔 마지막 자리를 [Modifier.weight]로 채운다.
+ *
  * @param personalRoom `null`이면 아직 개인방 정보가 준비되지 않은 상태(EC-001은 `placeCount == 0`인
  *   개인방 자체는 항상 존재한다고 전제 — PRD 「개인방」정의, 이 화면은 그 값을 그대로 그린다).
- * @param showGhostCard [RoomGhostCard] 노출 여부(FR-009, `groupRooms.isEmpty()` 파생값). `true`면
- *   개인방 다음 자리(EC-003 — 공동방이 없을 때 목록에 남는 유일한 항목)에 그린다.
+ * @param showNudge Full에서만 참이어야 한다 — Peek·Half에서 띄우면 시트 높이와 무관하게 커서 개인방
+ *   카드·현재 위치 버튼을 뒤덮는다(호출부인 `RoomListScreen`이 `sheetLevel`을 함께 판정해 넘긴다).
  */
 @Composable
 internal fun RoomListRoomCardList(
     personalRoom: Room?,
     groupRooms: ImmutableList<Room>,
-    showGhostCard: Boolean,
+    showNudge: Boolean,
     onRoomCardClick: (String) -> Unit,
-    onGhostCardClick: () -> Unit,
+    onNudgeCreateClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    LazyColumn(modifier = modifier.fillMaxWidth()) {
-        personalRoom?.let { room ->
-            item(key = room.id) {
+    if (showNudge) {
+        Column(modifier = modifier.fillMaxWidth()) {
+            personalRoom?.let { room ->
                 RoomListRoomCard(
                     room = room,
                     onClick = { onRoomCardClick(room.id) },
                 )
             }
+            RoomNudgeSheet(
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+                onCreateClick = onNudgeCreateClick,
+            )
         }
-        if (showGhostCard) {
-            item(key = "ghost-card") {
-                RoomGhostCard(
-                    modifier = Modifier.padding(horizontal = RoomListBottomSheetTokens.RoomCardHorizontalPadding),
-                    onClick = onGhostCardClick,
+    } else {
+        LazyColumn(modifier = modifier.fillMaxWidth()) {
+            personalRoom?.let { room ->
+                item(key = room.id) {
+                    RoomListRoomCard(
+                        room = room,
+                        onClick = { onRoomCardClick(room.id) },
+                    )
+                }
+            }
+            items(items = groupRooms, key = { it.id }) { room ->
+                RoomListRoomCard(
+                    room = room,
+                    onClick = { onRoomCardClick(room.id) },
                 )
             }
-        }
-        items(items = groupRooms, key = { it.id }) { room ->
-            RoomListRoomCard(
-                room = room,
-                onClick = { onRoomCardClick(room.id) },
-            )
         }
     }
 }
@@ -282,7 +304,63 @@ private fun RoomListRoomCard(
         participantImageUrls = params.participantImageUrls,
         onClick = onClick,
         modifier = modifier.padding(horizontal = RoomListBottomSheetTokens.RoomCardHorizontalPadding),
-        coverImageUrl = params.coverImageUrl,
+        thumbnail = { RoomCardThumbnail(thumbnail = params.thumbnail) },
         memo = params.memo,
     )
 }
+
+/**
+ * [RoomCardUiModel.thumbnail]을 `MinoRoomCard`의 컴포저블 슬롯으로 그린다.
+ *
+ * [RoomThumbnail.Collage]는 [MinoRoomThumbnail]의 콜라주 배치를 그대로 쓰고, 사진이 없는
+ * [RoomThumbnail.ColorAndCharacter]는 [RoomThumbnailFallback]으로 방 대표 색 캐릭터를 그린다 —
+ * `:feature:roomform`의 `RoomColorUiModel.chip`과 같은 이유로 이 매핑을 `:feature:room`이 갖는다
+ * (`docs/adr/2026-08-14-room-color-palette-in-design-system.md`).
+ */
+@Composable
+private fun RoomCardThumbnail(
+    thumbnail: RoomThumbnail,
+    modifier: Modifier = Modifier,
+) {
+    when (thumbnail) {
+        is RoomThumbnail.Collage ->
+            MinoRoomThumbnail(
+                imageUrls = thumbnail.imageUrls.toImmutableList(),
+                modifier = modifier,
+                fallback = { RoomThumbnailFallback(color = null, modifier = Modifier.fillMaxSize()) },
+            )
+
+        // RoomThumbnailFallback은 스스로 크기·모서리를 정하지 않는다(그쪽 KDoc) — MinoRoomThumbnail이
+        // 자기 크기(80dp·radius 14dp, Figma `Room Thumbnail`)를 스스로 갖는 것과 달리 이 분기는 그
+        // 자리를 직접 채워야 한다. 빠뜨리면 드로어블 고유 크기로만 작게 그려진다.
+        is RoomThumbnail.ColorAndCharacter ->
+            RoomThumbnailFallback(
+                color = thumbnail.color?.toMinoRoomColor(),
+                modifier = modifier
+                    .size(MinoRoomThumbnailDefaults.size)
+                    .clip(MinoRoomThumbnailDefaults.shape),
+            )
+    }
+}
+
+/**
+ * `:feature:roomform`의 `RoomColorUiModel.chip`과 같은 대응표 — 팔레트(`:core:design-system`)와
+ * 도메인 색 식별자 문자열([RoomThumbnail.ColorAndCharacter.color])을 둘 다 아는 feature가 소유한다.
+ * 아는 식별자가 아니면 회색(`null`)으로 읽는다([RoomMapper.toRoomColor]와 같은 이유).
+ */
+private fun String.toMinoRoomColor(): MinoRoomColor? =
+    when (this) {
+        "red" -> MinoRoomColor.Red
+        "red_orange" -> MinoRoomColor.RedOrange
+        "orange" -> MinoRoomColor.Orange
+        "lime" -> MinoRoomColor.Lime
+        "green" -> MinoRoomColor.Green
+        "cyan" -> MinoRoomColor.Cyan
+        "violet" -> MinoRoomColor.Violet
+        "pink" -> MinoRoomColor.Pink
+        "blue" -> MinoRoomColor.Blue
+        "brown" -> MinoRoomColor.Brown
+        "light_blue" -> MinoRoomColor.LightBlue
+        "purple" -> MinoRoomColor.Purple
+        else -> null
+    }
