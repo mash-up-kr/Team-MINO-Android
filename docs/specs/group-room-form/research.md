@@ -26,7 +26,9 @@
 
 ## R-002. 서버가 없는 상태에서 데이터 레이어를 어디까지 진짜로 만드는가 *(plan 1.0.0)*
 
-**Decision**: **DTO·Mapper·Repository·DataSource 인터페이스까지 실제 계약대로 만들고, `DataSource` 구현 하나만 인메모리 mock으로 채운다.** `RoomMockRemoteDataSourceImpl`이 `RoomMockStore`(`@Singleton` 인메모리 맵)를 읽고 써서 swagger 스키마와 같은 모양의 DTO를 돌려준다. Ktor `ApiService`는 **이번에 만들지 않는다.**
+> ~~**재검토됨(plan 2.0.0)**~~ — 실서버가 배포되어 아래 결정의 전제("서버가 없다")가 사라졌다. `DataSource` 구현을 mock으로 채운다는 부분은 [R-024](#r-024-실서버가-붙었다--mock-데이터-레이어를-걷어낸다-plan-200)로 대체됐고, ADR 승격 후보에서도 내렸다. **나머지(DTO·Mapper·Repository·인터페이스를 실제 계약대로 세운다)는 유효하며 실제로 그대로 쓰였다.**
+
+**Decision**: **DTO·Mapper·Repository·DataSource 인터페이스까지 실제 계약대로 만들고, ~~`DataSource` 구현 하나만 인메모리 mock으로 채운다~~.** `RoomMockRemoteDataSourceImpl`이 `RoomMockStore`(`@Singleton` 인메모리 맵)를 읽고 써서 swagger 스키마와 같은 모양의 DTO를 돌려준다. Ktor `ApiService`는 **이번에 만들지 않는다.**
 
 **Rationale**: [`core/data/README.md`](../../../core/data/README.md) §8이 정한 10단계 절차 중 mock으로 대체되는 것은 2단계(ApiService)뿐이다. 나머지를 실제와 같게 두면 서버가 붙을 때 바뀌는 곳이 `RoomDataSourceModule`의 `@Binds` 한 줄과 새 `RoomApiService` 한 파일로 좁혀진다. 반대로 Repository까지 통째로 fake로 두면, 실서버 전환 때 Mapper·DTO·에러 매핑이 그때 처음 작성되어 이번 검증이 아무것도 보증하지 못한다.
 
@@ -34,7 +36,7 @@
 
 **mock에 실패 주입 스위치를 두지 않는다.** EC-014(편집 실패 시 입력 유지)·UX-003의 검증은 Fake `RoomRepository`를 주입한 `RoomFormViewModel` 단위 테스트가 소유한다. 프로덕션 코드에 테스트 전용 분기를 남기지 않는다.
 
-**이 결정은 다른 feature를 구속한다** — 서버가 붙기 전에 만들어지는 모든 화면이 같은 갈래에 선다. ADR 승격 후보다.
+~~**이 결정은 다른 feature를 구속한다** — 서버가 붙기 전에 만들어지는 모든 화면이 같은 갈래에 선다. ADR 승격 후보다.~~
 
 **Alternatives considered**:
 - **Ktor `MockEngine`으로 HTTP 레이어까지 흉내낸다**(`libs.ktor.client.mock`이 카탈로그에 이미 있다) — 기각. JSON 문자열을 손으로 쓰고 라우팅을 흉내내는 비용이 인메모리 맵보다 크고, 검증되는 것은 우리가 쓴 mock JSON뿐이다. 단일 `HttpClient`에 baseUrl이 GitHub 임시값으로 잡혀 있어(`NetworkModule`) 엔진만 바꿔서는 깨끗하게 분리되지도 않는다.
@@ -291,9 +293,11 @@
 
 **Decision**: [R-003](#r-003-swagger-계약이-spec과-어긋나는-세-지점-plan-100)이 제안한 소문자 스네이크 식별자를 그대로 확정한다 — `"red"` · `"red_orange"` · … · `"gray"`.
 
-**Rationale**: 1.0.0에서 "서버 확정 전"을 이유로 미확정으로 남겼으나, mock 구간에서는 서버 확정을 기다릴 이유가 없다. 표기가 바뀔 때 고칠 곳이 `RoomMapper` 한 파일이라 되돌리는 비용이 사실상 없고, 그동안 이 값이 도메인·UI로 새어 나가지 않는다([contracts/room-api-mock.md](./contracts/room-api-mock.md) §2).
+**Rationale**: 1.0.0에서 "서버 확정 전"을 이유로 미확정으로 남겼으나, mock 구간에서는 서버 확정을 기다릴 이유가 없다. 표기가 바뀔 때 고칠 곳이 `RoomMapper` 한 파일이라 되돌리는 비용이 사실상 없고, 그동안 이 값이 도메인·UI로 새어 나가지 않는다([contracts/room-api.md](./contracts/room-api.md) §2 — 링크는 plan 2.0.0에서 갱신됐다).
 
 `GRAY`의 식별자를 `"gray"`로 두는 것은 R-017과 별개다 — 에셋 이름은 `my room`이지만 그것은 Figma variant 이름이지 서버 계약이 아니다. 도메인 값 이름을 따른다.
+
+> **후속 (plan 2.1.0 → ~~정정~~ plan 2.2.0)**: 2.1.0은 `GRAY`의 서버 어휘가 `"grey"`(영국식)로 확정됐다고 적었으나 **틀렸다.** 서버가 배포한 `enum`은 `"gray"`이며, **이 항목의 원래 판정이 13색 전부에서 그대로 맞았다** → [R-030](#r-030-서버-enum-배포로-색-어휘가-확정됐다--grey-판정을-되돌린다-plan-220). 위 문단의 "도메인 값 이름을 따른다"도 그대로 성립한다.
 
 **Alternatives considered**: R-003의 기각 이력을 참조한다. 이번 항목은 그 결정의 확정일 뿐 새 후보를 검토하지 않았다.
 
@@ -427,3 +431,239 @@ FR-024(진입 시점 대비 변경 판정)와 FR-008(미리보기 실시간 반�
 - **`2792-151339`가 남았으니 C를 계속 열어 둔다** — 기각. C가 걸었던 것은 **어느 컴포넌트가 의도인가**이고 그 답이 나왔다. 낡은 User Flow 보드의 정리는 이 계획이 기다릴 대상이 아니며, 기다리면 근거 없이 열린 항목이 무기한 남는다.
 - **편집 보드가 빈 폼을 그리므로 FR-013을 재검토한다** — 기각. 위 이유로 spec의 몫이고, PRD가 문장으로 받치고 있어 설계가 흔들리지 않는다.
 - **양쪽이 같아졌으니 R-015를 고쳐 쓴다** — 기각. 기존 결정을 덮어쓰지 않는다는 이 문서의 누적 규칙에 따라 새 항목으로 남긴다.
+
+---
+
+## R-024. 실서버가 붙었다 — mock 데이터 레이어를 걷어낸다 *(plan 2.0.0)*
+
+**Decision**: **[R-002](#r-002-서버가-없는-상태에서-데이터-레이어를-어디까지-진짜로-만드는가-plan-100)를 뒤집는다.** `RoomApiService`를 만들고 `RoomRemoteDataSourceImpl`이 그것을 위임하며, `RoomMockRemoteDataSourceImpl`과 `RoomMockStore`를 지운다. 남는 것은 DTO·Mapper·`RoomRepositoryImpl`·`RoomRemoteDataSource` 인터페이스로, **넷 다 한 글자도 바뀌지 않는다.**
+
+**Rationale**: [Team MINO API `1.0.0`](https://api.gguk.org/api-docs-json)이 배포되어 있고(조회: 2026-08-27T21:45:27+09:00) `POST /api/v1/rooms` · `PATCH /api/v1/rooms/{roomId}` · `GET /api/v1/rooms/{roomId}` 셋이 모두 있다. R-002가 mock을 택한 전제("서버가 없다")가 사라졌으므로 결정도 따라 사라진다.
+
+**R-002가 값을 했다는 것이 이 항목의 근거이기도 하다.** 그 결정이 노린 것은 "서버가 붙을 때 바뀌는 곳을 `@Binds` 한 줄과 새 파일 한 개로 좁힌다"였고, 실제로 걷어내는 비용이 **파일 2개 삭제 · 파일 2개 신규 · 바인딩 1줄**이었다. DTO·Mapper·Repository를 fake로 두었다면 이번에 처음 작성됐을 것이다.
+
+**mock을 남겨 둘 스위치를 두지 않는다.** 프로덕션 코드에 출처를 고르는 분기를 남기면 그 분기가 검증되지 않은 채 굳는다 — R-002가 실패 주입 스위치를 거부한 것과 같은 이유다. 실패 경로 검증은 Fake `RoomRepository`를 쓰는 ViewModel 테스트가 계속 소유한다.
+
+**Alternatives considered**:
+- **mock을 flavor로 남기고 qa에서만 실서버를 쓴다** — 기각. `RoomMockStore`가 프로세스 수명 저장소라 어차피 재실행마다 사라지고, 두 출처를 유지하는 비용이 실서버 하나를 쓰는 것보다 크다. 서버가 닿지 않을 때의 대비는 mock이 아니라 실패 처리(UX-003)가 이미 갖고 있다.
+- **`RoomRemoteDataSource` 인터페이스를 걷어내고 `RepositoryImpl`이 `ApiService`를 직접 쓴다** — 기각. [`core/data/README.md`](../../../core/data/README.md) §5가 인터페이스·구현체 쌍을 규칙으로 못박았다. 지금 지우면 로컬 캐시가 붙을 때 되살려야 한다.
+
+> **[R-002](#r-002-서버가-없는-상태에서-데이터-레이어를-어디까지-진짜로-만드는가-plan-100)는 ~~재검토됨(plan 2.0.0)~~** — `DataSource` 구현을 mock으로 채운다는 부분이 이 항목으로 대체됐다. **ADR 승격 후보에서도 내린다**: 그 결정이 다른 feature를 구속하려면 "서버가 없는 동안"이라는 전제가 유지돼야 하는데, 전제가 사라졌다.
+
+---
+
+## R-025. `{ data }` 봉투를 어느 레이어가 벗기는가 *(plan 2.0.0)*
+
+**Decision**: **`ApiService`가 벗긴다.** 제네릭 `MinoResponse<T>`(`network/dto/response/`)로 `client.post(...).body<MinoResponse<RoomResponse>>().data`로 즉시 푼다. `DataSource`·`RepositoryImpl`·Mapper·도메인은 봉투의 존재를 모른다.
+
+> **사실 정정 (plan 2.1.0)**: 이 항목을 쓸 때 **같은 결정이 이미 ADR로 존재한다는 사실을 놓쳤다.** `shared-link-receiver`가 먼저 `GET /api/v1/rooms`를 붙이며 [응답 봉투 ADR](../../adr/2026-08-27-response-envelope-unwrapped-in-apiservice.md)(2026-08-27, Accepted)로 정했고, 그 ADR의 §결과가 "`group-room-form`이 mock을 걷어내고 실서버로 전환할 때 같은 타입을 쓴다"고 이 feature를 직접 지목한다. **결론과 근거는 아래와 같지만 두 가지가 바뀐다** — 타입 이름은 `ApiEnvelope<T>`가 아니라 **`MinoResponse<T>`**이고(ADR이 `MinoDomainException`·`MinoIdentityProofPlugin`의 접두어를 따랐다), 이 계획은 그 타입을 **만들지 않고 쓰기만 한다.** 아래의 ADR 승격 제안도 철회한다 — 승격된 결정이 이미 있다.
+
+**Rationale**: [`core/data/README.md`](../../../core/data/README.md) §2의 레이어 흐름이 `ApiService`를 "엔드포인트를 호출하는" 자리로, `DataSource`를 "출처를 추상화하는" 자리로 갈라 두었다. 봉투는 **HTTP 전송 형식**이지 데이터가 아니므로 전송을 아는 가장 안쪽 레이어에서 끝나야 한다. 같은 문서 §5가 DataSource의 책임을 "데이터 출처 호출만. 변환·비즈니스 로직 없음"으로 못박은 것도 같은 방향이다.
+
+제네릭 하나로 두는 것은 이 feature만의 판단이 아니다 — 서버의 성공 응답 **전부**가 같은 봉투를 쓴다(`api-docs-json` 25개 오퍼레이션). 엔드포인트마다 `RoomEnvelope`·`PinEnvelope`를 만들면 같은 모양의 클래스가 API 수만큼 늘어난다.
+
+~~**이 결정은 다른 feature를 구속한다** — 앞으로 이 서버를 부르는 모든 `ApiService`가 같은 자리에서 같은 타입으로 봉투를 푼다. ADR 승격 후보다.~~ → 위 정정대로 ADR이 이미 있다.
+
+**Alternatives considered**:
+- **Ktor `ResponseObserver`/커스텀 `ContentConverter`로 전역에서 봉투를 벗긴다** — 기각. 봉투가 없는 응답(있을 수 있다)이나 봉투 자체를 읽어야 하는 경우가 생기면 전역 변환을 되돌릴 수 없고, 무엇보다 `body<RoomResponse>()`라고 쓰인 코드가 실제로는 다른 JSON을 파싱한다는 사실이 호출부에서 보이지 않는다.
+- **`RoomResponse`를 봉투째 선언한다(`data class RoomEnvelope(val data: RoomResponse)`)** — 기각. DTO가 25번 복제된다.
+- **`DataSourceImpl`이 벗긴다** — 기각. DataSource가 전송 형식을 알게 되어 §5의 책임 규칙을 어긴다.
+
+---
+
+## R-026. 색·설명 계약을 실제 API로 재대조한다 *(plan 2.0.0)*
+
+**Decision**: **[R-003](#r-003-swagger-계약이-spec과-어긋나는-세-지점-plan-100)의 판정(spec을 따르고 어긋남은 서버팀에 제기)을 유지한다.** [R-018](#r-018-mock의-색상-식별자-표기-plan-110)의 소문자 스네이크 식별자도 유지한다. 어긋나는 항목만 실제 문서로 갱신했고, 소유자는 [contracts/room-api.md](./contracts/room-api.md) §2다.
+
+**Rationale**: 초안에서 확정 문서로 바뀌면서 셋 중 하나(`color`가 5색 hex)는 해소 방향으로 움직였다 — 이제 `Room.color`의 예시가 `"black"`이라 **문자열 색 이름**을 받는 쪽으로 읽힌다. 그런데 같은 문서가 `color.maxLength: 7`을 걸어 두었고, 하필 그 값이 `#RRGGBB`의 길이와 같으며, 팔레트에서 두 단어인 색 둘(`red_orange`·`light_blue`)만 상한을 넘는다. `InvitationPreview.room.color`의 예시는 여전히 hex(`"#FF6B6B"`)다.
+
+**즉 서버가 무엇을 받는지가 문서에서 갈리지 않는다.** `color`에 `enum`이 없어 어휘를 읽을 수도 없다. 이 상태에서 표현을 바꾸는 것은 추정이므로, R-003이 세운 원칙 — **명세를 따르고 어긋남은 제기한다**([헌법 원칙 IV](../../constitution.md)) — 을 그대로 적용한다. 되돌리는 비용이 `RoomMapper` 한 파일이라는 사정도 초안 때와 같다.
+
+**상한에 맞춰 식별자를 줄이지 않는다.** `"red_orange"`를 7자 이하로 만드는 방법은 전부 우리가 지어내는 것이고, 서버가 실제로 무엇을 받는지 모르는 채 지어낸 값은 맞을 확률이 오히려 낮다. 잘못 지어낸 식별자는 `Http(400)`이 아니라 **조용히 저장된 뒤 다시 읽을 때 `GRAY`로 떨어져**(Mapper의 미지 식별자 처리) 색이 사라진 것처럼 보인다.
+
+**드러나는 방식**: 2번은 팔레트 12색 중 2색을 고른 사용자에게만, 1번(설명 20자)은 21~30자 설명에만 나타난다. 둘 다 **부분 실패**라 빌드·테스트로는 잡히지 않고 실기기 검증에서만 보인다 → [quickstart.md](./quickstart.md) S-9.
+
+**Alternatives considered**: R-003의 기각 이력을 참조한다. 이번 항목이 새로 검토한 후보는 "상한에 맞춰 식별자를 줄인다" 하나이며 위에서 기각했다.
+
+> **후속 (plan 2.1.0)**: 서버팀 협의로 네 지점이 모두 닫혔다 → [R-029](#r-029-색-어휘와-어긋남-네-건의-협의-결과-plan-210). **"기다리고 제기한다"는 판단이 옳았다** — 상한에 맞춰 식별자를 지어냈다면 확정 어휘(`red_orange`·`light_blue`)와 어긋나 되돌려야 했을 것이다.
+
+---
+
+## R-027. PATCH에서 지운 설명이 서버에 전달되는가 *(plan 2.0.0)*
+
+**Decision**: **`RoomRequest.description`에서 기본값을 없앤다.** `val description: String?`로 선언해 설명이 없을 때도 `"description": null`이 본문에 실리게 한다.
+
+**Rationale**: `NetworkModule`의 `Json { ignoreUnknownKeys = true }`는 `encodeDefaults`를 건드리지 않으므로 kotlinx-serialization의 기본값 `false`가 적용된다 — **기본값과 같은 값을 가진 프로퍼티는 인코딩되지 않는다.** 지금의 `description: String? = null`은 설명이 없을 때 필드째 빠진다.
+
+`POST`에서는 무해하다(`required`가 `name`·`color`뿐). **문제는 `PATCH`다.** 서버 스키마의 `required`가 `[]`이므로 빠진 필드는 "건드리지 않았다"로 읽히는 것이 PATCH의 통상 의미이며, 그러면 **편집에서 설명을 전부 지운 사용자의 변경이 요청에 담기지 않아 조용히 사라진다.** 폼은 성공으로 닫히고 방 설명은 그대로 남는다 — 실패를 알리는 신호가 어디에도 없다.
+
+이 지점은 mock에서 드러날 수 없었다. mock은 DTO 객체를 그대로 맵에 넣어 **직렬화를 한 번도 거치지 않았기** 때문이다. 실서버 전환이 처음 만드는 결함이다.
+
+**`encodeDefaults = true`를 전역으로 켜지 않는다.** 그 설정은 이 앱의 모든 요청 DTO의 직렬화 결과를 바꾸며, "기본값은 보내지 않는다"에 기대는 다른 DTO가 나중에 생기면 조용히 깨진다. 고칠 곳을 한 프로퍼티로 좁히는 편이 영향 범위를 읽을 수 있다.
+
+**Alternatives considered**:
+- **`Update` 전용 요청 타입을 나눠 `description`을 `String`(비-nullable)으로 둔다** — 기각. 서버가 `anyOf [string, null]`을 받으므로 빈 문자열과 `null` 중 무엇이 "설명 없음"인지 다시 정해야 하고, [data-model.md](./data-model.md) §5가 "빈 문자열은 `null`로 보낸다"를 이미 정했다. 타입을 나누는 조건(두 요청이 갈라짐)도 아직 아니다.
+- **`@EncodeDefault` 애노테이션을 붙인다** — 실질적으로 같은 결과지만 기각. 기본값을 선언한 뒤 그 기본값을 무시하라고 지시하는 형태라, 기본값을 없애는 쪽이 읽는 사람에게 의도가 곧바로 보인다.
+
+---
+
+## R-028. 세션·유저 등록 선행 조건을 이 feature가 떠안는가 *(plan 2.0.0)*
+
+**Decision**: **떠안지 않는다.** 익명 세션 확보 배선과 유저 등록(`POST /api/v1/users`) 호출은 이 계획의 범위 밖이며, 각각 `docs/specs/anonymous-auth-session`과 `docs/specs/profile`이 소유한다. 이 feature는 **선행 조건이 충족되지 않은 상태를 명시하고 검증 가이드에 우회를 적는 데까지** 한다.
+
+**Rationale**: 세 엔드포인트가 모두 `401`에 `USER_NOT_REGISTERED`를 두고 있어, 신원 증명이 실려도 서버에 유저가 없으면 거절된다. 그런데 저장소의 현재 상태가 둘 다 비어 있다 — `EnsureAnonymousSessionUseCase`는 `:core:domain`에 있으나 **호출하는 코드가 없고**, `POST /api/v1/users`를 부르는 코드는 아예 없다(`ProfileRepositoryImpl`은 로컬 저장뿐).
+
+여기서 세션 부트스트랩을 배선하면 **앱 시작 시점의 인증 생애주기**를 이 폼의 계획이 정하게 된다. 그것은 진입점 8개 전부와 나머지 모든 화면에 걸리는 결정이라 폼 하나가 정할 수 있는 범위가 아니고, 이미 자기 spec을 가진 남의 결정이다([헌법 원칙 II](../../constitution.md)의 경계 원칙이 문서 소유에도 그대로 적용된다).
+
+**막히는 것을 숨기지 않는다.** 배선 전까지 실기기에서 S-1~S-9가 전부 401로 막히며, 그 사실과 우회는 [quickstart.md](./quickstart.md) §1이 소유하고 [plan.md](./plan.md) §열린 항목 H가 추적한다. 이 계획이 만든 코드가 틀려서 막히는 것이 아니라는 구분이 남아야 다음 단계가 엉뚱한 곳을 고치지 않는다.
+
+**Alternatives considered**:
+- **임시 검증 진입점(`:feature:main`)에서 세션·등록을 부른다** — 기각. 걷어낼 임시 배선에 인증 부트스트랩을 넣으면, 걷어내는 순간 실제 진입점이 그 책임을 물려받았는지 아무도 확인하지 않는다. 게다가 `:feature:main`이 인증 UseCase를 알게 되어 되돌리기 어려운 의존이 생긴다.
+- **실서버 전환을 세션 배선 이후로 미룬다** — 기각. 데이터 레이어 교체와 인증 배선은 서로를 기다릴 이유가 없고, 미루면 mock 코드가 그동안 계속 유지 대상으로 남는다. 앞의 것을 먼저 마치고 뒤의 것이 붙는 순간 전체가 켜지는 편이 대기 비용이 없다.
+
+
+---
+
+## R-029. 색 어휘와 어긋남 네 건의 협의 결과 *(plan 2.1.0)*
+
+> ~~**일부 재검토됨(plan 2.2.0)**~~ — 아래 `"grey"` 판정이 **틀렸다.** 서버가 배포한 `enum`은 `"gray"`다 → [R-030](#r-030-서버-enum-배포로-색-어휘가-확정됐다--grey-판정을-되돌린다-plan-220). **협의 결과 표(어긋남 1~4)와 나머지 판단은 유효하며, 그중 2·4는 실제로 반영됐다.**
+
+**Decision**: **어긋남 네 건이 모두 spec 쪽으로 닫혔다.** 이 구현이 고치는 것은 ~~**`RoomColor.GRAY`의 서버 식별자 `"gray"` → `"grey"`**~~ **하나뿐이다 → 실제로는 고칠 것이 없었다(R-030).** 나머지 12색의 식별자는 [R-018](#r-018-mock의-색상-식별자-표기-plan-110)이 확정한 소문자 스네이크 표기 그대로 맞았다. 확정 어휘 표의 소유자는 [contracts/room-api.md](./contracts/room-api.md) §2다.
+
+**Rationale**: 2026-08-27 서버팀 협의 결과다.
+
+| # | 어긋남 | 결과 |
+|---|---|---|
+| 1 | `description.maxLength: 20` vs FR-005의 30자 | **30자가 맞다.** 서버가 상한을 고친다 |
+| 2 | `color.maxLength: 7`이 `red_orange`·`light_blue`를 자른다 | **상한을 늘린다.** 서버가 고친다 |
+| 3 | `Room.color` 예시(`"black"`)와 `InvitationPreview.room.color` 예시(`"#FF6B6B"`)의 형식이 갈린다 | **스키마의 모순이 아니라 낡은 예시였다.** 4번이 닫히면서 함께 닫힌다 — 확정 어휘에 `"black"`도 hex도 없다 |
+| 4 | `color`에 `enum`이 없어 어휘를 읽을 수 없다 | **12색으로 확정.** 공백은 밑줄이 되고(`red orange` → `"red_orange"`), 미선택 기본값은 ~~**`"grey"`**~~ → **`"gray"`**(R-030) |
+
+~~**`grey`가 이 항목의 유일한 구현 변경이다.**~~ **이 문단의 전제가 틀렸다(R-030).** 서버 어휘가 `"gray"`라 흡수할 철자 차이 자체가 없었다. 다만 **"도메인 이름을 서버 철자에 맞춰 바꾸지 않는다"는 판단은 그대로 유효하다** — R-018이 "열거 상수 이름에서 식별자를 파생하지 않는다"고 정한 원칙이며, 철자가 갈렸다면 그 원칙이 값을 했을 자리다.
+
+**서버 `enum`의 순서를 칩 그리드에 반영하지 않는다.** `RoomColor`의 선언 순서는 [`RoomColor.kt`](../../../core/domain/src/main/kotlin/team/mino/core/domain/model/RoomColor.kt)의 KDoc대로 **칩 그리드 배치 순서**이고 그 순서는 Figma가 정한다. 두 순서는 소유자가 다르므로 서로를 따르지 않는다 — 우연히 같아졌다가 한쪽이 바뀌면 조용히 어긋난다.
+
+**서버 수정 반영 전까지 1·2는 실측으로 확인한다.** 협의는 끝났지만 배포는 아직이므로, 21~30자 설명과 두 단어 색이 실제로 저장되는지는 서버가 고친 뒤에 확인해야 한다 → [quickstart.md](./quickstart.md) S-9 · [plan.md](./plan.md) §열린 항목 D.
+
+**Alternatives considered**: 없다. 확정된 서버 어휘를 받아 적은 항목이다. 이 결정 이전에 검토·기각된 후보들(hex 계약 · 식별자 단축 · spec 개정)은 [R-003](#r-003-swagger-계약이-spec과-어긋나는-세-지점-plan-100)·[R-026](#r-026-색설명-계약을-실제-api로-재대조한다-plan-200)의 이력을 참조한다.
+
+---
+
+## R-030. 서버 enum 배포로 색 어휘가 확정됐다 — `grey` 판정을 되돌린다 *(plan 2.2.0)*
+
+**Decision**: **서버가 `color`에 `enum` 13개를 배포했고, 회색은 `"gray"`다.** [R-029](#r-029-색-어휘와-어긋남-네-건의-협의-결과-plan-210)가 확정한 `"grey"`(영국식)를 되돌린다. [R-018](#r-018-mock의-색상-식별자-표기-plan-110)이 정한 소문자 스네이크 표기가 **13색 전부에서 그대로 맞았으므로 `RoomMapper`는 고칠 것이 없다.**
+
+**Rationale**: 2026-08-28T00:55:30+09:00 조회. `POST /api/v1/rooms` · `PATCH /api/v1/rooms/{roomId}` · `GET /api/v1/rooms/{roomId}`의 `color`가 모두 같은 `enum`을 갖는다.
+
+```
+red · red_orange · orange · lime · green · cyan · violet · pink · blue · brown · light_blue · purple · gray
+```
+
+응답 쪽에는 설명까지 붙었다 — **"팔레트 색상 키(13색, snake_case). 실제 색 매핑은 클라이언트 담당, 개인방 기본은 gray."** 색값을 클라이언트가 소유한다는 [R-003](#r-003-swagger-계약이-spec과-어긋나는-세-지점-plan-100)의 구조적 판단을 서버가 계약 문서에 명시한 것이다.
+
+**어긋남 네 건의 최종 상태**
+
+| # | 어긋남 | 상태 |
+|---|---|---|
+| 1 | `description.maxLength: 20` vs FR-005의 30자 | **미해소.** 협의대로 고쳐지지 않았다. 21~30자 설명은 여전히 거절된다 |
+| 2 | `color.maxLength: 7`이 두 단어 색을 자른다 | **해소.** 상한이 제거되고 `enum`으로 대체됐다 |
+| 3 | 색 표현의 자기모순 | **부분 해소.** 방 응답의 예시가 `"black"` → `"red"` + `enum`으로 정리됐으나, `InvitationPreview.room.color`는 여전히 hex 예시(`"#FF6B6B"`)다. **이 feature는 초대 미리보기를 쓰지 않아 영향이 없다** |
+| 4 | `color`에 `enum`이 없다 | **해소.** 13색이 명시됐다 |
+
+**왜 틀렸는가 — 구두 확정을 스키마 확정으로 취급했다.** 2.1.0은 서버팀이 구두로 전한 어휘를 받아 `research.md`에 확정 결정으로 박고 작업(`tasks.md` T069)까지 만들었다. 그런데 [R-026](#r-026-색설명-계약을-실제-api로-재대조한다-plan-200)이 세운 원칙은 **"문서에서 읽을 수 없으면 추정하지 않고 기다린다"**였고, 2.1.0은 그 원칙을 자기가 어겼다. 대가는 하루짜리였지만 — 그 사이에 T069가 수행됐다면 **서버가 `enum` 위반으로 거절하는 코드**가 들어갔을 것이다.
+
+**앞으로도 같게 다룬다**: 구두 합의는 협의 결과로 기록하되 **계약 값은 배포된 스키마가 낼 때까지 확정하지 않는다.** 그때까지 코드는 기존 값을 유지하고, 검증 시나리오가 차이를 드러내게 둔다(이번에 [quickstart.md](./quickstart.md) S-9가 맡았던 역할이다).
+
+**서버 `enum` 순서는 계약이 아니다.** 배포된 순서가 `RoomColor`의 선언 순서와 우연히 일치하지만, 그 선언 순서는 Figma 칩 그리드가 소유한다([R-018](#r-018-mock의-색상-식별자-표기-plan-110)). 두 순서를 서로 맞추지 않는다 — 한쪽이 바뀔 때 조용히 어긋난다.
+
+**Alternatives considered**: 없다. 배포된 `enum`은 확정 계약이므로 받아 적는 것 외의 선택지가 없다. `"grey"`를 고집하면 요청이 거절된다.
+
+---
+
+## R-031. `RoomApiService`가 이미 `develop`에 있다 — 신규가 아니라 확장이다 *(plan 3.0.0)*
+
+**Decision**: `core/data/.../network/service/RoomApiService.kt`를 **새로 만들지 않는다.** 이미 있는 클래스에 `getRoom`·`createRoom`·`updateRoom` 세 함수를 **더한다.** 테스트도 마찬가지로 이미 있는 `core/data/src/test/java/team/mino/core/data/network/RoomApiServiceTest.kt`에 케이스를 더한다 — 새 파일을 만들지 않는다.
+
+**Rationale**: 2026-08-28 `develop` 재확인. [R-024](#r-024-실서버가-붙었다--mock-데이터-레이어를-걷어낸다-plan-200)~[R-030](#r-030-서버-enum-배포로-색-어휘가-확정됐다--grey-판정을-되돌린다-plan-220)이 쓰인 시점에는 이 파일이 없었으나, 그 사이 `shared-link-receiver`가 `GET /api/v1/rooms`를 붙이면서 같은 이름의 클래스를 세웠다([그 feature의 research.md R-015](../shared-link-receiver/research.md)). 현재 형태는 `listRooms()` 하나다.
+
+이 계획이 같은 이름의 파일을 "신규"로 다루면 **작업자가 기존 파일을 덮어써 `listRooms()`를 지운다.** 그 함수는 방 선택 시트(`:feature:sharereceiver`)가 무는 유일한 데이터 경로다.
+
+> **정정(plan 3.0.1) — "조용히 깨진다"는 틀렸다.** 이 문단은 원래 덮어쓰기가 다른 feature를 조용히 망가뜨린다고 적었다. 실측하면 그렇지 않다. `listRooms()`를 참조하는 곳이 프로덕션 [`RoomListRemoteDataSourceImpl`](../../../core/data/src/main/java/team/mino/core/data/datasource/RoomListRemoteDataSourceImpl.kt)과 [`RoomApiServiceTest`](../../../core/data/src/test/java/team/mino/core/data/network/RoomApiServiceTest.kt)의 케이스 3건이라, 함수를 지우면 **`:core:data`가 컴파일되지 않는다.** 실패는 은밀한 런타임 회귀가 아니라 즉시 드러나는 빌드 실패다.
+>
+> **결정은 그대로다** — 확장으로 다루는 이유는 "조용히 깨져서"가 아니라 **덮어쓸 이유가 없어서**다. 바뀌는 것은 위험의 등급이다.
+>
+> **가드가 비는 구간은 없다.** 합병이 프로덕션 참조를 옮기지만 순서가 `T072`(네 함수 구현) → `T073` → `T082`(`RoomList*` 삭제)라, 참조가 사라지기 전에 새 참조가 먼저 선다. 다만 그 사이 **테스트 3건이 유일한 가드가 되는 순간이 있으므로**, T080이 "기존 케이스를 고치지 않는다"고 못박은 것은 스타일 규칙이 아니라 **가드 유지 장치**다.
+
+**확장이 따라야 할 기존 형태** — 세 함수는 이미 자리잡은 관례를 그대로 잇는다.
+
+| 항목 | 기존 `listRooms()`가 정한 형태 |
+|---|---|
+| 경로 | `client.get("api/v1/rooms")` — `defaultRequest.url` 기준 상대 경로, 앞에 `/`를 붙이지 않는다 |
+| 봉투 | `.body<MinoResponse<T>>().data` — 그 줄에서 끝난다 |
+| 예외 | 잡지 않는다. KDoc이 `convertDomainException`·`MinoIdentityProofPlugin`을 지목한다 |
+| 가시성 | `internal class ... @Inject constructor(private val client: HttpClient)` |
+
+**함께 확인된 것 — [R-025](#r-025--data-봉투를-어느-레이어가-벗기는가-plan-200)의 선행 조건이 닫혔다.** `MinoResponse<T>`(`network/dto/response/MinoResponse.kt`)와 [응답 봉투 ADR](../../adr/2026-08-27-response-envelope-unwrapped-in-apiservice.md)이 **둘 다 `develop`에 있다.** R-025가 "이 브랜치에서 ADR 링크가 열리지 않는다"고 적었던 상태는 끝났다. 결정은 그대로이고, 기다리던 것이 도착했을 뿐이다.
+
+**Alternatives considered**:
+- *`RoomFormApiService`를 따로 만든다* — 이름 충돌을 피하고 이 계획의 소유 범위가 또렷해지나, 같은 리소스·같은 `HttpClient`를 쓰는 서비스가 둘이 된다. [`core/data/README.md`](../../../core/data/README.md) §4의 리소스 단위 명명과 어긋나고, [R-032](#r-032-방-리소스의-두-datasource를-하나로-합친다-plan-300)가 DataSource를 합치는 방향과도 반대다. 기각.
+
+---
+
+## R-032. 방 리소스의 두 DataSource를 하나로 합친다 *(plan 3.0.0)*
+
+**Decision**: `RoomRemoteDataSource`에 `listRooms(): List<RoomSummaryResponse>`를 **흡수하고**, `RoomListRemoteDataSource`·`RoomListRemoteDataSourceImpl`·`di/RoomListDataSourceModule`을 **지운다.** `RoomRepositoryImpl`은 두 DataSource가 아니라 하나만 주입받는다.
+
+이 결정은 [R-024](#r-024-실서버가-붙었다--mock-데이터-레이어를-걷어낸다-plan-200)가 "`RoomRemoteDataSource` 인터페이스는 한 글자도 바뀌지 않는다"고 적었던 것을 **뒤집는다.** 그 판단은 mock을 실구현으로 갈아 끼우는 것만 보았고, 그 사이에 같은 리소스의 DataSource가 하나 더 생겼다는 사실을 알 수 없었다.
+
+**Rationale**: 이 합병을 이 계획에 배정한 것은 이 계획이 아니라 [`shared-link-receiver`의 research.md R-015](../shared-link-receiver/research.md)다 — *"같은 `room` 리소스에 DataSource가 둘인 상태는 `group-room-form`이 실서버로 전환하는 시점에 하나로 합쳐지며, 그때 지워지는 것은 `RoomListRemoteDataSource`다."* 같은 문장이 코드에도 남아 있다([`RoomListRemoteDataSource.kt`](../../../core/data/src/main/java/team/mino/core/data/datasource/RoomListRemoteDataSource.kt)의 KDoc).
+
+**둘로 갈라 놓았던 유일한 근거가 이번에 사라진다.** 그 KDoc이 밝힌 분리 사유는 *"바인딩 대상이 다르기 때문 — 그쪽은 mock, 이쪽은 실서버"*다. R-024가 mock을 걷어내면 두 바인딩이 같은 실구현을 가리키게 되어, 같은 리소스·같은 `ApiService`·같은 스코프를 무는 인터페이스가 **아무 차이 없이 둘** 남는다. [`core/data/README.md`](../../../core/data/README.md) §5는 DataSource를 데이터 출처 단위의 인터페이스·구현체 **쌍**으로 정하지, 한 출처에 둘을 두는 형태를 두지 않는다.
+
+`RoomRepositoryImpl`의 KDoc이 스스로 이 상태를 **"출처가 함수마다 갈리는 과도기"**라 부르고 있다. 그 과도기를 끝내는 것이 이 계획의 몫이다.
+
+**합병을 미루면 무엇이 남는가**: mock이 사라진 뒤에도 `RoomListRemoteDataSource`가 근거 문장이 거짓이 된 KDoc(`그쪽은 mock`)을 달고 남는다. 소유자 지목이 끊긴 문서 링크는 [헌법 원칙 I](../../constitution.md)이 금지하는 상태이고, 다음에 방 API를 건드리는 사람이 어느 DataSource에 함수를 더할지 판단할 근거가 없어진다.
+
+**바뀌는 경계** — 이것이 이번 개정을 MAJOR로 만든다.
+
+| 대상 | 이전 판정 | 3.0.0 |
+|---|---|---|
+| `RoomRemoteDataSource` 인터페이스 | 무변경 | **`listRooms()` 추가** |
+| `RoomRepositoryImpl` | 무변경 | **생성자 인자 2개 → 1개**, `getRooms()`가 같은 DataSource를 문다 |
+| `RoomList*` 3파일 | 이 계획 밖 | **삭제** |
+
+**`RoomSummaryResponse`·`RoomSummaryMapper`는 건드리지 않는다.** 옮기는 것은 함수 한 개의 선언 자리뿐이고, 목록 응답의 DTO·변환·도메인 모델(`RoomSummary`)은 `shared-link-receiver`가 소유한 채로 남는다. 이 계획은 그 계약을 읽지도 바꾸지도 않는다.
+
+**Alternatives considered**:
+- *합병을 미루고 열린 항목으로 남긴다* — 이번 개정이 MINOR에 머물러 `tasks.md`의 기존 작업 의미가 보존된다. 그러나 위의 "거짓이 된 KDoc"이 그대로 남고, 합병을 배정한 문서가 지목한 **바로 그 시점**을 이 계획이 그냥 지나치게 된다. 다음에 이 상태를 정리할 계기가 어느 spec에도 없다. 기각(2026-08-28 사용자 확인).
+- *`RoomListRemoteDataSource`를 남기고 `RoomRemoteDataSource` 쪽을 지운다* — 지우는 쪽이 반대가 된다. 이 계획이 소유한 세 함수가 더 많고, 배정 문서가 지목한 삭제 대상이 명시적으로 `RoomListRemoteDataSource`다. 기각.
+
+---
+
+## R-033. 어긋남 한 건은 여전히 열려 있다 — 2026-08-28 재조회 *(plan 3.0.0)*
+
+**Decision**: `description`의 상한은 **30자를 유지한다**([R-029](#r-029-색-어휘와-어긋남-네-건의-협의-결과-plan-210)의 판정 그대로). 이번 조회에서도 서버는 `20`이다. 코드는 바뀌지 않는다.
+
+**Rationale**: 2026-08-28T11:39:53+09:00 재조회. 세 오퍼레이션의 요청 스키마가 여전히 `"description": { "anyOf": [{ "type": "string", "maxLength": 20 }, { "type": "null" }] }`다. 색 `enum` 13색은 [R-030](#r-030-서버-enum-배포로-색-어휘가-확정됐다--grey-판정을-되돌린다-plan-220)이 확인한 그대로이고 변동이 없다.
+
+`enum` 배포(08-28T00:55) 이후 약 11시간이 지난 조회에서도 설명 상한이 그대로라는 것은, 서버팀의 수정이 색만 먼저 나갔다는 뜻이다. [plan.md](./plan.md) §열린 항목 D의 닫는 조건은 그대로 유효하다.
+
+**Alternatives considered**: 없다. [R-030](#r-030-서버-enum-배포로-색-어휘가-확정됐다--grey-판정을-되돌린다-plan-220)이 세운 "배포된 스키마가 낼 때까지 확정하지 않는다"를 따르면 조회 결과를 받아 적는 것이 전부다.
+
+---
+
+## R-034. 방 썸네일 13종과 폴백 컴포넌트가 `:core:common:ui`로 올라갔다 *(plan 3.0.0)*
+
+**Decision**: 방 썸네일 WebP 13종(12색 + 회색)과 그것을 그리는 `RoomThumbnailFallback`은 **`:feature:roomform`이 아니라 [`:core:common:ui`](../../../core/common/ui/README.md)에 있다.** 이 계획의 소스 트리에서 `feature/roomform/src/main/res/drawable-*/`를 걷어낸다.
+
+**Rationale**: 2026-08-28 `develop` 실측. 커밋 `2e4c5a2`가 밀도 3벌(mdpi·xhdpi·xxhdpi)을 통째로 옮기고 `RoomThumbnailFallback(color: MinoRoomColor?)`을 **public**으로 세웠다. 승격 사유는 그 커밋이 적었다 — *"폴백은 도메인 색상값과 래스터 에셋을 함께 요구해 디자인 시스템에 둘 수 없다."*
+
+두 번째 사용처가 실제로 생긴 것이 승격의 근거다. `shared-link-receiver`의 방 선택 시트가 같은 폴백을 그려야 했고, [`component-asset-placement.md`](../../conventions/component-asset-placement.md) §2.3(승격은 feature → `:core:common:ui` 한 방향)이 정한 조건이 그 시점에 충족됐다.
+
+**이 승격은 기존 ADR을 어기지 않는다 — 오히려 두 ADR이 명령한 그대로다.** [래스터 이미지 ADR](../../adr/2026-08-19-raster-image-placement-and-format.md) §결정 1이 *"공유 래스터 이미지는 `:core:common:ui`가 갖는다"*고 정했고, [방 색상 팔레트 ADR](../../adr/2026-08-14-room-color-palette-in-design-system.md) §적용 범위가 *"홀더 프로퍼티만 쓰는 공용 합성 컴포넌트는 여러 feature가 쓰더라도 이 ADR을 근거로 `:core:design-system`에 두지 않는다"*고 이 경우를 미리 갈라 두었다. `RoomThumbnailFallback`은 `internal` 토큰에 닿지 않으므로 그 갈래에 정확히 해당한다.
+
+**팔레트 ADR §결과의 "매핑은 feature가 소유한다"와도 어긋나지 않는다.** 그 문장이 가리키는 것은 **서버 색 식별자 ↔ `MinoRoomColor`** 변환이고, 그 매핑은 지금도 feature에 있다 — [`RoomColorUiModel.chip`](../../../feature/roomform/src/main/java/team/mino/feature/roomform/form/model/RoomColorUiModel.kt)(`RoomColor` → `MinoRoomColor`, KDoc이 그 ADR을 근거로 인용한다)과 [`RoomMapper`](../../../core/data/src/main/java/team/mino/core/data/repository/mapper/RoomMapper.kt)(서버 문자열 ↔ `RoomColor`). 승격된 것은 **`MinoRoomColor` → drawable**이라는 별개의 매핑으로, ADR이 다루지 않은 축이다. **ADR 개정이 필요 없다.** [R-008](#r-008-미리보기-카드와-확인-모달의-소유-모듈-plan-100)이 *"미리보기 카드는 디자인 시스템 컴포넌트가 아니라서 `:feature:roomform`이 갖는다"*고 정한 것은 **그대로 유효하다** — 옮겨 간 것은 카드가 아니라 카드 **안쪽의 썸네일 한 장**이고, [`RoomPreviewCard`](../../../feature/roomform/src/main/java/team/mino/feature/roomform/form/component/RoomPreviewCard.kt)는 여전히 이 feature가 소유한 채 그 폴백을 호출한다.
+
+**이 계획이 더 할 일은 없다.** 에셋도 컴포넌트도 이미 서 있고 폼이 이미 쓰고 있다. 트리 표기만 실측과 맞춘다.
+
+**Alternatives considered**: 없다. 이미 머지되어 두 feature가 함께 쓰는 상태이고, 되돌리면 방 선택 시트가 에셋을 잃는다.
