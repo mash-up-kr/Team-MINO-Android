@@ -28,6 +28,14 @@ internal object SnackbarTokens {
     val ActionFont = TypographyAccessKeyToken.Body2NormalBold
 
     val MaxWidth = 420.dp
+
+    /**
+     * 컴포넌트 원본(`Variant=Normal` 335×54)의 `Container`가 `x=16, y=11, 303×32`다 — 좌우 16·상하 11.
+     *
+     * 화면 시안에는 pill을 48로 줄여 놓은 인스턴스가 있으나(예: 스플래시 `3798-166765`) 그것은 인스턴스
+     * 리사이즈이지 컴포넌트 값이 아니다. 그 높이에 맞춰 상하를 8로 낮추면 모든 `MinoSnackbar`가 원본보다
+     * 6dp 작아진다.
+     */
     val HorizontalPadding = 16.dp
     val VerticalPadding = 11.dp
 

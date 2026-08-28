@@ -45,9 +45,9 @@ adb shell cmd package resolve-activity -c android.intent.category.LAUNCHER com.m
 | 최초 실행 | `isRegistered()`가 `false` | `SplashEntry.Onboarding` | FR-003 / TS-002 |
 | 재실행 | `isRegistered()`가 `true` | `SplashEntry.Main` | FR-004 / TS-003 |
 | 네트워크 실패 분리 | `isRegistered()`가 `Network` 던짐 | 전파되고 `Onboarding`으로 오판하지 않는다 | EC-004 |
-| 세션 실패 분리 | `isRegistered()`가 `Auth` 던짐 | 전파되고 `Onboarding`으로 오판하지 않는다 | FR-009 |
+| 인증 실패 분리 | `isRegistered()`가 `Http(401)` 던짐 | 전파되고 `Onboarding`으로 오판하지 않는다 | FR-009 |
 
-`:core:data` 쪽은 `errorCode` 분기를 따로 검증한다 — `401`+`USER_NOT_REGISTERED`는 `false`, `401`+`UNAUTHORIZED`·`TOKEN_EXPIRED`는 `Auth` 예외여야 한다(SC-002).
+`:core:data` 쪽은 `errorCode` 분기를 따로 검증한다 — `401`+`USER_NOT_REGISTERED`는 `false`, `401`+`UNAUTHORIZED`·`TOKEN_EXPIRED`·모르는 `errorCode`는 `MinoDomainException.Http(401)` 그대로여야 한다(SC-002). `Auth`로 재매핑하지 않는다 — 그 리프는 인증 제공자 실패 전용이고, HTTP 원천의 매핑 지점은 Ktor validator 하나다([research.md R-016](./research.md)).
 
 ## 3. 화면 동작 — 수동 시나리오
 

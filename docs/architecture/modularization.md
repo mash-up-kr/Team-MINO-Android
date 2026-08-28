@@ -57,12 +57,24 @@ Android SDK 기반 공용 유틸리티 (Context 확장, Intent 헬퍼 등).
 분석 — 이벤트 로깅(`AnalyticsTracker`)과 화면 조회 자동 로깅(`TrackScreenViews`).
 → Android Library (Compose)
 
-### `:feature:main`
-앱의 진입 feature. BottomNavigation 탭 셸을 소유하고 탭 feature의 그래프를 조립한다.
+### `:feature:splash` (진입형)
+앱의 런처 진입점. `MAIN`·`LAUNCHER` intent-filter를 소유하고, 익명 세션 확보와 프로필 등록 여부로 온보딩·메인 탭을 가른다. 다른 feature가 이 화면을 여는 일이 없어 `XLauncher` 계약을 갖지 않는 유일한 진입형이다.
+→ Android Library (Compose)
+
+### `:feature:main` (진입형)
+BottomNavigation 탭 셸을 소유하고 탭 feature의 그래프를 조립한다. 런처 자격은 `:feature:splash`가 갖는다.
 → Android Library (Compose)
 
 ### `:feature:profile` (진입형)
 프로필 설정·수정 화면. 온보딩과 마이페이지가 `ProfileLauncher`로 함께 여는 단일 화면을 소유한다.
+→ Android Library (Compose)
+
+### `:feature:roomform` (진입형)
+방 생성·수정 폼 화면.
+→ Android Library (Compose)
+
+### `:feature:sharereceiver` (진입형)
+외부 앱 공유(`ACTION_SEND`) 수신 화면. 받은 링크를 저장할 방을 고르는 바텀시트를 소유한다.
 → Android Library (Compose)
 
 ### `:feature:sample` (진입형)·`:feature:home` (탭)

@@ -10,9 +10,9 @@
 
 **최초 작성일**: 2026-08-23
 
-**최종 수정일**: 2026-08-27
+**최종 수정일**: 2026-08-28
 
-**버전**: 3.0.1
+**버전**: 3.0.2
 
 **참고**: 이 템플릿은 `/mino-plan` 명령으로 채워지며, 해당 명령의 정의가 실행 워크플로우를 설명한다.
 
@@ -64,7 +64,7 @@
 | G5 | **원칙 II `:core:domain`은 Android 비의존** | PASS | PASS — `SplashEntry`·계약·UseCase 모두 순수 Kotlin |
 | G6 | **원칙 IV `[TBD]` 표시** — 근거 없는 빈틈을 지어내지 않는다 | PASS | PASS — 미확정 0건. 계약의 모든 응답 갈래가 배포 OpenAPI에 근거한다 |
 | G7 | **원칙 IV 템플릿 선복사** | PASS | PASS — `plan-template.md`를 복사한 뒤 제자리 편집 |
-| G8 | **원칙 V 에러 처리** — `MinoDomainException` 매핑, 정상 시나리오에서 CEH 미도달 | PASS | PASS — `Network`/`Auth` 2분기를 `runCatchingDomain`으로 소비([error_handling.md](../../conventions/error_handling.md)). 열거 밖 실패로 재시도 루프가 끊기지 않게 한다(호출자 계약 C-5 → [research.md R-013](./research.md)) |
+| G8 | **원칙 V 에러 처리** — `MinoDomainException` 매핑, 정상 시나리오에서 CEH 미도달 | PASS | PASS — `Network` / 그 밖(`Auth`·`Http`) 2분기를 `runCatchingDomain`으로 소비([research.md R-016](./research.md))([error_handling.md](../../conventions/error_handling.md)). 열거 밖 실패로 재시도 루프가 끊기지 않게 한다(호출자 계약 C-5 → [research.md R-013](./research.md)) |
 | G9 | **기술 표준 — 디자인 토큰 단일 접근점** | PASS | PASS — `MinoSnackbar` 재사용, 판정은 Figma 대조로([figma-design-fidelity.md](../../conventions/figma-design-fidelity.md)) |
 | G10 | **기술 표준 — 이미지 에셋 배치** | PASS | PASS — feature 소유·WebP·밀도별([component-asset-placement.md](../../conventions/component-asset-placement.md)) |
 
@@ -118,7 +118,10 @@ core/domain/src/main/kotlin/team/mino/core/domain/
 
 core/data/src/main/java/team/mino/core/data/
 ├── network/service/UserApiService.kt             # 신규 — GET /api/v1/users/me
-├── repository/ProfileRegistrationRepositoryImpl.kt  # 신규 — errorCode 분기
+├── datasource/UserRemoteDataSource.kt            # 신규 — 인터페이스
+├── datasource/UserRemoteDataSourceImpl.kt        # 신규 — 401의 errorCode 분기(엔드포인트별 특수 정책)
+├── datasource/di/UserDataSourceModule.kt         # 신규 — DataSource 바인딩
+├── repository/ProfileRegistrationRepositoryImpl.kt  # 신규 — DataSource 위임
 └── repository/di/                                # 바인딩 (이 모듈 소유)
     # 응답 본문을 도메인으로 옮기지 않으므로 DTO·Mapper가 없다
 
@@ -126,6 +129,8 @@ feature/main/src/main/AndroidManifest.xml         # 변경 — LAUNCHER intent-f
 app/build.gradle.kts                              # 변경 — :feature:splash 의존 추가
 settings.gradle.kts                               # 변경 — include(":feature:splash")
 ```
+
+**`RepositoryImpl`은 `DataSource` 인터페이스만 주입받는다.** `401`의 `errorCode` 분기는 [`core/data/README.md`](../../../core/data/README.md) §4가 DataSource에만 허용하는 "엔드포인트별 특수 정책"이므로 `UserRemoteDataSourceImpl`이 갖는다 — Repository가 `ApiService`를 직접 알거나 예외를 잡으면 같은 README §3·§6을 어긴다. *(plan 3.0.2에서 정정 — 3.0.1까지 이 절이 DataSource 계층을 통째로 빠뜨려 tasks.md T008이 규약 위반을 물려받았다.)*
 
 **구조 결정**: 스플래시를 **진입형 feature 단일 모듈**로 신설한다. 근거와 기각한 대안은 [research.md R-001](./research.md)이 소유하며, 진입형/탭 구분과 공개 범위 규칙은 [feature-module.md §1](../../architecture/feature-module.md)을 따른다.
 
