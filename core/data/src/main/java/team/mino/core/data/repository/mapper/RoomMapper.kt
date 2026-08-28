@@ -1,10 +1,14 @@
 package team.mino.core.data.repository.mapper
 
 import team.mino.core.data.network.dto.request.RoomRequest
+import team.mino.core.data.network.dto.response.RoomMemberDetailResponse
 import team.mino.core.data.network.dto.response.RoomResponse
 import team.mino.core.domain.model.Room
 import team.mino.core.domain.model.RoomColor
 import team.mino.core.domain.model.RoomDraft
+import team.mino.core.domain.model.RoomMember
+import kotlin.time.ExperimentalTime
+import kotlin.time.Instant
 
 /**
  * 색의 서버 표현. 표의 소유자는 `docs/specs/group-room-form/contracts/room-api.md` §2다.
@@ -63,3 +67,14 @@ internal fun RoomColor?.toIdentifier(): String = COLOR_IDENTIFIERS.getValue(this
  * 색을 갖지 않은 방이 이미 [RoomColor.GRAY]로 보이므로 표현이 어긋나지 않는다.
  */
 internal fun String.toRoomColor(): RoomColor = COLORS_BY_IDENTIFIER[this] ?: RoomColor.GRAY
+
+/** `GET /api/v1/rooms/{roomId}/members` 응답 원소 → 도메인. */
+@OptIn(ExperimentalTime::class)
+internal fun RoomMemberDetailResponse.toDomain(): RoomMember =
+    RoomMember(
+        userId = userId,
+        nickname = nickname,
+        avatarUrl = avatar,
+        isOwner = isOwner,
+        joinedAt = Instant.parse(joinedAt),
+    )

@@ -5,6 +5,7 @@ import team.mino.core.data.repository.mapper.toDomain
 import team.mino.core.data.repository.mapper.toRequest
 import team.mino.core.domain.model.Room
 import team.mino.core.domain.model.RoomDraft
+import team.mino.core.domain.model.RoomMember
 import team.mino.core.domain.model.RoomSummary
 import team.mino.core.domain.repository.RoomRepository
 import javax.inject.Inject
@@ -29,4 +30,22 @@ internal class RoomRepositoryImpl @Inject constructor(
         roomId: String,
         draft: RoomDraft,
     ): Room = remoteDataSource.updateRoom(roomId, draft.toRequest()).toDomain()
+
+    override suspend fun getMembers(roomId: String): List<RoomMember> =
+        remoteDataSource.getMembers(roomId).map {
+            it.toDomain()
+        }
+
+    override suspend fun createInvitation(roomId: String): String = remoteDataSource.createInvitation(roomId).code
+
+    override suspend fun leaveRoom(roomId: String) {
+        remoteDataSource.leaveRoom(roomId)
+    }
+
+    override suspend fun transferOwner(
+        roomId: String,
+        nextOwnerId: String,
+    ) {
+        remoteDataSource.transferOwner(roomId, nextOwnerId)
+    }
 }

@@ -2,6 +2,7 @@ package team.mino.core.domain.repository
 
 import team.mino.core.domain.model.Room
 import team.mino.core.domain.model.RoomDraft
+import team.mino.core.domain.model.RoomMember
 import team.mino.core.domain.model.RoomSummary
 
 /**
@@ -42,4 +43,30 @@ interface RoomRepository {
         roomId: String,
         draft: RoomDraft,
     ): Room
+
+    /**
+     * 방 멤버 전체 목록. 초대 시트의 참여자 목록과 방장 위임 대상 선택이 함께 소비한다.
+     */
+    suspend fun getMembers(roomId: String): List<RoomMember>
+
+    /**
+     * 내 초대 링크의 코드를 발급한다. 이미 발급했다면 서버가 같은 code를 돌려준다.
+     * 완성된 URL이 아니라 code만 오므로, 링크 조립은 호출 측 책임이다.
+     */
+    suspend fun createInvitation(roomId: String): String
+
+    /**
+     * 방에서 나간다. 방장이 다른 멤버가 남은 채로 호출하면 `OWNER_TRANSFER_REQUIRED` 도메인
+     * 예외가 던져진다 — 위임을 먼저 요구한다는 뜻이다. 방장이 마지막 1인이면 방이 자동 삭제된다.
+     */
+    suspend fun leaveRoom(roomId: String)
+
+    /**
+     * 방장 권한을 [nextOwnerId]에게 위임한다. 나가기를 완료하려면 성공 후 [leaveRoom]을 이어서
+     * 호출해야 한다 — 이 함수만으로는 호출자가 방에 남는다.
+     */
+    suspend fun transferOwner(
+        roomId: String,
+        nextOwnerId: String,
+    )
 }

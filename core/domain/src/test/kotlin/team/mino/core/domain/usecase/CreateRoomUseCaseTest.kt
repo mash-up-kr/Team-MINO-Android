@@ -7,6 +7,7 @@ import org.junit.Test
 import team.mino.core.domain.model.Room
 import team.mino.core.domain.model.RoomColor
 import team.mino.core.domain.model.RoomDraft
+import team.mino.core.domain.model.RoomMember
 import team.mino.core.domain.model.RoomSummary
 import team.mino.core.domain.repository.RoomRepository
 import java.io.IOException
@@ -145,4 +146,16 @@ private class FakeRoomRepository : RoomRepository {
         roomId: String,
         draft: RoomDraft,
     ): Room = error("CreateRoomUseCase는 updateRoom을 부르지 않는다.")
+
+    override suspend fun getMembers(roomId: String): List<RoomMember> = error("CreateRoomUseCase는 getMembers를 부르지 않는다.")
+
+    override suspend fun createInvitation(roomId: String): String =
+        error("CreateRoomUseCase는 createInvitation을 부르지 않는다.")
+
+    override suspend fun leaveRoom(roomId: String): Unit = error("CreateRoomUseCase는 leaveRoom을 부르지 않는다.")
+
+    override suspend fun transferOwner(
+        roomId: String,
+        nextOwnerId: String,
+    ): Unit = error("CreateRoomUseCase는 transferOwner를 부르지 않는다.")
 }
