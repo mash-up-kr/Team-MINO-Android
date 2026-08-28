@@ -40,7 +40,7 @@ enum class ProfileAvatar { /* 12항목 — 선언 순서는 디자인 목록의 
 ```mermaid
 flowchart LR
     UI["ProfileViewModel"] -->|"저장"| UC["SaveProfileUseCase"]
-    UI -->|"① 진입 시 갱신"| Repo
+    UI -->|"① 마이페이지 진입 시 갱신"| Repo
     Local -.->|"② 갱신 성공 시 조건부 재프리필"| UI
     UC --> Repo["ProfileRepository"]
     Repo -->|"① 요청"| Remote["UserRemoteDataSource<br/>(원천)"]
@@ -51,7 +51,9 @@ flowchart LR
 
 - **원천은 서버, 로컬은 캐시다.** 저장은 `원격 성공 → 캐시 갱신` 순서이고, 원격이 실패하면 캐시를 건드리지 않는다([repository 계약 §저장의 불변식](contracts/profile-repository-contract.md)).
 - 읽기는 언제나 `observeProfile()` 하나다. 캐시가 있어 앱 재시작 후에도 프리필이 서고, 값이 바뀌면 표기 지점이 한꺼번에 갱신된다(SC-003, [D9](research.md#d9-앱-전체-즉시-반영--observeprofile-flowprofile)).
-- `refreshProfile()`은 화면 진입 시 한 번 돈다. 프리필의 원천을 서버로 맞추고(FR-006), 등록 여부를 캐시에 확정한다([D38](research.md#d38-등록수정-분기--서버에-직접-묻고-캐시가-그-답을-들고-있는다)).
+- `refreshProfile()`은 **마이페이지 진입 시** 한 번 돈다. 프리필의 원천을 서버로 맞추고(FR-006), 등록 여부를 캐시에 확정한다([D38](research.md#d38-등록수정-분기--서버에-직접-묻고-캐시가-그-답을-들고-있는다)).
+- 온보딩 진입에서는 갱신하지 않는다. 스플래시가 같은 `GET /api/v1/users/me`로 미등록을 확정해 연 화면이라, 갱신은 같은 401을 한 번 더 받고 이미 빈 캐시를 다시 비우는 것으로 끝난다 — 앱 시작 경로에 결과가 0인 왕복이 얹힌다. 판정은 `ProfileEntryPoint.needsRefresh`가 소유한다.
+- **그때 캐시가 비어 있다는 것은 보장이다.** 스플래시의 `ProfileRegistrationRepository.isRegistered()`가 미등록으로 판정하며 캐시를 비운다 — 서버가 모르는 세션의 캐시는 정의상 맞지 않는 값이다. 이 보장이 없으면 위 등록·수정 분기가 낡은 캐시를 보고 `PATCH`로 갈라진다([D50](research.md#d50-진입-시-갱신--마이페이지-진입에서만-건다)).
 - 오프라인 저장·나중에 동기화는 다루지 않는다(spec §4). 네트워크가 없으면 저장은 실패하고 입력값은 화면에 남는다(FR-012).
 - **원천 자리의 `UserRemoteDataSource`는 이 feature가 만든 타입이 아니다.** splash-screen이 먼저 만들었고 이 feature가 세 함수를 더한다([D49](research.md#d49-develop-통합-재대조--user-태그-엔드포인트의-소유자는-userapiservice-하나다)). 같은 인터페이스의 `isRegistered()`는 스플래시의 진입 판정용이고 이 흐름에 끼지 않는다.
 
@@ -59,7 +61,7 @@ flowchart LR
 
 | 캐시 상태 | 저장 시 호출 | 어떻게 그 상태가 됐나 |
 |---|---|---|
-| 비어 있음 | `POST /api/v1/users` (등록 + 개인방 생성) | `refreshProfile()`이 `401 USER_NOT_REGISTERED`를 받아 비웠다 |
+| 비어 있음 | `POST /api/v1/users` (등록 + 개인방 생성) | `refreshProfile()`이 `401 USER_NOT_REGISTERED`를 받아 비웠거나, 스플래시의 `isRegistered()`가 미등록으로 판정하며 비웠다 |
 | 값 있음 | `PATCH /api/v1/users/me` (수정) | `refreshProfile()` 또는 직전 저장이 채웠다 |
 
 - 등록이 `409 USER_ALREADY_REGISTERED`로 실패하면 저장 실패로 다룬다. 다음 진입의 `refreshProfile()`이 캐시를 복구해 `PATCH`로 돌아온다.
@@ -161,7 +163,7 @@ data class ProfileUiState(
 - `isNicknameTouched`는 진입 직후(TS-001)에 오류 문구가 뜨지 않게 하는 값이다. 첫 입력에서 참이 되고 `지우기`로 거짓으로 돌아간다.
 - **프리필(FR-006)은 두 번 돈다**([research.md D45](research.md#d45-프리필과-갱신의-순서--캐시로-먼저-채우고-갱신이-성공하면-조건부로-한-번-더)).
   1. 진입 즉시 `observeProfile()`의 **첫 값**(캐시)으로 `nickname`·`selectedAvatar`를 채우고 `isNicknameValid=true`, `isNicknameTouched=false`로 둔다.
-  2. `refreshProfile()`이 성공하면 **`isNicknameTouched == false && !isSaving`일 때만** 갱신된 캐시 값으로 한 번 더 채운다.
+  2. 마이페이지 진입이라 `refreshProfile()`이 돌고 그것이 성공하면, **`isNicknameTouched == false && !isSaving`일 때만** 갱신된 캐시 값으로 한 번 더 채운다. 온보딩 진입에서는 1번만 돈다.
 - **흐름을 계속 구독하지 않는다.** 구독하면 저장 직후 흘러나온 값이 그 사이 사용자가 입력한 것을 덮어쓴다. 그래서 "계속 듣기"가 아니라 "갱신이 성공한 그 시점에 한 번 더 읽기"다. 두 가드는 각각 사용자가 이미 타이핑을 시작한 경우와 갱신 응답이 저장 왕복 중에 도착한 경우를 막는다.
 - **`isSaving`은 이제 눈에 보인다.** 네트워크 왕복만큼 지속되므로 중복 저장 차단(UX-003·EC-004)이 기기에서도 확인된다([D25](research.md#d25-저장-실패-경로--통로는-지금-배선하고-발화-원천은-후속-작업에-남긴다) 보정).
 - 진입 시 갱신이 도는 동안 별도 로딩 상태를 두지 않는다. 캐시가 있으면 그것이 즉시 프리필되고, 없으면 빈 화면이 정상 상태(온보딩)이기 때문이다. spec에 진입 로딩 표현이 없으므로 만들지 않는다 — 갱신을 기다렸다가 프리필하지 않는 이유도 같다.
