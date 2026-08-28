@@ -19,6 +19,7 @@ import kotlinx.coroutines.launch
 import team.mino.core.common.ui.architecture.CollectSideEffect
 import team.mino.core.common.ui.scaffold.LocalSnackbarHostState
 import team.mino.core.navigation.activity.launcher.EXTRA_ROOM_FORM_RESULT_OUTCOME
+import team.mino.core.navigation.activity.launcher.EXTRA_ROOM_FORM_RESULT_ROOM_ID
 import team.mino.core.navigation.activity.launcher.EXTRA_ROOM_FORM_ROOM_ID
 import team.mino.core.navigation.activity.launcher.ROOM_FORM_OUTCOME_UPDATED
 import team.mino.feature.room.detail.vm.RoomDetailIntent
@@ -58,12 +59,11 @@ internal fun BoxScope.RoomDetailRoute(
         viewModel.processIntent(RoomDetailIntent.OnRoomFormResult(updated))
     }
 
-    // [FR-009] 공유 시트 [+ 새 방 만들기] — RoomListRoute의 EXTRA_ROOM_FORM_CREATED_ROOM_ID와 같은 이유로
-    // 이 파일 안에서만 정의하는 임시 키다(roomform 결과 계약이 아직 확정 전).
+    // [FR-009] 공유 시트 [+ 새 방 만들기].
     val shareCreateRoomResultLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult(),
     ) { result ->
-        val createdRoomId = result.data?.getStringExtra(EXTRA_ROOM_FORM_CREATED_ROOM_ID)
+        val createdRoomId = result.data?.getStringExtra(EXTRA_ROOM_FORM_RESULT_ROOM_ID)
         viewModel.processIntent(RoomDetailIntent.OnShareRoomFormResult(createdRoomId))
     }
 
@@ -139,6 +139,3 @@ internal fun BoxScope.RoomDetailRoute(
 
 /** [UX-002] 공유 완료 토스트 노출 시간. */
 private const val SHARE_COMPLETE_TOAST_DURATION_MS = 3000L
-
-/** `RoomListRoute.EXTRA_ROOM_FORM_CREATED_ROOM_ID`와 같은 이유·같은 값의 임시 키. */
-private const val EXTRA_ROOM_FORM_CREATED_ROOM_ID = "room_form_created_room_id"
