@@ -4,6 +4,9 @@
 - **작성일**: 2026-08-25
 - **작성자**: Jaesung Lee
 
+> [!NOTE]
+> 아래 §결과의 **"enum ↔ 저장 식별자 매핑은 feature가 소유한다 … 선언 순서를 1부터 매긴 임시값을 쓴다"는 더 이상 유효하지 않다.** 이 조항이 전제한 서버 스키마(`Avatar { id: integer }`)가 배포된 OpenAPI 문서에 없었고, 실제 계약은 `avatar: { color: string }`이다([`specs/profile/research.md` D37](../specs/profile/research.md#d37-아바타-식별자--도메인-profileavatar-enum-서버-표현은-avatarcolor-문자열)). 매길 저장 식별자 자체가 사라져 임시값은 폐기됐다. 지금 서버 표현(색 문자열) 대응은 `:core:data`의 `repository/mapper/ProfileMapper`가 손으로 적은 12줄로 소유하고, 로컬 캐시 표현은 같은 모듈의 `datasource/ProfileEntry`가 도메인 enum 이름으로 든다. `:feature:profile`의 `main/model/ProfileAvatarMapping.kt`가 도메인 `ProfileAvatar` ↔ 그림 `MinoProfileAvatar` 대응만 든다. 에셋·컴포넌트를 `:core:design-system`이 소유한다는 이 ADR의 본 결정과 "enum은 그림과 크기만 안다"는 제약은 그대로다 — 디자인 시스템은 여전히 서버 표현도 도메인도 모른다.
+
 ## 컨텍스트
 
 프로필 설정 화면이 앱에 번들된 아바타 12종 중 하나를 고르는 3×4 그리드를 요구한다. 이 12종을 코드 어디에 두느냐를 정해야 했고, 세 가지가 위치를 좁혔다.
