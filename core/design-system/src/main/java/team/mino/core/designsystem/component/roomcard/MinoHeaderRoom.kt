@@ -50,14 +50,18 @@ import team.mino.core.designsystem.util.modifier.clickable.rippleSingleClickable
  *
  * @param resourceCountText 위치 아이콘 옆에 표시할 개수 문구. "999+개"처럼 상한 클램핑을 포함한
  *   최종 표시 문자열을 호출부가 만들어 넘긴다 — 이 컴포넌트는 서식을 모른다.
- * @param onThumbnailClick 우측 썸네일 모아보기 버튼의 클릭 콜백.
+ * @param onThumbnailClick 우측 썸네일 모아보기 버튼의 클릭 콜백. `null`이면 버튼 자체를 그리지 않는다 —
+ *   room-detail Peek(`2542:125419`)·Half(`2542:125383`) 실측 결과, 이 트레일링 아이콘은 실제로 모든
+ *   `Header_Room` 인스턴스에 있는 게 아니라 Full 계열에서만 확인됐다(개수 아이콘+텍스트만 있는 인스턴스가
+ *   있음). 컴포넌트 세트의 변형 축이 "show memo" 하나뿐이라는 원래 가정이 이 사례로 깨져, 파라미터를
+ *   nullable로 열었다.
  * @param memo 제목 아래 메모. `null`이면 Figma `show memo=off`.
  */
 @Composable
 fun MinoHeaderRoom(
     title: String,
     resourceCountText: String,
-    onThumbnailClick: () -> Unit,
+    onThumbnailClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
     memo: String? = null,
 ) {
@@ -105,15 +109,17 @@ fun MinoHeaderRoom(
                     )
                 }
 
-                Icon(
-                    imageVector = MinoIcons.Thumbnail,
-                    contentDescription = "썸네일 모아보기",
-                    modifier = Modifier
-                        .size(HeaderRoomTokens.ThumbnailIconSize)
-                        .clip(CircleShape)
-                        .rippleSingleClickable(onClick = onThumbnailClick),
-                    tint = MinoHeaderRoomDefaults.resourceColor,
-                )
+                if (onThumbnailClick != null) {
+                    Icon(
+                        imageVector = MinoIcons.Thumbnail,
+                        contentDescription = "썸네일 모아보기",
+                        modifier = Modifier
+                            .size(HeaderRoomTokens.ThumbnailIconSize)
+                            .clip(CircleShape)
+                            .rippleSingleClickable(onClick = onThumbnailClick),
+                        tint = MinoHeaderRoomDefaults.resourceColor,
+                    )
+                }
             }
         }
 
