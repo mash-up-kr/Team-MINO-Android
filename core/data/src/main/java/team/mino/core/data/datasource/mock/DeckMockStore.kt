@@ -18,7 +18,7 @@ import javax.inject.Inject
  * 실제 계약에 맞췄으므로, 실서버로 바뀌어도 Mapper와 호출부는 그대로다.
  *
  * `RoomMockStore`와 달리 상태를 갖지 않아 `@Singleton`도 `Mutex`도 두지 않는다 — 이 mock은 읽기 전용이고
- * 카드를 만들거나 고치는 계약이 없다. 방 목록은 이미 실서버(`RoomRemoteDataSource`)에서 오므로 고정된
+ * 카드를 만들거나 고치는 계약이 없다. 방 목록은 이미 실서버(`RoomListRemoteDataSource`)에서 오므로 고정된
  * `roomId`로 시드를 찾지 못하고, 아래 [roomDeckOf]가 `roomId`를 프로필 하나에 고정 배정한다.
  *
  * 실패를 이 클래스가 직접 도메인 예외로 던지는 이유는 mock이 `HttpClient`의 전역 매핑
@@ -84,8 +84,13 @@ private val MOCK_REGISTRANTS: List<CardCreatedByResponse?> =
  * 카드가 넉넉한 방.
  *
  * - `ggukPick` — **10장이고 `labelGroup` 4종이 모두 섞여 있다**(TS-014). 라벨별로 묶지 않은 순서 그대로다.
- * - `latest` — 같은 카드를 역순으로 돌려준다. **정렬 간 후보가 겹치는 경우**로, 홈이 덱 사이 중복을 지우지 않음을 드러낸다.
- * - `nearest` — 3장. **10장 미만인 덱**(TS-005)이다.
+ * - `latest` — **정렬을 바꾸면 덱도 바뀌어야 한다.** 서버는 정렬마다 후보를 새로 고르므로 같은 카드를 뒤집어
+ *   돌려주면 홈에서 확인할 수 있는 것이 없다. 앞의 두 장만 `ggukPick`과 겹쳐 두어, 홈이 덱 사이 중복을
+ *   지우지 않는다는 것(spec §4 가정)은 그대로 드러난다.
+ * - `nearest` — 10장의 **다른 카드**.
+ *
+ * 세 정렬 모두 방의 `pinCount`와 같은 장수다. 덱이 방의 장소 수보다 짧으면 카드를 다 넘겼는데도 남은 장소가
+ * 있는 것처럼 보여, mock으로 확인하려던 순회 자체가 어긋난다.
  */
 private val MIXED_ROOM_CARDS: List<CardResponse> =
     listOf(
@@ -101,11 +106,40 @@ private val MIXED_ROOM_CARDS: List<CardResponse> =
         mockCard(10, "합정 심야책방", "서울 마포구 월드컵로3길 14", LABEL_WORTH_VISITING),
     )
 
+/** 최근 담은 순. 앞 두 장은 [MIXED_ROOM_CARDS]와 같은 카드다 — 정렬끼리 겹치는 자리를 남긴다. */
+private val LATEST_ROOM_CARDS: List<CardResponse> =
+    MIXED_ROOM_CARDS.take(2) +
+        listOf(
+            mockCard(21, "이태원 타코", "서울 용산구 이태원로27가길 32", LABEL_MANY_SAVES),
+            mockCard(22, "삼각지 우동집", "서울 용산구 한강대로62길 11", LABEL_MANY_COMMENTS),
+            mockCard(23, "익선동 한옥카페", "서울 종로구 수표로28길 33", LABEL_MANY_VIEWS),
+            mockCard(24, "문래동 철공소 술집", "서울 영등포구 도림로128가길 7", LABEL_WORTH_VISITING),
+            mockCard(25, "해방촌 라멘", "서울 용산구 신흥로 39", LABEL_MANY_SAVES, imageCount = 1),
+            mockCard(26, "성수 수제버거", "서울 성동구 아차산로9길 8", LABEL_MANY_COMMENTS),
+            mockCard(27, "낙원상가 노포", "서울 종로구 삼일대로 428", LABEL_MANY_VIEWS, imageCount = 0),
+            mockCard(28, "연남 소금빵", "서울 마포구 동교로38길 26", LABEL_WORTH_VISITING),
+        )
+
+/** 가까운 순. 방에 저장된 장소가 10개이므로 이 정렬도 10장이다. */
+private val NEAREST_ROOM_CARDS: List<CardResponse> =
+    listOf(
+        mockCard(31, "회사 앞 김밥천국", "서울 강남구 테헤란로 152", LABEL_WORTH_VISITING),
+        mockCard(32, "역삼 순대국", "서울 강남구 역삼로 180", LABEL_MANY_SAVES),
+        mockCard(33, "선릉 커피스탠드", "서울 강남구 선릉로 428", LABEL_MANY_COMMENTS, imageCount = 1),
+        mockCard(34, "논현 화로구이", "서울 강남구 학동로 253", LABEL_MANY_VIEWS),
+        mockCard(35, "신논현 포차", "서울 강남구 봉은사로 102", LABEL_WORTH_VISITING),
+        mockCard(36, "강남역 분식", "서울 강남구 강남대로96길 14", LABEL_MANY_SAVES, imageCount = 0),
+        mockCard(37, "언주 베트남쌀국수", "서울 강남구 언주로 715", LABEL_MANY_COMMENTS),
+        mockCard(38, "도곡 파스타바", "서울 강남구 남부순환로 2907", LABEL_MANY_VIEWS),
+        mockCard(39, "대치 중국집", "서울 강남구 도곡로 425", LABEL_WORTH_VISITING, imageCount = 1),
+        mockCard(40, "삼성동 이자카야", "서울 강남구 봉은사로86길 30", LABEL_MANY_SAVES),
+    )
+
 private val MIXED_ROOM =
     MockRoomDeck(
         ggukPick = MIXED_ROOM_CARDS,
-        latest = MIXED_ROOM_CARDS.asReversed(),
-        nearest = MIXED_ROOM_CARDS.take(3),
+        latest = LATEST_ROOM_CARDS,
+        nearest = NEAREST_ROOM_CARDS,
     )
 
 /**
@@ -127,8 +161,9 @@ private val ZERO_METRIC_ROOM =
     MockRoomDeck(
         ggukPick = ZERO_METRIC_ROOM_CARDS,
         latest = ZERO_METRIC_ROOM_CARDS.asReversed(),
-        // 후보 0건인 정렬. 좌표를 받아도 반경 안에 아무것도 없는 방이다(TS-017).
-        nearest = emptyList(),
+        // 이 방도 세 정렬이 모두 pinCount(5)와 같은 장수다. 후보 0건인 정렬은 [EMPTY_ROOM]과
+        // 위치 권한을 거부했을 때의 `가까운순`이 재현한다(EC-009·EC-013).
+        nearest = ZERO_METRIC_ROOM_CARDS.drop(2) + ZERO_METRIC_ROOM_CARDS.take(2),
     )
 
 /**
