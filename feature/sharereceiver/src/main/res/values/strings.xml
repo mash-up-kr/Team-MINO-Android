@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sharereceiver_header_title">게시물 저장</string>
+    <string name="sharereceiver_header_subtitle">장소를 저장할 방을 선택해주세요.</string>
+
+    <string name="sharereceiver_room_place_count">장소 %1$d개</string>
+
+    <string name="sharereceiver_empty_message">저장할 방이 없어 지금은 저장할 수 없어요.</string>
+
+    <string name="sharereceiver_action_save">저장하기</string>
+
+    <string name="sharereceiver_saved_toast">저장이 완료됐습니다.</string>
+</resources>
