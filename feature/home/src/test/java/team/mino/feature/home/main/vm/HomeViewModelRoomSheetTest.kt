@@ -129,7 +129,7 @@ class HomeViewModelRoomSheetTest {
             assertEquals(DeckSort.GGUK_PICK, state.sort)
             assertEquals(otherGgukPick, state.cards.toList())
             assertEquals(HomeTooltip.RoomChanged(roomName(OTHER_ROOM_ID)), state.tooltip)
-            assertNull("덱이 바뀌면 이전 덱의 되돌리기 이력은 비워진다", state.undoable)
+            assertTrue("덱이 바뀌면 이전 덱의 되돌리기 이력은 비워진다", state.undoStack.isEmpty())
 
             val request = deckRepository.deckRequests.last()
             assertEquals(OTHER_ROOM_ID, request.roomId)

@@ -13,6 +13,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import team.mino.core.domain.model.DeckSort
@@ -110,7 +111,7 @@ class HomeViewModelConfirmationTest {
 
             val state = viewModel.state.value
             assertEquals("탭한 카드가 최상단에 그대로 남아야 한다", cards, state.cards.toList())
-            assertNull("탭은 넘김이 아니므로 되돌릴 카드가 생기지 않는다", state.undoable)
+            assertTrue("탭은 넘김이 아니므로 되돌릴 카드가 생기지 않는다", state.undoStack.isEmpty())
             assertEquals("탭이 덱을 다시 받아 오면 요청이 늘어난다", deckRequestsBefore, deckRepository.deckRequests.size)
         }
 
@@ -256,7 +257,7 @@ class HomeViewModelConfirmationTest {
             val state = viewModel.state.value
             assertEquals("저장은 방 전환이 아니다", ROOM_ID, state.room?.id)
             assertEquals("카드가 그대로 남아야 한다", cards, state.cards.toList())
-            assertNull("저장은 넘김이 아니므로 되돌릴 카드가 생기지 않는다", state.undoable)
+            assertTrue("저장은 넘김이 아니므로 되돌릴 카드가 생기지 않는다", state.undoStack.isEmpty())
             assertEquals("덱을 다시 받아 왔다면 방이 갈렸다는 뜻이다", deckRequestsBefore, deckRepository.deckRequests.size)
             assertEquals(
                 "저장 대상은 마지막으로 보던 방이 아니다",

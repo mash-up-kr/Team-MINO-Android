@@ -188,7 +188,7 @@ private fun HomeContent(
                 CardDeck(
                     cards = state.cards,
                     isTransitioning = state.isTransitioning,
-                    canSwipeBackward = state.undoable != null,
+                    canSwipeBackward = state.undoStack.isNotEmpty(),
                     actionMenuTarget = state.actionMenuTarget,
                     onSwipeForward = { onIntent(HomeIntent.SwipeForward) },
                     onSwipeBackward = { onIntent(HomeIntent.SwipeBackward) },
