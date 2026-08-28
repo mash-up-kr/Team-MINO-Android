@@ -22,6 +22,7 @@ import team.mino.core.common.kotlin.geo.GeoPoint
 import team.mino.core.domain.model.Room
 import team.mino.core.domain.model.RoomListSortOption
 import team.mino.core.domain.repository.RoomRepository
+import team.mino.core.domain.usecase.EnsureAnonymousSessionUseCase
 import team.mino.core.navigation.activity.launcher.RoomDetailLauncher
 import team.mino.core.navigation.activity.launcher.RoomFormLauncher
 import team.mino.feature.room.main.component.DefaultMapCenter
@@ -44,6 +45,7 @@ import kotlin.time.Instant
 class RoomListViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val roomRepository: RoomRepository,
+    private val ensureAnonymousSessionUseCase: EnsureAnonymousSessionUseCase,
     val roomDetailLauncher: RoomDetailLauncher,
     val roomFormLauncher: RoomFormLauncher,
 ) : ViewModel(),
@@ -57,9 +59,18 @@ class RoomListViewModel @Inject constructor(
      * `RoomRepository.observeMyRooms()` 구독으로 항상 최신 유지된다. `groupRooms`가 갱신될 때마다
      * `showNudge`·`showGhostCard`를 `groupRooms.isEmpty()` 파생값으로 함께 계산한다
      * (FR-008~FR-010, [contracts/room-list-main-contract.md 「분기 규칙 — Nudge·Ghost Card 노출」]).
+     *
+     * `ensureAnonymousSessionUseCase()`를 먼저 기다리는 이유: 앱을 콜드 스타트하면 이 `init`이 익명
+     * 로그인이 끝나기도 전에 실행돼 `observeMyRooms()`의 첫 요청이 신원 증명 없이 나가 실패했다
+     * (`MinoIdentityProofPlugin`). 이 실패는 `launchSafely`의 `CoroutineExceptionHandler`가 잡아
+     * "알 수 없는 오류"로만 보여주고 재시도하지 않아, 그 뒤로 목록 구독 자체가 영영 멈췄다. 진입 화면이
+     * 세션 확보를 전담하는 게 맞지만(`docs/adr/2026-08-22-session-retry-owned-by-caller.md`) 그
+     * 화면이 아직 없어, 이 레이스를 막을 다른 호출자가 없다. `ensureSession()`은 멱등이라(같은 문서)
+     * 이미 확보된 세션에서는 즉시 반환된다 — 매 호출마다 비용이 들지 않는다.
      */
     private fun observeMyRooms() {
         launchSafely {
+            ensureAnonymousSessionUseCase()
             roomRepository.observeMyRooms().collect { rooms -> onRoomsUpdated(rooms) }
         }
     }
@@ -192,9 +203,15 @@ class RoomListViewModel @Inject constructor(
      * [FR-007] 공동방 생성 폼 결과 수신. `createdRoomId`가 있으면(생성 완료) 곧바로
      * [RoomListSideEffect.NavigateToRoomDetail]로 체이닝한다(새 SideEffect를 만들지 않고 [FR-006]의
      * 것을 재사용) — `null`이면(취소) 아무 것도 하지 않는다.
+     *
+     * [observeMyRooms]를 다시 부르는 이유: `RoomRepository.observeMyRooms()`는 서버를 계속 듣는
+     * 진짜 스트림이 아니라 **호출 시점에 한 번** 조회해 흘려보내는 Flow다(로컬 캐시·웹소켓이 없다).
+     * 그래서 방을 새로 만들어도 이 화면의 `groupRooms`는 저절로 갱신되지 않는다 — 방 생성 폼이 닫히는
+     * 이 시점에 명시적으로 다시 불러와야 목록에 나타난다.
      */
     private fun onRoomFormResult(createdRoomId: String?) {
         if (createdRoomId == null) return
+        observeMyRooms()
         launchSafely { postSideEffect(RoomListSideEffect.NavigateToRoomDetail(createdRoomId)) }
     }
 
