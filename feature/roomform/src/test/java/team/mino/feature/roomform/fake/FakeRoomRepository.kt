@@ -4,6 +4,7 @@ import kotlinx.coroutines.CompletableDeferred
 import team.mino.core.domain.model.Room
 import team.mino.core.domain.model.RoomColor
 import team.mino.core.domain.model.RoomDraft
+import team.mino.core.domain.model.RoomSummary
 import team.mino.core.domain.repository.RoomRepository
 import team.mino.core.errorhandling.MinoDomainException
 
@@ -80,6 +81,13 @@ internal class FakeRoomRepository : RoomRepository {
 
     /** 값이 있으면 [updateRoom]이 이것이 완료될 때까지 멈춘다. */
     var updateGate: CompletableDeferred<Unit>? = null
+
+    /**
+     * 이 모듈의 테스트는 방 목록을 쓰지 않는다. 조용히 빈 목록을 돌려주면 "방이 없다"와 구분되지 않으므로,
+     * 호출되면 그 자리에서 드러나도록 둔다.
+     */
+    override suspend fun getRooms(): List<RoomSummary> =
+        error("FakeRoomRepository는 목록 조회를 지원하지 않는다. 필요해지면 응답을 지정하는 자리를 먼저 만든다.")
 
     override suspend fun getRoom(roomId: String): Room {
         getCallCount++
