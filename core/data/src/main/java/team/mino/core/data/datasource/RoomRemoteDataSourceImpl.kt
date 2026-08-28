@@ -1,6 +1,5 @@
 package team.mino.core.data.datasource
 
-import team.mino.core.data.datasource.mock.RoomMockStore
 import team.mino.core.data.network.dto.request.RoomRequest
 import team.mino.core.data.network.dto.response.RoomResponse
 import team.mino.core.data.network.dto.response.RoomSummaryResponse
@@ -8,25 +7,23 @@ import team.mino.core.data.network.service.RoomApiService
 import javax.inject.Inject
 
 /**
- * [RoomRemoteDataSource]의 유일한 구현. [getRooms]는 실서버(`RoomApiService`)를 부르고, 나머지 셋은
- * 서버가 아직 없어 mock([RoomMockStore])에 위임한다.
+ * [RoomRemoteDataSource]의 실서버 구현. 계약은
+ * `docs/specs/group-room-form/contracts/room-api.md` §4가 소유한다.
  *
- * 지연·식별자 생성·없는 방의 404는 모두 원천인 [RoomMockStore]가 갖는다. mock 쪽 메서드는 출처 호출만
- * 한다 — 실서버 구현이 `RoomApiService`에 위임만 하는 것과 같은 모양이어야, 전환 때 바뀌는 곳이
- * `docs/specs/group-room-form/contracts/room-api-mock.md` §4가 적은 세 곳으로 유지된다.
+ * 네 함수 모두 [RoomApiService]에 위임만 한다 — 봉투 해제는 서비스가, 도메인 변환은 Repository가 하므로
+ * 이 클래스에는 변환도 비즈니스 로직도 없다(`core/data/README.md` §5).
  */
 internal class RoomRemoteDataSourceImpl @Inject constructor(
     private val service: RoomApiService,
-    private val store: RoomMockStore,
 ) : RoomRemoteDataSource {
-    override suspend fun getRooms(): List<RoomSummaryResponse> = service.getRooms()
+    override suspend fun listRooms(): List<RoomSummaryResponse> = service.listRooms()
 
-    override suspend fun getRoom(roomId: String): RoomResponse = store.getRoom(roomId)
+    override suspend fun getRoom(roomId: String): RoomResponse = service.getRoom(roomId)
 
-    override suspend fun createRoom(request: RoomRequest): RoomResponse = store.createRoom(request)
+    override suspend fun createRoom(request: RoomRequest): RoomResponse = service.createRoom(request)
 
     override suspend fun updateRoom(
         roomId: String,
         request: RoomRequest,
-    ): RoomResponse = store.updateRoom(roomId, request)
+    ): RoomResponse = service.updateRoom(roomId, request)
 }

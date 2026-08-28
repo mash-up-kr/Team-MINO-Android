@@ -1,39 +1,34 @@
 package team.mino.core.data.network.dto.response
 
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * `GET /api/v1/rooms`(`RoomSummary`) 응답 DTO.
+ * 방 목록 조회(`GET /api/v1/rooms`) 응답의 방 한 건.
  *
- * 백엔드 draft OpenAPI(`Team-MINO-Node`, `KKardy/GM-111-outline-prd` 브랜치, `info.version: 0.1.0-draft`)
- * 기준 필드만 표현한다 — 근거: docs/specs/room-list/research.md D12.
- * spec이 요구하는 썸네일 콜라주·아바타 URL·최근 저장일·코멘트 수는 draft에 없어 이 DTO에 포함하지 않고,
- * `repository/mapper/RoomMapper.kt`에서 임시 목데이터/플레이스홀더로 채운다.
+ * 방 선택 시트(`RoomSummaryMapper`)와 room-list(`RoomMapper`)가 같은 응답을 서로 다른 도메인 모델로
+ * 읽는다 — 시트는 [id]·[name]·[description]·[type]·[color]·[pinCount]·[thumbnailList]만, room-list는
+ * 여기에 [ownerId]·[memberCount]까지 함께 쓴다. 서버가 `hasPlace`·`users`도 함께 내려줄 수 있지만
+ * (`?showHasPlaceId=`·`?showUsers=true` 지정 시) 어느 쪽 소비자도 쓰지 않아 담지 않고
+ * `ignoreUnknownKeys = true`가 흡수한다.
+ *
+ * [type]·[color]는 서버가 준 식별자 문자열이다. 도메인 값과의 대응은 각 소비자의 매퍼만 안다.
+ *
+ * [thumbnailList]는 **두 가지를 담는다** — 최근 핀의 대표 이미지 URL 목록이거나, 저장된 핀이 없을 때의
+ * 방장 아바타 색상 키 1개다. 그 판정과 폐기는 각 소비자의 매퍼가 하며 도메인에는 URL만 올라간다
+ * (`docs/specs/shared-link-receiver/research.md` R-022). 필드가 없는 응답에서도 파싱이 깨지지 않도록
+ * 기본값을 둔다.
+ *
+ * 계약은 `docs/specs/shared-link-receiver/contracts/room-list-api.md` §1·§2가 소유한다.
  */
 @Serializable
-data class RoomSummaryResponse(
+internal data class RoomSummaryResponse(
     val id: String,
-    val type: String,
     val name: String,
-    val description: String?,
-    val color: String?,
-    @SerialName("ownerId") val ownerId: String,
-    @SerialName("inviteCode") val inviteCode: String,
-    @SerialName("createdAt") val createdAt: String,
-    @SerialName("pinCount") val pinCount: Int,
-    @SerialName("memberCount") val memberCount: Int,
-    @SerialName("hasPlace") val hasPlace: Boolean? = null,
-    val users: List<RoomMemberResponse>? = null,
-)
-
-@Serializable
-data class RoomMemberResponse(
-    val id: String,
-    val avatar: RoomMemberAvatarResponse? = null,
-)
-
-@Serializable
-data class RoomMemberAvatarResponse(
-    val id: Int,
+    val description: String? = null,
+    val type: String,
+    val color: String,
+    val ownerId: String,
+    val pinCount: Int,
+    val memberCount: Int,
+    val thumbnailList: List<String> = emptyList(),
 )

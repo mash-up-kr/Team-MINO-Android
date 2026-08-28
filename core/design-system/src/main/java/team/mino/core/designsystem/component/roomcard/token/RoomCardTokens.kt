@@ -1,45 +1,39 @@
 package team.mino.core.designsystem.component.roomcard.token
 
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
 import team.mino.core.designsystem.component.avatar.MinoAvatarGroupSize
+import team.mino.core.designsystem.foundation.color.token.ColorAccessKeyToken
+import team.mino.core.designsystem.foundation.typography.token.TypographyAccessKeyToken
 
 /**
- * Card_Room 컴포넌트 슬롯 → 크기/간격 토큰 매핑. Figma `Card_Room`(15892-81881) 기준.
- *
- * 색·타이포 토큰은 design-system 내부(`internal`) API라 여기서 직접 들고 있지 않고,
- * `MinoRoomCardDefaults`가 `MinoAndroidTheme.colors`/`.typography`로 직접 조회한다.
+ * Card_Room 컴포넌트 슬롯 → 디자인 토큰 키 매핑과, 대응 토큰이 없어 값으로 둔 치수.
  */
 internal object RoomCardTokens {
     val VerticalPadding = 12.dp
 
-    /** 커버와 텍스트 블록 사이 간격. */
-    val CoverSpacing = 12.dp
+    /** 썸네일·텍스트 블록·트레일링 슬롯을 잇는 간격. */
+    val ItemSpacing = 12.dp
 
-    /** 텍스트 블록과 체크박스 사이 간격. */
-    val TrailingSpacing = 12.dp
+    /** 텍스트 블록의 고정 높이. 제목 묶음과 장소 개수 줄을 위아래 끝에 붙인다. */
+    val ContentHeight = 78.dp
 
-    /** 제목·메모 사이 간격("xs"). */
+    // Figma xs 변수 대응 — 토큰 미존재
     val TitleMemoSpacing = 4.dp
 
-    /** 메모·장소 개수 사이 간격("sm"). */
-    val MemoPlaceCountSpacing = 8.dp
-
-    val CoverSize = 80.dp
-
-    /** 썸네일 모서리. Figma `Room Thumbnail`의 `Radius` 변수(14)를 따른다. */
-    val CoverShape: Shape = RoundedCornerShape(14.dp)
+    // Figma xs 변수 대응 — 토큰 미존재
+    val PlaceCountTrailingSpacing = 4.dp
 
     val AvatarSize = MinoAvatarGroupSize.XSmall
 
     /** 그룹방에서 겹쳐 보여줄 참여자 아바타 최대 개수. 초과분은 렌더하지 않는다. */
     const val MAX_AVATAR_COUNT = 5
 
-    val CheckBoxSize = 26.dp
-    val CheckBoxBorderWidth = 1.dp
-    val CheckBoxIconSize = 18.dp
+    val TitleFont = TypographyAccessKeyToken.Body1NormalBold
+    val TitleColor = ColorAccessKeyToken.LabelNormal
 
-    /** Figma 카드의 `xs` 토큰(4)을 따른다. */
-    val CheckBoxShape: Shape = RoundedCornerShape(4.dp)
+    val MemoFont = TypographyAccessKeyToken.Label2Medium
+    val MemoColor = ColorAccessKeyToken.LabelAlternative
+
+    val PlaceCountFont = TypographyAccessKeyToken.Label2Bold
+    val PlaceCountColor = ColorAccessKeyToken.LabelAlternative
 }

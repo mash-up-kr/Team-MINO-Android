@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import team.mino.core.domain.model.Room
 import team.mino.core.domain.model.RoomDraft
+import team.mino.core.domain.model.RoomSummary
 import team.mino.core.domain.repository.RoomRepository
 
 /**
@@ -23,6 +24,8 @@ internal class FakeRoomRepository : RoomRepository {
     }
 
     override fun observeMyRooms(): Flow<List<Room>> = rooms
+
+    override suspend fun getRooms(): List<RoomSummary> = error("FakeRoomRepository는 getRooms를 지원하지 않는다.")
 
     override suspend fun getRoom(roomId: String): Room = rooms.value.first { it.id == roomId }
 

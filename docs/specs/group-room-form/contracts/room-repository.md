@@ -14,20 +14,29 @@
 
 ```
 interface RoomRepository {
+    suspend fun getRooms(): List<RoomSummary>            // 이 feature가 쓰지 않는다 — 아래 참고
     suspend fun getRoom(roomId: String): Room
     suspend fun createRoom(draft: RoomDraft): Room
     suspend fun updateRoom(roomId: String, draft: RoomDraft): Room
 }
 ```
 
-| 함수 | swagger 대응 | 성공 | 실패 | 근거 |
+> [!NOTE]
+> **`getRooms()`는 이 계약의 것이 아니다.** `shared-link-receiver`가 방 선택 시트를 위해 같은 인터페이스에 더한 함수이고, 그쪽 계약(`docs/specs/shared-link-receiver/contracts/room-list-api.md`)이 소유한다. 이 폼은 호출하지 않는다. 인터페이스에 함께 있다는 사실만 적어 두는 이유는, 이 계획이 3.0.0에서 **그 함수가 무는 데이터 경로를 건드리기 때문**이다([research.md](../research.md) R-032) — 도메인 시그니처는 그대로이고 바뀌는 것은 `:core:data` 안쪽의 배선뿐이다.
+
+| 함수 | 서버 API | 성공 | 실패 | 근거 |
 |---|---|---|---|---|
 | `getRoom` | `GET /api/v1/rooms/{roomId}` | 편집 폼을 채울 `Room` | `MinoDomainException` throw | FR-013 · [research.md](../research.md) R-005 |
 | `createRoom` | `POST /api/v1/rooms` | 만들어진 `Room`(`id`·`ownerId` 포함) | 〃 | FR-010 |
 | `updateRoom` | `PATCH /api/v1/rooms/{roomId}` | 수정된 `Room` | 〃 | FR-015 |
 
+위 표는 **이 feature가 쓰는 세 함수**만 다룬다.
+
+엔드포인트의 스키마 원문과 어긋난 지점은 [contracts/room-api.md](./room-api.md)가 소유한다. **세 함수의 시그니처는 mock에서 실서버로 바뀌면서 하나도 달라지지 않았다** — 이 계약이 출처를 모르게 설계된 결과다([research.md](../research.md) R-024).
+
 - **`Result`를 반환하지 않는다.** 실패는 throw다 — [`error_handling.md`](../../../conventions/error_handling.md) §3·§4.
 - **`Flow`를 반환하지 않는다.** 세 함수 모두 1회성 요청이고, 방 목록 관찰은 이 feature의 범위가 아니다.
+- **`getRooms()`의 계약을 이 문서가 바꾸지 않는다.** 정렬하지 않고 받은 순서를 돌려주는 것도, 실패를 빈 목록으로 수렴시키지 않는 것도 `shared-link-receiver`의 계약 그대로다. 3.0.0의 합병은 그 동작을 보존해야 한다([contracts/room-api.md](./room-api.md) §4 회귀 위험).
 - 반환 타입은 도메인 모델뿐이다. DTO가 이 경계를 넘지 않는다.
 
 ---
@@ -85,3 +94,5 @@ class CreateRoomUseCase @Inject constructor(
 | 편집 요청 실패 | `DomainErrorEmitter` | 〃 (편집 경로에는 모달이 없다) | UX-003·**EC-014** |
 
 리프는 `MinoDomainException.Network` · `Http(code)` 둘뿐이다. 문구 매핑의 소유자는 [`error_handling.md`](../../../conventions/error_handling.md) §5·§8이 정한다.
+
+**실서버가 붙으면서 도달 가능한 실패가 늘어난다.** mock에는 없던 `Http(401)`(세션·유저 등록 미충족) · `Http(403)`(방장 아님) · `Network`(연결 실패)가 실재하며, 어느 것도 **위 세 줄의 분류를 바꾸지 않는다** — 코드별로 분기하지 않기 때문이다([contracts/room-api.md](./room-api.md) §6). 세션 선행 조건 자체가 갖춰지지 않았을 때는 도메인 예외가 아니라 `IllegalStateException`이 오르며, 그 경로는 이 계약이 아니라 같은 문서 §7이 소유한다.

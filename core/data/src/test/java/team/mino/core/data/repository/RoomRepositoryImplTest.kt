@@ -42,10 +42,8 @@ class RoomRepositoryImplTest {
             type = type,
             name = "테스트 방",
             description = null,
-            color = null,
+            color = "gray",
             ownerId = "owner-1",
-            inviteCode = "invite-1",
-            createdAt = "2026-08-25T00:00:00Z",
             pinCount = 0,
             memberCount = 1,
         )

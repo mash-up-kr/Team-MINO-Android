@@ -9,6 +9,7 @@ import team.mino.core.designsystem.component.bottomnavigation.MinoBottomNavigati
 import team.mino.core.designsystem.component.button.MinoButtonColors
 import team.mino.core.designsystem.component.button.MinoTextButtonColors
 import team.mino.core.designsystem.component.category.MinoCategoryColors
+import team.mino.core.designsystem.component.checkbox.MinoCheckboxColors
 import team.mino.core.designsystem.component.chip.MinoChipColors
 import team.mino.core.designsystem.component.contentbadge.MinoContentBadgeColors
 import team.mino.core.designsystem.component.menu.MinoMenuItemColors
@@ -84,6 +85,7 @@ class ColorScheme(
     internal var assistiveTextButtonColorsCached: MinoTextButtonColors? = null
     internal var normalCategoryColorsCached: MinoCategoryColors? = null
     internal var alternativeCategoryColorsCached: MinoCategoryColors? = null
+    internal var defaultCheckboxColorsCached: MinoCheckboxColors? = null
     internal var defaultChipColorsCached: MinoChipColors? = null
     internal var defaultContentBadgeColorsCached: MinoContentBadgeColors? = null
     internal var accentContentBadgeColorsCached: MinoContentBadgeColors? = null

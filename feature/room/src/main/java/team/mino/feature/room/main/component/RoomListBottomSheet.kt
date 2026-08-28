@@ -28,13 +28,18 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.toImmutableList
+import team.mino.core.common.ui.component.RoomThumbnailFallback
 import team.mino.core.designsystem.component.roomcard.MinoRoomCard
+import team.mino.core.designsystem.component.roomcolorchip.MinoRoomColor
+import team.mino.core.designsystem.component.roomthumbnail.MinoRoomThumbnail
 import team.mino.core.designsystem.foundation.icons.MinoIcons
 import team.mino.core.designsystem.foundation.icons.icons.Close
 import team.mino.core.designsystem.foundation.icons.icons.Plus
 import team.mino.core.designsystem.theme.MinoAndroidTheme
 import team.mino.core.designsystem.util.modifier.clickable.rippleSingleClickable
 import team.mino.core.domain.model.Room
+import team.mino.core.domain.model.RoomThumbnail
 import team.mino.feature.room.main.model.BottomSheetLevel
 import team.mino.feature.room.main.model.toRoomCardParams
 
@@ -282,7 +287,58 @@ private fun RoomListRoomCard(
         participantImageUrls = params.participantImageUrls,
         onClick = onClick,
         modifier = modifier.padding(horizontal = RoomListBottomSheetTokens.RoomCardHorizontalPadding),
-        coverImageUrl = params.coverImageUrl,
+        thumbnail = { RoomCardThumbnail(thumbnail = params.thumbnail) },
         memo = params.memo,
     )
 }
+
+/**
+ * [RoomCardUiModel.thumbnail]을 `MinoRoomCard`의 컴포저블 슬롯으로 그린다.
+ *
+ * [RoomThumbnail.Collage]는 [MinoRoomThumbnail]의 콜라주 배치를 그대로 쓰고, 사진이 없는
+ * [RoomThumbnail.ColorAndCharacter]는 [RoomThumbnailFallback]으로 방 대표 색 캐릭터를 그린다 —
+ * `:feature:roomform`의 `RoomColorUiModel.chip`과 같은 이유로 이 매핑을 `:feature:room`이 갖는다
+ * (`docs/adr/2026-08-14-room-color-palette-in-design-system.md`).
+ */
+@Composable
+private fun RoomCardThumbnail(
+    thumbnail: RoomThumbnail,
+    modifier: Modifier = Modifier,
+) {
+    when (thumbnail) {
+        is RoomThumbnail.Collage ->
+            MinoRoomThumbnail(
+                imageUrls = thumbnail.imageUrls.toImmutableList(),
+                modifier = modifier,
+                fallback = { RoomThumbnailFallback(color = null, modifier = Modifier.fillMaxSize()) },
+            )
+
+        is RoomThumbnail.ColorAndCharacter ->
+            RoomThumbnailFallback(
+                color = thumbnail.color?.toMinoRoomColor(),
+                modifier = modifier.fillMaxSize(),
+            )
+    }
+}
+
+/**
+ * `:feature:roomform`의 `RoomColorUiModel.chip`과 같은 대응표 — 팔레트(`:core:design-system`)와
+ * 도메인 색 식별자 문자열([RoomThumbnail.ColorAndCharacter.color])을 둘 다 아는 feature가 소유한다.
+ * 아는 식별자가 아니면 회색(`null`)으로 읽는다([RoomMapper.toRoomColor]와 같은 이유).
+ */
+private fun String.toMinoRoomColor(): MinoRoomColor? =
+    when (this) {
+        "red" -> MinoRoomColor.Red
+        "red_orange" -> MinoRoomColor.RedOrange
+        "orange" -> MinoRoomColor.Orange
+        "lime" -> MinoRoomColor.Lime
+        "green" -> MinoRoomColor.Green
+        "cyan" -> MinoRoomColor.Cyan
+        "violet" -> MinoRoomColor.Violet
+        "pink" -> MinoRoomColor.Pink
+        "blue" -> MinoRoomColor.Blue
+        "brown" -> MinoRoomColor.Brown
+        "light_blue" -> MinoRoomColor.LightBlue
+        "purple" -> MinoRoomColor.Purple
+        else -> null
+    }
