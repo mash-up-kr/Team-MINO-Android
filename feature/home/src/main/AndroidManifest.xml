@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  `가까운순` 덱은 서버가 좌표를 필수로 요구하고, 좌표는 이 권한 없이 얻을 수 없다.
+  거부는 오류가 아니라 정상 흐름이라 선언만 두고 요청 시점은 화면이 정한다(spec EC-009).
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
+</manifest>
