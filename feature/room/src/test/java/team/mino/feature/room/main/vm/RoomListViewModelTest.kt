@@ -19,11 +19,15 @@ import org.junit.Test
 import team.mino.core.domain.model.MapMarkerSortOption
 import team.mino.core.domain.model.PlaceCategoryFilter
 import team.mino.core.domain.model.Room
+import team.mino.core.domain.model.RoomColor
 import team.mino.core.domain.model.RoomListSortOption
 import team.mino.core.domain.model.RoomMemberSummary
 import team.mino.core.domain.model.RoomThumbnail
+import team.mino.core.domain.usecase.EnsureAnonymousSessionUseCase
+import team.mino.feature.room.fake.FakeAnonymousAuthRepository
 import team.mino.feature.room.fake.FakeLocationContext
 import team.mino.feature.room.fake.FakeRoomFormLauncher
+import team.mino.feature.room.fake.FakeRoomPlacesRepository
 import team.mino.feature.room.fake.FakeRoomRepository
 import team.mino.feature.room.main.component.DefaultMapCenter
 import team.mino.feature.room.main.model.BottomSheetLevel
@@ -45,6 +49,7 @@ import kotlin.time.Instant
 @OptIn(ExperimentalCoroutinesApi::class, ExperimentalTime::class)
 class RoomListViewModelTest {
     private val roomRepository = FakeRoomRepository()
+    private val roomPlacesRepository = FakeRoomPlacesRepository()
 
     @Before
     fun setUp() {
@@ -327,6 +332,8 @@ class RoomListViewModelTest {
         RoomListViewModel(
             context = FakeLocationContext(permissionGranted = permissionGranted),
             roomRepository = roomRepository,
+            roomPlacesRepository = roomPlacesRepository,
+            ensureAnonymousSessionUseCase = EnsureAnonymousSessionUseCase(FakeAnonymousAuthRepository()),
             roomFormLauncher = FakeRoomFormLauncher(),
         )
 
@@ -346,12 +353,13 @@ class RoomListViewModelTest {
         Room(
             id = id,
             name = id,
-            description = null,
-            color = null,
+            description = "",
+            color = RoomColor.GRAY,
+            ownerId = "owner",
             isPersonal = isPersonal,
             placeCount = 0,
             thumbnail = RoomThumbnail.ColorAndCharacter(color = null),
-            memberSummary = RoomMemberSummary(visibleAvatarUrls = emptyList(), overflowCount = 0),
+            memberSummary = RoomMemberSummary(visibleAvatars = emptyList(), overflowCount = 0),
             lastPlaceSavedAt = lastPlaceSavedAt,
             commentCount = 0,
         )

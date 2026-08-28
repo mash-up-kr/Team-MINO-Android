@@ -39,9 +39,17 @@ private fun RoomListBottomSheetFullPreview() {
     RoomListBottomSheetPreviewContainer(sheetLevel = BottomSheetLevel.FULL)
 }
 
+/** `Full`, 공동방 0개 — Figma `2661-157259`. 개인방 카드 아래로 Nudge가 남은 높이를 채운다. */
+@UiModePreviews
+@Composable
+private fun RoomListBottomSheetFullNudgePreview() {
+    RoomListBottomSheetPreviewContainer(sheetLevel = BottomSheetLevel.FULL, showNudge = true)
+}
+
 @Composable
 private fun RoomListBottomSheetPreviewContainer(
     sheetLevel: BottomSheetLevel,
+    showNudge: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     MinoAndroidAppTheme {
@@ -59,10 +67,10 @@ private fun RoomListBottomSheetPreviewContainer(
             ) {
                 RoomListRoomCardList(
                     personalRoom = PERSONAL_ROOM,
-                    groupRooms = persistentListOf(GROUP_ROOM).toImmutableList(),
-                    showGhostCard = false,
+                    groupRooms = if (showNudge) persistentListOf() else persistentListOf(GROUP_ROOM).toImmutableList(),
+                    showNudge = showNudge,
                     onRoomCardClick = {},
-                    onGhostCardClick = {},
+                    onNudgeCreateClick = {},
                 )
             }
         }

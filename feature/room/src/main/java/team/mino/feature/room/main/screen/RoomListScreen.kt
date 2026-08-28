@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
@@ -57,7 +58,7 @@ import team.mino.core.domain.model.RoomListSortOption
 import team.mino.feature.room.main.component.RoomListBottomSheet
 import team.mino.feature.room.main.component.RoomListMap
 import team.mino.feature.room.main.component.RoomListRoomCardList
-import team.mino.feature.room.main.component.RoomNudgeSheet
+import team.mino.feature.room.main.component.RoomNudgeAutoSheet
 import team.mino.feature.room.main.component.bottomSheetHeightOrNull
 import team.mino.feature.room.main.model.BottomSheetLevel
 import team.mino.feature.room.main.vm.RoomListIntent
@@ -120,8 +121,7 @@ internal fun RoomListScreen(
         RoomListMap(
             mapCenter = state.mapCenter,
             mapCenterRequestId = state.mapCenterRequestId,
-            personalRoom = state.personalRoom,
-            groupRooms = state.groupRooms,
+            mapPins = state.mapPins,
             modifier = Modifier
                 .fillMaxWidth()
                 .layout { measurable, constraints ->
@@ -173,7 +173,7 @@ internal fun RoomListScreen(
                 onAddRoomClick = { onIntent(RoomListIntent.OnAddRoomClick) },
                 modifier = Modifier.align(Alignment.BottomCenter),
             ) {
-                Column {
+                Column(modifier = Modifier.fillMaxHeight()) {
                     // Figma 003-1-2(half)·003-2-3(full) 대조 — 정렬 칩은 Full 전용이 아니라 Half에서도
                     // 보인다(FR-005). Peek는 헤더만 그리므로 content() 자체가 호출되지 않아 자동으로 숨는다.
                     RoomListSortChipRow(
@@ -183,23 +183,24 @@ internal fun RoomListScreen(
                     RoomListRoomCardList(
                         personalRoom = state.personalRoom,
                         groupRooms = state.groupRooms,
-                        showGhostCard = state.showGhostCard,
+                        // Figma 003-1-3(full_개인방만 존재) — 넛지는 개인방 카드 바로 아래, 시트 남은
+                        // 높이를 채우며 뜬다(화면 하단에 별도로 띄우면 개인방 카드와 넛지 사이가 붕 뜬다).
+                        // Peek·Half에서도 groupRooms.isEmpty()는 true일 수 있지만 Full에서만 보인다.
+                        showNudge = state.showNudge && state.sheetLevel == BottomSheetLevel.FULL,
                         onRoomCardClick = { onIntent(RoomListIntent.OnRoomCardClick(it)) },
-                        onGhostCardClick = { onIntent(RoomListIntent.OnGhostCardClick) },
+                        onNudgeCreateClick = { onIntent(RoomListIntent.OnNudgeCreateClick) },
+                        modifier = Modifier.weight(1f),
                     )
                 }
             }
 
-            if (state.showNudge) {
-                RoomNudgeSheet(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                        .background(
-                            color = MinoAndroidTheme.colors.backgroundElevatedNormal,
-                            shape = RoomListNudgeOverlayTokens.Shape,
-                        ),
+            // [FR-008] 공동방 0개 상태로 탭에 진입할 때마다 자동으로 뜨는 딤 팝업. `Full`에서는 인라인
+            // 넛지 카드([RoomListRoomCardList]의 showNudge)가 이미 같은 CTA를 보여주므로
+            // [RoomListUiState.isNudgeSheetVisible]가 중복 노출을 피한다.
+            if (state.isNudgeSheetVisible) {
+                RoomNudgeAutoSheet(
                     onCreateClick = { onIntent(RoomListIntent.OnNudgeCreateClick) },
+                    onDismissRequest = { onIntent(RoomListIntent.OnNudgeDismissClick) },
                 )
             }
 
@@ -227,13 +228,6 @@ internal fun RoomListScreen(
             }
         }
     }
-}
-
-/**
- * [RoomNudgeSheet] 오버레이 배경 모서리. Figma 넛지 카드(`2661-157272`)의 `borderRadius: 12px`.
- */
-private object RoomListNudgeOverlayTokens {
-    val Shape = RoundedCornerShape(12.dp)
 }
 
 /**
