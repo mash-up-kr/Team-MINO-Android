@@ -6,6 +6,7 @@ import team.mino.core.data.network.dto.response.RoomResponse
 import team.mino.core.domain.model.Room
 import team.mino.core.domain.model.RoomColor
 import team.mino.core.domain.model.RoomDraft
+import team.mino.core.domain.model.ProfileAvatar
 import team.mino.core.domain.model.RoomMember
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
@@ -74,7 +75,7 @@ internal fun RoomMemberDetailResponse.toDomain(): RoomMember =
     RoomMember(
         userId = userId,
         nickname = nickname,
-        avatarUrl = avatar,
+        avatar = avatar?.let { AVATARS_BY_COLOR[it.color] } ?: ProfileAvatar.Default,
         isOwner = isOwner,
         joinedAt = Instant.parse(joinedAt),
     )

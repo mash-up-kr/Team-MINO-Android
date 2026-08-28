@@ -81,11 +81,17 @@ internal class RoomApiService @Inject constructor(
 
     /** `GET /api/v1/rooms/{roomId}/members`. */
     suspend fun getMembers(roomId: String): List<RoomMemberDetailResponse> =
-        client.get("api/v1/rooms/$roomId/members").body()
+        client
+            .get("api/v1/rooms/$roomId/members")
+            .body<MinoResponse<List<RoomMemberDetailResponse>>>()
+            .data
 
     /** `POST /api/v1/rooms/{roomId}/invitations`. 개인방이면 서버가 `403 PERSONAL_ROOM_NOT_ALLOWED`. */
     suspend fun createInvitation(roomId: String): RoomInvitationResponse =
-        client.post("api/v1/rooms/$roomId/invitations").body()
+        client
+            .post("api/v1/rooms/$roomId/invitations")
+            .body<MinoResponse<RoomInvitationResponse>>()
+            .data
 
     /** `DELETE /api/v1/rooms/{roomId}/members/me`. 방장이 다른 멤버와 함께 호출하면 `409 OWNER_TRANSFER_REQUIRED`. */
     suspend fun leaveRoom(roomId: String) {

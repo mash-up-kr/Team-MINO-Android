@@ -11,12 +11,15 @@ import kotlin.time.Instant
  *
  * [RoomMemberSummary]("방 카드에 그리는 최대 4개 아바타 + overflow count" 축약 표현)와는 다른 타입이다 —
  * 서로 다른 API 응답(카드 목록 vs 멤버 목록)에서 오므로 하나를 다른 하나로 파생시키지 않는다.
+ *
+ * [avatar]는 서버가 URL이 아니라 색 키로 내려주는 [ProfileAvatar] 12종 중 하나다(`ProfileMapper`의
+ * 색 대응표를 공유). 모르는 값·없는 값은 [ProfileAvatar.Default]로 읽는다.
  */
 @OptIn(ExperimentalTime::class)
 data class RoomMember(
     val userId: String,
     val nickname: String,
-    val avatarUrl: String?,
+    val avatar: ProfileAvatar,
     val isOwner: Boolean,
     val joinedAt: Instant,
 )

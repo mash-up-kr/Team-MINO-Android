@@ -12,6 +12,7 @@ import kotlinx.collections.immutable.persistentListOf
 import team.mino.core.designsystem.theme.MinoAndroidAppTheme
 import team.mino.core.designsystem.theme.MinoAndroidTheme
 import team.mino.core.designsystem.util.preview.UiModePreviews
+import team.mino.core.domain.model.ProfileAvatar
 import team.mino.core.domain.model.RoomMember
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
@@ -57,7 +58,7 @@ private fun RoomInviteSheetIssuingPreview() {
 }
 
 private val PREVIEW_INVITE_MEMBERS = persistentListOf(
-    RoomMember(userId = "user-me", nickname = "나", avatarUrl = null, isOwner = true, joinedAt = Clock.System.now()),
-    RoomMember(userId = "user-2", nickname = "박지훈", avatarUrl = null, isOwner = false, joinedAt = Clock.System.now()),
-    RoomMember(userId = "user-3", nickname = "채윤지", avatarUrl = null, isOwner = false, joinedAt = Clock.System.now()),
+    RoomMember(userId = "user-me", nickname = "나", avatar = ProfileAvatar.Default, isOwner = true, joinedAt = Clock.System.now()),
+    RoomMember(userId = "user-2", nickname = "박지훈", avatar = ProfileAvatar.Person2, isOwner = false, joinedAt = Clock.System.now()),
+    RoomMember(userId = "user-3", nickname = "채윤지", avatar = ProfileAvatar.Person7, isOwner = false, joinedAt = Clock.System.now()),
 )

@@ -27,6 +27,7 @@ import team.mino.core.designsystem.component.avatar.MinoAvatarVariant
 import team.mino.core.designsystem.theme.MinoAndroidTheme
 import team.mino.core.designsystem.util.modifier.surface.surface
 import team.mino.core.domain.model.RoomMember
+import team.mino.feature.room.detail.model.image
 
 /**
  * [RoomInviteSheet] 치수 토큰. 시트 chrome(핸들·모서리)은 `RoomSelectSheet`(같은 디렉터리)와 동일 패턴을
@@ -174,7 +175,7 @@ private fun RoomInviteMemberRow(
         MinoAvatar(
             variant = MinoAvatarVariant.Person,
             size = MinoAvatarSize.Large,
-            imageUrl = member.avatarUrl,
+            profileAvatar = member.avatar.image,
         )
         Text(
             text = member.nickname,
