@@ -325,7 +325,7 @@ internal class HomeViewModel
             }
             if (sort == DeckSort.NEAREST && grantedLocation == null) {
                 roomAwaitingLocation = room
-                updateState { copy(phase = HomePhase.LOADING) }
+                updateState { copy(phase = HomePhase.LOADING, isTransitioning = false) }
                 postSideEffect(HomeSideEffect.RequestLocationPermission)
                 return
             }
@@ -355,6 +355,7 @@ internal class HomeViewModel
                     phase = HomePhase.DECK,
                     sort = sort,
                     cards = deck.cards.toImmutableList(),
+                    isTransitioning = false,
                     undoable = null,
                     loadError = null,
                 )
@@ -386,6 +387,7 @@ internal class HomeViewModel
                             // 볼 것이 있었는지가 완료 안내와 빈 상태 안내를 가른다(EC-011, FR-020).
                             phase = if (hasShownCard) HomePhase.ALL_EXHAUSTED else HomePhase.EMPTY,
                             cards = persistentListOf(),
+                            isTransitioning = false,
                             undoable = null,
                             loadError = null,
                         )
@@ -454,7 +456,7 @@ internal class HomeViewModel
          * 담는 것은 문구가 아니라 리프다. 사용자 액션의 일회성 실패는 여기로 오지 않는다(같은 표 2행).
          */
         private fun showLoadError(error: MinoDomainException) =
-            updateState { copy(phase = HomePhase.ERROR, loadError = error) }
+            updateState { copy(phase = HomePhase.ERROR, isTransitioning = false, loadError = error) }
 
         private companion object {
             /** 예고 툴팁이 뜨는 잔여 카드 수(FR-015). */
