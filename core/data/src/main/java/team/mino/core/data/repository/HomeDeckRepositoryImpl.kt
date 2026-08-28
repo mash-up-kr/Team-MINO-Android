@@ -3,7 +3,7 @@ package team.mino.core.data.repository
 import team.mino.core.common.kotlin.geo.GeoPoint
 import team.mino.core.data.datasource.DeckRemoteDataSource
 import team.mino.core.data.datasource.PinRemoteDataSource
-import team.mino.core.data.datasource.RoomListRemoteDataSource
+import team.mino.core.data.datasource.RoomRemoteDataSource
 import team.mino.core.data.network.dto.request.PinDuplicateRequest
 import team.mino.core.data.repository.mapper.toDomain
 import team.mino.core.domain.model.Deck
@@ -16,7 +16,7 @@ import javax.inject.Inject
  * 홈 덱 계약(`docs/specs/home-deck-exploration/contracts/home-ui.md` §4.2)의 구현.
  *
  * 출처가 함수마다 갈린다 — 덱은 [DeckRemoteDataSource]의 mock을 물고(`/cards` 미배포, 계약 §4),
- * 방 목록은 [RoomListRemoteDataSource]로, 두 확인 이벤트는 [PinRemoteDataSource]로 실서버에 붙는다.
+ * 방 목록은 [RoomRemoteDataSource]로, 두 확인 이벤트는 [PinRemoteDataSource]로 실서버에 붙는다.
  * 방 목록은 [RoomRepositoryImpl.getRooms]와 **같은 DataSource·같은 Mapper**를 쓰므로 조회가 두 벌로
  * 갈라지지 않는다. 도메인 계약이 둘로 나뉜 것은
  * 홈이 `pinCount`로 다음 방을 고르는 자기 용도를 §4.2에 명시했기 때문이고, Repository끼리는 의존하지
@@ -26,11 +26,11 @@ import javax.inject.Inject
  */
 internal class HomeDeckRepositoryImpl @Inject constructor(
     private val deckRemoteDataSource: DeckRemoteDataSource,
-    private val roomListRemoteDataSource: RoomListRemoteDataSource,
+    private val roomRemoteDataSource: RoomRemoteDataSource,
     private val pinRemoteDataSource: PinRemoteDataSource,
 ) : HomeDeckRepository {
     override suspend fun getRoomSummaries(): List<RoomSummary> =
-        roomListRemoteDataSource.listRooms().map { it.toDomain() }
+        roomRemoteDataSource.listRooms().map { it.toDomain() }
 
     /**
      * 받은 카드를 **그대로** 담는다. 10장 절단은 서버가 이미 했으므로 여기서 다시 자르지도 정렬하지도 않는다
