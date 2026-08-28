@@ -35,8 +35,8 @@ Android 다중 모듈이다. 모듈 경계와 파일 배치는 [plan.md](./plan.
 
 **목적**: 스텁 상태인 `:feature:home`을 이 기능이 들어갈 수 있는 모양으로 만든다
 
-- [ ] T001 `feature/home/build.gradle.kts`에 의존성 추가 — `:core:domain`·`:core:common:ui`·`:core:design-system`·`:core:map`(GeoPoint)·`:core:navigation`
-- [ ] T002 `feature/home/src/main/java/team/mino/feature/home/main/vm/HomeUiState.kt`의 플레이스홀더 `title: String` 제거 — 이후 T021이 실제 필드를 채운다
+- [X] T001 `feature/home/build.gradle.kts`에 의존성 추가 — `:core:domain`·`:core:common:ui`·`:core:design-system`·`:core:map`(GeoPoint)·`:core:navigation`
+- [X] T002 `feature/home/src/main/java/team/mino/feature/home/main/vm/HomeUiState.kt`의 플레이스홀더 `title: String` 제거 — 이후 T021이 실제 필드를 채운다
 
 **체크포인트**: 모듈이 이 기능의 의존성을 갖고 빌드된다
 
@@ -48,42 +48,42 @@ Android 다중 모듈이다. 모듈 경계와 파일 배치는 [plan.md](./plan.
 
 ### 2-1. 도메인 모델 ([data-model.md](./data-model.md) §1)
 
-- [ ] T003 [P] `core/domain/.../model/DeckSort.kt`에 `DeckSort` enum 생성 — **선언 순서가 곧 우선순위**(`GGUK_PICK`·`LATEST`·`NEAREST`). US1·US3이 쓴다
-- [ ] T004 [P] `core/domain/.../model/PlaceLabel.kt`에 `PlaceLabel` enum 생성 — 서버 `labelGroup`과 1:1(`WORTH_VISITING`·`MANY_SAVES`·`MANY_COMMENTS`·`MANY_VIEWS`). US2가 쓴다
-- [ ] T005 [P] `core/domain/.../model/PlaceCard.kt`에 `PlaceCard`·`Registrant` 생성 — 저장 경과일 필드를 두지 않는다. US1·US2가 쓴다
-- [ ] T006 [P] `core/domain/.../model/Deck.kt`에 `Deck`·`DeckKey` 생성. US1·US3이 쓴다
-- [ ] T007 [P] `core/domain/.../model/RoomSummary.kt`에 `RoomSummary` 생성 — 기존 `Room`을 넓히지 않는 이유는 [data-model.md](./data-model.md) §1.2 참고. US1·US3·US4가 쓴다
-- [ ] T008 [P] `core/domain/.../model/NextDeck.kt`에 `DeckContext`·`NextDeck` 생성. US3이 쓴다
+- [X] T003 [P] `core/domain/.../model/DeckSort.kt`에 `DeckSort` enum 생성 — **선언 순서가 곧 우선순위**(`GGUK_PICK`·`LATEST`·`NEAREST`). US1·US3이 쓴다
+- [X] T004 [P] `core/domain/.../model/PlaceLabel.kt`에 `PlaceLabel` enum 생성 — 서버 `labelGroup`과 1:1(`WORTH_VISITING`·`MANY_SAVES`·`MANY_COMMENTS`·`MANY_VIEWS`). US2가 쓴다
+- [X] T005 [P] `core/domain/.../model/PlaceCard.kt`에 `PlaceCard`·`Registrant` 생성 — 저장 경과일 필드를 두지 않는다. US1·US2가 쓴다
+- [X] T006 [P] `core/domain/.../model/Deck.kt`에 `Deck`·`DeckKey` 생성. US1·US3이 쓴다
+- [X] T007 [P] `core/domain/.../model/RoomSummary.kt`에 `RoomSummary` 생성 — 기존 `Room`을 넓히지 않는 이유는 [data-model.md](./data-model.md) §1.2 참고. US1·US3·US4가 쓴다
+- [X] T008 [P] `core/domain/.../model/NextDeck.kt`에 `DeckContext`·`NextDeck` 생성. US3이 쓴다
 
 ### 2-2. 전환 규칙 (US3의 심장)
 
-- [ ] T009 [P] [US3] `core/domain/src/test/kotlin/.../usecase/ResolveNextDeckUseCaseTest.kt`에 전환 규칙 테스트 작성 — TS-015·TS-016·TS-017·TS-018·TS-019·TS-021·TS-024·EC-009. **구현 전에 작성하고 실패를 확인한다**
-- [ ] T010 `core/domain/.../usecase/ResolveNextDeckUseCase.kt` 구현 — 판정 순서는 [contracts/home-ui.md](./contracts/home-ui.md) §4.1이 소유한다. 부수효과·I/O 없는 순수 함수 (T003·T006·T007·T008에 의존)
+- [X] T009 [P] [US3] `core/domain/src/test/kotlin/.../usecase/ResolveNextDeckUseCaseTest.kt`에 전환 규칙 테스트 작성 — TS-015·TS-016·TS-017·TS-018·TS-019·TS-021·TS-024·EC-009. **구현 전에 작성하고 실패를 확인한다**
+- [X] T010 `core/domain/.../usecase/ResolveNextDeckUseCase.kt` 구현 — 판정 순서는 [contracts/home-ui.md](./contracts/home-ui.md) §4.1이 소유한다. 부수효과·I/O 없는 순수 함수 (T003·T006·T007·T008에 의존)
 
 ### 2-3. Repository 계약
 
-- [ ] T011 [P] `core/domain/.../repository/HomeDeckRepository.kt` 인터페이스 정의 — 시그니처는 [contracts/home-ui.md](./contracts/home-ui.md) §4.2 그대로. `getDeck`의 `location: GeoPoint?`를 빠뜨리지 않는다(R-013). US1~US4가 쓴다
-- [ ] T012 [P] `core/domain/.../repository/HomePreferencesRepository.kt` 인터페이스 정의 — [contracts/home-ui.md](./contracts/home-ui.md) §4.3. US1(시작 방)·US5(가이드 이력)가 쓴다
+- [X] T011 [P] `core/domain/.../repository/HomeDeckRepository.kt` 인터페이스 정의 — 시그니처는 [contracts/home-ui.md](./contracts/home-ui.md) §4.2 그대로. `getDeck`의 `location: GeoPoint?`를 빠뜨리지 않는다(R-013). US1~US4가 쓴다
+- [X] T012 [P] `core/domain/.../repository/HomePreferencesRepository.kt` 인터페이스 정의 — [contracts/home-ui.md](./contracts/home-ui.md) §4.3. US1(시작 방)·US5(가이드 이력)가 쓴다
 
 ### 2-4. 데이터 계층 ([contracts/deck-api.md](./contracts/deck-api.md) §4)
 
-- [ ] T013 [P] `core/data/.../network/dto/response/CardResponse.kt` 생성 — [contracts/deck-api.md](./contracts/deck-api.md) §2.2의 응답 스키마를 그대로 옮긴다
-- [ ] T014 `core/data/.../datasource/DeckRemoteDataSource.kt` 인터페이스 정의 — `getCards(roomId, sort, lat?, lng?)` (T013에 의존)
-- [ ] T015 `core/data/.../datasource/DeckMockRemoteDataSourceImpl.kt` 구현 — **[contracts/deck-api.md](./contracts/deck-api.md) §4의 "반드시 재현해야 하는 경우" 5종을 모두 재현한다.** 빠뜨리면 TS-005·TS-014·TS-017·TS-023·EC-013이 검증되지 않는다 (T014에 의존)
-- [ ] T016 [P] `core/data/.../repository/mapper/DeckMapper.kt` 작성 — `CardResponse` → `PlaceCard`, `labelGroup` → `PlaceLabel`, `RoomResponse` → `RoomSummary` (T005·T007·T013에 의존)
-- [ ] T017 `core/data/.../repository/HomeDeckRepositoryImpl.kt` 구현 — **10장 절단을 다시 하지 않는다**(서버가 잘라 준다). `sort == NEAREST`인데 좌표가 `null`이면 요청하지 않고 빈 덱 반환 (T011·T014·T016에 의존)
-- [ ] T018 [P] `core/data/.../datasource/HomePreferencesLocalDataSource.kt`와 구현체 작성 — 기존 `DataStoreModule` 사용. 저장 대상은 마지막 방·가이드 이력 **둘뿐**
-- [ ] T019 `core/data/.../repository/HomePreferencesRepositoryImpl.kt` 구현 (T012·T018에 의존)
-- [ ] T020 [P] `core/data/.../datasource/di/DeckDataSourceModule.kt`와 `core/data/.../repository/di/HomeRepositoryModule.kt` 작성 — mock 바인딩은 **실서버 전환 지점 ②**([contracts/deck-api.md](./contracts/deck-api.md) §4)
+- [X] T013 [P] `core/data/.../network/dto/response/CardResponse.kt` 생성 — [contracts/deck-api.md](./contracts/deck-api.md) §2.2의 응답 스키마를 그대로 옮긴다
+- [X] T014 `core/data/.../datasource/DeckRemoteDataSource.kt` 인터페이스 정의 — `getCards(roomId, sort, lat?, lng?)` (T013에 의존)
+- [X] T015 `core/data/.../datasource/DeckMockRemoteDataSourceImpl.kt` 구현 — **[contracts/deck-api.md](./contracts/deck-api.md) §4의 "반드시 재현해야 하는 경우" 5종을 모두 재현한다.** 빠뜨리면 TS-005·TS-014·TS-017·TS-023·EC-013이 검증되지 않는다 (T014에 의존)
+- [X] T016 [P] `core/data/.../repository/mapper/DeckMapper.kt` 작성 — `CardResponse` → `PlaceCard`, `labelGroup` → `PlaceLabel`, `RoomResponse` → `RoomSummary` (T005·T007·T013에 의존)
+- [X] T017 `core/data/.../repository/HomeDeckRepositoryImpl.kt` 구현 — **10장 절단을 다시 하지 않는다**(서버가 잘라 준다). `sort == NEAREST`인데 좌표가 `null`이면 요청하지 않고 빈 덱 반환 (T011·T014·T016에 의존)
+- [X] T018 [P] `core/data/.../datasource/HomePreferencesLocalDataSource.kt`와 구현체 작성 — 기존 `DataStoreModule` 사용. 저장 대상은 마지막 방·가이드 이력 **둘뿐**
+- [X] T019 `core/data/.../repository/HomePreferencesRepositoryImpl.kt` 구현 (T012·T018에 의존)
+- [X] T020 [P] `core/data/.../datasource/di/DeckDataSourceModule.kt`와 `core/data/.../repository/di/HomeRepositoryModule.kt` 작성 — mock 바인딩은 **실서버 전환 지점 ②**([contracts/deck-api.md](./contracts/deck-api.md) §4)
 
 ### 2-5. feature 골격
 
-- [ ] T021 `feature/home/.../main/vm/HomeUiState.kt`·`HomeIntent.kt`·`HomeSideEffect.kt` 정의 — 필드·Intent 13종·SideEffect 4종은 [contracts/home-ui.md](./contracts/home-ui.md) §2·§3, [data-model.md](./data-model.md) §3이 소유한다. US1~US5 전부가 쓴다
-- [ ] T022 [P] `feature/home/.../main/model/HomePhase.kt`·`HomeTooltip.kt` 생성 (T021과 함께 쓰인다)
-- [ ] T023 `feature/home/.../main/vm/HomeViewModel.kt` 골격 — `MviContainer` 위임, `processIntent` 분기 뼈대만. 각 스토리가 자기 분기를 채운다 (T021에 의존)
-- [ ] T024 `feature/home/.../HomeNavigation.kt` 갱신 — 콜백을 `onNavigateToPlaceDetail`·`onNavigateToRoomForm`·`onCreateRoomFromEmpty` 3종으로 교체하고 **스텁이 남긴 `onNavigateToSample`·`onRequestSampleResult`를 제거**한다([contracts/home-ui.md](./contracts/home-ui.md) §1). `:feature:main`의 호출부도 함께 고친다
-- [ ] T025 [P] `feature/home/.../main/model/RoomAppearance.kt` 작성 — `RoomColor` → (배경색·캐릭터 에셋) 대응표. 팔레트는 `:core:design-system`이 소유하고 대응만 여기서 한다(R-010). US1·US4가 쓴다
-- [ ] T026 [P] 방 캐릭터 이미지 에셋을 `feature/home/src/main/res/`에 추가 — 배치 근거는 [`component-asset-placement.md`](../../conventions/component-asset-placement.md)
+- [X] T021 `feature/home/.../main/vm/HomeUiState.kt`·`HomeIntent.kt`·`HomeSideEffect.kt` 정의 — 필드·Intent 13종·SideEffect 4종은 [contracts/home-ui.md](./contracts/home-ui.md) §2·§3, [data-model.md](./data-model.md) §3이 소유한다. US1~US5 전부가 쓴다
+- [X] T022 [P] `feature/home/.../main/model/HomePhase.kt`·`HomeTooltip.kt` 생성 (T021과 함께 쓰인다)
+- [X] T023 `feature/home/.../main/vm/HomeViewModel.kt` 골격 — `MviContainer` 위임, `processIntent` 분기 뼈대만. 각 스토리가 자기 분기를 채운다 (T021에 의존)
+- [X] T024 `feature/home/.../HomeNavigation.kt` 갱신 — 콜백을 `onNavigateToPlaceDetail`·`onNavigateToRoomForm`·`onCreateRoomFromEmpty` 3종으로 교체하고 **스텁이 남긴 `onNavigateToSample`·`onRequestSampleResult`를 제거**한다([contracts/home-ui.md](./contracts/home-ui.md) §1). `:feature:main`의 호출부도 함께 고친다
+- [X] T025 [P] `feature/home/.../main/model/RoomAppearance.kt` 작성 — `RoomColor` → (배경색·캐릭터 에셋) 대응표. 팔레트는 `:core:design-system`이 소유하고 대응만 여기서 한다(R-010). US1·US4가 쓴다
+- [X] T026 [P] 방 캐릭터 이미지 에셋을 `feature/home/src/main/res/`에 추가 — 배치 근거는 [`component-asset-placement.md`](../../conventions/component-asset-placement.md)
 
 **체크포인트**: 각 기반 작업이 끝날 때마다 그것을 쓰는 스토리 작업을 시작할 수 있다. 기반 전체를 기다리지 않는다
 
@@ -97,17 +97,17 @@ Android 다중 모듈이다. 모듈 경계와 파일 배치는 [plan.md](./plan.
 
 ### 테스트 ⚠️
 
-- [ ] T027 [P] [US1] `feature/home/src/test/.../HomeViewModelDeckTest.kt`에 덱 로드·스와이프·되돌리기 테스트 작성 — TS-004·TS-005·EC-001·EC-003, `isTransitioning` 중 입력 무시(TS-007). **구현 전에 실패를 확인한다**
+- [X] T027 [P] [US1] `feature/home/src/test/.../HomeViewModelDeckTest.kt`에 덱 로드·스와이프·되돌리기 테스트 작성 — TS-004·TS-005·EC-001·EC-003, `isTransitioning` 중 입력 무시(TS-007). **구현 전에 실패를 확인한다**
 
 ### 구현
 
-- [ ] T028 [P] [US1] `feature/home/.../main/component/HomeTopShell.kt` 작성 — 방 뱃지·방 캐릭터·인사 문구(FR-021). Figma `2598-95698` (T025·T026에 의존)
-- [ ] T029 [P] [US1] `feature/home/.../main/component/PlaceCardItem.kt` 작성 — 헤더(등록자 아바타 + 라벨 뱃지 + `[...]`)·장소명·주소·대표 이미지 2칸 그리드. **저장 경과일을 표시하지 않는다** (T005에 의존)
-- [ ] T030 [US1] `feature/home/.../main/component/CardDeck.kt` 작성 — 뒤로 겹쳐 보이는 스택, 전환 애니메이션(UX-001). 제스처는 T031이 얹는다 (T029에 의존)
-- [ ] T031 [US1] `CardDeck.kt`에 스와이프 제스처 구현 — **시작점 x좌표가 카드 폭 절반 이상일 때만 소비**한다(FR-003, R-005). 탭과 드래그는 같은 `pointerInput`에서 터치 슬롭으로 가른다(R-006)
-- [ ] T032 [US1] `feature/home/.../main/vm/HomeViewModel.kt`에 덱 로드와 `SwipeForward`·`SwipeBackward`·`TransitionSettled` 처리 구현 — **`SwipeForward`는 서버를 부르지 않는다**(FR-023, TS-035). `isTransitioning` 중 스와이프 Intent는 큐에 쌓지 않고 버린다(R-007) (T011·T023에 의존)
-- [ ] T033 [US1] `feature/home/.../main/vm/HomeViewModel.kt`에 시작 방 결정 구현 — `HomePreferencesRepository.getLastRoomId()`가 `null`이면 `type == personal`인 방(FR-022, TS-032·TS-033). 방이 바뀔 때마다 `setLastRoomId` (T012·T019에 의존)
-- [ ] T034 [US1] `feature/home/.../main/screen/HomeScreen.kt`·`HomeRoute.kt` 작성 — Route는 VM·state·sideEffect 연결과 `CollectDomainError`까지, Screen은 stateless. [`feature-module.md`](../../architecture/feature-module.md) §4를 따른다
+- [X] T028 [P] [US1] `feature/home/.../main/component/HomeTopShell.kt` 작성 — 방 뱃지·방 캐릭터·인사 문구(FR-021). Figma `2598-95698` (T025·T026에 의존)
+- [X] T029 [P] [US1] `feature/home/.../main/component/PlaceCardItem.kt` 작성 — 헤더(등록자 아바타 + 라벨 뱃지 + `[...]`)·장소명·주소·대표 이미지 2칸 그리드. **저장 경과일을 표시하지 않는다** (T005에 의존)
+- [X] T030 [US1] `feature/home/.../main/component/CardDeck.kt` 작성 — 뒤로 겹쳐 보이는 스택, 전환 애니메이션(UX-001). 제스처는 T031이 얹는다 (T029에 의존)
+- [X] T031 [US1] `CardDeck.kt`에 스와이프 제스처 구현 — **시작점 x좌표가 카드 폭 절반 이상일 때만 소비**한다(FR-003, R-005). 탭과 드래그는 같은 `pointerInput`에서 터치 슬롭으로 가른다(R-006)
+- [X] T032 [US1] `feature/home/.../main/vm/HomeViewModel.kt`에 덱 로드와 `SwipeForward`·`SwipeBackward`·`TransitionSettled` 처리 구현 — **`SwipeForward`는 서버를 부르지 않는다**(FR-023, TS-035). `isTransitioning` 중 스와이프 Intent는 큐에 쌓지 않고 버린다(R-007) (T011·T023에 의존)
+- [X] T033 [US1] `feature/home/.../main/vm/HomeViewModel.kt`에 시작 방 결정 구현 — `HomePreferencesRepository.getLastRoomId()`가 `null`이면 `type == personal`인 방(FR-022, TS-032·TS-033). 방이 바뀔 때마다 `setLastRoomId` (T012·T019에 의존)
+- [X] T034 [US1] `feature/home/.../main/screen/HomeScreen.kt`·`HomeRoute.kt` 작성 — Route는 VM·state·sideEffect 연결과 `CollectDomainError`까지, Screen은 stateless. [`feature-module.md`](../../architecture/feature-module.md) §4를 따른다
 
 **체크포인트**: 덱이 뜨고 스와이프로 넘기고 되돌릴 수 있다. 정렬 칩·자동 전환은 아직 없다
 
@@ -121,15 +121,15 @@ Android 다중 모듈이다. 모듈 경계와 파일 배치는 [plan.md](./plan.
 
 ### 테스트 ⚠️
 
-- [ ] T035 [P] [US2] `feature/home/src/test/.../HomeViewModelConfirmationTest.kt`에 두 확인 이벤트의 독립 테스트 작성 — TS-013(탭은 덱을 안 건드림)·TS-034(탭이 `recordPlaceOpened`를 부름)·TS-035(넘김은 서버를 안 부름)·EC-017(되돌려도 초기화는 취소 안 됨). **FR-023을 지키는 유일한 그물이다**
+- [X] T035 [P] [US2] `feature/home/src/test/.../HomeViewModelConfirmationTest.kt`에 두 확인 이벤트의 독립 테스트 작성 — TS-013(탭은 덱을 안 건드림)·TS-034(탭이 `recordPlaceOpened`를 부름)·TS-035(넘김은 서버를 안 부름)·EC-017(되돌려도 초기화는 취소 안 됨). **FR-023을 지키는 유일한 그물이다**
 
 ### 구현
 
-- [ ] T036 [P] [US2] `feature/home/.../main/component/CardActionMenu.kt` 작성 — **`다른 방 저장` 한 항목만**(FR-005). 클릭한 카드 근처에서 열린다(UX-002)
-- [ ] T037 [US2] `feature/home/.../main/vm/HomeViewModel.kt`에 `OpenActionMenu`·`DismissActionMenu`·`SaveToAnotherRoom` 처리 구현 — 메뉴가 열린 채 스와이프하면 메뉴만 닫는다(EC-004·EC-005) (T021·T023에 의존)
-- [ ] T038 [US2] `feature/home/.../main/vm/HomeViewModel.kt`에 `OpenPlaceDetail` 처리 구현 — `recordPlaceOpened(pinId)`를 부르고 **결과를 기다리지 않고** `NavigateToPlaceDetail` SideEffect를 던진다(R-012). **덱의 진행 상태를 건드리지 않는다** (T011·T017에 의존)
-- [ ] T039 [US2] `feature/home/.../main/component/PlaceCardItem.kt`에 라벨 뱃지 표시 연결 — 4종 중 1종(FR-008, TS-014) (T004·T029에 의존)
-- [ ] T040 [US2] `feature/home/.../main/component/CardDeck.kt`에서 `[...]` 버튼의 클릭 영역이 카드 제스처보다 우선하도록 배선 — EC-007 (T031·T036에 의존)
+- [X] T036 [P] [US2] `feature/home/.../main/component/CardActionMenu.kt` 작성 — **`다른 방 저장` 한 항목만**(FR-005). 클릭한 카드 근처에서 열린다(UX-002)
+- [X] T037 [US2] `feature/home/.../main/vm/HomeViewModel.kt`에 `OpenActionMenu`·`DismissActionMenu`·`SaveToAnotherRoom` 처리 구현 — 메뉴가 열린 채 스와이프하면 메뉴만 닫는다(EC-004·EC-005) (T021·T023에 의존)
+- [X] T038 [US2] `feature/home/.../main/vm/HomeViewModel.kt`에 `OpenPlaceDetail` 처리 구현 — `recordPlaceOpened(pinId)`를 부르고 **결과를 기다리지 않고** `NavigateToPlaceDetail` SideEffect를 던진다(R-012). **덱의 진행 상태를 건드리지 않는다** (T011·T017에 의존)
+- [X] T039 [US2] `feature/home/.../main/component/PlaceCardItem.kt`에 라벨 뱃지 표시 연결 — 4종 중 1종(FR-008, TS-014) (T004·T029에 의존)
+- [X] T040 [US2] `feature/home/.../main/component/CardDeck.kt`에서 `[...]` 버튼의 클릭 영역이 카드 제스처보다 우선하도록 배선 — EC-007 (T031·T036에 의존)
 
 **체크포인트**: 액션 메뉴와 상세 진입이 동작하고, 두 확인 이벤트가 독립으로 검증된다
 
@@ -145,20 +145,20 @@ Android 다중 모듈이다. 모듈 경계와 파일 배치는 [plan.md](./plan.
 
 > T009(전환 규칙 JVM 테스트)가 Phase 2에 있다. TS-015·TS-016·TS-017·TS-018·TS-019·TS-021·TS-024와 EC-009가 거기서 검증된다.
 
-- [ ] T041 [P] [US3] `feature/home/src/test/.../HomeViewModelTransitionTest.kt`에 화면 상태 쪽 테스트 작성 — 예고 툴팁 덱당 1회(spec §4 가정), 칩 표시와 실제 덱의 일치(UX-004), `가까운순`에 좌표가 없으면 빈 덱 처리(EC-009)
+- [X] T041 [P] [US3] `feature/home/src/test/.../HomeViewModelTransitionTest.kt`에 화면 상태 쪽 테스트 작성 — 예고 툴팁 덱당 1회(spec §4 가정), 칩 표시와 실제 덱의 일치(UX-004), `가까운순`에 좌표가 없으면 빈 덱 처리(EC-009)
 
 ### 구현
 
-- [ ] T042 [P] [US3] `feature/home/.../main/component/SortChipRow.kt` 작성 — 3종을 왼쪽부터 `꾹 Pick`·`최신순`·`가까운순` 순으로, 현재 덱의 정렬을 선택 표시(FR-009)
-- [ ] T043 [P] [US3] `feature/home/.../main/component/HomeTooltipOverlay.kt` 작성 — 툴팁 2종, 3초 후 페이드아웃. **조작을 막지 않는다**(UX-003)
-- [ ] T044 [P] [US3] `feature/home/.../main/component/AllExhaustedContent.kt` 작성 — 상단은 그대로 두고 카드 자리에만 일러스트와 `꾹 눌러둔 장소를 모두 둘러봤어요`. **CTA 버튼을 두지 않는다**(FR-014). Figma `3388-199413`
-- [ ] T045 [P] [US3] `feature/home/.../main/component/EmptyContent.kt` 작성 — 빈 상태 안내와 `[공동방 만들기]` CTA(FR-020, EC-011)
-- [ ] T046 [US3] `feature/home/.../main/vm/HomeViewModel.kt`에 소진 감지와 전환 배선 구현 — 잔여 0이면 `ResolveNextDeckUseCase`를 호출하고 결과대로 `SameRoom`·`NextRoom`·`AllExhausted` 처리. **전환 시점마다 다시 판정한다**(FR-011) (T010·T032에 의존)
-- [ ] T047 [US3] `feature/home/.../main/vm/HomeViewModel.kt`에서 고른 덱의 후보가 0장으로 판명되면 그 덱도 소진으로 보고 규칙을 다시 적용 — EC-013. **빈 덱을 노출하지 않는다** (T046에 의존)
-- [ ] T048 [US3] `feature/home/.../main/vm/HomeViewModel.kt`에 `SelectSort` 처리 구현 — 칩 직접 선택 시 즉시 전환하되, 건너뛴 덱은 방을 넘기기 전에 다시 온다(FR-010, TS-020·TS-021) (T046에 의존)
-- [ ] T049 [US3] `feature/home/.../main/vm/HomeViewModel.kt`에서 방 전환 시 정렬을 `꾹 Pick`으로 초기화하고 방 전환 툴팁 3초 노출(FR-012·FR-016), 되돌리기 이력 초기화(EC-003) (T043·T046에 의존)
-- [ ] T050 [US3] `feature/home/.../main/vm/HomeViewModel.kt`에 예고 툴팁 판정 구현 — 잔여 2장 이하가 되면 **실제로 다음에 올** 덱·방을 가리킨다. 예고 대상이 없으면 노출하지 않고(TS-023), 덱당 1회만 띄운다 (T043·T046에 의존)
-- [ ] T051 [US3] `feature/home/.../main/vm/HomeViewModel.kt`에 `가까운순` 전환 시 위치 권한 흐름 배선 — `RequestLocationPermission` SideEffect를 던지고 `LocationPermissionResult(location)`로 받는다. 거부(`null`)면 좌표 없이 `getDeck`을 불러 빈 덱을 받고 소진으로 흡수한다(EC-009, R-009·R-013) (T017·T046에 의존)
+- [X] T042 [P] [US3] `feature/home/.../main/component/SortChipRow.kt` 작성 — 3종을 왼쪽부터 `꾹 Pick`·`최신순`·`가까운순` 순으로, 현재 덱의 정렬을 선택 표시(FR-009)
+- [X] T043 [P] [US3] `feature/home/.../main/component/HomeTooltipOverlay.kt` 작성 — 툴팁 2종, 3초 후 페이드아웃. **조작을 막지 않는다**(UX-003)
+- [X] T044 [P] [US3] `feature/home/.../main/component/AllExhaustedContent.kt` 작성 — 상단은 그대로 두고 카드 자리에만 일러스트와 `꾹 눌러둔 장소를 모두 둘러봤어요`. **CTA 버튼을 두지 않는다**(FR-014). Figma `3388-199413`
+- [X] T045 [P] [US3] `feature/home/.../main/component/EmptyContent.kt` 작성 — 빈 상태 안내와 `[공동방 만들기]` CTA(FR-020, EC-011)
+- [X] T046 [US3] `feature/home/.../main/vm/HomeViewModel.kt`에 소진 감지와 전환 배선 구현 — 잔여 0이면 `ResolveNextDeckUseCase`를 호출하고 결과대로 `SameRoom`·`NextRoom`·`AllExhausted` 처리. **전환 시점마다 다시 판정한다**(FR-011) (T010·T032에 의존)
+- [X] T047 [US3] `feature/home/.../main/vm/HomeViewModel.kt`에서 고른 덱의 후보가 0장으로 판명되면 그 덱도 소진으로 보고 규칙을 다시 적용 — EC-013. **빈 덱을 노출하지 않는다** (T046에 의존)
+- [X] T048 [US3] `feature/home/.../main/vm/HomeViewModel.kt`에 `SelectSort` 처리 구현 — 칩 직접 선택 시 즉시 전환하되, 건너뛴 덱은 방을 넘기기 전에 다시 온다(FR-010, TS-020·TS-021) (T046에 의존)
+- [X] T049 [US3] `feature/home/.../main/vm/HomeViewModel.kt`에서 방 전환 시 정렬을 `꾹 Pick`으로 초기화하고 방 전환 툴팁 3초 노출(FR-012·FR-016), 되돌리기 이력 초기화(EC-003) (T043·T046에 의존)
+- [X] T050 [US3] `feature/home/.../main/vm/HomeViewModel.kt`에 예고 툴팁 판정 구현 — 잔여 2장 이하가 되면 **실제로 다음에 올** 덱·방을 가리킨다. 예고 대상이 없으면 노출하지 않고(TS-023), 덱당 1회만 띄운다 (T043·T046에 의존)
+- [X] T051 [US3] `feature/home/.../main/vm/HomeViewModel.kt`에 `가까운순` 전환 시 위치 권한 흐름 배선 — `RequestLocationPermission` SideEffect를 던지고 `LocationPermissionResult(location)`로 받는다. 거부(`null`)면 좌표 없이 `getDeck`을 불러 빈 덱을 받고 소진으로 흡수한다(EC-009, R-009·R-013) (T017·T046에 의존)
 
 **체크포인트**: 사용자가 스와이프만으로 한 방의 세 덱을 훑고 다음 방까지 넘어간다. SC-001·SC-002·SC-003·SC-004가 성립한다
 
@@ -172,13 +172,13 @@ Android 다중 모듈이다. 모듈 경계와 파일 배치는 [plan.md](./plan.
 
 ### 테스트 ⚠️
 
-- [ ] T052 [P] [US4] `feature/home/src/test/.../HomeViewModelRoomSheetTest.kt`에 시트 테스트 작성 — 현재 방 재선택 시 덱을 다시 구성하지 않는다(EC-014)
+- [X] T052 [P] [US4] `feature/home/src/test/.../HomeViewModelRoomSheetTest.kt`에 시트 테스트 작성 — 현재 방 재선택 시 덱을 다시 구성하지 않는다(EC-014)
 
 ### 구현
 
-- [ ] T053 [P] [US4] `feature/home/.../main/component/HomeRoomSheet.kt` 작성 — **400dp 고정 높이·3열 그리드·70dp 썸네일 + 방 이름**, 첫 칸은 `방 만들기`. **체크박스도 확정 버튼도 없다**(FR-018). Figma `2809-139468` (T007·T025에 의존)
-- [ ] T054 [US4] `feature/home/.../main/component/HomeTopShell.kt`의 방 뱃지·캐릭터에 클릭을 붙여 `OpenRoomSheet` 발행(FR-017, TS-025·TS-026) (T028에 의존)
-- [ ] T055 [US4] `feature/home/.../main/vm/HomeViewModel.kt`에 `SelectRoom`·`DismissRoomSheet` 처리 구현 — 선택이 곧 확정이고, 현재 방을 다시 고르면 시트만 닫는다(EC-014). `방 만들기`는 `NavigateToRoomForm`(EC-015) (T049·T053에 의존)
+- [X] T053 [P] [US4] `feature/home/.../main/component/HomeRoomSheet.kt` 작성 — **400dp 고정 높이·3열 그리드·70dp 썸네일 + 방 이름**, 첫 칸은 `방 만들기`. **체크박스도 확정 버튼도 없다**(FR-018). Figma `2809-139468` (T007·T025에 의존)
+- [X] T054 [US4] `feature/home/.../main/component/HomeTopShell.kt`의 방 뱃지·캐릭터에 클릭을 붙여 `OpenRoomSheet` 발행(FR-017, TS-025·TS-026) (T028에 의존)
+- [X] T055 [US4] `feature/home/.../main/vm/HomeViewModel.kt`에 `SelectRoom`·`DismissRoomSheet` 처리 구현 — 선택이 곧 확정이고, 현재 방을 다시 고르면 시트만 닫는다(EC-014). `방 만들기`는 `NavigateToRoomForm`(EC-015) (T049·T053에 의존)
 
 **체크포인트**: 방을 직접 바꿀 수 있고 SC-007이 성립한다
 
@@ -192,14 +192,14 @@ Android 다중 모듈이다. 모듈 경계와 파일 배치는 [plan.md](./plan.
 
 ### 테스트 ⚠️
 
-- [ ] T056 [P] [US5] `feature/home/src/test/.../HomeViewModelGuideTest.kt`에 가이드 테스트 작성 — `isGuideVisible` 중 `DismissGuide` 외 Intent를 전부 버린다(TS-030), 닫은 이력이 있으면 노출하지 않는다(TS-031)
+- [X] T056 [P] [US5] `feature/home/src/test/.../HomeViewModelGuideTest.kt`에 가이드 테스트 작성 — `isGuideVisible` 중 `DismissGuide` 외 Intent를 전부 버린다(TS-030), 닫은 이력이 있으면 노출하지 않는다(TS-031)
 
 ### 구현
 
-- [ ] T057 [P] [US5] `feature/home/.../main/component/HomeGuideOverlay.kt` 작성 — 화면 전체 딤, 카드 위 손 아이콘 + `좌우로 스와이프하며 카드를 탐색해 보세요.`, 상단을 가리키는 `방 뱃지와 토끼를 클릭하면 방을 변경할 수 있어요`, 우측 상단 닫기. **문구 2개다**(FR-019). Figma `4334-216197`
-- [ ] T058 [US5] `feature/home/.../main/vm/HomeViewModel.kt`에 가이드 노출 판정과 `DismissGuide` 처리 구현 — `isGuideDismissed()`로 판정하고 닫으면 `dismissGuide()`로 영속 저장 (T012·T019에 의존)
-- [ ] T059 [US5] `feature/home/.../main/vm/HomeViewModel.kt`에 가이드 중 조작 차단 배선 — `isGuideVisible == true`면 `DismissGuide`를 뺀 모든 Intent를 버린다(TS-030) (T058에 의존)
-- [ ] T060 [US5] `feature/home/.../main/vm/HomeViewModel.kt`에서 볼 카드가 없어도 가이드를 먼저 노출하고, 닫은 뒤 빈 상태를 보여주도록 배선 — EC-016. 가이드는 `phase`와 직교한다 (T045·T058에 의존)
+- [X] T057 [P] [US5] `feature/home/.../main/component/HomeGuideOverlay.kt` 작성 — 화면 전체 딤, 카드 위 손 아이콘 + `좌우로 스와이프하며 카드를 탐색해 보세요.`, 상단을 가리키는 `방 뱃지와 토끼를 클릭하면 방을 변경할 수 있어요`, 우측 상단 닫기. **문구 2개다**(FR-019). Figma `4334-216197`
+- [X] T058 [US5] `feature/home/.../main/vm/HomeViewModel.kt`에 가이드 노출 판정과 `DismissGuide` 처리 구현 — `isGuideDismissed()`로 판정하고 닫으면 `dismissGuide()`로 영속 저장 (T012·T019에 의존)
+- [X] T059 [US5] `feature/home/.../main/vm/HomeViewModel.kt`에 가이드 중 조작 차단 배선 — `isGuideVisible == true`면 `DismissGuide`를 뺀 모든 Intent를 버린다(TS-030) (T058에 의존)
+- [X] T060 [US5] `feature/home/.../main/vm/HomeViewModel.kt`에서 볼 카드가 없어도 가이드를 먼저 노출하고, 닫은 뒤 빈 상태를 보여주도록 배선 — EC-016. 가이드는 `phase`와 직교한다 (T045·T058에 의존)
 
 **체크포인트**: 다섯 스토리가 모두 독립적으로 동작한다
 
@@ -207,10 +207,10 @@ Android 다중 모듈이다. 모듈 경계와 파일 배치는 [plan.md](./plan.
 
 ## Phase 8: 마무리 및 공통 관심사
 
-- [ ] T061 [P] Figma 대조 — 상단 셸·카드·정렬 칩·시트·툴팁·가이드의 색·치수·타이포를 원본과 맞춘다. 값이 일치하는 토큰이 있으면 토큰, 없으면 실측값. 절차는 [`figma-design-fidelity.md`](../../conventions/figma-design-fidelity.md)
-- [ ] T062 [P] 정렬 칩이 Figma 디자인 시스템 컴포넌트로 존재하는지 확인하고, 그렇다면 `:core:design-system`으로 옮긴다 — [`component-asset-placement.md`](../../conventions/component-asset-placement.md)
-- [ ] T063 도메인 에러 경로 확인 — `다른 방 저장` 409(중복)를 포함한 실패가 `HomeRoute`의 `CollectDomainError`로 스낵바에 뜨는지. [`error_handling.md`](../../conventions/error_handling.md) §5·§6
-- [ ] T064 `./gradlew :app:assembleQaDebug` 통과 확인 — 헌법이 정한 빌드 확인의 최소선
+- [X] T061 [P] Figma 대조 — 상단 셸·카드·정렬 칩·시트·툴팁·가이드의 색·치수·타이포를 원본과 맞춘다. 값이 일치하는 토큰이 있으면 토큰, 없으면 실측값. 절차는 [`figma-design-fidelity.md`](../../conventions/figma-design-fidelity.md)
+- [X] T062 [P] 정렬 칩이 Figma 디자인 시스템 컴포넌트로 존재하는지 확인하고, 그렇다면 `:core:design-system`으로 옮긴다 — [`component-asset-placement.md`](../../conventions/component-asset-placement.md)
+- [X] T063 도메인 에러 경로 확인 — `다른 방 저장` 409(중복)를 포함한 실패가 `HomeRoute`의 `CollectDomainError`로 스낵바에 뜨는지. [`error_handling.md`](../../conventions/error_handling.md) §5·§6
+- [X] T064 `./gradlew :app:assembleQaDebug` 통과 확인 — 헌법이 정한 빌드 확인의 최소선
 - [ ] T065 [quickstart.md](./quickstart.md) §4의 수동 시나리오 8절 전부 실행
 
 ---
