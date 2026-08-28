@@ -78,6 +78,7 @@ internal class RoomDetailViewModel @AssistedInject constructor(
     fun processIntent(intent: RoomDetailIntent) {
         when (intent) {
             RoomDetailIntent.OnScreenEntered -> onScreenEntered()
+            RoomDetailIntent.OnScreenExited -> onScreenExited()
             RoomDetailIntent.OnSheetDraggedUp -> onSheetDraggedUp()
             RoomDetailIntent.OnSheetDraggedDown -> onSheetDraggedDown()
             is RoomDetailIntent.OnSortSelected -> onSortSelected(intent.option)
@@ -143,6 +144,15 @@ internal class RoomDetailViewModel @AssistedInject constructor(
                     updateState { copy(places = filteredAndSorted()) }
                 }
         }
+    }
+
+    /**
+     * 방 리스트로 복귀할 때 이 화면 전용 오버레이 상태를 지운다 — 이 인스턴스가 같은 `roomId`로 다시
+     * 열릴 때 재사용되므로([RoomDetailIntent.OnScreenExited] KDoc), 여기서 지우지 않으면 예전에 열어
+     * 두고 안 닫은 "다른 방에 공유" 시트가 다음 진입에 그대로 다시 뜬다.
+     */
+    private fun onScreenExited() {
+        updateState { copy(showRoomSelectSheet = false, placeToShare = null) }
     }
 
     /**

@@ -6,6 +6,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
@@ -119,6 +120,14 @@ internal fun BoxScope.RoomDetailRoute(
 
     LaunchedEffect(Unit) {
         viewModel.processIntent(RoomDetailIntent.OnScreenEntered)
+    }
+
+    // 이 Route가 별도 목적지가 아니라 RoomListRoute의 selectedRoomId로 여닫히는 로컬 상태라
+    // (RoomListRoute.kt KDoc 참고), 시스템 뒤로가기가 RoomListRoute의 BackHandler에서 바로 처리돼
+    // 위 NavigateBack 경로를 거치지 않고 이 Composable이 사라질 수 있다 — 그 경로까지 덮도록
+    // onDispose에서 화면 이탈을 알린다.
+    DisposableEffect(Unit) {
+        onDispose { viewModel.processIntent(RoomDetailIntent.OnScreenExited) }
     }
 
     RoomDetailScreen(
