@@ -2,6 +2,8 @@ package team.mino.core.data.datasource
 
 import team.mino.core.data.datasource.mock.RoomMockStore
 import team.mino.core.data.network.dto.request.RoomRequest
+import team.mino.core.data.network.dto.response.RoomInvitationResponse
+import team.mino.core.data.network.dto.response.RoomMemberDetailResponse
 import team.mino.core.data.network.dto.response.RoomResponse
 import team.mino.core.data.network.dto.response.RoomSummaryResponse
 import team.mino.core.data.network.service.RoomApiService
@@ -29,4 +31,19 @@ internal class RoomRemoteDataSourceImpl @Inject constructor(
         roomId: String,
         request: RoomRequest,
     ): RoomResponse = store.updateRoom(roomId, request)
+
+    override suspend fun getMembers(roomId: String): List<RoomMemberDetailResponse> = service.getMembers(roomId)
+
+    override suspend fun createInvitation(roomId: String): RoomInvitationResponse = service.createInvitation(roomId)
+
+    override suspend fun leaveRoom(roomId: String) {
+        service.leaveRoom(roomId)
+    }
+
+    override suspend fun transferOwner(
+        roomId: String,
+        nextOwnerId: String,
+    ) {
+        service.transferOwner(roomId, nextOwnerId)
+    }
 }

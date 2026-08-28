@@ -37,3 +37,25 @@ data class RoomMemberResponse(
 data class RoomMemberAvatarResponse(
     val id: Int,
 )
+
+/**
+ * `GET /api/v1/rooms/{roomId}/members` 응답 원소 — 초대 시트 참여자 목록·방장 위임 대상 선택이 공유한다
+ * (`docs/specs/room-detail/contracts/place-repository.md` "RoomRepository 확장").
+ *
+ * 목록 요약([RoomSummaryResponse.users])이 쓰는 [RoomMemberResponse]와 이름은 비슷하지만 다른 응답이다 —
+ * 저 쪽은 `id`·`avatar{id}`만 담는 카드 축약 표현이고, 이 쪽은 멤버 전체 목록 화면이 쓰는 상세 표현이다.
+ */
+@Serializable
+data class RoomMemberDetailResponse(
+    val userId: String,
+    val nickname: String,
+    val avatar: String? = null,
+    val isOwner: Boolean,
+    val joinedAt: String,
+)
+
+/** `POST /api/v1/rooms/{roomId}/invitations` 응답 — 초대 코드(6자 대문자+숫자)만 담는다. */
+@Serializable
+data class RoomInvitationResponse(
+    val code: String,
+)

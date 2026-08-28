@@ -17,3 +17,9 @@ internal data class RoomRequest(
     val description: String? = null,
     val color: String,
 )
+
+/** `PUT /api/v1/rooms/{roomId}/owner` 요청 본문 — 방장 위임 대상. */
+@Serializable
+internal data class TransferOwnerRequest(
+    val nextOwnerId: String,
+)

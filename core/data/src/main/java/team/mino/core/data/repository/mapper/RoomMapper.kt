@@ -3,14 +3,17 @@
 package team.mino.core.data.repository.mapper
 
 import team.mino.core.data.network.dto.request.RoomRequest
+import team.mino.core.data.network.dto.response.RoomMemberDetailResponse
 import team.mino.core.data.network.dto.response.RoomResponse
 import team.mino.core.data.network.dto.response.RoomSummaryResponse
 import team.mino.core.domain.model.Room
 import team.mino.core.domain.model.RoomColor
 import team.mino.core.domain.model.RoomDraft
+import team.mino.core.domain.model.RoomMember
 import team.mino.core.domain.model.RoomMemberSummary
 import team.mino.core.domain.model.RoomThumbnail
 import kotlin.time.ExperimentalTime
+import kotlin.time.Instant
 
 /**
  * 색의 서버 표현. 표의 소유자는 `docs/specs/group-room-form/contracts/room-api-mock.md` §2다.
@@ -126,6 +129,16 @@ private fun RoomSummaryResponse.toMemberSummary(): RoomMemberSummary {
         )
     }
 }
+
+/** `GET /api/v1/rooms/{roomId}/members` 응답 원소 → 도메인. */
+internal fun RoomMemberDetailResponse.toDomain(): RoomMember =
+    RoomMember(
+        userId = userId,
+        nickname = nickname,
+        avatarUrl = avatar,
+        isOwner = isOwner,
+        joinedAt = Instant.parse(joinedAt),
+    )
 
 private const val ROOM_TYPE_PERSONAL = "personal"
 private const val MAX_COLLAGE_IMAGE_COUNT = 4
