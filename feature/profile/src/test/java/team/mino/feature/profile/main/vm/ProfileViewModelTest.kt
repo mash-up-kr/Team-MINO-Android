@@ -215,13 +215,26 @@ class ProfileViewModelTest {
      * (screen 계약 §Intent, `research.md` D45).
      */
     @Test
-    fun `진입하면 갱신을 정확히 한 번 요청한다`() =
+    fun `마이페이지로 진입하면 갱신을 정확히 한 번 요청한다`() =
         runTest {
             createViewModel()
             advanceUntilIdle()
 
             assertEquals(1, profileRepository.refreshCallCount)
         }
+
+    /**
+     * 근거는 [ProfileEntryPoint.needsRefresh]가 소유한다.
+     *
+     * 진입점을 ViewModel로 통제할 수 없어(`createViewModel` 참고) 판정 자체를 직접 본다 —
+     * `뒤로가기는 마이페이지 진입에서만 활성이다`와 같은 방식이다. **`init`이 그 판정을 실제로 읽는다는 것은
+     * 여기서 고정되지 않는다.**
+     */
+    @Test
+    fun `갱신이 필요한 진입점은 마이페이지뿐이다`() {
+        assertTrue(ProfileEntryPoint.MyPage.needsRefresh)
+        assertFalse(ProfileEntryPoint.Onboarding.needsRefresh)
+    }
 
     /**
      * 미등록은 실패가 아니다. 갱신이 예외 없이 끝나므로 온보딩 사용자는 진입 직후 오류를 보지 않는다
@@ -505,8 +518,11 @@ class ProfileViewModelTest {
 
     private companion object {
         /**
-         * `ProfileMain(entryPoint)`의 인자 이름. 라우트 복원의 형태를 맞추기 위한 것일 뿐,
-         * 여기 실린 값은 ViewModel에 도달하지 않는다 — `createViewModel` 참고.
+         * `ProfileMain(entryPoint)`의 인자 이름. **지우면 모든 케이스가 깨진다.**
+         *
+         * `RouteDecoder`는 핸들에 키가 없으면 그 필드를 기본값에 맡기는데 `ProfileMain.entryPoint`에는 기본값이
+         * 없어 `MissingFieldException`이 난다. 반대로 키에 **실은 값은 도달하지 않는다** — 스텁 `Bundle`이
+         * 비어 있어 언제나 `MyPage`로 복원된다(`createViewModel` 참고). 즉 필요한 것은 키의 존재뿐이다.
          */
         const val ENTRY_POINT_ARG = "entryPoint"
     }
