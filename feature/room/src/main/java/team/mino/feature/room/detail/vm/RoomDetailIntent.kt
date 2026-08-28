@@ -15,6 +15,16 @@ import team.mino.feature.room.detail.model.PlaceViewType
 internal sealed interface RoomDetailIntent : Intent {
     data object OnScreenEntered : RoomDetailIntent
 
+    /**
+     * 방 상세를 벗어날 때(방 리스트로 복귀) 발행한다. `RoomDetailRoute`가 이 화면의 유일한 진입점이 아니라
+     * `RoomListRoute`가 `selectedRoomId` 로컬 상태로 열고 닫는 구조라, 시스템 뒤로가기가 `RoomListRoute`의
+     * `BackHandler`에서 바로 처리돼([RoomListRoute.kt] 참고) 이 ViewModel의 닫기 경로([OnCloseClick])를
+     * 거치지 않을 수 있다. `hiltViewModel(key = roomId)`가 같은 방으로 다시 들어올 때 **같은 인스턴스**를
+     * 돌려주므로, 화면을 뜨는 시점(`DisposableEffect.onDispose`)에 이 화면 전용 오버레이 상태를 정리해
+     * 두지 않으면 다음 진입 때 이전에 닫지 않은 시트가 그대로 남는다.
+     */
+    data object OnScreenExited : RoomDetailIntent
+
     data object OnSheetDraggedUp : RoomDetailIntent
 
     data object OnSheetDraggedDown : RoomDetailIntent
