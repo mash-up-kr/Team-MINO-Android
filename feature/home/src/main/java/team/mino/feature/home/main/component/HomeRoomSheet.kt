@@ -73,19 +73,21 @@ internal fun HomeRoomSheet(
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
-        modifier = modifier.height(SheetHeight),
+        modifier = modifier,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         shape = SheetShape,
         containerColor = MinoAndroidTheme.colors.backgroundElevatedNormal,
         scrimColor = Color.Black.copy(alpha = SCRIM_ALPHA),
         dragHandle = { SheetHandle() },
     ) {
+        // 높이는 시트가 아니라 본체에 준다. ModalBottomSheet의 modifier는 시트가 설 자리를 재는
+        // 제약보다 바깥이라, 거기에 높이를 묶으면 시트가 바닥이 아니라 화면 맨 위에 붙는다.
         RoomSheetContent(
             rooms = rooms,
             currentRoomId = currentRoomId,
             onSelectRoom = onSelectRoom,
             onCreateRoom = onCreateRoom,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.height(SheetHeight - HandleAreaHeight),
         )
     }
 }
