@@ -19,14 +19,14 @@ enum class Flavor(
     qa(
         dimension = FlavorDimension.env,
         apiBaseUrl = "https://api.gguk.org/",
-        appName = "Mino-Android QA",
+        appName = "GGUK QA",
         applicationIdSuffix = ".qa",
         versionNameSuffix = "-qa",
     ),
     prod(
         dimension = FlavorDimension.env,
         apiBaseUrl = "https://api.gguk.org/",
-        appName = "Mino-Android",
+        appName = "GGUK",
     ),
 }
 
