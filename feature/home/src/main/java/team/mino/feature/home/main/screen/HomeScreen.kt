@@ -196,9 +196,9 @@ private fun HomeContent(
                     onMoreClick = { onIntent(HomeIntent.OpenActionMenu(it)) },
                     onSaveToAnotherRoom = { onIntent(HomeIntent.SaveToAnotherRoom(it)) },
                     onDismissActionMenu = { onIntent(HomeIntent.DismissActionMenu) },
-                    modifier = Modifier
-                        .padding(horizontal = ContentHorizontalPadding)
-                        .padding(top = CardDeckTop),
+                    // 좌우 여백은 덱이 직접 넣는다 — 스와이프를 화면 끝까지 받으려면 제스처를 받는 Box가
+                    // 여백 바깥까지 덮어야 한다.
+                    modifier = Modifier.padding(top = CardDeckTop),
                 )
 
             HomePhase.ALL_EXHAUSTED ->
