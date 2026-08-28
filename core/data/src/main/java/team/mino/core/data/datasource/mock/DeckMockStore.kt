@@ -18,7 +18,7 @@ import javax.inject.Inject
  * 실제 계약에 맞췄으므로, 실서버로 바뀌어도 Mapper와 호출부는 그대로다.
  *
  * `RoomMockStore`와 달리 상태를 갖지 않아 `@Singleton`도 `Mutex`도 두지 않는다 — 이 mock은 읽기 전용이고
- * 카드를 만들거나 고치는 계약이 없다. 방 목록은 이미 실서버(`RoomListRemoteDataSource`)에서 오므로 고정된
+ * 카드를 만들거나 고치는 계약이 없다. 방 목록은 이미 실서버(`RoomRemoteDataSource`)에서 오므로 고정된
  * `roomId`로 시드를 찾지 못하고, 아래 [roomDeckOf]가 `roomId`를 프로필 하나에 고정 배정한다.
  *
  * 실패를 이 클래스가 직접 도메인 예외로 던지는 이유는 mock이 `HttpClient`의 전역 매핑

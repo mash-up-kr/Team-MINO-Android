@@ -8,11 +8,13 @@ import org.junit.Test
 import team.mino.core.common.kotlin.geo.GeoPoint
 import team.mino.core.data.datasource.DeckRemoteDataSource
 import team.mino.core.data.datasource.PinRemoteDataSource
-import team.mino.core.data.datasource.RoomListRemoteDataSource
+import team.mino.core.data.datasource.RoomRemoteDataSource
 import team.mino.core.data.network.dto.request.PinCreateRequest
 import team.mino.core.data.network.dto.request.PinDuplicateRequest
+import team.mino.core.data.network.dto.request.RoomRequest
 import team.mino.core.data.network.dto.response.CardPlaceResponse
 import team.mino.core.data.network.dto.response.CardResponse
+import team.mino.core.data.network.dto.response.RoomResponse
 import team.mino.core.data.network.dto.response.RoomSummaryResponse
 import team.mino.core.domain.model.DeckSort
 import team.mino.core.errorhandling.MinoDomainException
@@ -33,7 +35,7 @@ class HomeDeckRepositoryImplTest {
     private val repository =
         HomeDeckRepositoryImpl(
             deckRemoteDataSource = deckRemoteDataSource,
-            roomListRemoteDataSource = UnusedRoomListRemoteDataSource,
+            roomRemoteDataSource = UnusedRoomRemoteDataSource,
             pinRemoteDataSource = pinRemoteDataSource,
         )
 
@@ -147,8 +149,18 @@ class HomeDeckRepositoryImplTest {
         }
     }
 
-    /** 덱과 저장만 보는 테스트라 방 목록은 닿지 않는다. 닿으면 그것 자체가 실패다. */
-    private object UnusedRoomListRemoteDataSource : RoomListRemoteDataSource {
+    /** 덱과 저장만 보는 테스트라 방 출처는 닿지 않는다. 닿으면 그것 자체가 실패다. */
+    private object UnusedRoomRemoteDataSource : RoomRemoteDataSource {
         override suspend fun listRooms(): List<RoomSummaryResponse> = throw IllegalStateException("부르지 않는다")
+
+        override suspend fun getRoom(roomId: String): RoomResponse = throw IllegalStateException("부르지 않는다")
+
+        override suspend fun createRoom(request: RoomRequest): RoomResponse =
+            throw IllegalStateException("부르지 않는다")
+
+        override suspend fun updateRoom(
+            roomId: String,
+            request: RoomRequest,
+        ): RoomResponse = throw IllegalStateException("부르지 않는다")
     }
 }
