@@ -114,7 +114,7 @@
 | 좌우 여백 | 각 **20** |
 
 - 배치는 `Modifier.fillMaxWidth().padding(horizontal = 20.dp)` + 하단 40dp로 잡는다. `MinoSnackbar`의 `MaxWidth = 420.dp`는 상한이라 375 화면에서 걸리지 않는다.
-- **남은 확인 1건(이 스펙 범위 밖)**: Figma 인스턴스 높이 48과 `MinoSnackbar` 토큰 조합(`VerticalPadding 11×2 + MinContentHeight 32 = 54`)이 어긋나 보인다. 인스턴스 리사이즈인지 컴포넌트 자체 값인지에 따라 갈리며, 어느 쪽이든 `:core:design-system` 소관이다(같은 파일 KDoc에 이미 `TODO(#77)`가 있다). 스플래시는 컴포넌트를 그대로 쓰므로 이 plan의 결정에 영향이 없다.
+- **~~남은 확인 1건~~ 닫힘(2026-08-28 대조)**: 높이 48과 토큰 조합(`VerticalPadding 11×2 + MinContentHeight 32 = 54`)의 어긋남은 **인스턴스 리사이즈**였다. 디자인 시스템 원본 `Snackbar/Snackbar`(`MU_Wanted Design System` `16215-19587`)의 `Variant=Normal`은 **335×54**이고 그 안의 `Container`가 `x=16, y=11, 303×32` — 좌우 16·상하 11이 컴포넌트 자체 값이다. 스플래시 시안의 인스턴스(`3798-166765`)만 48로 줄여 놓은 것이라 **`SnackbarTokens.VerticalPadding = 11.dp`가 맞고 고칠 것이 없다.** 시안 인스턴스를 원본 높이로 되돌릴지는 디자이너 소관이다.
 
 ---
 
@@ -188,7 +188,9 @@ data class AnonymousSession(val userId: String)
 
 ---
 
-## R-011. 실패 원인 분류 — `Network` / `Auth`
+## ~~R-011. 실패 원인 분류 — `Network` / `Auth`~~ *재검토됨(plan 3.0.2)*
+
+> 세션 확보(Firebase 원천)만 보고 두 리프로 잡았으나, 같은 화면이 소비하는 프로필 조회는 HTTP 원천이라 `Http(401)`로 온다. → R-016
 
 **결정 (plan 2.0.0)**: `MinoDomainException.Network` → 네트워크 연결 에러 토스트(FR-008), **`MinoDomainException.Auth`** → 일시적 오류 토스트(FR-009·FR-007).
 
@@ -258,3 +260,19 @@ SplashViewModel
 
 **Alternatives considered**:
 - *로컬 캐시로 판정하고 네트워크를 아예 안 탄다* — 3초 안에 끝나 빠르지만 위 두 조항이 죽고, 캐시가 비어 있는 재설치 사용자를 서버 상태와 무관하게 온보딩으로 보낸다. 기각.
+
+---
+
+## R-016. 실패 원인 분류 — `Network` / 그 밖(`Auth`·`Http`)
+
+**결정 (plan 3.0.2)**: `MinoDomainException.Network` → 네트워크 연결 에러 토스트(FR-008), **그 밖의 리프(`Auth`·`Http`)** → 일시적 오류 토스트(FR-009·FR-007).
+
+**근거**:
+- R-011이 리프를 `Network`/`Auth` 둘로 못박은 것은 **세션 확보 한 갈래만** 보고 내린 판정이다. 스플래시는 같은 시도 안에서 프로필 등록 여부도 조회하고(R-003), 그쪽은 HTTP 원천이라 Ktor validator가 `Http(code)`로 매핑한다.
+- `Auth` 리프는 **인증 제공자가 발급에 실패한 경우 전용**이고, 원천별 분류 기준은 [ADR: 도메인 예외 매핑 지점은 원천마다 하나씩 두고, 인증 실패용 `Auth` 리프를 추가한다](../../adr/2026-08-22-domain-exception-mapping-per-source.md)가 소유한다. 백엔드 HTTP 401을 `Auth`로 적은 것은 그 기준을 어긴 것이라 정정한다. 계약 표도 함께 고쳤다([profile-registration.md](./contracts/profile-registration.md)).
+- 사용자 분기는 **연결 자체가 안 된 것**과 **그 밖**의 둘 그대로다(FR-008·FR-009). 세션 발급 실패든 서버 조회 실패든 사용자가 취할 행동이 같아 문구를 가르지 않는다. spec의 2분기는 리프 2개가 아니라 `Network`인지 아닌지로 성립한다.
+
+**구현 대응**: `SplashRoute.messageResOf()`가 `Network` → `splash_error_network`, `Http`·`Auth` → `splash_error_temporary`로 매핑한다. 리프가 늘어도 `when`이 망라적이므로 누락이 컴파일에 걸린다.
+
+**Alternatives considered**:
+- *`Http(401)`을 `Auth`로 다시 매핑한다* — 매핑 지점이 validator 하나라는 성질이 깨지고, 위 ADR이 소유한 분류 기준(원천이 인증 제공자일 때만 `Auth`)을 어긴다. 기각.
