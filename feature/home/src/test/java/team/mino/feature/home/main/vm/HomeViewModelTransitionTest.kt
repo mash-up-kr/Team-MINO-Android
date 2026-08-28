@@ -36,7 +36,7 @@ import team.mino.feature.home.main.model.HomeTooltip
  * 덱이 바뀔 때 **화면이 무엇을 보여주는가**를 판정한다 — 정렬 칩(FR-010, UX-004), 예고 툴팁(FR-015),
  * 그리고 위치 권한 거부가 덱에 닿는 경로(EC-009).
  *
- * 다루는 범위는 TS-020·TS-022·TS-023과 EC-009·EC-012, spec §4 가정(「예고 툴팁은 한 덱당 1회」)이다.
+ * 다루는 범위는 TS-020·TS-022·TS-023과 EC-009·EC-012, spec §4 가정(예고 툴팁의 재노출 조건)이다.
  *
  * **여기서 보지 않는 것**과 그 자리를 메우는 것:
  *
@@ -223,20 +223,22 @@ class HomeViewModelTransitionTest {
         }
 
     /**
-     * 예고는 **한 덱당 한 번**이다(spec §4 가정).
+     * 되돌려서 잔여가 임계값 위로 올라갔다가 다시 내려오면 예고가 **다시 뜬다**(FR-015, spec §4 가정).
      *
-     * 되돌리기로 잔여가 늘었다 다시 줄어도 재노출하지 않는다. 사라진 것을 확인한 뒤 임계값을 다시 넘기므로,
-     * "아직 떠 있는 것"과 "다시 뜬 것"이 섞이지 않는다.
+     * 한 덱당 1회로 굳어 있으면 되돌리기 뒤에는 잔여 2장에 아무 안내도 없어, 잔여 2장과 예고를 잇는 규칙이
+     * 사용자에게만 조용히 깨진다. 사라진 것을 확인한 뒤 임계값을 다시 넘기므로 "아직 떠 있는 것"과
+     * "다시 뜬 것"이 섞이지 않는다.
      */
     @Test
-    fun `되돌렸다 다시 넘겨도 같은 덱의 예고 툴팁은 다시 뜨지 않는다`() =
+    fun `되돌렸다 다시 넘기면 같은 덱의 예고 툴팁이 다시 뜬다`() =
         runTest {
             stage(DeckSort.GGUK_PICK, count = 5)
             stage(DeckSort.LATEST, count = 3)
             val viewModel = createViewModel()
 
             repeat(3) { swipe(viewModel) }
-            assertNotNull("예고가 한 번은 떠야 재노출을 판정할 수 있다", viewModel.state.value.tooltip)
+            val expected = viewModel.state.value.tooltip
+            assertNotNull("예고가 한 번은 떠야 재노출을 판정할 수 있다", expected)
 
             advanceTimeBy(TOOLTIP_MILLIS + 1)
             assertNull(viewModel.state.value.tooltip)
@@ -246,7 +248,32 @@ class HomeViewModelTransitionTest {
             swipe(viewModel)
 
             assertEquals("임계값을 다시 넘겨야 재노출을 볼 수 있다", 2, viewModel.state.value.cards.size)
-            assertNull("한 덱의 예고는 한 번뿐이다", viewModel.state.value.tooltip)
+            assertEquals("임계값을 다시 지났으므로 같은 예고가 다시 뜬다", expected, viewModel.state.value.tooltip)
+        }
+
+    /**
+     * 되돌리지 않고 계속 넘기는 동안에는 예고가 **한 번뿐**이다(spec §4 가정).
+     *
+     * 재노출의 조건은 「덱이 임계값 위로 다시 길어졌다」이지 「임계값 아래다」가 아니다. 이 구분이 없으면
+     * 잔여가 줄어드는 매 장마다 예고가 뜬다.
+     */
+    @Test
+    fun `되돌리지 않고 더 넘기면 예고 툴팁이 다시 뜨지 않는다`() =
+        runTest {
+            stage(DeckSort.GGUK_PICK, count = 4)
+            stage(DeckSort.LATEST, count = 3)
+            val viewModel = createViewModel()
+
+            // 4장에서 두 번 넘겨 잔여 2장 — 예고가 한 번 뜬다.
+            repeat(2) { swipe(viewModel) }
+            assertNotNull(viewModel.state.value.tooltip)
+            advanceTimeBy(TOOLTIP_MILLIS + 1)
+            assertNull(viewModel.state.value.tooltip)
+
+            swipe(viewModel)
+
+            assertEquals(1, viewModel.state.value.cards.size)
+            assertNull("되돌리지 않았으므로 예고는 다시 뜨지 않는다", viewModel.state.value.tooltip)
         }
 
     /**
