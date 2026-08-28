@@ -58,7 +58,25 @@ private fun RoomInviteSheetIssuingPreview() {
 }
 
 private val PREVIEW_INVITE_MEMBERS = persistentListOf(
-    RoomMember(userId = "user-me", nickname = "나", avatar = ProfileAvatar.Default, isOwner = true, joinedAt = Clock.System.now()),
-    RoomMember(userId = "user-2", nickname = "박지훈", avatar = ProfileAvatar.Person2, isOwner = false, joinedAt = Clock.System.now()),
-    RoomMember(userId = "user-3", nickname = "채윤지", avatar = ProfileAvatar.Person7, isOwner = false, joinedAt = Clock.System.now()),
+    RoomMember(
+        userId = "user-me",
+        nickname = "나",
+        avatar = ProfileAvatar.Default,
+        isOwner = true,
+        joinedAt = Clock.System.now(),
+    ),
+    RoomMember(
+        userId = "user-2",
+        nickname = "박지훈",
+        avatar = ProfileAvatar.Person2,
+        isOwner = false,
+        joinedAt = Clock.System.now(),
+    ),
+    RoomMember(
+        userId = "user-3",
+        nickname = "채윤지",
+        avatar = ProfileAvatar.Person7,
+        isOwner = false,
+        joinedAt = Clock.System.now(),
+    ),
 )
