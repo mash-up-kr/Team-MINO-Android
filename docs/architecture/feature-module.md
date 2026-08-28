@@ -86,6 +86,8 @@ feature 간 순환 참조는 금지한다. 탭끼리 서로를 의존하지 않�
     └── vm/      XDetailViewModel · XDetailUiState · XDetailSideEffect
 ```
 
+> **런처 진입점은 `di/`를 갖지 않는다.** `MAIN`·`LAUNCHER` intent-filter를 든 feature(`:feature:splash`)는 OS 런처만이 열므로 다른 feature가 부를 `XLauncher` 계약 자체가 없다. 계약이 없으면 구현할 것도 바인딩할 것도 없다. 나머지 골격(`XActivity`·`XDestinations`·`XShell`·`XNavHost`)은 진입형 그대로다.
+
 **탭 feature** — `XActivity`·`XShell`·`XNavHost`·`di/`가 없다. 셸을 `:feature:main`이 소유하고, 진입은 등록 함수로 이뤄지기 때문이다.
 
 ```
@@ -293,7 +295,7 @@ internal fun XNavHost(navController: NavHostController, startDestination: Route,
 **진입형이면**
 
 4. 모듈 루트에 `XActivity` · `XDestinations` · `XShell` · `XNavHost`. 셸/그래프 분리(4장)를 지킨다.
-5. `di/`에 `XLauncherImpl`(`BaseActivityLauncher`) + `@Binds` 모듈. 그 짝인 `XLauncher` 계약은 `:core:navigation`에 둔다(→ `feature-navigation.md` 1장).
+5. `di/`에 `XLauncherImpl`(`BaseActivityLauncher`) + `@Binds` 모듈. 그 짝인 `XLauncher` 계약은 `:core:navigation`에 둔다(→ `feature-navigation.md` 1장). **런처 진입점은 이 항목을 건너뛴다**(2장 주석).
 
 **탭이면**
 

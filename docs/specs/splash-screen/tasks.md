@@ -44,7 +44,7 @@
 - [X] T005 [P] `core/domain/src/main/kotlin/team/mino/core/domain/repository/ProfileRegistrationRepository.kt`에 `isRegistered(): Boolean` 인터페이스 생성 — T006·T008이 쓴다. 계약은 [contracts/profile-registration.md](./contracts/profile-registration.md)
 - [X] T006 `core/domain/src/main/kotlin/team/mino/core/domain/usecase/ResolveSplashEntryUseCase.kt` 생성 (T004·T005에 의존) — 세션은 확보하지 않는다([research.md R-012](./research.md))
 - [X] T007 [P] `core/data/src/main/java/team/mino/core/data/network/service/UserApiService.kt`에 `GET /api/v1/users/me` 호출 추가 — Bearer는 기존 플러그인이 자동 첨부하므로 이 서비스가 토큰을 다루지 않는다
-- [X] T008 `core/data/src/main/java/team/mino/core/data/repository/ProfileRegistrationRepositoryImpl.kt` 구현 (T005·T007에 의존) — `200`→`true`, `401`+`USER_NOT_REGISTERED`→`false`, `401`+`UNAUTHORIZED`·`TOKEN_EXPIRED`→`MinoDomainException.Auth`, 연결 실패→`Network`
+- [X] T008 `core/data/src/main/java/team/mino/core/data/datasource/`에 `UserRemoteDataSource` 인터페이스·구현과 `di/UserDataSourceModule.kt` 바인딩 생성, `repository/ProfileRegistrationRepositoryImpl.kt`는 DataSource 위임만 (T005·T007에 의존) — `200`→`true`, `401`+`USER_NOT_REGISTERED`→`false`, 그 밖의 `401`(`UNAUTHORIZED`·`TOKEN_EXPIRED`·모르는 코드)→`MinoDomainException.Http(401)` 그대로 전파, 연결 실패→`Network`. `errorCode` 분기는 DataSource가 갖는다 — `RepositoryImpl`은 `ApiService`를 알지도 예외를 잡지도 않는다([core/data README §3·§4·§6](../../../core/data/README.md))
 - [X] T009 `core/data/src/main/java/team/mino/core/data/repository/di/`에 `ProfileRegistrationRepository` 바인딩 추가 (T008에 의존) — 배치 규칙은 [dependency-injection.md](../../conventions/dependency-injection.md)
 - [X] T010 `feature/splash/src/main/java/team/mino/feature/splash/SplashActivity.kt`와 `SplashShell.kt` 골격 생성, `feature/splash/src/main/AndroidManifest.xml`에 MAIN·LAUNCHER intent-filter 선언 — 공개 표면은 `SplashActivity` 하나뿐이며 나머지는 `internal`([contracts/splash-ui.md §1](./contracts/splash-ui.md))
 - [X] T011 `feature/main/src/main/AndroidManifest.xml`에서 `MainActivity`의 MAIN·LAUNCHER intent-filter 제거 (T010과 같은 커밋으로 묶는다) — 둘 다 LAUNCHER면 런처 아이콘이 두 개 뜬다
@@ -66,7 +66,7 @@
 > 구현 전에 작성하고 실패를 확인한다.
 
 - [X] T014 [P] [US1] `core/domain/src/test/kotlin/team/mino/core/domain/usecase/ResolveSplashEntryUseCaseTest.kt` 작성 — `isRegistered()`가 `false`→`Onboarding`, `true`→`Main`, 예외는 그대로 전파되고 `Onboarding`으로 오판하지 않음 (TS-002·TS-003·EC-004)
-- [X] T015 [P] [US1] `core/data/src/test/java/team/mino/core/data/repository/ProfileRegistrationRepositoryImplTest.kt` 작성 — `401`+`USER_NOT_REGISTERED`는 `false`, `401`+`UNAUTHORIZED`·`TOKEN_EXPIRED`는 `Auth` 예외 (SC-002)
+- [X] T015 [P] [US1] `core/data/src/test/java/team/mino/core/data/datasource/UserRemoteDataSourceImplTest.kt` 작성 — `401`+`USER_NOT_REGISTERED`는 `false`, `401`+`UNAUTHORIZED`·`TOKEN_EXPIRED`·모르는 `errorCode`는 `Http(401)` 그대로 (SC-002). 검증 대상이 `errorCode` 분기를 가진 DataSource이므로 테스트도 그쪽에 둔다(T008)
 
 ### 사용자 스토리 1 구현
 
@@ -87,13 +87,13 @@
 
 ### 사용자 스토리 2 테스트 ⚠️
 
-- [X] T020 [P] [US2] `feature/splash/src/test/java/team/mino/feature/splash/main/SplashViewModelTest.kt` 작성 — 3초 경과 시 스피너 노출, 13초 경과 시 스피너 해제와 일시적 오류, `Network`/`Auth`가 서로 다른 토스트로 갈리는지, 토스트 반복이 10초 간격을 지키는지 (TS-007~TS-010·TS-015)
+- [X] T020 [P] [US2] `feature/splash/src/test/java/team/mino/feature/splash/main/SplashViewModelTest.kt` 작성 — 3초 경과 시 스피너 노출, 13초 경과 시 스피너 해제와 일시적 오류, `Network`와 그 밖(`Auth`·`Http`)이 서로 다른 토스트로 갈리는지, 토스트 반복이 10초 간격을 지키는지 (TS-007~TS-010·TS-015)
 
 ### 사용자 스토리 2 구현
 
 - [X] T021 [US2] `SplashViewModel`에 스피너 전이 추가 — 최소 노출 3초가 지났는데 세션이 미확보면 `isSpinnerVisible = true`, 3초 안에 끝나면 한 번도 노출하지 않는다 (FR-006·UX-005)
 - [X] T022 [US2] `SplashViewModel`에 13초 전이 추가 — 스피너 노출 후 10초가 더 지나면 스피너를 감추고 `ShowToast(TemporaryError)` 발행. **`withTimeout`을 쓰지 않는다**(`TimeoutCancellationException`이 CEH로 샌다, [research.md R-004·R-013](./research.md)) (FR-007)
-- [X] T023 [US2] `SplashViewModel`에 실패 분기 추가 — `MinoDomainException.Network`→`NetworkError`, `Auth`→`TemporaryError` (FR-008·FR-009·UX-007)
+- [X] T023 [US2] 실패 분기 추가 — `MinoDomainException.Network`→네트워크 문구, 그 밖의 리프(`Auth`·`Http`)→일시적 오류 문구 (FR-008·FR-009·UX-007). 리프→문구 매핑은 ViewModel이 아니라 `SplashRoute`가 갖는다([error_handling.md §5·§8](../../conventions/error_handling.md))
 - [X] T024 [US2] `SplashViewModel`에 자동 재시도 루프 추가 — 실패·시간 초과 뒤에도 세션 확보를 반복 호출하고 성공하면 즉시 전환. 횟수 상한을 두지 않으며 **도메인 예외 수신에만 종속시키지 않는다**(호출자 계약 C-5) (FR-010·EC-005)
 - [X] T025 [US2] `SplashViewModel`에 토스트 반복 억제 추가 — 직전 표출로부터 10초가 지나지 않으면 발행하지 않는다. 마지막 표출 시각은 UI 상태가 아니라 ViewModel 내부 값이다 (UX-006)
 - [X] T026 [US2] `SplashScreen`에 스피너(Material3 `CircularProgressIndicator`, 28dp)와 `MinoSnackbar` 배치 — 브랜드 레이어 **위에** 얹고 토스트는 좌우 20dp·화면 하단 40dp 띄운 위치 (UX-003·UX-004, 실측 근거는 [research.md R-006](./research.md))
