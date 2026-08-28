@@ -4,7 +4,7 @@
 
 > **범위**: 화면은 저장이 어디로 나가는지 모른다. 그 뒤가 서버인지 캐시인지, 등록인지 수정인지가 이 계약의 어느 항목도 바꾸지 않는다([research.md D36](../research.md#d36-원격-연동-착수--원천은-서버-로컬-datastore는-캐시)·[D38](../research.md#d38-등록수정-분기--서버에-직접-묻고-캐시가-그-답을-들고-있는다)).
 >
-> **plan 4.0.0에서 바뀐 것은 세 줄이다** — `SaveClicked`가 넘기는 아바타의 타입, 진입 시 갱신 호출, 그리고 실패 통로가 실제로 발화한다는 사실. UiState의 필드도 Intent·SideEffect의 목록도 화면 구성도 그대로다.
+> **plan 4.0.0에서 바뀐 것은 세 줄이다** — `SaveClicked`가 넘기는 아바타의 타입, 마이페이지 진입 시 갱신 호출, 그리고 실패 통로가 실제로 발화한다는 사실. UiState의 필드도 Intent·SideEffect의 목록도 화면 구성도 그대로다.
 
 ## Route (feature 내부)
 
@@ -46,7 +46,7 @@ internal sealed interface ProfileIntent : Intent {
   1. 진입 즉시 `ProfileRepository.observeProfile()`의 **첫 값**(캐시)으로 채운다.
   2. `refreshProfile()`이 **성공하면** `isNicknameTouched == false && !isSaving`일 때만 갱신된 값으로 한 번 더 채운다.
 - **흐름을 계속 구독하지 않는다.** 구독하면 저장 직후 값이 사용자 입력을 덮어쓴다 — 이미 구현된 `prefill()`의 KDoc이 그 근거를 갖고 있고, 이 계약은 그 판단을 유지한 채 갱신 시점의 재읽기만 더한다.
-- **진입 시 `ProfileRepository.refreshProfile()`을 한 번 부른다.** 프리필의 원천을 서버로 맞추고(FR-006), 등록 여부를 캐시에 확정하기 위해서다([D39](../research.md#d39-repository-표면--observeprofile--refreshprofile--saveprofile-세-멤버)). 온보딩 진입에서 미등록은 실패가 아니므로 스낵바가 뜨지 않는다. 실패하면 실패 통로로 나가고 화면은 캐시 값(또는 빈 상태)으로 계속 선다 — **별도 로딩 상태를 두지 않는다**(spec에 진입 로딩 표현이 없다). `launchSafely` + `runCatchingDomain`으로 감싸는 것은 저장과 같다.
+- **마이페이지 진입에서만 `ProfileRepository.refreshProfile()`을 한 번 부른다.** 프리필의 원천을 서버로 맞추고(FR-006), 등록 여부를 캐시에 확정하기 위해서다([D39](../research.md#d39-repository-표면--observeprofile--refreshprofile--saveprofile-세-멤버)). 온보딩 진입에서는 아예 부르지 않는다 — 스플래시가 같은 `GET /api/v1/users/me`로 미등록을 확정해 연 화면이라, 갱신은 같은 401을 한 번 더 받고 이미 빈 캐시를 다시 비우는 것으로 끝난다. 판정은 `ProfileEntryPoint.needsRefresh`가 소유한다. 실패하면 실패 통로로 나가고 화면은 캐시 값(또는 빈 상태)으로 계속 선다 — **별도 로딩 상태를 두지 않는다**(spec에 진입 로딩 표현이 없다). `launchSafely` + `runCatchingDomain`으로 감싸는 것은 저장과 같다.
 
 ## SideEffect
 

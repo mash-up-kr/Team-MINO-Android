@@ -578,3 +578,18 @@ Phase 0 산출물. `plan.md`에서 내린 설계 결정을 누적한다. 항목�
 - **`ProfileRegistrationRepository`를 없애고 `ProfileRepository`로 합친다**. 도메인 Repository 둘도 프로필을 다루니 합칠 수 있어 보인다. 그러나 스플래시가 필요한 것은 **값이 아니라 존재 여부**이고, 합치면 진입 판정이 `observeProfile()`의 캐시 의미까지 알아야 한다. 관심사가 다르므로 둘을 유지한다. 범위 밖이기도 하다 — 스플래시는 이미 머지된 feature다. 기각.
 
 - (plan 5.0.0에서 확인)
+
+## D50. 진입 시 갱신 — 마이페이지 진입에서만 건다
+
+- **Decision**: `ProfileViewModel`의 진입 시 `refreshProfile()` 호출을 `ProfileEntryPoint.MyPage`로 제한한다. 온보딩 진입에서는 갱신하지 않고 캐시 프리필만 돈다. 판정은 `ProfileEntryPoint.needsRefresh`가 소유한다.
+- **Rationale**: 온보딩 진입은 스플래시의 `ResolveSplashEntryUseCase`가 `hasProfile()`로 **같은 `GET /api/v1/users/me`를 쳐서 미등록(`401 USER_NOT_REGISTERED`)을 확정한 결과** 열린 화면이다([D49](#d49-develop-통합-재대조--user-태그-엔드포인트의-소유자는-userapiservice-하나다)). 그 직후 `getMe()`로 같은 경로를 한 번 더 치면 같은 401을 받고, 이미 비어 있는 캐시를 다시 비우는 것으로 끝난다. 앱 시작 경로에 **결과가 0인 왕복 1회**와 매 요청에 붙는 `IdTokenProvider.getIdToken()` 1회가 순수 낭비로 얹힌다.
+- **마이페이지는 제외하지 않는 이유**: 스플래시는 콜드 스타트 때 **등록 여부만** 봤고 값을 캐시에 채우지 않았다. 마이페이지 진입은 그로부터 임의의 시간이 지난 시점이라 [D45](#d45-프리필과-갱신의-순서--캐시로-먼저-채우고-갱신이-성공하면-조건부로-한-번-더)가 든 복구 경로(캐시 쓰기 실패·서버 상태가 앞선 경우)가 그대로 살아 있다.
+- **온보딩에서 캐시를 비우는 일은 스플래시 게이트로 옮긴다.** 갱신을 끄면 `refreshProfile()`이 하던 캐시 무효화도 함께 사라지는데, 그 정리는 `ProfileRepositoryImpl.saveProfile()`의 등록/수정 분기가 기대는 전제다(캐시 유무로 `POST`/`PATCH`를 가른다 — [D38](#d38-등록수정-분기--서버에-직접-묻고-캐시가-그-답을-들고-있는다)). 그래서 `ProfileRegistrationRepositoryImpl.isRegistered()`가 미등록으로 판정할 때 캐시를 비운다. 왕복이 늘지 않고 성공 본문을 역직렬화하지도 않으므로 [D49](#d49-develop-통합-재대조--user-태그-엔드포인트의-소유자는-userapiservice-하나다)의 성질도 그대로다. 이로써 온보딩의 "캐시는 비어 있다"가 UI의 추정이 아니라 데이터 레이어가 세운 사실이 된다.
+- **조회 메서드에 쓰기가 딸리는 것을 감수한다**: `isRegistered()`는 이름상 질의지만, 그 판정 자체가 캐시를 무효로 만드는 사건이다. 판정과 무효화를 떼어 두면 둘 사이에 캐시가 낡은 채로 읽히는 창이 생기고, 그 창을 닫을 책임자가 없다. 부수효과는 도메인 인터페이스 KDoc에 계약으로 싣는다.
+- **[D45]의 나머지는 그대로다**: 캐시 먼저 → 갱신 그다음의 순서, 두 가드(`isNicknameTouched`·`isSaving`), 로딩 상태를 두지 않는 것 모두 유효하다. 이 결정은 갱신을 *언제 거는가*만 좁힌다.
+- **판정을 `ProfileEntryPoint`가 드는 이유**: ViewModel의 private 함수로 두면 유닛 테스트로 판정할 수 없다 — 이 모듈은 `isReturnDefaultValues = true`라 `savedStateHandle.toRoute<ProfileMain>()`가 스텁 `Bundle`을 읽어 **어떤 진입점을 넣어도 `MyPage`로 복원된다**(`RoomFormViewModelTest`가 같은 사실을 문서화하고 있다). 진입점 자체의 성질로 올리면 ViewModel을 거치지 않고 직접 고정할 수 있다.
+- **Alternatives considered**:
+  - **스플래시가 `hasProfile()` 대신 `refreshProfile()`을 써서 한 번의 왕복으로 등록 판정과 캐시 채움을 끝낸다.** 중복이 근본에서 사라지고 프로필 화면은 캐시만 읽으면 된다. 그러나 진입 게이트가 프로필 본문 스키마에 묶여, 서버가 예상 밖 본문을 주는 순간 앱을 켜는 모든 사용자가 진입에 실패한다 — [D49](#d49-develop-통합-재대조--user-태그-엔드포인트의-소유자는-userapiservice-하나다)가 `hasProfile()`이 성공 본문을 역직렬화하지 않도록 지킨 바로 그 성질을 깬다. 기각.
+  - **현행 유지.** 동작은 옳고 낭비는 온보딩 1회뿐이다. 그러나 그 1회가 하필 **앱 시작 경로**에 있고, 없애는 비용이 조건 한 줄이다. 기각.
+- (2026-08-28 확정)
+

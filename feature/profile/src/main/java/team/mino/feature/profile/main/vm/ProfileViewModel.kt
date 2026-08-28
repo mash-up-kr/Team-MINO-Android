@@ -54,11 +54,13 @@ internal class ProfileViewModel
          * 둘을 코루틴 하나에 순서대로 넣는 것이 그 순서를 보장하는 유일한 방법이다. 따로 띄우면 갱신이
          * 캐시 조회를 앞질러 끝날 수 있고, 그러면 뒤늦게 도착한 캐시 값이 갱신 값을 덮어쓴다.
          *
-         * 갱신은 진입 시 한 번뿐이다. 실패해도 프리필된 값은 되돌리지 않아 화면이 캐시 값으로 계속 선다.
+         * 갱신은 진입 시 한 번뿐이고, 그마저 [ProfileEntryPoint.needsRefresh]인 진입점에서만 건다. 실패해도
+         * 프리필된 값은 되돌리지 않아 화면이 캐시 값으로 계속 선다.
          */
         init {
             launchSafely {
                 prefill()
+                if (!state.value.entryPoint.needsRefresh) return@launchSafely
                 runCatchingDomain { profileRepository.refreshProfile() }
                     .onSuccess { prefillIfAllowed() }
                     .onDomainFailure { error -> emitDomainError(error) }
