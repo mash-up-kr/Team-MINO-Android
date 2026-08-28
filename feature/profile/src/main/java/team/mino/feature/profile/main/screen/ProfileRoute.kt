@@ -6,13 +6,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import team.mino.core.common.ui.architecture.CollectSideEffect
 import team.mino.core.common.ui.error.CollectDomainError
 import team.mino.core.common.ui.scaffold.LocalSnackbarHostState
+import team.mino.core.errorhandling.DomainErrorEmitter
 import team.mino.core.errorhandling.MinoDomainException
 import team.mino.feature.profile.R
 import team.mino.feature.profile.main.vm.ProfileSideEffect
@@ -37,7 +38,7 @@ internal fun ProfileRoute(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = LocalSnackbarHostState.current
     val scope = rememberCoroutineScope()
-    val context = LocalContext.current
+    val resources = LocalResources.current
 
     // 뒤로 갈 수 없는 진입점에서는 시스템 뒤로가기도 삼킨다. 갈 수 있는 진입점에서는 아무것도
     // 하지 않고 기본 동작에 맡겨 Activity가 저장 없이 닫히게 둔다.
@@ -49,8 +50,9 @@ internal fun ProfileRoute(
         }
     }
 
-    CollectDomainError(viewModel) { error ->
-        scope.launch { snackbarHostState.showSnackbar(context.getString(messageResOf(error))) }
+    val errorEmitter: DomainErrorEmitter = viewModel
+    CollectDomainError(errorEmitter) { error ->
+        scope.launch { snackbarHostState.showSnackbar(resources.getString(messageResOf(error))) }
     }
 
     ProfileScreen(
