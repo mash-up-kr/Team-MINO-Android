@@ -190,6 +190,22 @@ internal class HomeViewModel
                     isTransitioning = true,
                 )
             }
+            rearmDeckAhead()
+        }
+
+        /**
+         * 되돌려서 잔여가 임계값 위로 올라갔으면 예고를 **다시 띄울 수 있게** 푼다(FR-015).
+         *
+         * 노출 이력이 덱 단위로 굳어 있으면, 되돌리기로 덱이 다시 길어져도 임계값을 다시 지날 때 아무 안내가
+         * 없다. 사용자에게는 「2장 남았는데 예고가 안 뜬다」로만 보인다 — 잔여 2장과 예고를 잇는 규칙이
+         * 조용히 깨진 것이다.
+         *
+         * 임계값 **위로 올라갔을 때만** 푼다. 2장에서 되돌려 3장이 되지 않는 한 되돌릴 때마다 다시 뜨지 않는다.
+         */
+        private fun rearmDeckAhead() {
+            val room = state.value.room ?: return
+            if (state.value.cards.size <= DECK_AHEAD_THRESHOLD) return
+            previewedDecks -= DeckKey(roomId = room.id, sort = state.value.sort)
         }
 
         /** 메뉴가 열려 있었으면 닫고 `true`. 스와이프도 바깥 탭도 결과가 같다(EC-004·005). */
