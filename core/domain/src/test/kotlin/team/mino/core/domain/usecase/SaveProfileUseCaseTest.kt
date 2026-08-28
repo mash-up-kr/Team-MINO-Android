@@ -91,4 +91,6 @@ private class FakeProfileRepository : ProfileRepository {
         saveFailure?.let { throw it }
         savedProfile = profile
     }
+
+    override suspend fun currentUserId(): String? = error("이 테스트가 다루는 저장 경로는 currentUserId를 부르지 않는다.")
 }

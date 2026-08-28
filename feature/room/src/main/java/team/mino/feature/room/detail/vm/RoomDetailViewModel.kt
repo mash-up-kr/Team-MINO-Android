@@ -18,6 +18,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
@@ -30,8 +32,8 @@ import team.mino.core.domain.model.Place
 import team.mino.core.domain.model.PlaceCategoryFilter
 import team.mino.core.domain.model.Room
 import team.mino.core.domain.repository.PlaceRepository
+import team.mino.core.domain.repository.ProfileRepository
 import team.mino.core.domain.repository.RoomRepository
-import team.mino.core.domain.usecase.EnsureAnonymousSessionUseCase
 import team.mino.core.errorhandling.DomainErrorEmitter
 import team.mino.core.errorhandling.MinoDomainException
 import team.mino.core.errorhandling.domainErrorEmitter
@@ -59,7 +61,7 @@ internal class RoomDetailViewModel @AssistedInject constructor(
     @Assisted private val roomId: String,
     private val roomRepository: RoomRepository,
     private val placeRepository: PlaceRepository,
-    private val ensureAnonymousSessionUseCase: EnsureAnonymousSessionUseCase,
+    private val profileRepository: ProfileRepository,
     val roomFormLauncher: RoomFormLauncher,
 ) : ViewModel(),
     MviContainer<RoomDetailUiState, RoomDetailSideEffect> by mviContainer(RoomDetailUiState()),
@@ -114,8 +116,9 @@ internal class RoomDetailViewModel @AssistedInject constructor(
 
     /**
      * [FR-001] 진입 조회 — `RoomRepository.getRoom` 단건 조회와 `PlaceRepository.observePlaces` 구독을
-     * 함께 시작한다. `isOwner`는 [EnsureAnonymousSessionUseCase]로 확보한 현재 세션의 `userId`를
-     * [Room.ownerId]와 비교해 판정한다(ADR 2026-08-22 익명 인증 — 이 앱의 유일한 사용자 식별 수단).
+     * 함께 시작한다. `isOwner`는 [ProfileRepository.currentUserId]로 얻은 서버 user id를
+     * [Room.ownerId]와 비교해 판정한다 — Firebase 익명 로그인 uid와는 다른 식별자라 그걸로 비교하면
+     * 항상 불일치한다(실기기 확인된 결함).
      *
      * 새 emit마다 현재 [RoomDetailUiState.sortOption]·[RoomDetailUiState.categoryFilter]를 다시
      * 적용한다 — 그렇지 않으면 재구독 결과가 사용자가 고른 정렬·필터를 되돌린다.
@@ -182,19 +185,23 @@ internal class RoomDetailViewModel @AssistedInject constructor(
         updateState { copy(viewType = viewType) }
     }
 
-    private suspend fun loadRoom() {
-        runCatchingDomain { roomRepository.getRoom(roomId) }
-            .onSuccess { room ->
-                val currentUserId = ensureAnonymousSessionUseCase().userId
-                updateState {
-                    copy(
-                        room = room,
-                        isOwner = room.ownerId == currentUserId,
-                        isPersonalRoom = room.isPersonal,
-                    )
-                }
-            }.onDomainFailure { updateState { copy(loadError = it) } }
-    }
+    // 방 조회와 내 user id 조회는 서로 결과를 기다릴 필요가 없어 async로 함께 시작한다 — 순서대로
+    // await하면 방 조회가 끝날 때까지 user id 요청이 시작조차 되지 않아 왕복이 그대로 더해진다.
+    private suspend fun loadRoom() =
+        coroutineScope {
+            val currentUserIdDeferred = async { profileRepository.currentUserId() }
+            runCatchingDomain { roomRepository.getRoom(roomId) }
+                .onSuccess { room ->
+                    val currentUserId = currentUserIdDeferred.await()
+                    updateState {
+                        copy(
+                            room = room,
+                            isOwner = room.ownerId == currentUserId,
+                            isPersonalRoom = room.isPersonal,
+                        )
+                    }
+                }.onDomainFailure { updateState { copy(loadError = it) } }
+        }
 
     /** [contracts/room-detail-main-contract.md 「분기 규칙 — 시트 드래그 전이」] room-list와 동일 패턴. */
     private fun onSheetDraggedUp() {

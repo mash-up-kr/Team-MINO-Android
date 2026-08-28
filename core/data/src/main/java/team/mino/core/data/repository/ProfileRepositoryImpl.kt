@@ -58,4 +58,6 @@ internal class ProfileRepositoryImpl @Inject constructor(
             }
         localDataSource.saveProfile(response.toDomain().toEntry())
     }
+
+    override suspend fun currentUserId(): String? = remoteDataSource.getMe()?.id
 }
