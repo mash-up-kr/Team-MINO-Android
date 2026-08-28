@@ -1,7 +1,51 @@
 package team.mino.feature.home.main.vm
 
+import androidx.compose.runtime.Immutable
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 import team.mino.core.common.android.architecture.UiState
+import team.mino.core.domain.model.DeckSort
+import team.mino.core.domain.model.PlaceCard
+import team.mino.core.domain.model.RoomSummary
+import team.mino.core.errorhandling.MinoDomainException
+import team.mino.feature.home.main.model.HomePhase
+import team.mino.feature.home.main.model.HomeTooltip
 
-data class HomeUiState(
-    val title: String = "홈 탭 화면입니다",
+/**
+ * 홈 탭 화면의 상태.
+ *
+ * 홈 안에서 끝나는 전환(방 시트·액션 메뉴·가이드)은 콜백이 아니라 전부 여기 담긴다 —
+ * `docs/specs/home-deck-exploration/contracts/home-ui.md` §1.
+ *
+ * @property phase 카드 자리에 무엇이 놓이는지. 상단(방 뱃지·인사 문구·정렬 칩)은 어느 값에서도 남는다.
+ * @property room 지금 보고 있는 방. 첫 덱을 받기 전이라 아직 정해지지 않았으면 `null`이다.
+ * @property rooms 방 시트가 늘어놓을 방 목록(spec FR-018). 순회 판정용 목록과 같은 값이지만 **시트가 그리는
+ *  것**이라 상태로도 올라온다 — 홈에 머무는 동안 다시 받지 않으므로 첫 조회 뒤 바뀌지 않는다.
+ * @property sort 방이 바뀌면 선언 순서상 첫 정렬로 되돌아간다(spec FR-013).
+ * @property cards 남은 카드. 최상단이 첫 원소이며, 넘긴 카드는 여기서 덜어낸다.
+ * @property isTransitioning 전환 애니메이션이 도는 중. 참인 동안 스와이프 의도는 큐에 쌓지 않고 버린다
+ *  (spec UX-001, `research.md` R-007) — 그래서 진행 중인 애니메이션을 상태로 들고 있어야 한다.
+ * @property tooltip 한 번에 하나만 뜬다. 사라진 상태가 `null`이다.
+ * @property actionMenuTarget 액션 메뉴가 열린 카드의 pinId. 메뉴는 카드 앵커에 묶여 있어 대상 없이 열리지 않는다.
+ * @property isGuideVisible 참인 동안 [HomeIntent.DismissGuide]를 뺀 모든 의도를 버린다(spec FR-019).
+ *  [phase]와 직교한다 — 볼 카드가 없어도 가이드를 먼저 띄운다(spec EC-016).
+ * @property undoable 우→좌 스와이프로 되돌릴 카드. **1단계만** 들고 있으며, 덱이 바뀌면 비운다(spec EC-003).
+ * @property loadError 주 데이터(방 목록·덱) 로드 실패. 문구가 아니라 리프를 담아 그리는 쪽이 매핑한다
+ *  (`docs/conventions/error_handling.md` §5 1행). [HomePhase.ERROR]와 함께 세워지고 함께 걷힌다 —
+ *  사용자 액션의 일회성 실패는 여기 오지 않고 `DomainErrorEmitter`로 나간다(같은 표 2행).
+ */
+@Immutable
+internal data class HomeUiState(
+    val phase: HomePhase = HomePhase.LOADING,
+    val room: RoomSummary? = null,
+    val rooms: ImmutableList<RoomSummary> = persistentListOf(),
+    val sort: DeckSort = DeckSort.GGUK_PICK,
+    val cards: ImmutableList<PlaceCard> = persistentListOf(),
+    val isTransitioning: Boolean = false,
+    val tooltip: HomeTooltip? = null,
+    val actionMenuTarget: String? = null,
+    val isRoomSheetOpen: Boolean = false,
+    val isGuideVisible: Boolean = false,
+    val undoable: PlaceCard? = null,
+    val loadError: MinoDomainException? = null,
 ) : UiState
