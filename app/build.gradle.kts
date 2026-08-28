@@ -51,6 +51,7 @@ dependencies {
     implementation(project(":feature:profile"))
     implementation(project(":feature:roomform"))
     implementation(project(":feature:main"))
+    implementation(project(":feature:splash"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
