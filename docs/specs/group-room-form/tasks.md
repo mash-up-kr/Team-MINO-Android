@@ -2,11 +2,11 @@
 
 **대상 스펙 경로**: `docs/specs/group-room-form`
 
-**기준 plan 버전**: 1.4.1
+**기준 plan 버전**: 3.0.1
 
 **최초 작성일**: 2026-08-25
 
-**최종 수정일**: 2026-08-25
+**최종 수정일**: 2026-08-28
 
 **사전 조건**: [plan.md](./plan.md) · [spec.md](./spec.md) · [data-model.md](./data-model.md) · [research.md](./research.md) · [contracts/](./contracts/) · [quickstart.md](./quickstart.md)
 
@@ -14,7 +14,11 @@
 
 **구성 방식**: 작업을 [spec.md](./spec.md) §1의 유저 플로우 5개(US1~US5)에 대응시켜 묶는다.
 
-**이번 범위의 데이터 레이어는 인메모리 mock이다.** DTO·Mapper·Repository 체인은 실제와 동일하게 세우되 `DataSource` 구현만 mock으로 채운다 — 실서버 전환 시 바뀌는 세 지점은 [contracts/room-api-mock.md](./contracts/room-api-mock.md) §4가 소유하며 이 목록에 없다.
+**데이터 레이어는 실서버를 호출한다.** plan 1.x가 세웠던 인메모리 mock은 plan 2.0.0에서 걷어냈다([research.md](./research.md) R-024). 계약은 [contracts/room-api.md](./contracts/room-api.md)가 소유하며, 걷어내는 범위는 아래 §폐기된 작업이 적는다.
+
+> **T001~T067은 mock 구간에서 완료된 작업이다.** plan 2.0.0~2.2.0이 더한 실서버 전환분이 **열두 개**(T068·T070~T080), plan 3.0.0이 더한 DataSource 합병분이 **네 개**(T081~T084)이며, 대부분 Phase 2의 데이터 레이어에 들어간다. 완료 표시를 되돌리지 않는 이유는 그 작업들이 실제로 수행됐기 때문이고, 다시 확인해야 할 것은 T076·T077이 별도 작업으로 갖는다.
+>
+> **plan 3.0.0이 `develop` 실측으로 세 가지를 바로잡았다.** ① `RoomApiService`가 이미 있어 T071이 신규가 아니라 **확장**이다(덮어쓰면 `:core:data`가 컴파일되지 않는다) ② `RoomListRemoteDataSource` 합병이 이 목록의 몫으로 배정돼 T081~T084가 생겼다 ③ T070이 기다리던 `MinoResponse<T>`와 봉투 ADR이 **`develop`에 들어왔다**([research.md](./research.md) R-031·R-032).
 
 ## 형식: `[ID] [P?] [Story] 설명`
 
@@ -51,7 +55,7 @@
 
 ## Phase 2: 기반 작업 (US1~US5 공통 인프라)
 
-**목적**: 다섯 스토리가 공통으로 쓰는 진입 계약 · 도메인 · mock 데이터 레이어 · 디자인 시스템 · feature 골격을 세운다.
+**목적**: 다섯 스토리가 공통으로 쓰는 진입 계약 · 도메인 · 데이터 레이어 · 디자인 시스템 · feature 골격을 세운다.
 
 **⚠️ 중요**: 각 작업 줄에 어떤 스토리가 그것을 쓰는지 적었다. 스토리 작업은 자신이 쓰는 산출물이 나온 시점부터 시작할 수 있고, 이 단계 전체의 완료를 기다리지 않는다.
 
@@ -70,15 +74,30 @@
 - [X] T011 `core/domain/src/main/kotlin/team/mino/core/domain/usecase/ValidateRoomNameUseCase.kt` 신규 — 앞뒤 공백 제거 후 판정, 허용 문자는 한글(완성형·자모)·영문·숫자·공백. **길이를 판정하지 않고 `suspend`가 아니다**([contracts/room-repository.md](./contracts/room-repository.md) §2) — *US1·US2*
 - [X] T012 [P] `core/domain/src/test/kotlin/team/mino/core/domain/usecase/ValidateRoomNameUseCaseTest.kt` 신규 — [contracts/room-repository.md](./contracts/room-repository.md) §2 표의 다섯 줄 + 숫자만·영문만·경계값(1자·15자)
 
-### mock 데이터 레이어 (`:core:data`)
+### 데이터 레이어 (`:core:data`)
 
-- [X] T013 [P] `core/data/src/main/java/team/mino/core/data/network/dto/response/RoomResponse.kt` · `core/data/src/main/java/team/mino/core/data/network/dto/request/RoomRequest.kt` 신규 — 응답 DTO 1종과 요청 DTO 2종(`CreateRoomRequest`·`UpdateRoomRequest`). 필드는 [data-model.md](./data-model.md) §5 — *US3·US4*
-- [X] T014 `core/data/src/main/java/team/mino/core/data/repository/mapper/RoomMapper.kt` 신규 — DTO ↔ 도메인. 색상 식별자 문자열 표는 [contracts/room-api-mock.md](./contracts/room-api-mock.md) §2가 소유하며, **서버 표현이 바뀌면 고칠 곳은 이 파일 하나다**. `description`의 `null`은 `.orEmpty()`로 흡수한다 — *US3·US4*
-- [X] T015 [P] `core/data/src/main/java/team/mino/core/data/datasource/mock/RoomMockStore.kt` 신규 — `internal @Singleton` 인메모리 저장소. `Mutex`로 맵 접근 보호 · 짧은 읽을 수 있는 `id` 생성 · 고정 `ownerId` · 시드(공동방 `야호`/`야호호`/`red` 1개 + 개인방 1개) · 관측 가능한 지연. 계약은 [contracts/room-api-mock.md](./contracts/room-api-mock.md) §3 — *US3·US4*
-- [X] T016 `core/data/src/main/java/team/mino/core/data/datasource/RoomRemoteDataSource.kt` · `RoomMockRemoteDataSourceImpl.kt` 신규 — `internal` 인터페이스와 유일한 mock 구현. 없는 `roomId`는 `MinoDomainException.Http(404, cause)`를 던지고 **403·실패 주입은 두지 않는다**([contracts/room-api-mock.md](./contracts/room-api-mock.md) §3) — *US3·US4*
-- [X] T017 `core/data/src/main/java/team/mino/core/data/datasource/di/RoomDataSourceModule.kt` 신규 — `@Binds @Singleton`으로 mock 구현을 인터페이스에 바인딩. **실서버 전환 시 갈아 끼우는 지점이 이 한 줄이다** — *US3·US4*
-- [X] T018 `core/data/src/main/java/team/mino/core/data/repository/RoomRepositoryImpl.kt` 신규 — DataSource 호출 + Mapper 변환. DTO가 이 경계를 넘지 않는다 — *US3·US4*
+> **T013~T019는 mock 구간에 완료됐고, T068~T074가 실서버로 전환하며, T081~T083이 방 리소스의 두 DataSource를 합친다.** 전환에서 **바뀌지 않는 것**이 이 구간의 성과다 — `RoomResponse`·`RoomMapper`와 `:core:domain`·`:feature:roomform` 전체가 그대로다([research.md](./research.md) R-024).
+>
+> **다만 plan 3.0.0이 예외 둘을 만들었다.** `RoomRemoteDataSource` 인터페이스는 `listRooms()`를 흡수하고(T081), `RoomRepositoryImpl`은 생성자 인자가 하나로 줄어든다(T083) — 2.0.0이 "둘 다 무변경"이라 적었던 판정이 뒤집힌 것이며, 근거는 [research.md](./research.md) R-032다.
+
+- [X] T013 [P] `core/data/src/main/java/team/mino/core/data/network/dto/response/RoomResponse.kt` · `core/data/src/main/java/team/mino/core/data/network/dto/request/RoomRequest.kt` 신규 — 응답 DTO와 요청 DTO. 생성·편집이 요청 타입 하나를 공유한다. 필드는 [data-model.md](./data-model.md) §5 — *US3·US4*
+- [X] T068 `core/data/src/main/java/team/mino/core/data/network/dto/request/RoomRequest.kt` 수정 — `description`의 **기본값 `= null`을 제거한다.** `Json`의 `encodeDefaults`가 `false`라 기본값을 두면 설명이 없을 때 필드째 빠지고, PATCH에서 그것은 "건드리지 않았다"로 읽혀 **편집에서 지운 설명이 조용히 사라진다**([research.md](./research.md) R-027 · [contracts/room-api.md](./contracts/room-api.md) §5) — *US4*
+- [X] T014 `core/data/src/main/java/team/mino/core/data/repository/mapper/RoomMapper.kt` 신규 — DTO ↔ 도메인. 색 식별자 표는 [contracts/room-api.md](./contracts/room-api.md) §2가 소유하며, **서버 표현이 바뀌면 고칠 곳은 이 파일 하나다**. `description`의 `null`은 `.orEmpty()`로 흡수한다. **이 표가 2026-08-28 배포된 서버 `enum` 13색과 그대로 일치해 실서버 전환에서 고칠 것이 없었다**([research.md](./research.md) R-030) — *US3·US4*
+- [X] T016 `core/data/src/main/java/team/mino/core/data/datasource/RoomRemoteDataSource.kt` 신규 — `internal` 인터페이스. **실서버 전환에도 바뀌지 않는다.** 같은 작업이 함께 낸 `RoomMockRemoteDataSourceImpl.kt`는 T073이 걷어낸다 — *US3·US4*
+- [X] T070 `develop`에 `core/data/src/main/java/team/mino/core/data/network/dto/response/MinoResponse.kt`와 [응답 봉투 ADR](../../adr/2026-08-27-response-envelope-unwrapped-in-apiservice.md)이 들어왔는지 확인한다 — `feature/158-instagram-share-receive`가 소유하며 **이 계획은 만들지 않는다.** 없으면 T071이 막힌다([plan.md](./plan.md) §제약 조건 · [research.md](./research.md) R-025). **2026-08-28 확인 완료 — 둘 다 `develop`에 있다.** 기존 `RoomApiService.listRooms()`가 이미 이 봉투를 벗기고 있어 T071은 그 형태를 잇기만 하면 된다([research.md](./research.md) R-031). **T071의 관문이 열렸다** — *US3·US4*
+- [X] T071 `core/data/src/main/java/team/mino/core/data/network/service/RoomApiService.kt` **확장** — 이 파일은 **이미 존재하며 `listRooms()` 하나를 갖고 있다**(`shared-link-receiver`가 세웠다). **`listRooms()`를 지우거나 파일을 새로 쓰지 않는다** — 그 함수는 방 선택 시트(`:feature:sharereceiver`)가 무는 유일한 데이터 경로다. 지우면 `:core:data`가 **컴파일되지 않으므로** 놓친 채 지나갈 수는 없지만, 빌드를 고치려다 참조 쪽을 지우면 그때 시트가 죽는다([research.md](./research.md) R-031). 세 함수(`getRoom`·`createRoom`·`updateRoom`)를 **더하고**, 기존 함수가 이미 정한 형태를 그대로 잇는다 — `api/v1/rooms` 상대 경로(앞에 `/`를 붙이지 않는다) · `body<MinoResponse<RoomResponse>>().data`로 봉투 해제 · 예외를 잡지 않는다. **반환 타입에 `MinoResponse`가 드러나면 안 된다**([contracts/room-api.md](./contracts/room-api.md) §4 · [core/data/README.md](../../../core/data/README.md) §4). `Authorization` 헤더를 손으로 붙이지 않는다 — `minoIdentityProofPlugin`이 전역으로 싣는다 — *US3·US4*
+- [X] T081 `core/data/src/main/java/team/mino/core/data/datasource/RoomRemoteDataSource.kt` **확장** — `suspend fun listRooms(): List<RoomSummaryResponse>`를 더한다. **시그니처를 바꾸지 않고 `RoomListRemoteDataSource`에서 그대로 옮겨 온다** — 그 함수의 반환 타입·실패 계약의 소유자는 여전히 `docs/specs/shared-link-receiver/contracts/room-list-api.md` §6이고, 이 작업이 정하는 것은 **어느 인터페이스에 놓이는가**뿐이다. 합병을 이 목록에 배정한 것은 그 feature의 research R-015다([research.md](./research.md) R-032 · [contracts/room-api.md](./contracts/room-api.md) §4) — *US3·US4*
+- [X] T072 `core/data/src/main/java/team/mino/core/data/datasource/RoomRemoteDataSourceImpl.kt` 신규 — `internal`, `RoomApiService`를 주입받아 위임만 한다. 변환·비즈니스 로직을 두지 않는다([core/data/README.md](../../../core/data/README.md) §5). **네 함수를 구현한다** — T081이 인터페이스에 `listRooms()`를 더하므로 `getRoom`·`createRoom`·`updateRoom`에 그것까지 넷이다([contracts/room-api.md](./contracts/room-api.md) §4) — *US3·US4*
+- [X] T017 `core/data/src/main/java/team/mino/core/data/datasource/di/RoomDataSourceModule.kt` 신규 — `@Binds @Singleton`으로 구현을 인터페이스에 바인딩 — *US3·US4*
+- [X] T073 `core/data/src/main/java/team/mino/core/data/datasource/di/RoomDataSourceModule.kt`의 `@Binds` 대상을 `RoomRemoteDataSourceImpl`로 바꾸고, **`RoomMockRemoteDataSourceImpl.kt`와 `mock/RoomMockStore.kt`를 지운다**(`mock/` 디렉터리째). 남겨 두는 스위치를 만들지 않는다 — 프로덕션 코드에 검증되지 않는 분기를 두지 않기 위해서다([research.md](./research.md) R-024 · [contracts/room-api.md](./contracts/room-api.md) §4). **`RoomList*` 3파일 삭제는 이 작업이 아니라 T082가 한다** — 사유가 다르다(이쪽은 mock 제거, 저쪽은 합병) — *US3·US4*
+- [X] T082 `core/data/src/main/java/team/mino/core/data/datasource/RoomListRemoteDataSource.kt` · `RoomListRemoteDataSourceImpl.kt` · `datasource/di/RoomListDataSourceModule.kt` **3파일을 지운다.** 둘로 갈라 놓았던 유일한 근거가 사라졌기 때문이다 — `RoomListRemoteDataSource`의 KDoc이 *"그쪽은 mock, 이쪽은 실서버"*라 적었고, T073이 mock을 걷어내면 그 문장이 거짓이 된다([research.md](./research.md) R-032). **아래 다섯은 지우지 않는다** — `RoomSummaryResponse` · `RoomSummaryMapper` · `RoomSummary`(도메인) · `RoomType`(도메인) · `RoomRepository.getRooms()`. 방 목록의 DTO·변환·도메인 계약은 `shared-link-receiver`가 소유한 채로 남는다([contracts/room-api.md](./contracts/room-api.md) §4) — *US3·US4*
+- [X] T083 `core/data/src/main/java/team/mino/core/data/repository/RoomRepositoryImpl.kt` 수정 — 생성자 인자를 **2개에서 1개로 줄인다**(`listRemoteDataSource` 제거). `getRooms()`가 무는 대상만 `listRemoteDataSource` → `remoteDataSource`로 바뀌고 **네 함수의 본문과 Mapper 호출은 그대로다.** KDoc의 *"출처가 함수마다 갈리는 과도기"* 문단을 지운다 — 그 과도기를 끝내는 것이 이 작업이다([research.md](./research.md) R-032 · [contracts/room-api.md](./contracts/room-api.md) §4) — *US3·US4*
+- [X] T078 살아남는 파일 5곳의 KDoc이 가리키는 **삭제된 계약 문서를 갱신한다** — `core/data/src/main/java/team/mino/core/data/datasource/RoomRemoteDataSource.kt` · `repository/RoomRepositoryImpl.kt` · `repository/mapper/RoomMapper.kt` · `datasource/di/RoomDataSourceModule.kt` · `feature/roomform/src/test/java/team/mino/feature/roomform/form/vm/RoomFormViewModelTest.kt`. 넷은 `contracts/room-api-mock.md`를, 하나는 그 문서의 시드를 지목하는데 **T073이 끝나면 그 문서가 없다** — 링크로 소유자를 지목한다는 규칙이 끊긴다([헌법 원칙 I](../../constitution.md)). 새 지목처는 [contracts/room-api.md](./contracts/room-api.md) §4·§2다. `RoomDataSourceModule`의 KDoc은 mock 전제라 문장째 바꾼다. **`RoomRepositoryImpl`의 "과도기" 문단은 이 작업이 아니라 T083이 지운다** — 같은 파일을 두 작업이 만지므로 순서를 지킨다(T083 → T078) — *US3·US4*
+- [X] T018 `core/data/src/main/java/team/mino/core/data/repository/RoomRepositoryImpl.kt` 신규 — DataSource 호출 + Mapper 변환. DTO가 이 경계를 넘지 않는다. **실서버 전환에도 바뀌지 않는다** — *US3·US4*
 - [X] T019 `core/data/src/main/java/team/mino/core/data/repository/di/RoomRepositoryModule.kt` 신규 — `@Binds`. 바인딩은 구현 소유 모듈이 갖는다([dependency-injection.md](../../conventions/dependency-injection.md)) — *US3·US4*
+- [X] T074 [P] `core/data/src/test/java/team/mino/core/data/network/dto/RoomRequestSerializationTest.kt` 신규 — `NetworkModule`과 **같은 `Json` 설정**으로 `RoomRequest`를 직렬화해, 설명이 없을 때 `"description": null`이 본문에 실리는지 검증한다(T068의 회귀 방지). **이 결함은 실기기가 아니라 이 테스트가 잡아야 한다** — mock 구간에는 직렬화 자체가 없어 드러날 수 없었다([research.md](./research.md) R-027 · [plan.md](./plan.md) §기술 컨텍스트) — *US3·US4*
+- [X] T079 [P] `core/data/src/test/java/team/mino/core/data/repository/mapper/RoomMapperTest.kt` 신규 — `RoomDraft.toRequest()`가 13색을 **서버 `enum`과 같은 식별자**로 옮기는지 검증한다. 미선택(`null`)이 `"gray"`로 확정되는 것과 `RoomResponse.toDomain()`이 모르는 식별자를 `GRAY`로 읽는 것도 함께 잡는다. **`enum` 밖의 값을 보내면 서버가 거절하므로 이 표가 어긋나는 것은 런타임 실패다** — T014의 표가 지금은 맞지만 그것을 지키는 테스트가 없다. 표는 [contracts/room-api.md](./contracts/room-api.md) §2 — *US3·US4*
+- [X] T080 [P] `core/data/src/test/java/team/mino/core/data/network/RoomApiServiceTest.kt` **확장** — 이 파일은 **이미 존재하며**(경로에 `service/`가 없다) `listRooms()`의 봉투 해제를 덮고 있다. **기존 케이스를 고치지 않고 케이스를 더한다** — 기존 케이스를 손대야 했다면 T071이 기존 동작을 바꾼 것이다(T084의 판정 근거). 더할 것은 Ktor `MockEngine`으로 세 함수의 **경로와 봉투 해제**를 검증하는 케이스다. `{ "data": { … } }`를 돌려주고 `RoomResponse`가 나오는지, `POST`가 `api/v1/rooms`·`PATCH`·`GET`이 `api/v1/rooms/{id}`로 나가는지를 본다. **`MinoResponse<T>`가 제네릭 `@Serializable`이라 직렬화기 해석이 컴파일에서 드러나지 않는다** — 틀리면 런타임 파싱이 깨진다. `libs.ktor.client.mock`은 이미 `:core:data`의 `testImplementation`에 있다 — *US3·US4*
 
 ### 디자인 시스템 (`:core:design-system`)
 
@@ -88,7 +107,7 @@
 
 ### 에셋 (`:feature:roomform`)
 
-- [X] T023 [P] 방 썸네일 13종을 `feature/roomform/src/main/res/drawable-{mdpi,xhdpi,xxhdpi}/`에 WebP로 export — 대상은 디자인 시스템 라이브러리 파일 `hkSOCt4kOfyaVWdxybTicF`의 컴포넌트셋 `16765-22588`(`Room Thumbnail_Empty`), variant 12색 + `my room`(= 회색). 절차는 [figma-design-fidelity.md](../../conventions/figma-design-fidelity.md) §1.3 · 포맷·밀도는 [component-asset-placement.md](../../conventions/component-asset-placement.md) §1.1 — *US1 미리보기 · US4 편집 미리보기*
+- [X] T023 [P] 방 썸네일 13종을 `feature/roomform/src/main/res/drawable-{mdpi,xhdpi,xxhdpi}/`에 WebP로 export — 대상은 디자인 시스템 라이브러리 파일 `hkSOCt4kOfyaVWdxybTicF`의 컴포넌트셋 `16765-22588`(`Room Thumbnail_Empty`), variant 12색 + `my room`(= 회색). 절차는 [figma-design-fidelity.md](../../conventions/figma-design-fidelity.md) §1.3 · 포맷·밀도는 [component-asset-placement.md](../../conventions/component-asset-placement.md) §1.1. **이 작업은 완료됐고, 이후 에셋이 `:core:common:ui`로 옮겨졌다**(커밋 `2e4c5a2`) — 두 번째 사용처(방 선택 시트)가 생겨 승격 조건을 충족했기 때문이다. **다시 export하지 않는다.** 현 위치와 `RoomThumbnailFallback`의 소유는 [research.md](./research.md) R-034 — *US1 미리보기 · US4 편집 미리보기*
 
 ### feature 골격 (`:feature:roomform`)
 
@@ -102,11 +121,12 @@
 - [X] T031 [P] `feature/roomform/src/main/java/team/mino/feature/roomform/form/vm/RoomFormIntent.kt` 신규 — [contracts/room-form-ui.md](./contracts/room-form-ui.md) §2 표의 Intent 10종 — *US1~US5*
 - [X] T032 [P] `feature/roomform/src/main/java/team/mino/feature/roomform/form/vm/RoomFormSideEffect.kt` 신규 — `Finish(outcome)` 하나와 `RoomFormOutcome` 네 갈래([contracts/room-form-ui.md](./contracts/room-form-ui.md) §3). **스낵바·화면 전환 SideEffect를 두지 않는다** — *US1~US5*
 - [X] T033 `feature/roomform/src/main/java/team/mino/feature/roomform/form/vm/RoomFormViewModel.kt` 신규(골격) — `@HiltViewModel` + `MviContainer` + `DomainErrorEmitter` 위임, `init`에서 `savedStateHandle.toRoute<RoomForm>()`로 `mode`·`isOnboarding` 복원, `processIntent`의 `when` 뼈대. 각 분기의 본문은 US1·US3·US4·US5가 채운다([contracts/room-form-ui.md](./contracts/room-form-ui.md) §5) — *US1~US5*
-- [X] T034 [P] `feature/roomform/src/main/res/values/strings.xml` 신규 — 타이틀 2종(FR-025) · CTA 2종(FR-009) · 모달 3종의 제목과 버튼(FR-020·FR-021·FR-024) · 필드 라벨·placeholder·helper(FR-002·FR-004·FR-005) · [건너뛰기](FR-017) · 에러 문구. 문구의 소유자는 [spec.md](./spec.md)이며 여기 옮겨 적는 것은 리소스 값뿐이다 — *US1~US5*
+- [X] T034 [P] `feature/roomform/src/main/res/values/strings.xml` 신규 — 타이틀 2종(FR-025) · CTA 2종(FR-009) · 모달 3종의 제목과 버튼(FR-020·FR-021·FR-024) · 필드 라벨·placeholder·helper(FR-002·FR-004·FR-005) · `건너뛰기`(FR-017) · 에러 문구. 문구의 소유자는 [spec.md](./spec.md)이며 여기 옮겨 적는 것은 리소스 값뿐이다 — *US1~US5*
 
 ### 임시 검증 진입점 (`:feature:main`)
 
 - [X] T035 `:feature:main`에 폼 진입·결과 수신 배선을 더한다 — `feature/main/src/main/java/team/mino/feature/main/MainActivity.kt`가 `RoomFormLauncher`와 결과 `registerForActivityResult`를 갖고, `MainShell.kt`·`MainNavHost.kt`가 콜백을 관통시키며, `placeholder/screen/MainTabPlaceholderScreen.kt`(또는 그 자리의 임시 화면)이 생성·온보딩 생성·시드 방 편집 세 버튼과 결과 표시를 노출한다. 기존 Sample 배선과 같은 모양이다. **실제 진입점 feature가 생기면 걷어낸다**([plan.md](./plan.md) §범위 경계) — *US1~US5 전체의 유일한 실행 경로*
+- [X] T075 `feature/main/src/main/java/team/mino/feature/main/MainActivity.kt`(하드코딩된 `SEED_ROOM_ID = "room-1"` 상수와 `onEditSeedRoom` 호출부) · `placeholder/RoomFormEntryPoint.kt` · `placeholder/screen/RoomFormEntryPlaceholderScreen.kt`에서 **편집 조작의 대상을 바꾼다** — mock 시드가 사라져 고정 `roomId`가 없으므로, 상수를 지우고 **직전에 생성한 방의 `roomId`로 여는 조작**으로 고치며 방을 한 번도 만들지 않았으면 비활성으로 둔다. 임시 배선이라 계약 문서를 두지 않는다. **세션·유저 등록을 여기에 붙이지 않는다**([plan.md](./plan.md) §범위 경계 · [research.md](./research.md) R-028) — *US4 실행 경로*
 
 **체크포인트**: 각 기반 작업이 끝날 때마다 그것을 쓰는 스토리 작업을 시작할 수 있다. T035까지 끝나면 빈 폼이 실제로 열린다
 
@@ -183,7 +203,7 @@
 
 **목표**: `roomId`를 싣고 진입하면 기존 값이 채워진 폼이 열리고, CTA를 누르면 **저장 확인 모달 없이** 곧바로 반영돼 `updated` + `roomId`가 돌아간다. (FR-013·FR-015 수정분·FR-025 · UX-003)
 
-**독립 테스트**: [quickstart.md](./quickstart.md) S-3을 수행한다 — 시드 방(`야호`)으로 열어 값·카운터·타이틀·CTA 라벨을 확인하고, 고친 뒤 다시 열어 반영을 본다. FR-014(방장 전용 노출)·FR-016(다른 화면 반영)은 대상 화면이 없어 검증하지 않는다.
+**독립 테스트**: [quickstart.md](./quickstart.md) S-3을 수행한다 — **S-1이 만든 방**으로 열어(mock 시드 `야호`는 T073이 걷어냈다) 값·카운터·타이틀·CTA 라벨을 확인하고, 고친 뒤 다시 열어 반영을 본다. FR-014(방장 전용 노출)·FR-016(다른 화면 반영)은 대상 화면이 없어 검증하지 않는다.
 
 ### 사용자 스토리 4 테스트 ⚠️
 
@@ -227,7 +247,25 @@
 - [X] T064 [quickstart.md](./quickstart.md) §3의 S-1~S-8을 임시 진입점으로 직접 눌러 확인한다
 - [X] T065 Figma 노드 대조 결과를 `<노드 ID> | 대조: <변수명>=<값> … | <불일치>` 형식으로 제출한다 — 대상은 `2314-95301`·`2314-95339`·`2314-95377`·`2542-125922`·`3798-167701`·`3798-167946`·`3832-213717`. **빌드·테스트 통과를 디자인 일치의 근거로 삼지 않는다**([figma-design-fidelity.md](../../conventions/figma-design-fidelity.md) §6)
 - [X] T066 [contracts/room-form-launcher.md](./contracts/room-form-launcher.md) §5의 세 확인을 수행한다 — `feature/roomform/build.gradle.kts`에 다른 `:feature:*`가 없고, `:feature:roomform` 어디에도 다른 feature의 Launcher 주입이 없으며, `setResult` 호출 지점이 한 곳뿐이다
-- [X] T067 [P] ADR 승격을 제안한다 — R-002(mock 데이터 레이어 전략) · R-006(디자인 시스템 컴포넌트 판정) · R-022(DS 컴포넌트의 글자 수 단위). 셋 다 다른 feature를 구속한다([plan.md](./plan.md) 헌법 게이트 G4). 각 파일은 `docs/adr/2026-08-25-*.md`로 만든다([작성 규칙](../../adr/README.md))
+- [X] T067 [P] ADR 승격을 제안한다 — ~~R-002(mock 데이터 레이어 전략)~~ · R-006(디자인 시스템 컴포넌트 판정) · R-022(DS 컴포넌트의 글자 수 단위)([plan.md](./plan.md) 헌법 게이트 G4). **R-002는 plan 2.0.0에서 후보에서 내려갔다** — 전제("서버가 없다")가 사라져 다른 feature를 구속할 수 없다(R-024). 그 ADR은 쓰이지 않았으므로 폐기할 문서도 없다. 봉투(R-025)는 승격 대상이 아니라 **기존 ADR 준수**다
+- [X] T076 `./gradlew :app:assembleQaDebug`와 `./gradlew :core:domain:test :core:data:testQaDebugUnitTest :feature:roomform:testQaDebugUnitTest`를 실행해 전부 통과시킨다 — T063과 같은 확인을 **실서버 전환 후에 다시** 하는 것이며, `:core:data` 테스트가 새로 들어간다([quickstart.md](./quickstart.md) §2)
+- [X] T084 [quickstart.md](./quickstart.md) §3의 **S-10(합병 회귀)** 을 확인한다 — T081~T083이 합친 경로를 무는 것은 이 폼이 아니라 **`:feature:sharereceiver`의 방 선택 시트**라, 폼을 아무리 눌러도 회귀가 드러나지 않는다. 시트를 열어 ① 방 목록이 그대로 그려지는지 ② 개인방이 최상단인지 ③ S-1로 만든 새 방이 목록에 나타나는지를 본다. **세션 배선 전이면 셋 다 401로 막히므로**, 그때는 **기존 `RoomApiServiceTest` 케이스가 무수정으로 통과하는지**로 대신한다 — 기존 케이스를 고쳐야 했다면 `listRooms()`의 동작이 바뀐 것이다([quickstart.md](./quickstart.md) §3 S-10 · [research.md](./research.md) R-032) — *US3·US4*
+- [X] T077 [quickstart.md](./quickstart.md) §3의 S-1~S-9를 임시 진입점으로 눌러 확인한다 — S-3은 S-1이 만든 방으로 진입하고(시드가 없다), S-9는 서버 수정 반영을 확인한다. **세션·유저 등록이 배선되기 전이면 전부 401로 막힌다** — 그때는 통과가 아니라 **"미검증"으로 기록한다**([quickstart.md](./quickstart.md) §1·§4 · [plan.md](./plan.md) §열린 항목 H)
+
+---
+
+## 폐기된 작업
+
+plan 2.0.0이 데이터 출처를 mock에서 실서버로 바꾸면서(R-024) 아래가 폐기됐다. **완료된 작업이므로 지우지 않고 여기 남긴다** — 코드가 이미 들어가 있다는 뜻이고, 걷어내는 것은 T073이 한다.
+
+| ID | 무엇이었나 | 폐기 사유 | 정리 범위 |
+|---|---|---|---|
+| ~~T015~~ | `datasource/mock/RoomMockStore.kt` 신규 — 인메모리 저장소 + 시드(`야호`) | **전제가 사라졌다.** 서버가 배포되어 인메모리 저장소를 둘 이유가 없다 | 파일 삭제 + `mock/` 디렉터리 제거 → **T073** |
+| ~~T016의 절반~~ | 같은 작업이 함께 낸 `datasource/RoomMockRemoteDataSourceImpl.kt` | 〃 — `RoomRemoteDataSourceImpl`(T072)로 대체 | 파일 삭제 → **T073**. **T016 자체는 폐기가 아니다** — 그 작업의 주 산출물인 `RoomRemoteDataSource` 인터페이스는 무변경으로 살아 있다 |
+
+**시드가 사라진 파급**: T035가 만든 임시 진입점의 "시드 방 편집" 조작이 대상을 잃는다 → **T075**. [quickstart.md](./quickstart.md) S-3의 선행 조건도 함께 바뀌었다(S-1이 만든 방으로 진입).
+
+**폐기되지 않은 것**: `RoomResponse`·`RoomRequest`·`RoomMapper`·`RoomRepositoryImpl`·두 `@Binds` 모듈·`:core:domain` 전체·`:feature:roomform` 전체. mock을 걷어내도 그대로 쓰인다 — T013~T014·T016~T019가 실제 계약대로 세워졌기 때문이다.
 
 ---
 
@@ -239,6 +277,13 @@
 |---|---|---|
 | 이번 범위에서 완결 | FR-001·FR-002·FR-003·FR-004·FR-005·FR-006·FR-007·FR-008·FR-009·FR-010·FR-013·FR-018·FR-020·FR-021·FR-022·FR-023·FR-024·FR-025 · UX-001~UX-005·UX-007~UX-009 · SC-001~SC-005·SC-007·SC-008 | T004~T062 |
 | 결과 반환까지만 | FR-015(수정·복귀 신호) · FR-017(`skipped` 반환) · FR-019(`roomId` 반환) | T057·T059·T025 |
+| 실서버 저장·조회로 뒷받침 | FR-010(생성) · FR-013(편집 진입 조회) · FR-015(편집 저장) — 저장처가 인메모리에서 서버로 바뀐 것이며 요구사항은 그대로다 | T068 · T070~T074 · T079 · T080 |
+| 요구사항이 아닌 **구조 정리** | **대응하는 FR이 없다.** 근거는 이 spec이 아니라 [`shared-link-receiver`의 research R-015](../shared-link-receiver/research.md)이며, 두 DataSource 합병을 이 계획에 배정했다([research.md](./research.md) R-032) | T081 · T082 · T083 |
+| 요구사항이 아닌 **검증·정리 지원** | 요구사항을 직접 구현하지 않고 위 작업의 검증·문서 무결성을 맡는다 | T075(임시 진입점) · T076·T077(품질 게이트) · T078(KDoc — [헌법 원칙 I](../../constitution.md)) · T084(합병 회귀 — `:feature:sharereceiver` 보호) |
+
+**FR 하나도 새로 생기거나 사라지지 않았다.** plan 2.0.0·2.1.0은 같은 요구사항을 다른 저장처로 옮겼고, **plan 3.0.0은 요구사항을 건드리지 않은 채 데이터 레이어의 중복 구조만 걷어냈다.**
+
+> **미착수 15건은 작업 줄에 FR을 인용하지 않는다** — 전부 데이터 레이어·검증 작업이라 요구사항 추적성이 이 표에만 걸려 있다. 이 표를 갱신하지 않고 작업을 더하면 그 작업의 근거가 문서 어디에도 남지 않는다.
 
 ### 이번 범위에서 닫히지 않는 것
 
@@ -256,11 +301,25 @@
 
 ### 미결 사항
 
-1. **`MinoTopNavigation`이 이미 존재한다.** [plan.md](./plan.md) 1.4.1의 소스 트리는 이 컴포넌트를 `[신규]`로 적었으나, 2026-08-25 `597ea97`(다른 이슈)로 `:core:design-system`에 이미 들어와 develop에 있다. 그래서 T020은 **신설이 아니라 확장**이다. 파라미터 이름·구성이 [contracts/design-system-additions.md](./contracts/design-system-additions.md) §1의 API 초안과 어긋나는 문제는 **현 구현 방식을 따르는 것으로 확정됐다**(2026-08-25 사용자 결정) — 이미 develop에 들어와 다른 화면이 쓰기 시작한 시그니처를 문서 초안에 맞추자고 흔드는 편이 대가가 크다. 그 결정을 T020이 담고 있으므로 착수 시 다시 판단할 것이 없다. 계약 §1의 초안 코드 블록은 이 단계에서 고치지 않았고, 초안과 실제가 갈린 자리는 T020이 단일 출처다.
-2. **열린 항목 D(서버 계약)는 그대로다.** swagger 초안이 방 설명 길이·색상 표현·색상 가짓수 세 지점에서 spec과 어긋난다([research.md](./research.md) R-003). 이번 범위는 mock이라 막히지 않고, 서버 확정 시 고칠 곳은 T014의 `RoomMapper` 한 파일이다.
+1. **`MinoTopNavigation`이 이미 존재한다.** [plan.md](./plan.md) 1.4.1의 소스 트리는 이 컴포넌트를 `[신규]`로 적었으나, 2026-08-25 `597ea97`(다른 이슈)로 `:core:design-system`에 이미 들어와 develop에 있다. 그래서 T020은 **신설이 아니라 확장**이다. 파라미터 이름·구성이 [contracts/design-system-additions.md](./contracts/design-system-additions.md) §1의 API 초안과 어긋나는 문제는 **현 구현 방식을 따르는 것으로 확정됐다**(2026-08-25 사용자 결정) — 이미 develop에 들어와 다른 화면이 쓰기 시작한 시그니처를 문서 초안에 맞추자고 흔드는 편이 대가가 크다. 그 결정을 T020이 담고 있으므로 착수 시 다시 판단할 것이 없다. **계약 §1의 초안 코드 블록은 2026-08-28 plan 2.2.1이 실제 시그니처로 맞췄다**(`onNavigateBack` → `onBackClick`, `colors` 파라미터 없음). 초안과 실제가 갈린 자리가 사라졌으므로 **이 항목은 닫혔다.**
+2. **열린 항목 D가 한 건으로 줄었고, 이 목록이 떠안는 것은 없다.** 2026-08-28T00:55:30 조회에서 서버가 `color`에 13색 `enum`을 배포한 것이 확인돼 어긋남 2·4가 해소됐다([research.md](./research.md) R-030). **그 `enum`의 회색이 `"gray"`여서 plan 2.1.0이 `"grey"`로 확정했던 판정이 뒤집혔고, T014의 표가 원래 맞았으므로 고칠 코드가 없다** — 그 정정으로 T069가 이 목록에서 사라졌다. 남은 어긋남은 `description.maxLength: 20`(spec은 30자) 하나이며 **21~30자 설명은 지금도 서버가 거절한다.** 반영 여부는 T077이 [quickstart.md](./quickstart.md) S-9의 4번으로 확인하고, **그 4번이 실패하는 것은 이 목록의 결함이 아니다.** 반면 **S-9의 1~3은 통과해야 한다** — 실패하면 T014의 표가 `enum`과 어긋난 것이고, 그것을 잡는 것이 T079다.
 3. **열린 항목 G(`graphemeLength`의 가시성)도 그대로다.** 방 이름을 `length`로 세는 근거는 FR-004의 허용 문자가 전부 코드 유닛 1개라는 것이며([contracts/room-form-ui.md](./contracts/room-form-ui.md) §1), 허용 문자가 넓어지면 `:core:common:kotlin` 승격이 필요해진다. 그 조건은 [plan.md](./plan.md) §복잡도 추적이 추적한다.
 4. **`MinoTextArea`의 grapheme 변경은 이 목록에 없다.** plan 1.3.0이 `/mino-task`를 거치지 않고 낸 코드이며 트리에 `[완료]`로 표기됐다([plan.md](./plan.md) §복잡도 추적). 다시 작업으로 만들지 않는다.
+5. **T071이 다른 브랜치를 기다린다 — 기다리기로 확정했다**(2026-08-28 사용자 결정). `MinoResponse<T>`와 [응답 봉투 ADR](../../adr/2026-08-27-response-envelope-unwrapped-in-apiservice.md)은 `feature/158-instagram-share-receive`가 갖고 있고 **이 목록은 그 파일을 만들지 않는다**([research.md](./research.md) R-025). 여기서 같은 타입을 따로 만들면 머지 때 충돌한다.
 
+   ~~**2026-08-28 확인 — 전제가 생각보다 멀다.** 158은 `develop`은 물론 자기 base 브랜치에도 그 파일이 없다.~~ **해소(plan 3.0.0).** 2026-08-28 재확인에서 `MinoResponse.kt`와 봉투 ADR이 **둘 다 `develop`에 있다.** 158이 머지되면서 함께 들어왔고, 기존 `RoomApiService.listRooms()`가 이미 그 봉투를 벗기고 있다([research.md](./research.md) R-031). **T070을 완료로 표시했고 T071의 관문이 열렸다.** 이 항목은 닫혔다.
+6. **`403`(방장 아님)은 검증하지 않는다 — 확정.** 실서버가 붙으면서 처음 도달 가능해졌으나(mock에는 경로가 없어 계약에서 뺐던 분기다), 방장이 아닌 사용자를 만들 수단이 임시 진입점에 없다. **`errorCode`로 분기하지 않아 코드 경로가 다른 실패와 같으므로**([contracts/room-api.md](./contracts/room-api.md) §6) 분류 자체는 T048·T053이 Fake로 이미 덮는다. 검증하지 않는다는 사실의 소유자는 [quickstart.md](./quickstart.md) §5다.
+7. **열린 항목 H는 이 목록이 닫지 않는다 — 그대로 두기로 확정했다**(2026-08-28 사용자 결정). 익명 세션 확보와 유저 등록(`POST /api/v1/users`)이 배선되지 않아 세 엔드포인트가 모두 `401`로 막힌다([research.md](./research.md) R-028). 각각 `docs/specs/anonymous-auth-session`·`docs/specs/profile`의 몫이며, **여기에 배선을 더하지 않는다** — 걷어낼 임시 진입점에 인증 부트스트랩을 넣으면 걷어내는 순간 책임이 사라진다. 그 결과 T077의 시나리오 검증이 H가 닫히기 전까지 "미검증"으로 남는다. **단위 테스트(T074·T076)는 H와 무관하게 돈다.**
+
+8. **DataSource 합병은 이 목록의 몫으로 배정된 것이다 — 이 목록이 정한 것이 아니다.** `shared-link-receiver`의 research R-015가 *"두 DataSource는 `group-room-form`이 실서버로 전환하는 시점에 합쳐지고, 그때 지워지는 것은 `RoomListRemoteDataSource`다"*라고 적었고, 같은 문장이 `RoomListRemoteDataSource.kt`의 KDoc에도 있다. plan 3.0.0이 그 배정을 받아 T081~T084를 세웠다([research.md](./research.md) R-032). **이 합병이 건드리는 `getRooms()`는 이 feature가 호출하지 않는다** — 그래서 회귀가 이 폼의 시나리오에 드러나지 않고, T084를 따로 둔 이유가 그것이다.
+
+9. **`RoomApiService`는 신규가 아니라 확장이다 — 컴파일러가 막아 주는 경고다.** T071의 대상 파일은 이미 존재하고 `listRooms()`를 갖고 있다. plan 2.x의 소스 트리가 그것을 `[신규]`로 적어 두었던 것이 3.0.0에서 정정됐다([research.md](./research.md) R-031).
+
+   **plan 3.0.1에서 등급을 내렸다.** 3.0.0은 이것을 "가장 위험한 지점 — 조용히 깨진다"로 적었으나 실측이 뒤집었다. `listRooms()`를 참조하는 곳이 프로덕션 `RoomListRemoteDataSourceImpl` 1곳과 `RoomApiServiceTest` 케이스 3건이라, **함수를 지우면 `:core:data`가 컴파일되지 않는다.** 은밀한 런타임 회귀가 아니라 즉시 드러나는 빌드 실패다.
+
+   **해소 조건**: T071이 확장으로 수행되면 "신규냐 확장이냐"라는 질문 자체가 사라진다. 그때 이 항목을 취소선으로 닫는다. **문서 쪽 정리는 이미 끝났다** — 남아 있는 `[신규]` 표기는 전부 `RoomRemoteDataSourceImpl`(진짜 신규)을 가리키거나 이 정정문 자체다.
+
+   **가드가 비는 구간은 없다.** 합병이 프로덕션 참조를 옮기지만 순서가 T072 → T073 → T082라 참조가 사라지기 전에 새 참조가 먼저 선다. 다만 그 사이 **테스트 3건이 유일한 가드가 되는 순간이 있어**, T080의 "기존 케이스를 고치지 않는다"는 스타일 규칙이 아니라 **가드 유지 장치**다(T084의 대체 판정 근거이기도 하다).
 ---
 
 ## 의존성 및 실행 순서
@@ -271,6 +330,7 @@
 - **기반 작업 (Phase 2)**: Phase 1 완료에 의존. 내부 의존은 아래 "기반 작업 내부"
 - **사용자 스토리 (Phase 3~7)**: 각 작업이 **실제로 읽거나 컴파일 대상으로 삼는** 기반 작업에만 의존한다. Phase 2 전체의 완료를 기다리지 않는다
 - **마무리 (Phase 8)**: 목표한 모든 스토리의 완료에 의존. T063은 언제든 중간 확인용으로 돌릴 수 있다
+- **실서버 전환 + DataSource 합병 (T068~T084)**: Phase 2의 데이터 레이어에 들어가지만 **실행은 T001~T067 이후다.** mock 구간이 이미 완료됐으므로 이 **열다섯 개**(T070 완료로 남은 것)가 지금 착수할 유일한 작업이다. 내부 순서는 아래 "실서버 전환 내부"가 말한다
 
 ### 기반 작업 내부
 
@@ -280,7 +340,7 @@ T005 ─┴───────────────────────
 T006·T007·T008 ──► T010 ──► T018 ──► T019
 T009 ──► T011 ──► T012
 T013 ──► T014 ──► T018
-T013 ──► T015 ──► T016 ──► T017 · T018
+T013 ──► T016 ──► T017 · T018
 T021 ──► T022
 T024 ──► T025 · T026 · T027
 T029 · T006 · T009 ──► T030 ──► T033
@@ -290,6 +350,32 @@ T010 · T011 ──► T033
 
 - T020·T023·T034는 다른 기반 작업에 의존하지 않는다
 - T035는 T005·T004·T028이 끝나야 실제로 폼을 열 수 있다
+
+### 실서버 전환 + 합병 내부 (T068~T084)
+
+```
+T070 (봉투 착지 확인 — 완료) ──► T071 (RoomApiService 확장)
+T081 (인터페이스에 listRooms 흡수) ──► T072 (DataSourceImpl 네 함수)
+T071 ──────────────────────────────► T072 ──► T073 (@Binds 교체 + mock 삭제)
+T073 ──► T082 (RoomList* 3파일 삭제) ──► T083 (RepositoryImpl 인자 축소) ──► T078 (KDoc 갱신)
+T071 ──► T080 (ApiService 봉투 테스트 — 기존 파일 확장)
+T068 (RoomRequest 기본값 제거) ──► T074 (직렬화 테스트)
+T079 (매퍼 어휘 테스트 — 선행 작업 없음)
+T073 ──► T075 (임시 진입점 편집 조작) ──► T077 (시나리오)
+T083 ──► T084 (합병 회귀 — 방 선택 시트)
+T073 · T074 · T079 · T080 · T083 ──► T076 (빌드·테스트)
+```
+
+- **T070의 관문이 열렸다.** 2026-08-28 `MinoResponse<T>`와 봉투 ADR이 `develop`에 착지해, T071이 더는 다른 브랜치를 기다리지 않는다
+- **T073이 여전히 관문이다.** 그 전까지는 mock이 계속 바인딩돼 있어 실서버 경로가 한 번도 실행되지 않는다. T071·T072를 만들어 두어도 마찬가지다
+- **T081은 T072보다 앞서야 한다.** 인터페이스에 `listRooms()`가 없으면 T072가 구현할 함수가 셋뿐이다
+- **T082는 T073 뒤여야 한다.** mock 바인딩이 살아 있는 동안 `RoomList*`를 지우면 `getRooms()`가 무는 실서버 경로가 통째로 사라져 방 선택 시트가 즉시 깨진다. **순서가 뒤집히면 다른 feature가 죽는다**
+- **T083은 T082 뒤다.** 지우지 않은 `RoomListRemoteDataSource`를 주입에서 빼면 바인딩이 뜬다
+- **T068은 T070~T073과 독립이다** — 순서를 기다리지 않고 먼저 해도 된다. 다만 효과는 T073 이후에만 나타난다
+- **T074·T079는 T073 없이도 돈다.** 직렬화도 매핑도 바인딩과 무관하므로, 서버 연결 전에 R-027·R-030 회귀를 먼저 막을 수 있다
+- **T079는 선행 작업이 없다.** 검증 대상인 T014의 표가 이미 들어가 있고 지금은 맞다 — 이 테스트는 그것이 계속 맞음을 지키는 쪽이다
+- **T078은 T083 뒤여야 한다.** 둘이 `RoomRepositoryImpl`의 같은 KDoc을 만지고, T073 전에 고치면 아직 존재하는 mock 파일이 없는 문서를 가리키게 된다
+- **T084는 T083 뒤다.** 합병이 끝나야 회귀를 볼 수 있다
 
 ### 사용자 스토리 간 의존성
 
@@ -311,6 +397,8 @@ T010 · T011 ──► T033
 - 세 모듈(`:core:domain` · `:core:data` · `:core:design-system`)의 기반 작업은 서로를 기다리지 않는다
 - 스토리 안에서 [P]가 붙은 컴포넌트 작업(T038·T039 / T044)은 동시에 만들 수 있다
 - T047·T049는 `:core:domain`이라 feature 작업과 병렬이다
+- 실서버 전환에서는 **T068·T074·T079가 T071~T073과 병렬이다** — 셋 다 `:core:data`의 DTO·테스트만 건드리고 `MinoResponse`를 쓰지 않는다. **세 테스트 T074·T079·T080은 서로 다른 파일이라 셋 다 [P]다**. T075는 `:feature:main`이라 파일이 겹치지 않지만 **T073 이후라야 눌러 볼 수 있다**
+- **합병 4건(T081~T084)은 서로 직렬이고 병렬화 대상이 아니다** — T081만 T071과 병렬로 열 수 있다(서로 다른 파일이고 T072에서 만난다). 나머지는 삭제·주입 변경이 연쇄해 [P]가 붙지 않는다
 
 ---
 
@@ -337,6 +425,22 @@ Task: "RoomColorUiModel — RoomColor ↔ MinoRoomColor ↔ drawable 매핑"   #
 Task: "RoomPreviewCard 작성"                                           # T039
 ```
 
+## 병렬 실행 예시: 실서버 전환
+
+```bash
+# MinoResponse를 쓰지 않는 셋 + 인터페이스 확장을 동시에 연다
+Task: "RoomRequest의 description 기본값 제거"                          # T068
+Task: "RoomRequest 직렬화 테스트 작성"                                  # T074
+Task: "RoomMapper 색 어휘 테스트 작성"                                  # T079
+Task: "RoomRemoteDataSource에 listRooms() 흡수"                        # T081
+
+# 봉투는 이미 develop에 있다(T070 완료). 확장부터 직렬로
+Task: "RoomApiService에 세 함수 추가 (listRooms 보존)"                  # T071
+Task: "RoomApiServiceTest에 세 함수 케이스 추가 (기존 케이스 무수정)"    # T080
+```
+
+> **합병 구간(T073 → T082 → T083)은 병렬로 돌리지 않는다.** 순서가 뒤집히면 방 선택 시트가 깨진다 — 위 "실서버 전환 + 합병 내부" 참조.
+
 ---
 
 ## 구현 전략
@@ -358,6 +462,20 @@ Task: "RoomPreviewCard 작성"                                           # T039
 5. US4 추가 → S-3
 6. US5 추가 → S-4·S-5·S-6 → 다섯 스토리 완결
 7. Phase 8로 빌드·테스트·디자인 대조·경계 확인을 닫는다
+
+### 실서버 전환 (지금 착수할 구간)
+
+T001~T067과 T070이 완료됐으므로 남은 것은 이 열넷이다. **T070의 관문이 열려 더 기다릴 것이 없다.**
+
+1. **T068 + T074·T079 + T081** — 서로 독립인 묶음으로 먼저 연다. T068과 T074는 고침·검증 짝, T079는 이미 맞는 표를 지키는 회귀 테스트, T081은 인터페이스에 `listRooms()`를 흡수한다
+2. **T071 → T072 → T073** — T071은 **신규가 아니라 확장이다.** `listRooms()`를 지우지 않는 것이 이 단계의 유일한 함정이며, 지우면 `:core:data`가 컴파일되지 않는다(빌드가 막아 주므로 놓친 채 지나갈 수는 없다). T073에서 mock이 걷히고 실서버 경로가 처음 실행된다. T080은 T071 직후 붙일 수 있다
+3. **T082 → T083** — 합병을 닫는다. **순서를 지킨다** — mock 바인딩이 살아 있는 동안 `RoomList*`를 지우면 `getRooms()`의 실서버 경로가 통째로 사라진다
+4. **T078** — T073이 지운 문서를 가리키던 KDoc 5곳을 정리한다. **T083 뒤에 둔다** — 둘이 `RoomRepositoryImpl`의 같은 KDoc을 만진다
+5. **T075** — 시드가 사라진 자리를 임시 진입점이 메운다
+6. **중단하고 검증**: T076(빌드·단위 테스트)까지가 세션 배선과 무관하게 통과해야 하는 선이다. **T084의 대체 판정(기존 `RoomApiServiceTest` 무수정 통과)도 여기서 함께 본다**
+7. **T077 + T084** — 세션·유저 등록이 배선돼 있으면 S-1~S-9와 S-10을 누른다. 아니면 **"미검증"으로 기록하고 멈춘다** — 401을 통과로 적지 않는다
+
+> **이 구간에서 다른 feature를 깨뜨릴 수 있는 작업이 셋이다** — T071(덮어쓰기) · T082(순서) · T083(주입). 셋 다 `:feature:sharereceiver`의 방 선택 시트가 피해자이고, 그것을 잡는 것이 T084다.
 
 ### 팀 병렬 전략
 

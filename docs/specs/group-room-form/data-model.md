@@ -74,7 +74,7 @@ enum class RoomColor { RED, RED_ORANGE, ORANGE, LIME, GREEN, CYAN, VIOLET, PINK,
 | `GRAY`의 의미 | 색을 고르지 않은 방이 **갖게 되는** 색. "값 없음"이 아니다 | spec §2.3 · [research.md](./research.md) R-010 |
 | 선언 순서 | Figma 칩 그리드의 배치 순서 — red / red orange / orange / lime · green / cyan / violet / pink · blue / brown / light blue / purple. 노드는 [contracts/design-system-additions.md](./contracts/design-system-additions.md) §2가 소유한다 | FR-006 |
 | 갖지 않는 것 | hex 값·표시 이름·캐릭터 에셋 참조 | 헌법 원칙 II — 도메인은 UI 자산을 모른다 |
-| 썸네일 대응 | 12색은 같은 이름의 variant, `GRAY`는 `my room` variant. 매핑은 feature가 소유한다 | [research.md](./research.md) R-017 |
+| 썸네일 대응 | 12색은 같은 이름의 variant, `GRAY`는 `my room` variant. 매핑은 **`:core:common:ui`의 `RoomThumbnailFallback`**이 `MinoRoomColor` 기준으로 소유한다 | [research.md](./research.md) R-017 · R-034 |
 
 `companion object`에 `selectable: List<RoomColor>`(= `entries - GRAY`)를 둔다. 칩 그리드가 순회할 목록의 단일 출처다.
 
@@ -220,7 +220,7 @@ sealed interface RoomFormDialog {
 
 ## 5. DTO (`:core:data/network/dto/`)
 
-swagger 필드명을 그대로 따른다. 세부 계약과 어긋난 지점의 처리는 [contracts/room-api-mock.md](./contracts/room-api-mock.md).
+서버 필드명을 그대로 따른다. 스키마 원문·어긋난 지점의 처리는 [contracts/room-api.md](./contracts/room-api.md).
 
 ### `RoomResponse` (응답)
 
@@ -229,20 +229,22 @@ swagger 필드명을 그대로 따른다. 세부 계약과 어긋난 지점의 �
 | `id` | `String` | `Room.id` | `Room.id` |
 | `name` | `String` | `Room.name` | `Room.name` |
 | `description` | `String?` | `Room.description` | `.orEmpty()` |
-| `color` | `String` | `Room.color` | `RoomColor` (식별자 문자열, R-003) |
+| `color` | `String` | `Room.color` | `RoomColor` (서버 `enum` 13색, R-030 — `GRAY`는 `"gray"`) |
 | `ownerId` | `String` | `Room.ownerId` | `Room.ownerId` |
 
-`inviteCode`·`createdAt`은 DTO에도 두지 않는다 — mock이 내려줄 필요가 없고, `ignoreUnknownKeys = true`가 이미 걸려 있어 서버가 보내도 파싱이 깨지지 않는다.
+서버가 함께 내려주는 `type`·`createdAt`과, `GET /api/v1/rooms/{roomId}`에만 있는 `pinCount`·`memberCount`는 **DTO에도 두지 않는다** — 폼이 읽지 않고, `ignoreUnknownKeys = true`가 흡수하므로 파싱이 깨지지 않는다. `Room.type`을 도메인에 두지 않는 판정은 [research.md](./research.md) R-020이 소유한다.
 
-### `CreateRoomRequest` / `UpdateRoomRequest`
+응답 봉투 `{ "data": ... }`는 이 DTO에 나타나지 않는다 — `RoomApiService`가 `MinoResponse<T>`로 벗겨 낸 뒤를 이 표가 그린다([응답 봉투 ADR](../../adr/2026-08-27-response-envelope-unwrapped-in-apiservice.md) · [contracts/room-api.md](./contracts/room-api.md) §3).
 
-| 필드 | 타입 | 비고 |
-|---|---|---|
-| `name` | `String` | Create는 필수, Update는 nullable 아님(폼이 항상 세 값을 함께 보낸다) |
-| `description` | `String?` | 빈 문자열은 `null`로 보낸다 |
-| `color` | `String` | `RoomDraft.color ?: GRAY`가 확정한 값의 식별자 |
+### `RoomRequest` (생성·편집 공용)
 
-**Update를 PATCH이면서 세 필드를 모두 보내는 이유**: 폼이 세 항목을 한 화면에서 함께 편집하므로 부분 갱신 의미가 없고, 부분 전송은 "지운 설명"과 "안 건드린 설명"을 구분하지 못한다.
+| 필드 | 타입 | 기본값 | 비고 |
+|---|---|---|---|
+| `name` | `String` | 없음 | 폼이 항상 보낸다. 서버 `maxLength: 15` — FR-003과 일치한다 |
+| `description` | `String?` | **두지 않는다** | 빈 문자열은 `null`로 보낸다. 기본값을 두면 `null`이 본문에서 빠져 "지운 설명"이 전달되지 않는다([research.md](./research.md) R-027). **서버 `maxLength`는 여전히 20이다** — 30으로 고치기로 협의됐으나 미반영(R-030) |
+| `color` | `String` | 없음 | `RoomDraft.color ?: GRAY`가 확정한 값의 식별자. **서버 `enum` 밖의 값은 거절된다** — 어휘는 [contracts/room-api.md](./contracts/room-api.md) §2 |
+
+**생성과 편집이 같은 타입을 쓰고, PATCH에도 세 필드를 모두 보낸다**: 폼이 세 항목을 한 화면에서 함께 편집하므로 부분 갱신 의미가 없고, 부분 전송은 "지운 설명"과 "안 건드린 설명"을 구분하지 못한다. 서버가 `PATCH`의 `required`를 `[]`로 두었지만 그 여지를 쓰지 않는다. 두 요청이 갈라지는 날 타입을 나눈다.
 
 ---
 
