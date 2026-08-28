@@ -11,19 +11,19 @@ import team.mino.feature.room.main.screen.RoomListRoute
 @Serializable
 data object RoomGraph : Route
 
+/**
+ * 방 리스트·방 상세 그래프의 유일한 목적지. 방 리스트↔방 상세 전환은 별도 목적지가 아니라
+ * `RoomListViewModel.selectedRoomId` 로컬 상태로 표현한다 — 지도(`RoomListMap`)를 하나의 컴포지션에서
+ * 계속 살려 두어야 리스트↔상세 전환에서 카메라가 리셋되지 않는다.
+ */
 @Serializable
 internal data object RoomMain : Route
 
 /**
  * 방 리스트 탭 그래프를 셸의 [NavGraphBuilder]에 등록한다. 이 모듈의 화면 표면은 이 함수 하나다.
- *
- * `sheetLevelOverride`는 항상 `null`로 진입한다 — EC-007([SCR-005] 방 상세 `[X]` 복귀 시 시트 상태
- * 유지)은 `room-detail`이 미구현이라 아직 이 그래프로 값을 되돌려줄 경로가 없다([contracts/navigation-launchers.md](../../../../docs/specs/room-list/contracts/navigation-launchers.md)).
  */
 fun NavGraphBuilder.roomGraph() {
     graph<RoomGraph>(startDestination = RoomMain) {
-        screen<RoomMain> {
-            RoomListRoute(sheetLevelOverride = null)
-        }
+        screen<RoomMain> { RoomListRoute() }
     }
 }

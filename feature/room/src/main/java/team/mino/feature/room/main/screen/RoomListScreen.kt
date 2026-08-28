@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
@@ -65,14 +66,31 @@ import kotlin.math.roundToInt
 
 /**
  * 방 리스트 탭 화면. `Peek`/`Half`/`Full` 3단계를 [RoomListUiState.sheetLevel] 상태 하나로 그린다.
+ *
+ * @param detailContent `null`이 아니면 방 상세를 보는 중이다([RoomListUiState.selectedRoomId] 참고) —
+ * 이 컴포저블이 방 상세의 컨트롤·바텀시트·오버레이를 그린다. 지도([RoomListMap])는 이 분기와 무관하게
+ * 항상 이 함수가 한 번만 그려서, 리스트↔상세 전환에도 같은 컴포지션에 남아 카메라가 리셋되지 않는다
+ * (`RoomListRoute` KDoc 참고).
+ * @param detailSheetLevel `detailContent`가 그리는 방 상세 바텀시트의 현재 단계. 지도가 상태바 밑으로
+ * 새어 나와야 하는지(`mapBleed`)는 "현재 활성화된 시트"가 `Full`인지로 판정해야 한다 — 상세 모드인데도
+ * 리스트의 `state.sheetLevel`만 보면 상세가 `Full`이라 지도가 안 보여야 할 때도 지도가 계속 새어 나와
+ * 상태바 영역에 지도 색이 비치고 그 아래서 흰 시트가 시작되는 이음매가 생긴다(실기기 확인된 결함).
  */
 @Composable
 internal fun RoomListScreen(
     state: RoomListUiState,
     onIntent: (RoomListIntent) -> Unit,
     modifier: Modifier = Modifier,
+    detailSheetLevel: BottomSheetLevel? = null,
+    detailContent: (@Composable BoxScope.() -> Unit)? = null,
 ) {
-    val isMapControlVisible = state.sheetLevel != BottomSheetLevel.FULL
+    val isDetailMode = detailContent != null
+    val listIsMapControlVisible = state.sheetLevel != BottomSheetLevel.FULL
+    val isMapControlVisible = if (isDetailMode) {
+        detailSheetLevel != BottomSheetLevel.FULL
+    } else {
+        listIsMapControlVisible
+    }
     var sortMenuExpanded by remember { mutableStateOf(false) }
     // 트리거 위치를 이 Box 기준 좌표(root 기준 아님)로 계산하려고 두 LayoutCoordinates를 그대로
     // 들고 있는다 — RoomListSortMenu의 KDoc 「루트 좌표계 이중 오프셋」 참조.
@@ -122,87 +140,91 @@ internal fun RoomListScreen(
                 },
         )
 
-        if (isMapControlVisible) {
-            RoomListMapControls(
-                mapMarkerSort = state.mapMarkerSort,
-                categoryFilter = state.categoryFilter,
-                onSortTriggerClick = { sortMenuExpanded = !sortMenuExpanded },
-                onSortTriggerPositioned = { sortTriggerCoordinates = it },
-                onCategoryFilterSelected = { onIntent(RoomListIntent.OnCategoryFilterSelected(it)) },
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .fillMaxWidth()
-                    .padding(start = 20.dp, top = 20.dp, end = 20.dp, bottom = 12.dp),
-            )
-
-            val sheetHeight = bottomSheetHeightOrNull(state.sheetLevel, state.groupRooms.size) ?: 0.dp
-            RoomListCurrentLocationButton(
-                onClick = { onIntent(RoomListIntent.OnCurrentLocationClick) },
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(end = 20.dp, bottom = sheetHeight + RoomListCurrentLocationButtonTokens.GapAboveSheet),
-            )
-        }
-
-        RoomListBottomSheet(
-            sheetLevel = state.sheetLevel,
-            groupRoomCount = state.groupRooms.size,
-            onDraggedUp = { onIntent(RoomListIntent.OnSheetDraggedUp) },
-            onDraggedDown = { onIntent(RoomListIntent.OnSheetDraggedDown) },
-            onAddRoomClick = { onIntent(RoomListIntent.OnAddRoomClick) },
-            modifier = Modifier.align(Alignment.BottomCenter),
-        ) {
-            Column {
-                // Figma 003-1-2(half)·003-2-3(full) 대조 — 정렬 칩은 Full 전용이 아니라 Half에서도
-                // 보인다(FR-005). Peek는 헤더만 그리므로 content() 자체가 호출되지 않아 자동으로 숨는다.
-                RoomListSortChipRow(
-                    selected = state.roomListSort,
-                    onSelected = { onIntent(RoomListIntent.OnRoomListSortSelected(it)) },
+        if (isDetailMode) {
+            detailContent()
+        } else {
+            if (isMapControlVisible) {
+                RoomListMapControls(
+                    mapMarkerSort = state.mapMarkerSort,
+                    categoryFilter = state.categoryFilter,
+                    onSortTriggerClick = { sortMenuExpanded = !sortMenuExpanded },
+                    onSortTriggerPositioned = { sortTriggerCoordinates = it },
+                    onCategoryFilterSelected = { onIntent(RoomListIntent.OnCategoryFilterSelected(it)) },
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .fillMaxWidth()
+                        .padding(start = 20.dp, top = 20.dp, end = 20.dp, bottom = 12.dp),
                 )
-                RoomListRoomCardList(
-                    personalRoom = state.personalRoom,
-                    groupRooms = state.groupRooms,
-                    showGhostCard = state.showGhostCard,
-                    onRoomCardClick = { onIntent(RoomListIntent.OnRoomCardClick(it)) },
-                    onGhostCardClick = { onIntent(RoomListIntent.OnGhostCardClick) },
+
+                val sheetHeight = bottomSheetHeightOrNull(state.sheetLevel, state.groupRooms.size) ?: 0.dp
+                RoomListCurrentLocationButton(
+                    onClick = { onIntent(RoomListIntent.OnCurrentLocationClick) },
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(end = 20.dp, bottom = sheetHeight + RoomListCurrentLocationButtonTokens.GapAboveSheet),
                 )
             }
-        }
 
-        if (state.showNudge) {
-            RoomNudgeSheet(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .background(
-                        color = MinoAndroidTheme.colors.backgroundElevatedNormal,
-                        shape = RoomListNudgeOverlayTokens.Shape,
-                    ),
-                onCreateClick = { onIntent(RoomListIntent.OnNudgeCreateClick) },
-            )
-        }
+            RoomListBottomSheet(
+                sheetLevel = state.sheetLevel,
+                groupRoomCount = state.groupRooms.size,
+                onDraggedUp = { onIntent(RoomListIntent.OnSheetDraggedUp) },
+                onDraggedDown = { onIntent(RoomListIntent.OnSheetDraggedDown) },
+                onAddRoomClick = { onIntent(RoomListIntent.OnAddRoomClick) },
+                modifier = Modifier.align(Alignment.BottomCenter),
+            ) {
+                Column {
+                    // Figma 003-1-2(half)·003-2-3(full) 대조 — 정렬 칩은 Full 전용이 아니라 Half에서도
+                    // 보인다(FR-005). Peek는 헤더만 그리므로 content() 자체가 호출되지 않아 자동으로 숨는다.
+                    RoomListSortChipRow(
+                        selected = state.roomListSort,
+                        onSelected = { onIntent(RoomListIntent.OnRoomListSortSelected(it)) },
+                    )
+                    RoomListRoomCardList(
+                        personalRoom = state.personalRoom,
+                        groupRooms = state.groupRooms,
+                        showGhostCard = state.showGhostCard,
+                        onRoomCardClick = { onIntent(RoomListIntent.OnRoomCardClick(it)) },
+                        onGhostCardClick = { onIntent(RoomListIntent.OnGhostCardClick) },
+                    )
+                }
+            }
 
-        if (isMapControlVisible && sortMenuExpanded) {
-            RoomListSortMenu(
-                selected = state.mapMarkerSort,
-                onSelected = {
-                    onIntent(RoomListIntent.OnMapSortSelected(it))
-                    sortMenuExpanded = false
-                },
-                modifier = Modifier.offset {
-                    val root = rootCoordinates
-                    val trigger = sortTriggerCoordinates
-                    if (root == null || trigger == null) {
-                        IntOffset.Zero
-                    } else {
-                        val position = root.localPositionOf(
-                            sourceCoordinates = trigger,
-                            relativeToSource = Offset(0f, trigger.size.height + sortMenuGapPx),
-                        )
-                        IntOffset(position.x.roundToInt(), position.y.roundToInt())
-                    }
-                },
-            )
+            if (state.showNudge) {
+                RoomNudgeSheet(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .background(
+                            color = MinoAndroidTheme.colors.backgroundElevatedNormal,
+                            shape = RoomListNudgeOverlayTokens.Shape,
+                        ),
+                    onCreateClick = { onIntent(RoomListIntent.OnNudgeCreateClick) },
+                )
+            }
+
+            if (isMapControlVisible && sortMenuExpanded) {
+                RoomListSortMenu(
+                    selected = state.mapMarkerSort,
+                    onSelected = {
+                        onIntent(RoomListIntent.OnMapSortSelected(it))
+                        sortMenuExpanded = false
+                    },
+                    modifier = Modifier.offset {
+                        val root = rootCoordinates
+                        val trigger = sortTriggerCoordinates
+                        if (root == null || trigger == null) {
+                            IntOffset.Zero
+                        } else {
+                            val position = root.localPositionOf(
+                                sourceCoordinates = trigger,
+                                relativeToSource = Offset(0f, trigger.size.height + sortMenuGapPx),
+                            )
+                            IntOffset(position.x.roundToInt(), position.y.roundToInt())
+                        }
+                    },
+                )
+            }
         }
     }
 }

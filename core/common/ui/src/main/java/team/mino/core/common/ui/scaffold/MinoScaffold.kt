@@ -14,12 +14,15 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import team.mino.core.common.ui.R
 import team.mino.core.common.ui.error.CollectUncaughtError
 import team.mino.core.designsystem.component.snackbar.MinoSnackbar
+import team.mino.core.designsystem.foundation.icons.MinoIcons
+import team.mino.core.designsystem.foundation.icons.icons.Check
 
 /**
  * 네비게이션 셸(`XShell`)이 여는 프로젝트 표준 [Scaffold]. **Activity당 하나만** 연다.
@@ -61,7 +64,8 @@ fun MinoScaffold(
             )
 
             // 표출 위치의 기준선이 스크린 하단이라 Scaffold의 snackbarHost 슬롯을 비워 두고 셸이
-            // 직접 얹는다. 그 슬롯은 호스트를 bottomBar 위에 놓아 하단 바 유무로 기준선이 갈린다.
+            // 직접 얹는다. 그 슬롯은 호스트를 bottomBar 위에 놓아 하단 바 유무로 기준선이 갈린다
+            // (`docs/adr/2026-08-24-snackbar-host-owned-by-mino-scaffold.md`).
             SnackbarHost(
                 hostState = snackbarHostState,
                 modifier = Modifier
@@ -74,6 +78,7 @@ fun MinoScaffold(
             ) { data ->
                 MinoSnackbar(
                     message = data.visuals.message,
+                    leadingIcon = rememberVectorPainter(MinoIcons.Check),
                     modifier = Modifier.fillMaxWidth(),
                     actionLabel = data.visuals.actionLabel,
                     onActionClick = data::performAction,

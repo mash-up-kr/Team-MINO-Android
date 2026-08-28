@@ -61,6 +61,8 @@ xLauncher.launch(activity) { putExtra(EXTRA_X_SOMETHING, value) }
 | `NavGraphBuilder.graph<T>(startDestination, typeMap)` | `Route` 타입 `T`를 진입점으로 하는 **중첩 그래프** 등록. androidx의 `navigation<T>`를 `Route`로 제약한다. |
 | `serializableNavType<T>()` / `MinoNavJson` | custom `@Serializable` 인자를 라우트에 싣기 위한 `NavType`. 등록·복원이 공유하는 단일 `Json`. |
 | `NavController.popBackStackIfResumed(entry)` | 현재 화면이 `RESUMED`일 때만 pop — 전환 중 빠른 중복 탭의 **이중 pop을 방지**. |
+| `ImmersiveRoute` | 바텀 네비게이션을 숨겨야 하는 몰입 화면임을 표시하는 빈 마커 인터페이스. 몰입 화면을 만드는 feature는 자신의 `Route`에 이 마커를 함께 구현한다. |
+| `ImmersiveRouteRegistry` | `ImmersiveRoute`를 구현하는 `Route`를 모아 두는 레지스트리. 탭 셸이 `isImmersive(destination)`으로 현재 목적지가 몰입 화면인지(구체 `Route` 타입을 몰라도) 판정할 수 있게 한다. |
 
 ```kotlin
 MinoNavHost(navController, startDestination) {
@@ -73,6 +75,9 @@ MinoNavHost(navController, startDestination) {
 
 > [!NOTE]
 > custom 인자 타입은 등록(`screen<T>`)과 복원(`SavedStateHandle.toRoute<T>`)이 **같은 `typeMap`** 을 참조해야 round-trip이 어긋나지 않는다. Route `companion`에 한 번 정의해 공유한다. 전체 인자 전달·복원 흐름은 [`feature-navigation.md`](../../docs/architecture/feature-navigation.md) 참조.
+
+> [!IMPORTANT]
+> `screen<T>`·`graph<T>`는 등록 시점에 `T`가 `ImmersiveRoute`를 구현하는지 검사해, 구현하면 `ImmersiveRouteRegistry`에 자동으로 등록하는 **부수효과**를 갖는다. 몰입 화면을 만드는 feature는 `Route`에 `ImmersiveRoute`를 함께 구현하기만 하면 되고, 레지스트리에 직접 등록하는 코드를 작성할 필요가 없다.
 
 ---
 
@@ -91,7 +96,9 @@ team/mino/core/navigation/
     ├── Route.kt                  # 라우트 공통 상위 타입(marker)
     ├── MinoNavHost.kt            # 표준 NavHost + screen<T>·graph<T> 등록 함수
     ├── SerializableNavType.kt    # custom 인자용 NavType + MinoNavJson
-    └── NavLifecycle.kt           # popBackStackIfResumed
+    ├── NavLifecycle.kt           # popBackStackIfResumed
+    ├── ImmersiveRoute.kt         # 바텀 네비게이션을 숨길 몰입 화면 마커(interface)
+    └── ImmersiveRouteRegistry.kt # ImmersiveRoute 구현 Route를 모아 두는 레지스트리(screen<T>·graph<T>가 등록)
 ```
 
 ---

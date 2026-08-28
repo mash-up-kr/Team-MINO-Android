@@ -83,5 +83,11 @@ private fun mockMarkerCenter(roomId: String): GeoPoint {
     )
 }
 
-/** [EC-002] 기본 디폴트 좌표 — 강남역(PRD [SYS-004] Flow A "현재 강남역으로 임시 지정, 추후 변경될 수 있음"). 위치 권한 미허용 시 [RoomListMap]·ViewModel이 함께 참조한다. */
+/**
+ * [EC-002] 기본 디폴트 좌표 — 강남역(PRD [SYS-004] Flow A "현재 강남역으로 임시 지정, 추후 변경될 수 있음").
+ * 위치 권한 미허용 시 [RoomListMap]·ViewModel이 함께 참조한다.
+ *
+ * `feature.room.detail.component.RoomDetailMap`도 같은 기본 지도 중심을 쓴다 — feature 내부 다른 화면 패키지가
+ * 참조해야 해서 `internal`(모듈 전체 가시성)로 둔다.
+ */
 internal val DefaultMapCenter = GeoPoint(latitude = 37.4979, longitude = 127.0276)

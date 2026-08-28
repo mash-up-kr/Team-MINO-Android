@@ -23,7 +23,6 @@ import team.mino.core.domain.model.RoomListSortOption
 import team.mino.core.domain.model.RoomMemberSummary
 import team.mino.core.domain.model.RoomThumbnail
 import team.mino.feature.room.fake.FakeLocationContext
-import team.mino.feature.room.fake.FakeRoomDetailLauncher
 import team.mino.feature.room.fake.FakeRoomFormLauncher
 import team.mino.feature.room.fake.FakeRoomRepository
 import team.mino.feature.room.main.component.DefaultMapCenter
@@ -232,15 +231,24 @@ class RoomListViewModelTest {
         }
 
     @Test
-    fun `방 카드 선택은 방 상세 이동 SideEffect를 발행한다`() =
+    fun `방 카드 선택은 selectedRoomId를 설정한다`() =
         runTest {
             val viewModel = createViewModel()
-            val sideEffects = collectSideEffects(viewModel)
 
             viewModel.processIntent(RoomListIntent.OnRoomCardClick("room-1"))
-            advanceUntilIdle()
 
-            assertEquals(listOf(RoomListSideEffect.NavigateToRoomDetail("room-1")), sideEffects)
+            assertEquals("room-1", viewModel.state.value.selectedRoomId)
+        }
+
+    @Test
+    fun `방 상세 닫기는 selectedRoomId를 null로 되돌린다`() =
+        runTest {
+            val viewModel = createViewModel()
+            viewModel.processIntent(RoomListIntent.OnRoomCardClick("room-1"))
+
+            viewModel.processIntent(RoomListIntent.OnCloseRoomDetailClick)
+
+            assertEquals(null, viewModel.state.value.selectedRoomId)
         }
 
     @Test
@@ -275,24 +283,20 @@ class RoomListViewModelTest {
     fun `방 생성 폼 결과에 생성된 방 ID가 있으면 방 상세로 체이닝한다`() =
         runTest {
             val viewModel = createViewModel()
-            val sideEffects = collectSideEffects(viewModel)
 
             viewModel.processIntent(RoomListIntent.OnRoomFormResult("created-room"))
-            advanceUntilIdle()
 
-            assertEquals(listOf(RoomListSideEffect.NavigateToRoomDetail("created-room")), sideEffects)
+            assertEquals("created-room", viewModel.state.value.selectedRoomId)
         }
 
     @Test
     fun `방 생성 폼 결과가 취소(null)면 아무 것도 하지 않는다`() =
         runTest {
             val viewModel = createViewModel()
-            val sideEffects = collectSideEffects(viewModel)
 
             viewModel.processIntent(RoomListIntent.OnRoomFormResult(null))
-            advanceUntilIdle()
 
-            assertTrue(sideEffects.isEmpty())
+            assertEquals(null, viewModel.state.value.selectedRoomId)
         }
 
     @Test
@@ -323,7 +327,6 @@ class RoomListViewModelTest {
         RoomListViewModel(
             context = FakeLocationContext(permissionGranted = permissionGranted),
             roomRepository = roomRepository,
-            roomDetailLauncher = FakeRoomDetailLauncher(),
             roomFormLauncher = FakeRoomFormLauncher(),
         )
 
