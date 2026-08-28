@@ -1,6 +1,7 @@
 package team.mino.feature.home.main.component
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -8,6 +9,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -55,8 +57,20 @@ import kotlin.math.abs
  * - 슬롭을 넘으면 드래그 — 탭으로 처리하지 않는다(spec EC-006).
  * - `[...]`는 자체 클릭 영역이 먼저 down을 소비하므로 여기까지 오지 않는다(spec EC-007).
  *
- * 드래그는 **제스처의 시작점**이 카드 폭 절반보다 오른쪽일 때만 소비한다(spec FR-003, R-005). 시작점으로
+ * 드래그는 **제스처의 시작점**이 화면 절반보다 오른쪽일 때만 소비한다(spec FR-003, R-005). 시작점으로
  * 판정해야 경계를 넘나드는 드래그에서 동작이 갈리지 않는다. 임계값에 못 미치면 제자리로 돌아온다(spec EC-002).
+ *
+ * **인식 영역은 카드가 아니라 화면 폭이다.** 카드 위에서 시작해야만 먹히면 되돌리기처럼 「지금 카드를
+ * 밀지 않는」 제스처가 카드를 붙잡고 시작해야 해 어색하다. 그래서 좌우 여백은 이 Box가 덮고
+ * ([DeckHorizontalPadding]), 카드만 그 여백 안으로 들여 그린다. 거리 판정은 카드 폭 기준을 유지한다.
+ *
+ * **좌→우로 밀 때만 카드가 손을 따라간다** — 가로만이 아니라 세로로도 함께 움직이고, 가로로 밀린 만큼 눕는다
+ * ([SWIPE_ROTATION_DEGREES]). 넘김이 확정되면 놓은 방향을 그대로 연장해 화면 밖으로 날아가므로,
+ * 비스듬히 놓으면 비스듬히 빠진다.
+ *
+ * **우→좌(되돌리기)는 좌→우 이탈의 역재생이다.** 끄는 동안 맨 앞 카드는 제자리에 머물고 — 보여 줄 것은
+ * 직전에 넘긴 카드가 돌아오는 움직임이지 지금 카드가 밀리는 움직임이 아니다 — 손을 떼면 그 카드가
+ * 오른쪽 위([entryOriginOf])에서 기울어진 채 들어와 제자리에 앉는다. 판정과 소비는 끄는 내내 그대로 한다.
  *
  * **전환 중 입력을 버리는 판정은 [team.mino.feature.home.main.vm.HomeViewModel]이 한다**(R-007). 이 컴포저블은
  * 손을 뗀 즉시 의도를 보내고, 전환을 **시작한** 제스처만 애니메이션이 끝날 때 `TransitionSettled`를 보낸다 —
@@ -64,6 +78,8 @@ import kotlin.math.abs
  *
  * @param cards 남은 카드. 첫 원소가 맨 앞이다.
  * @param isTransitioning 전환 애니메이션이 도는 중인가. 입력을 막는 데 쓰지 않고 완료 신호의 주인만 가린다.
+ * @param canSwipeBackward 되돌릴 카드가 있는가. 되돌리기 애니메이션은 덱이 바뀌기 **전에** 자리를 잡아야 해서
+ *  ViewModel의 판정을 기다릴 수 없다 — 되돌릴 것이 없는데 자리를 잡으면 지금 카드가 헛되이 날아간다(spec EC-001).
  * @param actionMenuTarget 액션 메뉴가 열린 카드의 pinId. **맨 앞 장에만 반영한다** — 뒷장은 내용을 그리지 않아
  *  앵커가 될 `[...]`가 없다.
  * @param onCardClick 카드 본문 탭.
@@ -75,6 +91,7 @@ import kotlin.math.abs
 internal fun CardDeck(
     cards: ImmutableList<PlaceCard>,
     isTransitioning: Boolean,
+    canSwipeBackward: Boolean,
     actionMenuTarget: String?,
     onSwipeForward: () -> Unit,
     onSwipeBackward: () -> Unit,
@@ -86,13 +103,14 @@ internal fun CardDeck(
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
-    val dragOffsetX = remember { Animatable(0f) }
-    val exitOffsetX = remember { Animatable(0f) }
+    val dragOffset = remember { Animatable(Offset.Zero, Offset.VectorConverter) }
+    val exitOffset = remember { Animatable(Offset.Zero, Offset.VectorConverter) }
     var exitingCard by remember { mutableStateOf<PlaceCard?>(null) }
 
     // pointerInput 블록은 한 번만 뜨므로 그 안에서 읽는 값은 최신 것을 따로 들고 있어야 한다.
     val currentCards by rememberUpdatedState(cards)
     val currentIsTransitioning by rememberUpdatedState(isTransitioning)
+    val currentCanSwipeBackward by rememberUpdatedState(canSwipeBackward)
     val currentOnSwipeForward by rememberUpdatedState(onSwipeForward)
     val currentOnSwipeBackward by rememberUpdatedState(onSwipeBackward)
     val currentOnTransitionSettled by rememberUpdatedState(onTransitionSettled)
@@ -104,6 +122,10 @@ internal fun CardDeck(
             .height(DeckHeight)
             .pointerInput(Unit) {
                 awaitEachGesture {
+                    // 제스처는 화면 끝까지 받지만 거리 판정은 **카드 폭** 기준이다 — 좌우 여백까지 세면
+                    // 임계값이 카드보다 커져 같은 손짓이 기기 폭에 따라 다르게 먹힌다.
+                    val cardWidth = size.width - DeckHorizontalPadding.toPx() * 2f
+
                     // [...]가 down을 소비했으면 awaitFirstDown이 걸러 낸다 — 그 탭은 여기 오지 않는다.
                     val down = awaitFirstDown()
                     val fromSwipeArea = down.position.x >= size.width * SWIPE_START_AREA_FRACTION
@@ -122,7 +144,9 @@ internal fun CardDeck(
                         if (!dragging && travel.getDistance() > viewConfiguration.touchSlop) dragging = true
                         if (dragging && fromSwipeArea) {
                             change.consume()
-                            scope.launch { dragOffsetX.snapTo(travel.x) }
+                            // 왼쪽으로 끄는 동안은 제자리다. 되돌리기의 주인공은 돌아오는 직전 카드다.
+                            val followed = if (travel.x > 0f) travel else Offset.Zero
+                            scope.launch { dragOffset.snapTo(followed) }
                         }
                     }
 
@@ -131,26 +155,40 @@ internal fun CardDeck(
                         !dragging -> if (released && topCard != null) currentOnCardClick(topCard.pinId)
                         !fromSwipeArea -> Unit
                         else -> {
-                            val committed = released && abs(travel.x) >= size.width * SWIPE_COMMIT_FRACTION
+                            val committed = released && abs(travel.x) >= cardWidth * SWIPE_COMMIT_FRACTION
                             val forward = travel.x > 0f
                             val startsTransition = !currentIsTransitioning
-                            val releasedAt = travel.x
-                            val exitTarget = size.width * EXIT_TRAVEL_FACTOR
+                            val releasedAt = travel
 
                             scope.launch {
                                 if (!committed) {
-                                    dragOffsetX.animateTo(0f, SettleSpec)
+                                    dragOffset.animateTo(Offset.Zero, SettleSpec)
                                     return@launch
                                 }
-                                if (forward) currentOnSwipeForward() else currentOnSwipeBackward()
-                                if (forward && startsTransition && topCard != null) {
-                                    exitingCard = topCard
-                                    exitOffsetX.snapTo(releasedAt)
-                                    dragOffsetX.snapTo(0f)
-                                    exitOffsetX.animateTo(exitTarget, SettleSpec)
-                                    exitingCard = null
+                                if (forward) {
+                                    currentOnSwipeForward()
+                                    if (startsTransition && topCard != null) {
+                                        // 놓은 방향 그대로 연장해 날린다 — 가로가 화면 폭을 넘을 때까지 늘리면
+                                        // 세로 성분도 같은 비율로 따라가 손이 그리던 궤적을 잇는다.
+                                        val exitTarget =
+                                            releasedAt * (cardWidth * EXIT_TRAVEL_FACTOR / abs(releasedAt.x))
+                                        exitingCard = topCard
+                                        exitOffset.snapTo(releasedAt)
+                                        dragOffset.snapTo(Offset.Zero)
+                                        exitOffset.animateTo(exitTarget, SettleSpec)
+                                        exitingCard = null
+                                    } else {
+                                        dragOffset.animateTo(Offset.Zero, SettleSpec)
+                                    }
                                 } else {
-                                    dragOffsetX.animateTo(0f, SettleSpec)
+                                    // 되돌아올 카드가 설 자리를 **덱이 바뀌기 전에** 잡는다. 맨 앞 자리는
+                                    // dragOffset이 그리므로, 여기서 미리 밀어 두면 되돌아온 카드의 첫 프레임이
+                                    // 화면 밖에서 시작한다 — 자리를 나중에 잡으면 한 프레임 제자리에 번쩍인다.
+                                    if (startsTransition && currentCanSwipeBackward) {
+                                        dragOffset.snapTo(entryOriginOf(cardWidth))
+                                    }
+                                    currentOnSwipeBackward()
+                                    dragOffset.animateTo(Offset.Zero, SettleSpec)
                                 }
                                 if (startsTransition) currentOnTransitionSettled()
                             }
@@ -159,35 +197,42 @@ internal fun CardDeck(
                 }
             },
     ) {
-        val visible = cards.take(VISIBLE_CARD_COUNT)
-        // 뒤에서 앞으로 그린다. 리스트가 한 칸 밀리면 각 카드가 제 자리로 애니메이션하며 올라온다(spec UX-001).
-        for (index in visible.indices.reversed()) {
-            val card = visible[index]
-            key(card.pinId) {
+        // 카드는 시안대로 좌우 여백 안에 놓고, 제스처만 바깥 Box가 화면 끝까지 받는다.
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = DeckHorizontalPadding),
+        ) {
+            val visible = cards.take(VISIBLE_CARD_COUNT)
+            // 뒤에서 앞으로 그린다. 리스트가 한 칸 밀리면 각 카드가 제 자리로 애니메이션하며 올라온다(spec UX-001).
+            for (index in visible.indices.reversed()) {
+                val card = visible[index]
+                key(card.pinId) {
+                    DeckCard(
+                        card = card,
+                        depth = index,
+                        isActionMenuOpen = index == 0 && card.pinId == actionMenuTarget,
+                        offset = { if (index == 0) dragOffset.value else Offset.Zero },
+                        onCardClick = { currentOnCardClick(card.pinId) },
+                        onMoreClick = { onMoreClick(card.pinId) },
+                        onSaveToAnotherRoom = { onSaveToAnotherRoom(card.pinId) },
+                        onDismissActionMenu = onDismissActionMenu,
+                    )
+                }
+            }
+            // 넘어간 카드. 덱에서는 이미 빠졌고 화면 밖으로 나가는 동안만 남는다.
+            exitingCard?.let { card ->
                 DeckCard(
                     card = card,
-                    depth = index,
-                    isActionMenuOpen = index == 0 && card.pinId == actionMenuTarget,
-                    offsetX = { if (index == 0) dragOffsetX.value else 0f },
-                    onCardClick = { currentOnCardClick(card.pinId) },
-                    onMoreClick = { onMoreClick(card.pinId) },
-                    onSaveToAnotherRoom = { onSaveToAnotherRoom(card.pinId) },
-                    onDismissActionMenu = onDismissActionMenu,
+                    depth = 0,
+                    isActionMenuOpen = false,
+                    offset = { exitOffset.value },
+                    onCardClick = {},
+                    onMoreClick = {},
+                    onSaveToAnotherRoom = {},
+                    onDismissActionMenu = {},
                 )
             }
-        }
-        // 넘어간 카드. 덱에서는 이미 빠졌고 화면 밖으로 나가는 동안만 남는다.
-        exitingCard?.let { card ->
-            DeckCard(
-                card = card,
-                depth = 0,
-                isActionMenuOpen = false,
-                offsetX = { exitOffsetX.value },
-                onCardClick = {},
-                onMoreClick = {},
-                onSaveToAnotherRoom = {},
-                onDismissActionMenu = {},
-            )
         }
     }
 }
@@ -203,7 +248,7 @@ private fun DeckCard(
     card: PlaceCard,
     depth: Int,
     isActionMenuOpen: Boolean,
-    offsetX: () -> Float,
+    offset: () -> Offset,
     onCardClick: () -> Unit,
     onMoreClick: () -> Unit,
     onSaveToAnotherRoom: () -> Unit,
@@ -224,11 +269,13 @@ private fun DeckCard(
             .graphicsLayer {
                 val currentDepth = animatedDepth.value
                 val depthScale = 1f - currentDepth * DepthScaleStep
+                val swipe = offset()
                 scaleX = depthScale
                 scaleY = depthScale
                 transformOrigin = TransformOrigin(0.5f, 0f)
-                translationX = offsetX()
-                translationY = cardTop(currentDepth).toPx()
+                translationX = swipe.x
+                translationY = cardTop(currentDepth).toPx() + swipe.y
+                rotationZ = if (size.width == 0f) 0f else swipe.x / size.width * SWIPE_ROTATION_DEGREES
             },
     ) {
         if (isFront) {
@@ -277,7 +324,7 @@ private val DeckHeight = FrontCardTop + CardHeight
 private val ReferenceCardWidth = 335.dp
 private val DepthWidthStep = 20.dp
 private val DepthScaleStep = DepthWidthStep / ReferenceCardWidth
-private val SettleSpec = tween<Float>(TRANSITION_DURATION_MILLIS)
+private val SettleSpec = tween<Offset>(TRANSITION_DURATION_MILLIS)
 
 private const val VISIBLE_CARD_COUNT = 5
 private const val TRANSITION_DURATION_MILLIS = 260
@@ -291,8 +338,30 @@ private const val SWIPE_START_AREA_FRACTION = 0.5f
 /** 넘김·되돌리기로 확정되는 이동 거리. 디자인에 정의가 없다. */
 private const val SWIPE_COMMIT_FRACTION = 0.25f
 
+/** 카드가 놓이는 좌우 여백. 제스처를 받는 바깥 Box는 이 여백 **밖**까지 덮는다. */
+private val DeckHorizontalPadding = 20.dp
+
 /** 넘어간 카드가 화면 밖으로 빠지는 거리. */
 private const val EXIT_TRAVEL_FACTOR = 1.2f
+
+/**
+ * 되돌아오는 카드가 출발하는 자리 — 넘김이 끝난 자리 그대로다. 되돌리기는 좌→우 이탈의 역재생이라
+ * 오른쪽 **위**에서 들어온다(시안 영상).
+ *
+ * 세로가 가로의 절반인 것은 영상에서 잰 값이다(가로 149px일 때 위로 77px). 나갈 때는 놓은 방향이 기울기를
+ * 정하지만 돌아올 때는 참고할 제스처가 없어, 대표값 하나를 쓴다.
+ */
+private fun entryOriginOf(cardWidth: Float): Offset =
+    Offset(cardWidth * EXIT_TRAVEL_FACTOR, -cardWidth * EXIT_TRAVEL_FACTOR * ENTRY_RISE_RATIO)
+
+private const val ENTRY_RISE_RATIO = 0.5f
+
+/**
+ * 카드가 화면 폭만큼 옆으로 밀렸을 때 눕는 각도. 시안 영상에서 잰 값이다(가로 이동 1px당 0.05°).
+ *
+ * **음수인 것이 의도다** — 오른쪽으로 밀면 시계 반대 방향으로, 카드의 오른쪽 위 모서리가 들리며 눕는다.
+ */
+private const val SWIPE_ROTATION_DEGREES = -16f
 
 @Suppress("ComposeModifierMissing") // 프리뷰 함수는 modifier가 불필요
 @UiModePreviews
@@ -313,6 +382,7 @@ private fun CardDeckPreview() {
                     previewCard(4, PlaceLabel.WORTH_VISITING),
                 ),
                 isTransitioning = false,
+                canSwipeBackward = false,
                 actionMenuTarget = null,
                 onSwipeForward = {},
                 onSwipeBackward = {},
