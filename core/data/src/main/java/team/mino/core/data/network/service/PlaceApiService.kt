@@ -1,0 +1,41 @@
+package team.mino.core.data.network.service
+
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.request.get
+import io.ktor.client.request.parameter
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
+import team.mino.core.data.network.dto.request.PinDuplicateRequest
+import team.mino.core.data.network.dto.response.MinoResponse
+import team.mino.core.data.network.dto.response.PinResponse
+import javax.inject.Inject
+
+/**
+ * 핀(장소) 조회·공유 API — `docs/specs/room-detail/contracts/place-repository.md` 근거.
+ *
+ * 응답은 공통 인터셉터 없이 `{ "data": ... }` 봉투를 그대로 받으므로, [RoomApiService]와 같이
+ * 이 서비스가 직접 벗긴다.
+ */
+internal class PlaceApiService @Inject constructor(
+    private val client: HttpClient,
+) {
+    suspend fun getPins(roomId: String): List<PinResponse> =
+        client
+            .get("api/v1/pins") {
+                parameter("roomId", roomId)
+            }.body<MinoResponse<List<PinResponse>>>()
+            .data
+
+    suspend fun duplicatePin(
+        pinId: String,
+        targetRoomIds: List<String>,
+    ) {
+        client.post("api/v1/pins/$pinId/duplicate") {
+            contentType(ContentType.Application.Json)
+            setBody(PinDuplicateRequest(roomIds = targetRoomIds))
+        }
+    }
+}
