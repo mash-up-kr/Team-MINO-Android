@@ -11,8 +11,8 @@ import team.mino.feature.main.placeholder.RoomFormEntryPoint
 
 @Composable
 internal fun MainShell(
-    onNavigateToSample: () -> Unit,
-    onRequestSampleResult: () -> Unit,
+    onNavigateToPlaceDetail: (pinId: String) -> Unit,
+    onNavigateToRoomForm: () -> Unit,
     roomFormEntryPoint: RoomFormEntryPoint,
     modifier: Modifier = Modifier,
 ) {
@@ -31,8 +31,8 @@ internal fun MainShell(
     ) { innerPadding ->
         MainNavHost(
             navController = navController,
-            onNavigateToSample = onNavigateToSample,
-            onRequestSampleResult = onRequestSampleResult,
+            onNavigateToPlaceDetail = onNavigateToPlaceDetail,
+            onNavigateToRoomForm = onNavigateToRoomForm,
             roomFormEntryPoint = roomFormEntryPoint,
             modifier = Modifier.padding(innerPadding),
         )
