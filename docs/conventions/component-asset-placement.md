@@ -39,6 +39,7 @@ UI 컴포넌트와 이미지 에셋을 **어느 모듈에 만드는지**, 이미
 |---|---|
 | 한 feature의 화면에서만 쓴다 | 그 feature의 `src/main/res/drawable-*` — **기본값** |
 | 둘 이상의 feature가 쓴다 | `:core:common:ui`의 `src/main/res/drawable-*` |
+| 밀도별 에셋을 파생시킨 원본 마스터 | 그 모듈의 `src/main/` 바로 아래 — `res/` 밖이라 APK에 실리지 않는다 |
 
 - 사용처가 하나면 feature에 둔다. 다른 화면에도 쓸 것 같다는 예상은 근거가 아니다.
 - Figma에서 내보내는 절차 → [figma-design-fidelity §1.3](figma-design-fidelity.md#13-에셋-export--아이콘-svg이미지)
