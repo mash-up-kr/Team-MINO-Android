@@ -13,7 +13,13 @@ package team.mino.feature.main.placeholder
 internal data class RoomFormEntryPoint(
     /** 폼이 돌려준 마지막 결과. 아직 한 번도 돌아오지 않았으면 `null`이다. */
     val lastResult: String?,
+    /**
+     * 편집으로 열 방. 폼이 방을 만들거나 고쳐 돌려준 id다.
+     *
+     * 이 화면에서 방을 한 번도 만들지 않았으면 `null`이고, 그때 [onEditLastRoom]은 비활성이다.
+     */
+    val lastRoomId: String?,
     val onCreate: () -> Unit,
     val onCreateWithOnboarding: () -> Unit,
-    val onEditSeedRoom: () -> Unit,
+    val onEditLastRoom: (String) -> Unit,
 )

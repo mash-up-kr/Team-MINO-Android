@@ -10,7 +10,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import dagger.hilt.android.AndroidEntryPoint
@@ -32,8 +31,12 @@ class MainActivity : ComponentActivity() {
 
     private var roomFormResult by mutableStateOf<String?>(null)
 
+    /** 폼이 마지막으로 돌려준 방 id. 편집 경로는 이 방을 연다. */
+    private var lastRoomId by mutableStateOf<String?>(null)
+
     private val roomFormResultLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            result.resultRoomId()?.let { lastRoomId = it }
             roomFormResult = result.describe()
         }
 
@@ -53,14 +56,13 @@ class MainActivity : ComponentActivity() {
                     // 결과가 바뀔 때만 새로 만든다. 매 리컴포지션마다 새 묶음을 넘기면 셸 아래의
                     // `NavHost`가 그래프 생성 키를 잃어 그래프를 통째로 다시 만든다.
                     roomFormEntryPoint =
-                        remember(roomFormResult) {
-                            RoomFormEntryPoint(
-                                lastResult = roomFormResult,
-                                onCreate = { launchRoomForm() },
-                                onCreateWithOnboarding = { launchRoomForm(isOnboarding = true) },
-                                onEditSeedRoom = { launchRoomForm(roomId = SEED_ROOM_ID) },
-                            )
-                        },
+                        RoomFormEntryPoint(
+                            lastResult = roomFormResult,
+                            lastRoomId = lastRoomId,
+                            onCreate = { launchRoomForm() },
+                            onCreateWithOnboarding = { launchRoomForm(isOnboarding = true) },
+                            onEditLastRoom = { roomId -> launchRoomForm(roomId = roomId) },
+                        ),
                     modifier = Modifier.fillMaxSize(),
                 )
             }
@@ -93,12 +95,13 @@ class MainActivity : ComponentActivity() {
             "outcome=cancelled, roomId=(없음)"
         } else {
             val outcome = data?.getStringExtra(EXTRA_ROOM_FORM_RESULT_OUTCOME) ?: "(없음)"
-            val roomId = data?.getStringExtra(EXTRA_ROOM_FORM_RESULT_ROOM_ID) ?: "(없음)"
-            "outcome=$outcome, roomId=$roomId"
+            "outcome=$outcome, roomId=${resultRoomId() ?: "(없음)"}"
         }
 
-    private companion object {
-        /** mock 저장소의 시드 공동방(`야호`). 편집 경로를 손으로 확인하는 데만 쓴다. */
-        const val SEED_ROOM_ID = "room-1"
-    }
+    /**
+     * 결과가 실어 온 방 id. `created`·`updated`만 이 값을 갖는다
+     * (→ docs/specs/group-room-form/contracts/room-form-launcher.md §3).
+     */
+    private fun ActivityResult.resultRoomId(): String? =
+        data?.getStringExtra(EXTRA_ROOM_FORM_RESULT_ROOM_ID).takeIf { resultCode == RESULT_OK }
 }

@@ -670,7 +670,7 @@ class RoomFormViewModelTest {
         /** 편집 상태가 담는 방 식별자. */
         const val EDIT_ROOM_ID = "room-1"
 
-        /** 편집 진입이 불러온 방의 값(`contracts/room-api-mock.md` 시드 · TS-018 · quickstart S-3). */
+        /** 편집 진입이 불러온 방의 값(TS-018 · quickstart S-3). 계약이 정한 시드가 아니라 이 테스트의 픽스처다. */
         const val LOADED_NAME = "야호"
 
         const val LOADED_DESCRIPTION = "야호호"

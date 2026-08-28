@@ -7,11 +7,11 @@ import team.mino.core.domain.model.RoomColor
 import team.mino.core.domain.model.RoomDraft
 
 /**
- * 색의 서버 표현. 표의 소유자는 `docs/specs/group-room-form/contracts/room-api-mock.md` §2다.
+ * 색의 서버 표현. 표의 소유자는 `docs/specs/group-room-form/contracts/room-api.md` §2다.
  *
- * 서버가 색을 다른 표현(hex 등)으로 확정하면 고칠 곳은 이 표 하나다. 도메인·UI·mock 저장소 어디에도
- * 이 문자열이 새어 나가지 않는다. 열거 상수 이름에서 파생하지 않는 이유도 같다 — 도메인 이름이 바뀌었을 때
- * 서버 계약이 조용히 따라 바뀌면 안 된다.
+ * 서버가 색을 다른 표현으로 바꾸면 고칠 곳은 이 표 하나다. 도메인·UI 어디에도 이 문자열이 새어 나가지
+ * 않는다. 열거 상수 이름에서 파생하지 않는 이유도 같다 — 도메인 이름이 바뀌었을 때 서버 계약이 조용히
+ * 따라 바뀌면 안 된다.
  */
 private val COLOR_IDENTIFIERS: Map<RoomColor, String> =
     mapOf(

@@ -14,7 +14,7 @@ import team.mino.core.designsystem.theme.MinoAndroidTheme
 import team.mino.feature.main.placeholder.RoomFormEntryPoint
 
 /**
- * 방 폼을 세 갈래(생성 · 온보딩 생성 · 시드 방 편집)로 열어 보고 돌아온 결과를 확인하는 임시 화면.
+ * 방 폼을 세 갈래(생성 · 온보딩 생성 · 직전에 만든 방 편집)로 열어 보고 돌아온 결과를 확인하는 임시 화면.
  *
  * 실제 진입점 feature가 생기면 [RoomFormEntryPoint]와 함께 제거한다
  * (→ `docs/specs/group-room-form/plan.md` §범위 경계).
@@ -46,11 +46,18 @@ internal fun RoomFormEntryPlaceholderScreen(
         ) {
             Text(text = "온보딩으로 열기")
         }
+        val lastRoomId = entryPoint.lastRoomId
         Button(
-            onClick = entryPoint.onEditSeedRoom,
+            onClick = { lastRoomId?.let(entryPoint.onEditLastRoom) },
             modifier = Modifier.fillMaxWidth(),
+            enabled = lastRoomId != null,
         ) {
-            Text(text = "시드 방(room-1) 편집")
+            Text(
+                text =
+                    lastRoomId
+                        ?.let { "직전에 만든 방($it) 편집" }
+                        ?: "직전에 만든 방 편집 — 먼저 방을 만드세요",
+            )
         }
 
         Text(
