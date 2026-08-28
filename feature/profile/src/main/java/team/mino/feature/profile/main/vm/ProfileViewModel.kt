@@ -17,10 +17,9 @@ import team.mino.core.errorhandling.domainErrorEmitter
 import team.mino.core.errorhandling.onDomainFailure
 import team.mino.core.errorhandling.runCatchingDomain
 import team.mino.feature.profile.ProfileMain
-import team.mino.feature.profile.main.model.DefaultProfileAvatar
 import team.mino.feature.profile.main.model.ProfileEntryPoint
-import team.mino.feature.profile.main.model.avatarId
-import team.mino.feature.profile.main.model.profileAvatarOf
+import team.mino.feature.profile.main.model.image
+import team.mino.feature.profile.main.model.profileAvatar
 import javax.inject.Inject
 
 /**
@@ -31,7 +30,7 @@ import javax.inject.Inject
  * 저장 실패는 SideEffect가 아니라 [DomainErrorEmitter]로 나간다 — 채널이 ViewModel 인스턴스별이라
  * `ProfileRoute`가 직접 수집한다.
  *
- * 저장된 프로필의 프리필도 여기서 건다. 화면은 조회를 걸지 않는다.
+ * 저장된 프로필의 프리필과 진입 시 갱신도 여기서 건다. 화면은 조회를 걸지 않는다.
  */
 @HiltViewModel
 internal class ProfileViewModel
@@ -49,27 +48,52 @@ internal class ProfileViewModel
             ),
         ),
         DomainErrorEmitter by domainErrorEmitter() {
+        /**
+         * 캐시로 먼저 채우고 갱신은 그다음이다 — 갱신을 기다렸다가 채우면 왕복하는 동안 화면이 빈 채로 선다.
+         *
+         * 둘을 코루틴 하나에 순서대로 넣는 것이 그 순서를 보장하는 유일한 방법이다. 따로 띄우면 갱신이
+         * 캐시 조회를 앞질러 끝날 수 있고, 그러면 뒤늦게 도착한 캐시 값이 갱신 값을 덮어쓴다.
+         *
+         * 갱신은 진입 시 한 번뿐이다. 실패해도 프리필된 값은 되돌리지 않아 화면이 캐시 값으로 계속 선다.
+         */
         init {
+            launchSafely {
+                prefill()
+                runCatchingDomain { profileRepository.refreshProfile() }
+                    .onSuccess { prefillIfAllowed() }
+                    .onDomainFailure { error -> emitDomainError(error) }
+            }
+        }
+
+        /**
+         * 갱신된 캐시로 한 번 더 채운다.
+         *
+         * 사용자가 이미 입력을 시작했거나([ProfileUiState.isNicknameTouched]) 저장 왕복 중이면
+         * ([ProfileUiState.isSaving]) 사용자의 의도가 서버 값보다 우선하므로 화면을 건드리지 않는다.
+         * 가드는 갱신이 돌아온 시점의 상태로 판정해야 한다 — 진입 시점의 상태는 아직 둘 다 거짓이다.
+         */
+        private suspend fun prefillIfAllowed() {
+            val current = state.value
+            if (current.isNicknameTouched || current.isSaving) return
             prefill()
         }
 
         /**
          * 저장된 값이 있으면 입력 상태를 미리 채운다. 진입점은 보지 않는다 — 채울 것이 있느냐만 본다.
          *
-         * **첫 값만 반영한다.** 계속 구독하면 저장 직후 흘러나온 값이 사용자가 그 사이에 입력한 것을
-         * 덮어쓴다. 프리필은 사용자의 입력이 아니므로 `isNicknameTouched`를 올리지 않는다.
+         * **부른 그 시점의 값 하나만 읽는다.** 계속 구독하면 저장 직후 흘러나온 값이 사용자가 그 사이에
+         * 입력한 것을 덮어쓴다. 갱신된 값은 [prefillIfAllowed]가 다시 불러 반영한다.
+         * 프리필은 사용자의 입력이 아니므로 `isNicknameTouched`를 올리지 않는다.
          */
-        private fun prefill() {
-            launchSafely {
-                val saved = profileRepository.observeProfile().first() ?: return@launchSafely
-                updateState {
-                    copy(
-                        nickname = saved.nickname,
-                        selectedAvatar = profileAvatarOf(saved.avatarId),
-                        isNicknameValid = true,
-                        isNicknameTouched = false,
-                    )
-                }
+        private suspend fun prefill() {
+            val saved = profileRepository.observeProfile().first() ?: return
+            updateState {
+                copy(
+                    nickname = saved.nickname,
+                    selectedAvatar = saved.avatar.image,
+                    isNicknameValid = true,
+                    isNicknameTouched = false,
+                )
             }
         }
 
@@ -125,7 +149,7 @@ internal class ProfileViewModel
                 runCatchingDomain {
                     saveProfile(
                         rawNickname = current.nickname,
-                        avatarId = (current.selectedAvatar ?: DefaultProfileAvatar).avatarId,
+                        avatar = current.displayedAvatar.profileAvatar,
                     )
                 }.onSuccess {
                     postSideEffect(ProfileSideEffect.SaveCompleted)
