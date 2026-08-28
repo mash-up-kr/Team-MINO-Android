@@ -36,7 +36,6 @@ class MainActivity : ComponentActivity() {
 
     private val roomFormResultLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            result.resultRoomId()?.let { lastRoomId = it }
             roomFormResult = result.describe()
         }
 
