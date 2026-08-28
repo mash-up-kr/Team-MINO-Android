@@ -10,7 +10,5 @@ import team.mino.core.common.android.architecture.SideEffect
 sealed interface RoomListSideEffect : SideEffect {
     data object RequestLocationPermission : RoomListSideEffect
 
-    data class NavigateToRoomDetail(val roomId: String) : RoomListSideEffect
-
     data object NavigateToRoomForm : RoomListSideEffect
 }

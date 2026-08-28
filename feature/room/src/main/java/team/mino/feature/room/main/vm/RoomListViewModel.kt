@@ -22,7 +22,6 @@ import team.mino.core.common.kotlin.geo.GeoPoint
 import team.mino.core.domain.model.Room
 import team.mino.core.domain.model.RoomListSortOption
 import team.mino.core.domain.repository.RoomRepository
-import team.mino.core.navigation.activity.launcher.RoomDetailLauncher
 import team.mino.core.navigation.activity.launcher.RoomFormLauncher
 import team.mino.feature.room.main.component.DefaultMapCenter
 import team.mino.feature.room.main.model.BottomSheetLevel
@@ -44,7 +43,6 @@ import kotlin.time.Instant
 class RoomListViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val roomRepository: RoomRepository,
-    val roomDetailLauncher: RoomDetailLauncher,
     val roomFormLauncher: RoomFormLauncher,
 ) : ViewModel(),
     MviContainer<RoomListUiState, RoomListSideEffect> by mviContainer(RoomListUiState()) {
@@ -78,15 +76,6 @@ class RoomListViewModel @Inject constructor(
         }
     }
 
-    /**
-     * [FR-001]·[EC-007] 진입 시 초기 sheetLevel 결정. `RoomListRoute`가 시작 인자를 받는 즉시(첫
-     * 컴포지션) 한 번 호출한다 — 아직 `RoomMain` Route에 인자가 없어(EC-007 크로스 feature 배선은
-     * `room-detail`[SCR-005] 미구현 상태) `SavedStateHandle.toRoute()` 대신 Route가 직접 넘겨준다.
-     */
-    fun resolveInitialSheetLevel(sheetLevelOverride: BottomSheetLevel?) {
-        updateState { copy(sheetLevel = sheetLevelOverride ?: BottomSheetLevel.HALF) }
-    }
-
     fun processIntent(intent: RoomListIntent) {
         when (intent) {
             RoomListIntent.OnScreenEntered -> onScreenEntered()
@@ -98,6 +87,7 @@ class RoomListViewModel @Inject constructor(
             is RoomListIntent.OnLocationPermissionResult -> onLocationPermissionResult(intent.granted)
             is RoomListIntent.OnRoomListSortSelected -> onRoomListSortSelected(intent.option)
             is RoomListIntent.OnRoomCardClick -> onRoomCardClick(intent.roomId)
+            RoomListIntent.OnCloseRoomDetailClick -> onCloseRoomDetailClick()
             RoomListIntent.OnAddRoomClick -> onAddRoomClick()
             is RoomListIntent.OnRoomFormResult -> onRoomFormResult(intent.createdRoomId)
 
@@ -178,9 +168,17 @@ class RoomListViewModel @Inject constructor(
         }
     }
 
-    /** [FR-006] 방 카드 선택 → [RoomListSideEffect.NavigateToRoomDetail] 발행(전환 결정만, 실제 호출은 Route). */
+    /**
+     * [FR-006] 방 카드 선택 — `selectedRoomId`를 설정해 같은 목적지 안에서 방 상세로 전환한다(별도
+     * Navigation 목적지 전환이 아니다, `RoomNavigation.kt` KDoc 참고).
+     */
     private fun onRoomCardClick(roomId: String) {
-        launchSafely { postSideEffect(RoomListSideEffect.NavigateToRoomDetail(roomId)) }
+        updateState { copy(selectedRoomId = roomId) }
+    }
+
+    /** 방 상세 [X] 닫기 — 리스트로 복귀한다. */
+    private fun onCloseRoomDetailClick() {
+        updateState { copy(selectedRoomId = null) }
     }
 
     /** [FR-007] 시트 우상단 [+] → [RoomListSideEffect.NavigateToRoomForm] 발행(전환 결정만, 실제 호출은 Route). */
@@ -189,13 +187,12 @@ class RoomListViewModel @Inject constructor(
     }
 
     /**
-     * [FR-007] 공동방 생성 폼 결과 수신. `createdRoomId`가 있으면(생성 완료) 곧바로
-     * [RoomListSideEffect.NavigateToRoomDetail]로 체이닝한다(새 SideEffect를 만들지 않고 [FR-006]의
-     * 것을 재사용) — `null`이면(취소) 아무 것도 하지 않는다.
+     * [FR-007] 공동방 생성 폼 결과 수신. `createdRoomId`가 있으면(생성 완료) 곧바로 그 방의 상세로
+     * 체이닝한다([FR-006]의 [onRoomCardClick]과 같은 규칙) — `null`이면(취소) 아무 것도 하지 않는다.
      */
     private fun onRoomFormResult(createdRoomId: String?) {
         if (createdRoomId == null) return
-        launchSafely { postSideEffect(RoomListSideEffect.NavigateToRoomDetail(createdRoomId)) }
+        updateState { copy(selectedRoomId = createdRoomId) }
     }
 
     private fun hasLocationPermission(): Boolean =

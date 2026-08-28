@@ -33,4 +33,10 @@ data class RoomListUiState(
      * 않는다.
      */
     val mapCenterRequestId: Int = 0,
+    /**
+     * 방 상세로 "전환"된 방 id. `null`이면 리스트, 값이 있으면 그 방의 상세를 같은 목적지 안에서
+     * 그린다(`RoomNavigation.kt` KDoc 참고) — Navigation 목적지 전환이 아니라 이 로컬 상태로
+     * 표현해야 지도(`RoomListMap`)가 계속 같은 컴포지션에 남아 카메라가 리셋되지 않는다.
+     */
+    val selectedRoomId: String? = null,
 ) : UiState

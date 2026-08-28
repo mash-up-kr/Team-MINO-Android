@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import team.mino.core.domain.model.Room
 import team.mino.core.domain.model.RoomDraft
+import team.mino.core.domain.model.RoomMember
 import team.mino.core.domain.repository.RoomRepository
 
 /**
@@ -32,4 +33,17 @@ internal class FakeRoomRepository : RoomRepository {
         roomId: String,
         draft: RoomDraft,
     ): Room = error("FakeRoomRepository는 updateRoom을 지원하지 않는다.")
+
+    override suspend fun getMembers(roomId: String): List<RoomMember> =
+        error("FakeRoomRepository는 getMembers를 지원하지 않는다.")
+
+    override suspend fun createInvitation(roomId: String): String =
+        error("FakeRoomRepository는 createInvitation을 지원하지 않는다.")
+
+    override suspend fun leaveRoom(roomId: String): Unit = error("FakeRoomRepository는 leaveRoom을 지원하지 않는다.")
+
+    override suspend fun transferOwner(
+        roomId: String,
+        nextOwnerId: String,
+    ): Unit = error("FakeRoomRepository는 transferOwner를 지원하지 않는다.")
 }

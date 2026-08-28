@@ -2,9 +2,12 @@ package team.mino.feature.room.main.screen
 
 import android.Manifest
 import android.app.Activity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -12,8 +15,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import team.mino.core.common.ui.architecture.CollectSideEffect
-import team.mino.core.navigation.activity.launcher.EXTRA_ROOM_DETAIL_ROOM_ID
-import team.mino.feature.room.main.model.BottomSheetLevel
+import team.mino.core.common.ui.scaffold.LocalBottomNavVisibility
+import team.mino.feature.room.detail.screen.RoomDetailRoute
+import team.mino.feature.room.detail.vm.RoomDetailViewModel
 import team.mino.feature.room.main.vm.RoomListIntent
 import team.mino.feature.room.main.vm.RoomListSideEffect
 import team.mino.feature.room.main.vm.RoomListViewModel
@@ -32,16 +36,20 @@ private const val EXTRA_ROOM_FORM_CREATED_ROOM_ID = "room_form_created_room_id"
 /**
  * 방 리스트 탭 그래프의 진입 Route — 유일한 화면.
  *
- * @param sheetLevelOverride 시작 인자. `null`이면 FR-001 기본값(HALF), 값이 있으면 EC-007(방 상세 [X] 복귀) 케이스다.
+ * 방 상세는 별도 목적지가 아니라 [RoomListUiState.selectedRoomId] 로컬 상태로 전환한다
+ * (`RoomNavigation.kt` KDoc 참고) — 그래서 [RoomDetailRoute]를 `navController.navigate()`가
+ * 아니라 이 Route 안에서 직접 그린다. [RoomListScreen]의 `detailContent` 슬롯으로 넘겨 지도
+ * (`RoomListMap`)를 감싼 같은 [BoxScope] 안에 얹는다 — 그래야 지도가 리스트↔상세 전환에도 같은
+ * 컴포지션에 남아 카메라가 리셋되지 않는다.
  */
 @Composable
 internal fun RoomListRoute(
-    sheetLevelOverride: BottomSheetLevel?,
     modifier: Modifier = Modifier,
     viewModel: RoomListViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val activity = LocalContext.current as Activity
+    val selectedRoomId = state.selectedRoomId
 
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions(),
@@ -64,10 +72,6 @@ internal fun RoomListRoute(
                 locationPermissionLauncher.launch(
                     arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION),
                 )
-            is RoomListSideEffect.NavigateToRoomDetail ->
-                viewModel.roomDetailLauncher.launch(activity) {
-                    putExtra(EXTRA_ROOM_DETAIL_ROOM_ID, effect.roomId)
-                }
 
             RoomListSideEffect.NavigateToRoomForm ->
                 viewModel.roomFormLauncher.launch(activity, resultLauncher = roomFormResultLauncher)
@@ -75,13 +79,52 @@ internal fun RoomListRoute(
     }
 
     LaunchedEffect(Unit) {
-        viewModel.resolveInitialSheetLevel(sheetLevelOverride)
         viewModel.processIntent(RoomListIntent.OnScreenEntered)
+    }
+
+    // 방 상세를 보는 중엔 시스템 뒤로가기/제스처가 곧장 탭·앱을 벗어나지 않고 먼저 리스트로 복귀한다.
+    BackHandler(enabled = selectedRoomId != null) {
+        viewModel.processIntent(RoomListIntent.OnCloseRoomDetailClick)
+    }
+
+    // ImmersiveRoute는 목적지 단위 마커라 이 화면(같은 목적지 안에서 로컬 상태로 전환)엔 못 쓴다 —
+    // LocalBottomNavVisibility로 대체(core/common/ui/scaffold/LocalBottomNavVisibility.kt KDoc 참고).
+    val bottomNavVisibility = LocalBottomNavVisibility.current
+    val isDetailMode = selectedRoomId != null
+    DisposableEffect(isDetailMode) {
+        bottomNavVisibility.value = !isDetailMode
+        onDispose { bottomNavVisibility.value = true }
+    }
+
+    // 상세 시트가 Full인지(=지도가 안 새어 나와야 하는지)는 상세 자신의 sheetLevel로만 판정할 수 있다.
+    // 같은 key(roomId)로 hiltViewModel을 다시 조회하면 RoomDetailRoute가 쓰는 것과 같은 ViewModel
+    // 인스턴스를 그대로 얻는다(ViewModelStore가 key로 캐시) — 런처·SideEffect 배선을 중복시키지 않고
+    // 이 화면(RoomListScreen)이 필요로 하는 sheetLevel 하나만 읽는다.
+    val detailSheetLevel = if (selectedRoomId != null) {
+        val detailViewModel = hiltViewModel<RoomDetailViewModel, RoomDetailViewModel.Factory>(
+            key = selectedRoomId,
+            creationCallback = { factory -> factory.create(selectedRoomId) },
+        )
+        val detailState by detailViewModel.state.collectAsStateWithLifecycle()
+        detailState.sheetLevel
+    } else {
+        null
     }
 
     RoomListScreen(
         state = state,
         onIntent = viewModel::processIntent,
         modifier = modifier,
+        detailSheetLevel = detailSheetLevel,
+        detailContent = if (selectedRoomId != null) {
+            {
+                RoomDetailRoute(
+                    roomId = selectedRoomId,
+                    onBack = { viewModel.processIntent(RoomListIntent.OnCloseRoomDetailClick) },
+                )
+            }
+        } else {
+            null
+        },
     )
 }

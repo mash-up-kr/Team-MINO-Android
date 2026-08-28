@@ -25,6 +25,9 @@ sealed interface RoomListIntent : Intent {
 
     data class OnRoomCardClick(val roomId: String) : RoomListIntent
 
+    /** 방 상세 [X] 닫기 — `selectedRoomId`를 `null`로 되돌려 리스트로 복귀한다. */
+    data object OnCloseRoomDetailClick : RoomListIntent
+
     data object OnAddRoomClick : RoomListIntent
 
     data object OnGhostCardClick : RoomListIntent

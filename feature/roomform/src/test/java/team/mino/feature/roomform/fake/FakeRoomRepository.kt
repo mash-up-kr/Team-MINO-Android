@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.flowOf
 import team.mino.core.domain.model.Room
 import team.mino.core.domain.model.RoomColor
 import team.mino.core.domain.model.RoomDraft
+import team.mino.core.domain.model.RoomMember
 import team.mino.core.domain.model.RoomMemberSummary
 import team.mino.core.domain.model.RoomThumbnail
 import team.mino.core.domain.repository.RoomRepository
@@ -125,6 +126,20 @@ internal class FakeRoomRepository : RoomRepository {
      * [RoomColor.GRAY]로 채우는 것은 반환값을 만들기 위한 것일 뿐, 확정 규칙의 판정 대상은
      * 이 결과가 아니라 [createdDraft]에 담긴 색이다.
      */
+    override suspend fun getMembers(roomId: String): List<RoomMember> =
+        error("FakeRoomRepository(:feature:roomform)는 getMembers를 지원하지 않는다.")
+
+    override suspend fun createInvitation(roomId: String): String =
+        error("FakeRoomRepository(:feature:roomform)는 createInvitation을 지원하지 않는다.")
+
+    override suspend fun leaveRoom(roomId: String): Unit =
+        error("FakeRoomRepository(:feature:roomform)는 leaveRoom을 지원하지 않는다.")
+
+    override suspend fun transferOwner(
+        roomId: String,
+        nextOwnerId: String,
+    ): Unit = error("FakeRoomRepository(:feature:roomform)는 transferOwner를 지원하지 않는다.")
+
     private fun RoomDraft.toRoom(id: String): Room =
         Room(
             id = id,

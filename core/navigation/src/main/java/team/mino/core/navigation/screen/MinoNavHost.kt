@@ -44,6 +44,9 @@ inline fun <reified T : Route> NavGraphBuilder.screen(
     typeMap: Map<KType, NavType<*>> = emptyMap(),
     noinline content: @Composable AnimatedContentScope.(NavBackStackEntry) -> Unit,
 ) {
+    if (ImmersiveRoute::class.java.isAssignableFrom(T::class.java)) {
+        ImmersiveRouteRegistry.register(T::class)
+    }
     composable<T>(typeMap = typeMap, content = content)
 }
 
@@ -60,5 +63,8 @@ inline fun <reified T : Route> NavGraphBuilder.graph(
     typeMap: Map<KType, NavType<*>> = emptyMap(),
     noinline builder: NavGraphBuilder.() -> Unit,
 ) {
+    if (ImmersiveRoute::class.java.isAssignableFrom(T::class.java)) {
+        ImmersiveRouteRegistry.register(T::class)
+    }
     navigation<T>(startDestination = startDestination, typeMap = typeMap, builder = builder)
 }
