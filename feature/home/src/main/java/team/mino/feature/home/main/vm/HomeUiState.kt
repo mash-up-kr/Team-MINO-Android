@@ -25,6 +25,9 @@ import team.mino.feature.home.main.model.HomeTooltip
  * @property cards 남은 카드. 최상단이 첫 원소이며, 넘긴 카드는 여기서 덜어낸다.
  * @property isTransitioning 전환 애니메이션이 도는 중. 참인 동안 스와이프 의도는 큐에 쌓지 않고 버린다
  *  (spec UX-001, `research.md` R-007) — 그래서 진행 중인 애니메이션을 상태로 들고 있어야 한다.
+ *  **[phase]가 바뀔 때는 완료 신호를 기다리지 않고 여기서 내린다.** 완료를 알리는 것은 카드 덱 컴포저블인데
+ *  [HomePhase.DECK]를 벗어나면 그 컴포저블이 통째로 빠져 애니메이션 코루틴이 취소되고, 신호가 끝내 오지
+ *  않아 이후 스와이프가 전부 버려진다.
  * @property tooltip 한 번에 하나만 뜬다. 사라진 상태가 `null`이다.
  * @property actionMenuTarget 액션 메뉴가 열린 카드의 pinId. 메뉴는 카드 앵커에 묶여 있어 대상 없이 열리지 않는다.
  * @property isGuideVisible 참인 동안 [HomeIntent.DismissGuide]를 뺀 모든 의도를 버린다(spec FR-019).
