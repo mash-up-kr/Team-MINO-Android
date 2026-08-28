@@ -32,7 +32,8 @@ import team.mino.feature.home.main.model.HomeTooltip
  * @property actionMenuTarget 액션 메뉴가 열린 카드의 pinId. 메뉴는 카드 앵커에 묶여 있어 대상 없이 열리지 않는다.
  * @property isGuideVisible 참인 동안 [HomeIntent.DismissGuide]를 뺀 모든 의도를 버린다(spec FR-019).
  *  [phase]와 직교한다 — 볼 카드가 없어도 가이드를 먼저 띄운다(spec EC-016).
- * @property undoable 우→좌 스와이프로 되돌릴 카드. **1단계만** 들고 있으며, 덱이 바뀌면 비운다(spec EC-003).
+ * @property undoStack 우→좌 스와이프로 되돌릴 카드들. 넘긴 순서대로 쌓이고 **뒤에서부터** 꺼낸다 —
+ *  이 덱에서 넘긴 카드가 남아 있는 한 연속으로 되돌아간다(spec FR-002). 덱이 바뀌면 통째로 비운다(spec EC-003).
  * @property loadError 주 데이터(방 목록·덱) 로드 실패. 문구가 아니라 리프를 담아 그리는 쪽이 매핑한다
  *  (`docs/conventions/error_handling.md` §5 1행). [HomePhase.ERROR]와 함께 세워지고 함께 걷힌다 —
  *  사용자 액션의 일회성 실패는 여기 오지 않고 `DomainErrorEmitter`로 나간다(같은 표 2행).
@@ -49,6 +50,6 @@ internal data class HomeUiState(
     val actionMenuTarget: String? = null,
     val isRoomSheetOpen: Boolean = false,
     val isGuideVisible: Boolean = false,
-    val undoable: PlaceCard? = null,
+    val undoStack: ImmutableList<PlaceCard> = persistentListOf(),
     val loadError: MinoDomainException? = null,
 ) : UiState

@@ -165,7 +165,7 @@ internal class HomeViewModel
             updateState {
                 copy(
                     cards = cards.drop(1).toImmutableList(),
-                    undoable = top,
+                    undoStack = (undoStack + top).toImmutableList(),
                     isTransitioning = true,
                 )
             }
@@ -173,19 +173,20 @@ internal class HomeViewModel
         }
 
         /**
-         * 우→좌 되돌리기. 직전 넘김 **하나만** 취소한다(FR-002, `data-model.md` §2.2).
+         * 우→좌 되돌리기. 넘긴 순서의 **역순으로 한 장씩** 되돌린다(FR-002, `data-model.md` §2.2) —
+         * 이 덱에서 넘긴 카드가 남아 있는 한 몇 번이든 이어서 되돌아간다.
          *
          * 이미 나간 `recordPlaceOpened`는 취소하지 않는다 — 보상 호출을 흘리지 않는 것이 EC-017이다.
          * 되돌릴 것이 없으면 상태를 건드리지 않는다(EC-001).
          */
         private fun swipeBackward() {
             if (closeActionMenuIfOpen() || state.value.isTransitioning) return
-            val restored = state.value.undoable ?: return
+            val restored = state.value.undoStack.lastOrNull() ?: return
 
             updateState {
                 copy(
                     cards = (listOf(restored) + cards).toImmutableList(),
-                    undoable = null,
+                    undoStack = undoStack.dropLast(1).toImmutableList(),
                     isTransitioning = true,
                 )
             }
@@ -301,7 +302,7 @@ internal class HomeViewModel
                     room = room,
                     sort = DeckSort.GGUK_PICK,
                     isRoomSheetOpen = false,
-                    undoable = null,
+                    undoStack = persistentListOf(),
                 )
             }
             showTooltip(HomeTooltip.RoomChanged(room.name))
@@ -356,7 +357,7 @@ internal class HomeViewModel
                     sort = sort,
                     cards = deck.cards.toImmutableList(),
                     isTransitioning = false,
-                    undoable = null,
+                    undoStack = persistentListOf(),
                     loadError = null,
                 )
             }
@@ -388,7 +389,7 @@ internal class HomeViewModel
                             phase = if (hasShownCard) HomePhase.ALL_EXHAUSTED else HomePhase.EMPTY,
                             cards = persistentListOf(),
                             isTransitioning = false,
-                            undoable = null,
+                            undoStack = persistentListOf(),
                             loadError = null,
                         )
                     }

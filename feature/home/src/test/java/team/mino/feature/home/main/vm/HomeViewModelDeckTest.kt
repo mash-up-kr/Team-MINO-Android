@@ -117,14 +117,14 @@ class HomeViewModelDeckTest {
 
             val state = viewModel.state.value
             assertEquals(cards.drop(1), state.cards.toList())
-            assertEquals(cards.first(), state.undoable)
+            assertEquals(listOf(cards.first()), state.undoStack.toList())
         }
 
     /**
      * 우→좌 스와이프는 방금 넘긴 카드를 최상단으로 되돌린다(FR-002, TS-002).
      *
-     * 되돌린 뒤 [HomeUiState.undoable]이 비는 것이 **1단계 제한**의 표현이다. 비우지 않으면 같은 카드를 몇 번이고
-     * 되살릴 수 있어 덱에 사본이 쌓인다.
+     * 되돌린 카드는 [HomeUiState.undoStack]에서 **빠져야** 한다. 빼지 않으면 같은 카드를 몇 번이고 되살릴 수
+     * 있어 덱에 사본이 쌓인다.
      */
     @Test
     fun `넘긴 직후 되돌리면 그 카드가 최상단으로 복구된다`() =
@@ -139,12 +139,17 @@ class HomeViewModelDeckTest {
 
             val state = viewModel.state.value
             assertEquals(cards, state.cards.toList())
-            assertNull("되돌린 뒤에도 이력이 남으면 같은 카드가 두 번 복구된다", state.undoable)
+            assertTrue("되돌린 카드가 이력에 남으면 같은 카드가 두 번 복구된다", state.undoStack.isEmpty())
         }
 
-    /** 되돌리기는 1단계뿐이다(FR-002, `data-model.md` §2.2). 두 장을 넘겨도 되살아나는 것은 마지막 한 장이다. */
+    /**
+     * 되돌리기는 넘긴 만큼 이어진다(FR-002, `data-model.md` §2.2).
+     *
+     * **역순임을 카드 순서로 본다.** 되돌린 장수만 세면 아무 순서로나 되살리는 구현도 통과하는데, 그러면
+     * 사용자가 방금 넘긴 카드가 아닌 다른 카드를 마주한다.
+     */
     @Test
-    fun `두 장을 넘긴 뒤 두 번 되돌려도 한 장만 복구된다`() =
+    fun `두 장을 넘긴 뒤 두 번 되돌리면 넘긴 역순으로 모두 복구된다`() =
         runTest {
             val cards = cards(count = 3)
             deckRepository.setDeck(ROOM_ID, DeckSort.GGUK_PICK, cards)
@@ -154,12 +159,18 @@ class HomeViewModelDeckTest {
                 viewModel.processIntent(HomeIntent.SwipeForward)
                 viewModel.processIntent(HomeIntent.TransitionSettled)
             }
+            assertEquals(cards.take(2), viewModel.state.value.undoStack.toList())
+
             viewModel.processIntent(HomeIntent.SwipeBackward)
             viewModel.processIntent(HomeIntent.TransitionSettled)
-            viewModel.processIntent(HomeIntent.SwipeBackward)
+            assertEquals("두 번째로 넘긴 카드가 먼저 돌아온다", cards.drop(1), viewModel.state.value.cards.toList())
 
-            val remaining = viewModel.state.value.cards
-            assertEquals(cards.drop(1), remaining)
+            viewModel.processIntent(HomeIntent.SwipeBackward)
+            viewModel.processIntent(HomeIntent.TransitionSettled)
+
+            val state = viewModel.state.value
+            assertEquals("첫 카드까지 돌아와 원래 덱이 된다", cards, state.cards.toList())
+            assertTrue("다 되돌렸으면 이력이 비어야 한다", state.undoStack.isEmpty())
         }
 
     /**
@@ -181,7 +192,7 @@ class HomeViewModelDeckTest {
             val deckRequestsBefore = deckRepository.deckRequests.size
 
             assertEquals("되돌릴 것이 없는 상태는 덱 최상단이 첫 카드인 상태다", cards, before.cards.toList())
-            assertNull(before.undoable)
+            assertTrue(before.undoStack.isEmpty())
 
             viewModel.processIntent(HomeIntent.SwipeBackward)
 
@@ -211,13 +222,13 @@ class HomeViewModelDeckTest {
             viewModel.processIntent(HomeIntent.SwipeForward)
             viewModel.processIntent(HomeIntent.TransitionSettled)
             assertEquals("소진되면 같은 방의 다음 덱으로 넘어가 있어야 한다", DeckSort.LATEST, viewModel.state.value.sort)
-            assertNull("덱이 바뀌는 순간 이력이 비워져야 한다", viewModel.state.value.undoable)
+            assertTrue("덱이 바뀌는 순간 이력이 비워져야 한다", viewModel.state.value.undoStack.isEmpty())
 
             viewModel.processIntent(HomeIntent.SwipeBackward)
 
             val state = viewModel.state.value
             assertEquals(latest, state.cards.toList())
-            assertNull(state.undoable)
+            assertTrue(state.undoStack.isEmpty())
         }
 
     /**
