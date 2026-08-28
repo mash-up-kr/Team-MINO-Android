@@ -35,3 +35,6 @@ internal data class ProfileResponse(
 internal data class AvatarResponse(
     val color: String,
 )
+
+// RoomMemberDetailResponse(RoomSummaryResponse.kt)도 같은 아바타 표현을 쓴다 — 서버가 유저 표현 전반에
+// 같은 { color } 봉투를 재사용한다.

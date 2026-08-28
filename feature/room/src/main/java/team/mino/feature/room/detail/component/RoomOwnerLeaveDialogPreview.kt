@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import kotlinx.collections.immutable.persistentListOf
 import team.mino.core.designsystem.theme.MinoAndroidAppTheme
 import team.mino.core.designsystem.util.preview.UiModePreviews
+import team.mino.core.domain.model.ProfileAvatar
 import team.mino.core.domain.model.RoomMember
 import team.mino.feature.room.detail.vm.LeaveDialogState
 import kotlin.time.Clock
@@ -47,14 +48,14 @@ private val PREVIEW_MEMBERS = persistentListOf(
     RoomMember(
         userId = "user-2",
         nickname = "박지훈",
-        avatarUrl = null,
+        avatar = ProfileAvatar.Person2,
         isOwner = false,
         joinedAt = Clock.System.now(),
     ),
     RoomMember(
         userId = "user-3",
         nickname = "채윤지",
-        avatarUrl = null,
+        avatar = ProfileAvatar.Person7,
         isOwner = false,
         joinedAt = Clock.System.now(),
     ),

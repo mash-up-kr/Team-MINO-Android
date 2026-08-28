@@ -31,6 +31,7 @@ import team.mino.core.designsystem.util.modifier.clickable.rippleSingleClickable
 import team.mino.core.designsystem.util.modifier.selectable.rippleSingleSelectable
 import team.mino.core.designsystem.util.modifier.surface.surface
 import team.mino.core.domain.model.RoomMember
+import team.mino.feature.room.detail.model.image
 import team.mino.feature.room.detail.vm.LeaveDialogState
 
 /**
@@ -217,7 +218,7 @@ private fun OwnerDelegateMemberRow(
         MinoAvatar(
             variant = MinoAvatarVariant.Person,
             size = MinoAvatarSize.Large,
-            imageUrl = member.avatarUrl,
+            profileAvatar = member.avatar.image,
             contentDescription = member.nickname,
         )
 

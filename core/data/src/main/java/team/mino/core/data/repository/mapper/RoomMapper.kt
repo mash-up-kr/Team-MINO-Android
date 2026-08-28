@@ -9,6 +9,7 @@ import team.mino.core.data.network.dto.response.RoomSummaryResponse
 import team.mino.core.domain.model.Room
 import team.mino.core.domain.model.RoomColor
 import team.mino.core.domain.model.RoomDraft
+import team.mino.core.domain.model.ProfileAvatar
 import team.mino.core.domain.model.RoomMember
 import team.mino.core.domain.model.RoomMemberSummary
 import team.mino.core.domain.model.RoomThumbnail
@@ -135,7 +136,7 @@ internal fun RoomMemberDetailResponse.toDomain(): RoomMember =
     RoomMember(
         userId = userId,
         nickname = nickname,
-        avatarUrl = avatar,
+        avatar = avatar?.let { AVATARS_BY_COLOR[it.color] } ?: ProfileAvatar.Default,
         isOwner = isOwner,
         joinedAt = Instant.parse(joinedAt),
     )

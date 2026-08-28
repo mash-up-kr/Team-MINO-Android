@@ -41,10 +41,10 @@ internal data class RoomSummaryResponse(
  * 저 쪽은 `id`·`avatar{id}`만 담는 카드 축약 표현이고, 이 쪽은 멤버 전체 목록 화면이 쓰는 상세 표현이다.
  */
 @Serializable
-data class RoomMemberDetailResponse(
+internal data class RoomMemberDetailResponse(
     val userId: String,
     val nickname: String,
-    val avatar: String? = null,
+    val avatar: AvatarResponse? = null,
     val isOwner: Boolean,
     val joinedAt: String,
 )
