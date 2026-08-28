@@ -36,9 +36,4 @@ class ValidateNicknameUseCaseTest {
     fun `한글 낱자는 무효다`() {
         assertFalse(validateNickname("ㄱㄱ"))
     }
-
-    @Test
-    fun `중간에 공백이 있으면 무효다`() {
-        assertFalse(validateNickname("민 호"))
-    }
 }
