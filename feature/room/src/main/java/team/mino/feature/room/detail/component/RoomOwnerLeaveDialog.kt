@@ -10,10 +10,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -87,55 +85,30 @@ internal fun RoomOwnerLeaveDialog(
     }
 }
 
-/** 1인 방 방장 나가기 확인 모달 — [PlaceDeleteConfirmDialog]와 동일한 AlertDialog 최소 구현. */
+/** 1인 방 방장 나가기 확인 모달 — [PlaceDeleteConfirmDialog]("이 장소를 삭제할까요?")와 같은 카드. */
 @Composable
 private fun OwnerLeaveSingleConfirmDialog(
     onConfirm: () -> Unit,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    AlertDialog(
-        modifier = modifier,
-        onDismissRequest = onCancel,
-        title = {
+    RoomConfirmDialog(onDismiss = onCancel, modifier = modifier) {
+        RoomConfirmDialogCard(
             // [TBD] 정확한 문구는 Figma·PRD 대조 필요.
-            Text(
-                text = "방을 나가면 방이 삭제돼요",
-                style = MinoAndroidTheme.typography.body1NormalBold,
-                color = MinoAndroidTheme.colors.labelNormal,
-            )
-        },
-        text = {
-            // [TBD] 정확한 문구는 Figma·PRD 대조 필요.
-            Text(
-                text = "나 혼자 있는 방이라, 나가면 방과 저장된 모든 장소가 함께 삭제돼요.",
-                style = MinoAndroidTheme.typography.label1NormalRegular,
-                color = MinoAndroidTheme.colors.labelAlternative,
-            )
-        },
-        confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text(
-                    text = "나가기",
-                    style = MinoAndroidTheme.typography.body2NormalMedium,
-                    color = MinoAndroidTheme.colors.statusNegative,
-                )
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onCancel) {
-                Text(
-                    text = "취소",
-                    style = MinoAndroidTheme.typography.body2NormalMedium,
-                    color = MinoAndroidTheme.colors.labelAlternative,
-                )
-            }
-        },
-        containerColor = MinoAndroidTheme.colors.backgroundElevatedNormal,
-    )
+            title = "방을 나가면 방이 삭제돼요",
+            description = "나 혼자 있는 방이라, 나가면 방과 저장된 모든 장소가 함께 삭제돼요.",
+            cancelText = "취소",
+            onCancel = onCancel,
+            confirmText = "나가기",
+            onConfirm = onConfirm,
+        )
+    }
 }
 
-/** N인 방 방장 위임 대상 선택 모달 — Figma node 2542:125613 기준(리드가 조회). */
+/**
+ * N인 방 방장 위임 대상 선택 모달 — [PlaceDeleteConfirmDialog]("이 장소를 삭제할까요?")와 같은 카드에
+ * 설명 문구 대신 위임 대상 목록을 얹는다. 멤버 행 레이아웃은 Figma node 2542:125613(리드가 조회) 기준.
+ */
 @Composable
 private fun OwnerDelegateDialog(
     roomMembers: ImmutableList<RoomMember>,
@@ -145,18 +118,16 @@ private fun OwnerDelegateDialog(
     onCancel: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    AlertDialog(
-        modifier = modifier,
-        onDismissRequest = onCancel,
-        title = {
+    RoomConfirmDialog(onDismiss = onCancel, modifier = modifier) {
+        RoomConfirmDialogCard(
             // [TBD] 정확한 문구는 Figma·PRD 대조 필요.
-            Text(
-                text = "다음 방장을 선택해 주세요",
-                style = MinoAndroidTheme.typography.body1NormalBold,
-                color = MinoAndroidTheme.colors.labelNormal,
-            )
-        },
-        text = {
+            title = "다음 방장을 선택해 주세요",
+            cancelText = "취소",
+            onCancel = onCancel,
+            confirmText = "다음",
+            onConfirm = onConfirm,
+            confirmEnabled = selectedMemberId != null,
+        ) {
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -170,30 +141,8 @@ private fun OwnerDelegateDialog(
                     )
                 }
             }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = onConfirm,
-                enabled = selectedMemberId != null,
-            ) {
-                Text(
-                    text = "다음",
-                    style = MinoAndroidTheme.typography.body2NormalMedium,
-                    color = MinoAndroidTheme.colors.primaryNormal,
-                )
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onCancel) {
-                Text(
-                    text = "취소",
-                    style = MinoAndroidTheme.typography.body2NormalMedium,
-                    color = MinoAndroidTheme.colors.labelAlternative,
-                )
-            }
-        },
-        containerColor = MinoAndroidTheme.colors.backgroundElevatedNormal,
-    )
+        }
+    }
 }
 
 /**
