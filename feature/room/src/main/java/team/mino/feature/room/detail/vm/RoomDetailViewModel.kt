@@ -31,8 +31,8 @@ import team.mino.core.domain.model.MapMarkerSortOption
 import team.mino.core.domain.model.Place
 import team.mino.core.domain.model.PlaceCategoryFilter
 import team.mino.core.domain.model.Room
-import team.mino.core.domain.repository.PlaceRepository
 import team.mino.core.domain.repository.ProfileRepository
+import team.mino.core.domain.repository.RoomPlacesRepository
 import team.mino.core.domain.repository.RoomRepository
 import team.mino.core.errorhandling.DomainErrorEmitter
 import team.mino.core.errorhandling.MinoDomainException
@@ -60,7 +60,7 @@ internal class RoomDetailViewModel @AssistedInject constructor(
     @ApplicationContext private val context: Context,
     @Assisted private val roomId: String,
     private val roomRepository: RoomRepository,
-    private val placeRepository: PlaceRepository,
+    private val roomPlacesRepository: RoomPlacesRepository,
     private val profileRepository: ProfileRepository,
     val roomFormLauncher: RoomFormLauncher,
 ) : ViewModel(),
@@ -115,7 +115,7 @@ internal class RoomDetailViewModel @AssistedInject constructor(
     }
 
     /**
-     * [FR-001] 진입 조회 — `RoomRepository.getRoom` 단건 조회와 `PlaceRepository.observePlaces` 구독을
+     * [FR-001] 진입 조회 — `RoomRepository.getRoom` 단건 조회와 `RoomPlacesRepository.observePlaces` 구독을
      * 함께 시작한다. `isOwner`는 [ProfileRepository.currentUserId]로 얻은 서버 user id를
      * [Room.ownerId]와 비교해 판정한다 — Firebase 익명 로그인 uid와는 다른 식별자라 그걸로 비교하면
      * 항상 불일치한다(실기기 확인된 결함).
@@ -134,7 +134,7 @@ internal class RoomDetailViewModel @AssistedInject constructor(
             launchSafely { postSideEffect(RoomDetailSideEffect.RequestLocationPermission) }
         }
         launchSafely {
-            placeRepository
+            roomPlacesRepository
                 .observePlaces(roomId)
                 .catch { throwable ->
                     if (throwable is MinoDomainException) {
@@ -274,7 +274,7 @@ internal class RoomDetailViewModel @AssistedInject constructor(
     private fun onRoomSelectConfirm(targetRoomIds: ImmutableList<String>) {
         val place = state.value.placeToShare ?: return
         launchSafely {
-            runCatchingDomain { placeRepository.sharePlaces(place.id, targetRoomIds) }
+            runCatchingDomain { roomPlacesRepository.sharePlaces(place.id, targetRoomIds) }
                 .onSuccess {
                     postSideEffect(RoomDetailSideEffect.ShowShareCompleteToast)
                     updateState { copy(showRoomSelectSheet = false, placeToShare = null) }
@@ -323,7 +323,7 @@ internal class RoomDetailViewModel @AssistedInject constructor(
     private fun onPlaceDeleteConfirm() {
         val place = state.value.placeToDelete ?: return
         launchSafely {
-            runCatchingDomain { placeRepository.deletePlace(roomId, place.id) }
+            runCatchingDomain { roomPlacesRepository.deletePlace(roomId, place.id) }
                 .onSuccess {
                     rawPlaces = rawPlaces.filterNot { it.id == place.id }
                     updateState { copy(placeToDelete = null, places = filteredAndSorted()) }

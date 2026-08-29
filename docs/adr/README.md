@@ -50,9 +50,13 @@ ADR은 [`adr-writer` 스킬](../../.claude/skills/adr-writer/SKILL.md)이 자동
 | 2026-08-22 | [비회원 사용자 구분은 Firebase 익명 인증이 소유하고, 앱은 세션·신원 증명을 저장하지 않는다](2026-08-22-firebase-anonymous-auth-session.md) | Accepted | Jaesung Lee |
 | 2026-08-22 | [도메인 예외 매핑 지점은 원천마다 하나씩 두고, 인증 실패용 `Auth` 리프를 추가한다](2026-08-22-domain-exception-mapping-per-source.md) | Accepted | Jaesung Lee |
 | 2026-08-22 | [익명 세션 확보의 재시도·지연 판정은 호출 화면이 소유하고, 데이터 레이어는 멱등한 1회 확보만 제공한다](2026-08-22-session-retry-owned-by-caller.md) | Accepted | Jaesung Lee |
+| 2026-08-24 | [초대 링크 문자열 조립은 도메인 인터페이스로 계약하고, 호스트를 아는 구현은 `:core:data`가 갖는다](2026-08-24-invite-link-assembly-domain-interface.md) | Accepted | Jaesung Lee |
+| 2026-08-24 | [토스트의 모양(`MinoSnackbar`)과 표출 위치(하단 40dp)는 화면이 아니라 `MinoScaffold`가 소유한다](2026-08-24-snackbar-host-owned-by-mino-scaffold.md) | Accepted | Jaesung Lee |
 | 2026-08-25 | [프로필 아바타 12종의 에셋과 컴포넌트는 `:core:design-system`이 소유한다](2026-08-25-profile-avatar-assets-in-design-system.md) | Accepted | Jaesung Lee |
 | 2026-08-25 | [디자인 시스템 텍스트 입력의 글자 수는 grapheme cluster로 센다](2026-08-25-grapheme-count-for-text-input.md) | Accepted | Jaesung Lee |
 | 2026-08-26 | [화면보다 오래 살아야 하는 요청은 WorkManager가 소유하고, 재시도 정책을 워커가 든다](2026-08-26-workmanager-for-detached-requests.md) | Accepted | Jaesung Lee |
 | 2026-08-27 | [서버 응답의 `{ data }` 봉투는 제네릭 DTO 하나로 `ApiService`에서 벗긴다](2026-08-27-response-envelope-unwrapped-in-apiservice.md) | Accepted | Jaesung Lee |
 | 2026-08-28 | [실패 응답의 `errorCode`를 도메인 예외로 올리지 않고, 에러 본문 타입은 공용으로 하나만 둔다](2026-08-28-error-body-type-and-no-error-code-leaf.md) | Accepted | Jaesung Lee |
 | 2026-08-28 | [`ApiService`의 단위는 feature가 아니라 서버 리소스(OpenAPI 태그)다](2026-08-28-api-service-owned-per-server-tag.md) | Accepted | Jaesung Lee |
+| 2026-08-29 | [여러 탭에서 진입하는 몰입 화면은 탭 Route가 아니라 진입형 feature로 둔다](2026-08-29-entry-feature-for-cross-tab-immersive-screen.md) | Proposed | Jaesung Lee |
+| 2026-08-29 | [앱 진입 화면 판정은 온보딩이 소유하고, 스플래시는 그 판정을 소비한다](2026-08-29-onboarding-entry-decision-owned-by-onboarding.md) | Accepted | Jaesung Lee |

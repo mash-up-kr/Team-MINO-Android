@@ -22,4 +22,11 @@ object MinoTopNavigationDefaults {
 
     val actionLabelColor: Color
         @Composable @ReadOnlyComposable get() = TopNavigationTokens.ActionLabelColor.value
+
+    val actionIconColor: Color
+        @Composable @ReadOnlyComposable get() = TopNavigationTokens.ActionIconColor.value
+
+    /** 아이콘 액션의 눌림 오버레이 색. 리플이 이 색으로 그려진다. */
+    val actionIconOverlayColor: Color
+        @Composable @ReadOnlyComposable get() = TopNavigationTokens.ActionIconOverlayColor.value
 }

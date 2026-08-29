@@ -8,10 +8,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import dagger.hilt.android.AndroidEntryPoint
 import team.mino.core.designsystem.theme.MinoAndroidAppTheme
-import team.mino.core.navigation.activity.launcher.EXTRA_PROFILE_ENTRY_POINT
 import team.mino.core.navigation.activity.launcher.MainLauncher
-import team.mino.core.navigation.activity.launcher.PROFILE_ENTRY_POINT_ONBOARDING
-import team.mino.core.navigation.activity.launcher.ProfileLauncher
+import team.mino.core.navigation.activity.launcher.OnboardingLauncher
 import javax.inject.Inject
 
 /**
@@ -29,7 +27,7 @@ class SplashActivity : ComponentActivity() {
     lateinit var mainLauncher: MainLauncher
 
     @Inject
-    lateinit var profileLauncher: ProfileLauncher
+    lateinit var onboardingLauncher: OnboardingLauncher
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,11 +37,7 @@ class SplashActivity : ComponentActivity() {
             MinoAndroidAppTheme {
                 SplashShell(
                     onNavigateToMain = { mainLauncher.launch(this, withFinish = true) },
-                    onNavigateToOnboarding = {
-                        profileLauncher.launch(this, withFinish = true) {
-                            putExtra(EXTRA_PROFILE_ENTRY_POINT, PROFILE_ENTRY_POINT_ONBOARDING)
-                        }
-                    },
+                    onNavigateToOnboarding = { onboardingLauncher.launch(this, withFinish = true) },
                     modifier = Modifier.fillMaxSize(),
                 )
             }

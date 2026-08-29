@@ -50,9 +50,11 @@ dependencies {
     implementation(project(":feature:sample"))
     implementation(project(":feature:profile"))
     implementation(project(":feature:roomform"))
+    implementation(project(":feature:placedetail"))
     implementation(project(":feature:main"))
     implementation(project(":feature:sharereceiver"))
     implementation(project(":feature:splash"))
+    implementation(project(":feature:onboarding"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

@@ -5,7 +5,9 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import team.mino.core.designsystem.component.button.token.ButtonTokens
+import team.mino.core.designsystem.component.button.token.shape
 import team.mino.core.designsystem.foundation.color.ColorScheme
 import team.mino.core.designsystem.foundation.color.fromToken
 import team.mino.core.designsystem.theme.MinoAndroidTheme
@@ -24,6 +26,15 @@ object MinoButtonDefaults {
             ButtonStyle.OutlinedPrimary -> MinoAndroidTheme.colors.outlinedPrimaryButtonColors
             ButtonStyle.OutlinedAssistive -> MinoAndroidTheme.colors.outlinedAssistiveButtonColors
         }
+
+    /**
+     * [size]에 대응하는 버튼 모서리.
+     *
+     * 버튼 바깥에 그림자·배경을 얹는 호출부가 같은 모서리를 필요로 한다. 그 값을 호출부가 다시 적으면 Figma가
+     * 반경을 바꿀 때 버튼과 그 위에 얹힌 것이 서로 다른 모서리로 갈라진다.
+     */
+    @Stable
+    fun shape(size: ButtonSize): Shape = size.shape()
 
     /** [enabled]에 대응하는 배경색. */
     @Stable

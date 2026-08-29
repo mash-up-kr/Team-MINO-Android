@@ -1,5 +1,6 @@
 package team.mino.core.common.ui.scaffold
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -10,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
@@ -28,6 +30,10 @@ import team.mino.core.designsystem.foundation.icons.icons.Check
  * 화면 전환이 있으면 [content] 안에서 `MinoNavHost`를, 단일 화면이면 화면 컴포저블을 직접 그린다.
  * 미처리 예외(버그) 안내와 스낵바 호스트를 셸이 소유하므로 feature는 별도 배선이 필요 없다.
  * 도메인 에러는 ViewModel 인스턴스별 채널이라 셸이 아니라 Route가 [LocalSnackbarHostState]로 표시한다.
+ *
+ * 토스트의 **모양([MinoSnackbar])과 표출 위치**도 셸이 소유한다. 화면은 메시지를 올리는 데까지만
+ * 관여하고 오프셋도 스낵바 컴포저블도 다루지 않는다
+ * (`docs/adr/2026-08-24-snackbar-host-owned-by-mino-scaffold.md`).
  *
  * 규약은 `docs/conventions/error_handling.md`와 `docs/architecture/feature-module.md` 4장 참조.
  */
@@ -49,37 +55,39 @@ fun MinoScaffold(
     }
 
     CompositionLocalProvider(LocalSnackbarHostState provides snackbarHostState) {
-        Scaffold(
-            modifier = modifier,
-            bottomBar = bottomBar,
-            // Figma `Snackbar/Snackbar`(예: 2542-125839) 스펙 — Material3 기본 Snackbar가 아니라
-            // 디자인 시스템 MinoSnackbar로 그린다. 셸이 스낵바 호스트를 유일하게 소유하므로
-            // (KDoc 위 "스낵바 호스트 제공" 참고) 이 자리 한 곳만 바꾸면 앱 전체 스낵바에 반영된다.
-            // 실측 결과 화면 좌우 20dp 여백(그 안쪽 16dp는 MinoSnackbar 자체 패딩)과 체크(✓) 리딩
-            // 아이콘이 있다 — SnackbarHost는 기본적으로 이 여백·아이콘을 주지 않아 직접 채운다.
-            // 하단 여백도 실측(node `2542-125839`, 812pt 캔버스 기준 스낵바 하단 y=710, Home
-            // Indicator 상단 y=778 → 시스템 안전영역 위로 68dp 간격) — Scaffold 기본값은 이 간격
-            // 없이 안전영역에 바로 붙으므로 SNACKBAR_BOTTOM_MARGIN으로 직접 채운다.
-            snackbarHost = {
-                SnackbarHost(snackbarHostState) { data ->
-                    MinoSnackbar(
-                        message = data.visuals.message,
-                        leadingIcon = rememberVectorPainter(MinoIcons.Check),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = SNACKBAR_HORIZONTAL_MARGIN)
-                            .padding(bottom = SNACKBAR_BOTTOM_MARGIN),
-                    )
-                }
-            },
-            containerColor = containerColor,
-            content = content,
-        )
+        Box(modifier = modifier) {
+            Scaffold(
+                bottomBar = bottomBar,
+                snackbarHost = {},
+                containerColor = containerColor,
+                content = content,
+            )
+
+            // 표출 위치의 기준선이 스크린 하단이라 Scaffold의 snackbarHost 슬롯을 비워 두고 셸이
+            // 직접 얹는다. 그 슬롯은 호스트를 bottomBar 위에 놓아 하단 바 유무로 기준선이 갈린다
+            // (`docs/adr/2026-08-24-snackbar-host-owned-by-mino-scaffold.md`).
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(
+                        start = SnackbarHorizontalMargin,
+                        end = SnackbarHorizontalMargin,
+                        bottom = SnackbarBottomMargin,
+                    ),
+            ) { data ->
+                MinoSnackbar(
+                    message = data.visuals.message,
+                    leadingIcon = rememberVectorPainter(MinoIcons.Check),
+                    modifier = Modifier.fillMaxWidth(),
+                    actionLabel = data.visuals.actionLabel,
+                    onActionClick = data::performAction,
+                    onCloseClick = if (data.visuals.withDismissAction) data::dismiss else null,
+                )
+            }
+        }
     }
 }
 
-/** Figma `Snackbar/Snackbar`(예: 2542-125839) 실측 — 화면 좌우 가장자리로부터의 여백. */
-private val SNACKBAR_HORIZONTAL_MARGIN = 20.dp
-
-/** Figma `Snackbar/Snackbar`(예: 2542-125839) 실측 — 시스템 안전영역 위로 띄우는 하단 여백. */
-private val SNACKBAR_BOTTOM_MARGIN = 68.dp
+private val SnackbarHorizontalMargin = 20.dp
+private val SnackbarBottomMargin = 40.dp

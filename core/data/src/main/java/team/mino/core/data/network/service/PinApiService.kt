@@ -6,6 +6,7 @@ import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import team.mino.core.data.network.dto.request.PinCreateRequest
+import team.mino.core.data.network.dto.request.PinDuplicateRequest
 import javax.inject.Inject
 
 /**
@@ -31,6 +32,34 @@ internal class PinApiService @Inject constructor(
      */
     suspend fun createPin(request: PinCreateRequest) {
         client.post("api/v1/rooms/pins") {
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }
+    }
+
+    /**
+     * [pinId] 장소의 「경과일 초기화 확인」을 알린다 —
+     * `docs/specs/home-deck-exploration/contracts/deck-api.md` §3.2.
+     *
+     * 본문이 없는 `POST`다. 응답 `{ "data": { "ok": true } }`도 읽지 않는다 — 성공 여부는 상태 코드가
+     * 이미 말하고 `ok`에서 더 얻을 값이 없다. 서버는 append-only 로그에 한 줄을 더할 뿐이다.
+     */
+    suspend fun recordPinAccess(pinId: String) {
+        client.post("api/v1/pins/$pinId/accesses")
+    }
+
+    /**
+     * [pinId] 장소를 [request]의 방들에 복제한다 — 같은 계약 §3.3.
+     *
+     * **`409`를 여기서 잡지 않는다.** 대상 방에 같은 장소가 있으면 서버가 전체를 거절하는데, 그것은
+     * 사용자에게 알려야 할 실패다. `expectSuccess = true`가 만든 예외를 `convertDomainException`이
+     * `MinoDomainException.Http`로 바꿔 스낵바까지 올려 보낸다.
+     */
+    suspend fun duplicatePin(
+        pinId: String,
+        request: PinDuplicateRequest,
+    ) {
+        client.post("api/v1/pins/$pinId/duplicate") {
             contentType(ContentType.Application.Json)
             setBody(request)
         }

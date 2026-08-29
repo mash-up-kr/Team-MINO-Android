@@ -66,13 +66,26 @@ internal sealed interface SplashSideEffect {
 
 | 목적지 | 수단 | 상태 |
 |---|---|---|
-| 메인 탭 | `MainLauncher.launch(activity, withFinish = true)` | 계약 존재 ([MainLauncher.kt](../../../../core/navigation/src/main/java/team/mino/core/navigation/activity/launcher/MainLauncher.kt)) |
-| 온보딩(프로필 설정) | `ProfileLauncher.launch(activity, withFinish = true) { putExtra(EXTRA_PROFILE_ENTRY_POINT, PROFILE_ENTRY_POINT_ONBOARDING) }` | 계약 존재 ([ProfileLauncher.kt](../../../../core/navigation/src/main/java/team/mino/core/navigation/activity/launcher/ProfileLauncher.kt)) |
+| `SplashEntry.Main` | `MainLauncher.launch(activity, withFinish = true)` | 계약 존재 ([MainLauncher.kt](../../../../core/navigation/src/main/java/team/mino/core/navigation/activity/launcher/MainLauncher.kt)) |
+| `SplashEntry.Onboarding` | **온보딩 진입 계약을 `withFinish = true`로 호출한다** | 아래 참고 |
 
 - `withFinish = true`로 스플래시를 종료해 뒤로가기로 되돌아오지 못하게 한다.
 - `withFinish`와 `resultLauncher`는 함께 쓰지 않는다([core/navigation README §2.1](../../../../core/navigation/README.md)).
+- **스플래시는 새 전환 계약을 만들지 않는다.** `:core:navigation`에 이미 있거나 온보딩이 만드는 것을 소비한다.
 
-진입점 값(`PROFILE_ENTRY_POINT_ONBOARDING`)은 `:core:navigation`의 계약 자리에 상수로 놓여 있어 호출자와 화면이 같은 문자열을 본다. 스플래시는 새 계약을 만들지 않는다.
+### 온보딩 진입 계약의 대상 — 이 계획이 정하지 않는다
+
+현재 구현은 `ProfileLauncher`를 직접 부르며 온보딩의 첫 스텝을 여는 형태다([ProfileLauncher.kt](../../../../core/navigation/src/main/java/team/mino/core/navigation/activity/launcher/ProfileLauncher.kt) + `PROFILE_ENTRY_POINT_ONBOARDING`). 이는 `:feature:onboarding`이 없던 시점의 임시 배선이며, **`docs/specs/onboarding-flow`가 그것을 `OnboardingLauncher`로 대체하기로 정했다**([contracts/onboarding-launcher.md §8](../../onboarding-flow/contracts/onboarding-launcher.md)).
+
+이 문서가 계약으로 고정하는 것은 **성질 셋**이고, 어느 `Launcher`인지는 온보딩이 정한다.
+
+| # | 성질 | 근거 |
+|---|---|---|
+| 1 | `withFinish = true` — 스플래시로 되돌아올 수 없다 | FR-010 · 온보딩 spec FR-006 |
+| 2 | 결과를 받지 않는다 — `resultLauncher`를 넘기지 않는다 | 온보딩의 종착지는 스플래시가 아니다 |
+| 3 | **어느 스텝부터 여는지를 스플래시가 지정하지 않는다** | spec §3.2 · 온보딩 spec FR-023 |
+
+3번이 `ProfileLauncher` 직접 호출을 대체해야 하는 이유다 — 그 호출은 **프로필 설정 스텝을 지정**하고 있어, 재개해야 할 사용자에게도 첫 스텝을 연다.
 
 ## 6. 상위 계약 준수 — `anonymous-auth-session` 호출자 계약
 
@@ -83,7 +96,8 @@ internal sealed interface SplashSideEffect {
 
 ## 7. 재시도 계약
 
-- 실패 후 `EnsureAnonymousSessionUseCase`를 **자동으로** 재호출한다. 사용자 조작을 요구하지 않는다(FR-010). 이 UseCase는 멱등이라 반복 호출이 안전하다.
+- 실패 후 **`EnsureAnonymousSessionUseCase`와 `ResolveSplashEntryUseCase`를 한 묶음으로** 자동 재호출한다. 사용자 조작을 요구하지 않는다(FR-010). 두 호출 모두 멱등이라 반복이 안전하다.
+- **재시도 대상이 세션 확보만이 아니다.** 판정이 실패해도 같은 루프가 돈다 — 그래서 오프라인 재실행이 이 루프에 갇힌다(spec `EC-002`·`TS-016`). spec 5.0.0이 승인한 동작이며, 루프를 빠져나가는 유일한 조건은 `SplashEntry`가 만들어지는 것이다([research.md R-020](../research.md)).
 - 성공하는 순간 표출 중인 토스트와 무관하게 즉시 전환한다(EC-005).
 - 토스트는 직전 표출로부터 **최소 10초** 간격을 두고 반복한다(UX-006).
 - 재시도 **횟수 상한은 두지 않는다**(호출자 계약 C-4, spec §4 가정). 간격은 구현 단계에서 정하고 `research.md`에 덧붙인다.

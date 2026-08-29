@@ -3,6 +3,7 @@ package team.mino.core.data.repository.mapper
 import team.mino.core.data.datasource.ProfileEntry
 import team.mino.core.data.network.dto.request.AvatarRequest
 import team.mino.core.data.network.dto.request.ProfileRequest
+import team.mino.core.data.network.dto.response.AvatarResponse
 import team.mino.core.data.network.dto.response.ProfileResponse
 import team.mino.core.domain.model.Profile
 import team.mino.core.domain.model.ProfileAvatar
@@ -51,8 +52,16 @@ private val AVATARS_BY_NAME: Map<String, ProfileAvatar> = ProfileAvatar.entries.
 internal fun ProfileResponse.toDomain(): Profile =
     Profile(
         nickname = nickname,
-        avatar = avatar?.let { AVATARS_BY_COLOR[it.color] } ?: ProfileAvatar.Default,
+        avatar = avatar.toProfileAvatarOrNull() ?: ProfileAvatar.Default,
     )
+
+/**
+ * 서버가 준 아바타를 읽는다. **아바타가 없거나 표에 없는 색이면 `null`** — 무엇으로 메울지는 부르는 쪽이 정한다.
+ * 프로필은 기본 아바타로 메우고(위), 홈 카드는 「고르지 않음」을 그대로 도메인에 싣는다(`DeckMapper`).
+ *
+ * 색 표를 이 파일 밖으로 내보내지 않기 위한 자리다 — 표가 하나여야 서버가 대응을 바꿀 때 고칠 곳도 하나다.
+ */
+internal fun AvatarResponse?.toProfileAvatarOrNull(): ProfileAvatar? = this?.let { AVATARS_BY_COLOR[it.color] }
 
 /** 아바타 12종만 나간다 — `gray`를 내보내는 경로는 없다. */
 internal fun Profile.toRequest(): ProfileRequest =

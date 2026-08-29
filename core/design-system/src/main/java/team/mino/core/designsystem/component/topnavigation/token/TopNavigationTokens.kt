@@ -35,6 +35,16 @@ internal object TopNavigationTokens {
     val ActionInteractionOverhang = 6.dp
     val ActionInteractionShape = RoundedCornerShape(6.dp)
 
+    /** 아이콘 액션이 놓이는 자리의 크기. 텍스트 액션과 달리 자리가 정사각으로 고정된다. */
+    val ActionIconSize = 24.dp
+
+    /**
+     * 아이콘 액션 터치·리플 영역의 크기. 아이콘 자리보다 커서 사방으로 넘치며,
+     * 넘치는 만큼은 [ActionIconPadding]으로 되돌려 아이콘 자체는 [ActionIconSize]로 그린다.
+     */
+    val ActionIconInteractionSize = 40.dp
+    val ActionIconPadding = 8.dp
+
     val TitleHorizontalPadding = 4.dp
 
     val TitleFont = TypographyAccessKeyToken.Headline2Bold
@@ -42,4 +52,11 @@ internal object TopNavigationTokens {
     val BackIconColor = ColorAccessKeyToken.LabelNormal
     val ActionLabelFont = TypographyAccessKeyToken.Label1NormalMedium
     val ActionLabelColor = ColorAccessKeyToken.LabelNormal
+    val ActionIconColor = ColorAccessKeyToken.LabelNormal
+
+    /**
+     * 아이콘 액션이 눌렸을 때 덮이는 오버레이 색. 디자인이 아이콘 색과 별개의 레이어로 정하므로
+     * 주변에서 물려받지 않고 이 토큰으로 고정한다.
+     */
+    val ActionIconOverlayColor = ColorAccessKeyToken.LabelNormal
 }

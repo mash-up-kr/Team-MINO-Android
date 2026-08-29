@@ -3,6 +3,7 @@ package team.mino.feature.sharereceiver.fake
 import kotlinx.coroutines.flow.Flow
 import team.mino.core.domain.model.Room
 import team.mino.core.domain.model.RoomDraft
+import team.mino.core.domain.model.RoomMember
 import team.mino.core.domain.model.RoomSummary
 import team.mino.core.domain.repository.RoomRepository
 import team.mino.core.errorhandling.MinoDomainException
@@ -49,4 +50,15 @@ internal class FakeRoomRepository : RoomRepository {
         roomId: String,
         draft: RoomDraft,
     ): Room = error("방 선택 시트는 방을 고치지 않는다.")
+
+    override suspend fun getMembers(roomId: String): List<RoomMember> = error("방 선택 시트는 멤버 목록을 조회하지 않는다.")
+
+    override suspend fun createInvitation(roomId: String): String = error("방 선택 시트는 초대 링크를 발급하지 않는다.")
+
+    override suspend fun leaveRoom(roomId: String): Unit = error("방 선택 시트는 방에서 나가지 않는다.")
+
+    override suspend fun transferOwner(
+        roomId: String,
+        nextOwnerId: String,
+    ): Unit = error("방 선택 시트는 방장 위임을 하지 않는다.")
 }

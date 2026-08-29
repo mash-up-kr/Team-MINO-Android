@@ -1,6 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    원본이 캐릭터·선반·배경이 한 장으로 합성된 장면이라 전경/배경을 나누지 않는다. 나누면 런처가
+    두 레이어를 다른 속도로 흔드는 패럴랙스 때문에 캐릭터가 선반에서 떠 보인다.
+
+    background는 108dp 캔버스 전체다. 원본 정사각을 가시영역 72dp에 맞춰 얹고, 패럴랙스 때만
+    드러나는 바깥 18dp 링은 가장자리 픽셀을 늘려 채웠다. foreground는 그릴 것이 없어 비운다.
+
+    monochrome(테마 아이콘)은 전경 알파만 쓰므로 배경·선반이 사라진다. 캐릭터 실루엣만 뽑아
+    66dp 안전영역에 맞춘 별도 에셋을 쓴다. 원본은 app/src/main/ic_launcher-master.webp.
+-->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-    <background android:drawable="@drawable/ic_launcher_background" />
-    <foreground android:drawable="@drawable/ic_launcher_foreground" />
-    <monochrome android:drawable="@drawable/ic_launcher_foreground" />
+    <background android:drawable="@mipmap/ic_launcher_background" />
+    <foreground android:drawable="@android:color/transparent" />
+    <monochrome android:drawable="@mipmap/ic_launcher_monochrome" />
 </adaptive-icon>

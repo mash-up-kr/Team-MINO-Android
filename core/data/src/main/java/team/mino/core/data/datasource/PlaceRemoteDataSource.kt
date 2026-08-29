@@ -7,7 +7,7 @@ import team.mino.core.data.network.dto.response.PinResponse
  * `docs/specs/room-detail/contracts/place-repository.md` 근거.
  *
  * `deletePlace`에 대응하는 서버 엔드포인트가 아직 없어([docs/specs/room-detail/research.md] D14) 이
- * DataSource에는 삭제 메서드를 두지 않는다 — 임시 처리는 `PlaceRepositoryImpl`이 갖는다.
+ * DataSource에는 삭제 메서드를 두지 않는다 — 임시 처리는 `RoomPlacesRepositoryImpl`이 갖는다.
  */
 internal interface PlaceRemoteDataSource {
     /** 특정 방에 저장된 핀 전체 조회. `GET /api/v1/pins?roomId={roomId}`. */

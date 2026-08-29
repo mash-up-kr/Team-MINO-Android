@@ -7,19 +7,21 @@ import androidx.compose.ui.graphics.Color
 import team.mino.core.designsystem.component.contentbadge.token.ContentBadgeTokens
 import team.mino.core.designsystem.foundation.color.ColorScheme
 import team.mino.core.designsystem.foundation.color.fromToken
+import team.mino.core.designsystem.foundation.color.token.ColorAccessKeyToken
 import team.mino.core.designsystem.theme.MinoAndroidTheme
 
 /**
  * [MinoContentBadge]의 기본값 모음.
  */
 object MinoContentBadgeDefaults {
-    /** [color]에 대응하는 [MinoContentBadgeColors]. Figma `Color` 속성(Neutral·Accent)에 대응. */
+    /** [color]에 대응하는 [MinoContentBadgeColors]. Figma `Color` 속성에 대응. */
     @Composable
     @ReadOnlyComposable
     fun colors(color: ContentBadgeColor): MinoContentBadgeColors =
         when (color) {
             ContentBadgeColor.Neutral -> MinoAndroidTheme.colors.defaultContentBadgeColors
             ContentBadgeColor.Accent -> MinoAndroidTheme.colors.accentContentBadgeColors
+            ContentBadgeColor.LightBlue -> MinoAndroidTheme.colors.lightBlueContentBadgeColors
         }
 
     internal val ColorScheme.defaultContentBadgeColors: MinoContentBadgeColors
@@ -31,18 +33,27 @@ object MinoContentBadgeDefaults {
                     borderColor = fromToken(ContentBadgeTokens.NeutralBorderColor),
                 ).also { defaultContentBadgeColorsCached = it }
 
-    /** Accent는 Cyan 한 색에서 배경(8%)·테두리(43%)를 알파로 파생한다. */
     internal val ColorScheme.accentContentBadgeColors: MinoContentBadgeColors
         get() =
             accentContentBadgeColorsCached
-                ?: run {
-                    val accent = fromToken(ContentBadgeTokens.AccentColor)
-                    MinoContentBadgeColors(
-                        containerColor = accent.copy(alpha = ContentBadgeTokens.AccentTintOpacity),
-                        contentColor = accent,
-                        borderColor = accent.copy(alpha = ContentBadgeTokens.AccentBorderOpacity),
-                    )
-                }.also { accentContentBadgeColorsCached = it }
+                ?: accentColors(ContentBadgeTokens.AccentColor)
+                    .also { accentContentBadgeColorsCached = it }
+
+    internal val ColorScheme.lightBlueContentBadgeColors: MinoContentBadgeColors
+        get() =
+            lightBlueContentBadgeColorsCached
+                ?: accentColors(ContentBadgeTokens.LightBlueColor)
+                    .also { lightBlueContentBadgeColorsCached = it }
+
+    /** Accent 계열은 한 색에서 배경·테두리를 알파로 파생한다. */
+    private fun ColorScheme.accentColors(accentToken: ColorAccessKeyToken): MinoContentBadgeColors {
+        val accent = fromToken(accentToken)
+        return MinoContentBadgeColors(
+            containerColor = accent.copy(alpha = ContentBadgeTokens.AccentTintOpacity),
+            contentColor = accent,
+            borderColor = accent.copy(alpha = ContentBadgeTokens.AccentBorderOpacity),
+        )
+    }
 }
 
 /**

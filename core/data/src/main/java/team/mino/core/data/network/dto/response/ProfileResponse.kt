@@ -30,10 +30,13 @@ internal data class ProfileResponse(
  * [color]는 서버가 준 색 식별자 문자열이다. 도메인 `ProfileAvatar`와의 대응은 `ProfileMapper`만 안다 —
  * DTO는 도메인 타입을 알지 못한다. 서버 `enum`이 넓어져도 파싱이 깨지지 않도록 문자열로 받고,
  * 모르는 값의 처리는 매퍼가 정한다.
+ *
+ * 기본값을 둔 것은 아바타 객체가 색 없이 오더라도(빈 객체·다른 필드만 실린 응답) 조회 전체를 실패시키지
+ * 않기 위해서다. 빈 문자열은 표에 없는 색과 같게 다뤄져 매퍼가 기본 아바타로 읽는다.
  */
 @Serializable
 internal data class AvatarResponse(
-    val color: String,
+    val color: String = "",
 )
 
 // RoomMemberDetailResponse(RoomSummaryResponse.kt)도 같은 아바타 표현을 쓴다 — 서버가 유저 표현 전반에
