@@ -1,7 +1,6 @@
 package team.mino.feature.main
 
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -14,10 +13,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import dagger.hilt.android.AndroidEntryPoint
 import team.mino.core.designsystem.theme.MinoAndroidAppTheme
+import team.mino.core.navigation.activity.launcher.EXTRA_PLACE_DETAIL_PIN_ID
 import team.mino.core.navigation.activity.launcher.EXTRA_ROOM_FORM_ONBOARDING
 import team.mino.core.navigation.activity.launcher.EXTRA_ROOM_FORM_RESULT_OUTCOME
 import team.mino.core.navigation.activity.launcher.EXTRA_ROOM_FORM_RESULT_ROOM_ID
 import team.mino.core.navigation.activity.launcher.EXTRA_ROOM_FORM_ROOM_ID
+import team.mino.core.navigation.activity.launcher.PlaceDetailLauncher
 import team.mino.core.navigation.activity.launcher.RoomFormLauncher
 import team.mino.feature.main.placeholder.RoomFormEntryPoint
 import javax.inject.Inject
@@ -28,6 +29,9 @@ class MainActivity : ComponentActivity() {
     // (→ docs/specs/group-room-form/plan.md §범위 경계).
     @Inject
     lateinit var roomFormLauncher: RoomFormLauncher
+
+    @Inject
+    lateinit var placeDetailLauncher: PlaceDetailLauncher
 
     private var roomFormResult by mutableStateOf<String?>(null)
 
@@ -47,11 +51,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             MinoAndroidAppTheme {
                 MainShell(
-                    // [SCR-006] 장소 상세 feature가 아직 없다. 그 모듈이 생기면 런처 호출로 바꾼다
-                    // (→ docs/specs/home-deck-exploration/spec.md FR-007).
-                    onNavigateToPlaceDetail = { pinId ->
-                        Toast.makeText(this, "장소 상세: pinId=$pinId", Toast.LENGTH_SHORT).show()
-                    },
+                    onNavigateToPlaceDetail = ::launchPlaceDetail,
                     onNavigateToRoomForm = { launchRoomForm() },
                     // 결과가 바뀔 때만 새로 만든다. 매 리컴포지션마다 새 묶음을 넘기면 셸 아래의
                     // `NavHost`가 그래프 생성 키를 잃어 그래프를 통째로 다시 만든다.
@@ -67,6 +67,18 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
+    }
+
+    /**
+     * 장소 상세를 연다. 홈 카드가 지목한 핀 하나가 진입 인자 전부다
+     * (→ docs/specs/place-detail/contracts/place-detail-launcher.md §2).
+     *
+     * 결과를 받지 않으므로 `resultLauncher`를 넘기지 않는다(같은 계약 §3). 그래서 상세에서 나가면 홈으로
+     * 되돌아온다 — 「지금 보고 있는 방의 [SCR-005] 방 상세로 나간다」(place-detail spec FR-009)와 어긋난
+     * 채 남는 부채이며, 방 상세(#161)가 머지된 뒤 결과 반환으로 닫는다.
+     */
+    private fun launchPlaceDetail(pinId: String) {
+        placeDetailLauncher.launch(this) { putExtra(EXTRA_PLACE_DETAIL_PIN_ID, pinId) }
     }
 
     /**

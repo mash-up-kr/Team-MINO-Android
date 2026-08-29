@@ -220,6 +220,12 @@ internal class HomeViewModel
          *
          * 두 코루틴으로 나누는 것이 R-012의 「결과를 기다리지 않는다」다. 하나로 묶으면 초기화 응답이
          * 상세 전환 앞을 막고, 실패하면 전환이 아예 일어나지 않는다.
+         *
+         * **[HomeDeckRepository.recordPlaceOpened] 호출은 걷어낼 코드다.** [SCR-006] 장소 상세가 배선되면서
+         * 같은 「경과일 초기화 확인」을 상세가 열릴 때마다 기록한다(`docs/specs/place-detail/spec.md` FR-026 —
+         * 진입 경로와 무관하게 기록한다). 두 호출이 같은 서버 기록으로 가므로 카드 한 번 탭에 2회가 나간다.
+         * 이 스펙의 FR-007·TS-034가 홈에도 기록을 요구해 지금은 남겨 두며, 기록의 소유를 상세로 넘기는
+         * spec 개정과 함께 아래 첫 `launchSafely` 블록을 지운다.
          */
         private fun openPlaceDetail(pinId: String) {
             launchSafely {
