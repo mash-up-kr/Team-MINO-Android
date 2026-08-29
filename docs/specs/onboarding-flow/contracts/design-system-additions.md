@@ -11,7 +11,7 @@
 | 자산 | Figma | 판정 | 이 계획이 하는 일 |
 |---|---|---|---|
 | `Pagination/Dots` | **MU_Wanted Design System (Community)** 라이브러리의 컴포넌트셋 | `:core:design-system` | **신설한다** (§2) |
-| `Top Navigation/Top Navigation` | 같은 라이브러리의 컴포넌트셋 | `:core:design-system` | **소비만 한다** — 신설 소유자가 이미 둘이다 (§4) |
+| `Top Navigation/Top Navigation` | 같은 라이브러리의 컴포넌트셋 | `:core:design-system` | **축을 넓힌다** — 컴포넌트는 이미 있고 우측 아이콘 액션이 없다 (§4) |
 | `Action Area/Action Area` | 같은 라이브러리 | `:core:design-system` | 소비만 한다 — `MinoActionArea`가 이미 있다 |
 | `Snackbar/Snackbar` | 같은 라이브러리 | `:core:design-system` | 소비만 한다 — `MinoSnackbar`가 이미 있다. 다만 셸이 그것을 쓰지 않는다 (§3) |
 | 튜토리얼 예시 이미지 5종 · 친구 초대 일러스트 | 디자인 시스템 컴포넌트가 아니다 | `:feature:onboarding` | feature가 갖는다 (§5) |
@@ -58,23 +58,58 @@
 
 **이 변경이 닿는 다른 화면**: 미처리 예외 안내(`CollectUncaughtError`)와 도메인 에러 스낵바 전부. 표출 위치와 모양이 앱 전체에서 한 번에 바뀐다 — 그것이 의도다.
 
-**남은 후속**: 스플래시 계획이 같은 40dp를 아직 **Screen 컴포저블의 몫**으로 적고 있어 ADR과 어긋난다. 소유자 판정 자체는 닫혔고, 그 계획의 개정만 남았다 — [열린 항목 E](../research.md#열린-항목).
+**현재 코드 상태(2026-08-29 확인)**: `MinoScaffold`가 여전히 `SnackbarHost(snackbarHostState)`를 그리고 오프셋도 없다. ADR이 요구하는 상태가 코드에 아직 없으며, **이 계획이 그 변경을 내는 첫 작업이다.**
+
+**남은 후속**: 스플래시 스펙·계획이 같은 40dp를 아직 **Screen 컴포저블의 몫**으로 적고 있고 `SplashRoute`가 그렇게 구현되어 있다(자체 토스트 상태·표출 시간을 든다). 소유자 판정 자체는 닫혔고, 그 문서의 개정과 구현 정리만 남았다 — [열린 항목 E](../research.md#열린-항목).
 
 ---
 
-## 4. 소비 — `MinoTopNavigation`
+## 4. 확장 — `MinoTopNavigation`의 우측 아이콘 액션
+
+> **plan 2.0.0에서 판정이 바뀌었다.** 1.0.x는 "신설 소유자가 둘이라 소비만 한다"였는데, 컴포넌트가 머지되어 그 다툼은 끝났다. 대신 **필요한 축 하나가 없다는 사실**이 드러났다([research.md R-025](../research.md)).
 
 두 화면의 상단 바가 모두 `Top Navigation/Top Navigation` 인스턴스다(`2314-95568` · `3798-167080`).
 
-| 화면 | 필요한 구성 | 근거 |
-|---|---|---|
-| 친구 초대 | 제목 없음 · 우측 [X] | FR-013·TS-022 |
-| 튜토리얼 스텝 1~4 | 제목 `튜토리얼` · 우측 텍스트 [건너뛰기] | FR-017·TS-029 |
-| 튜토리얼 스텝 5 | 제목 `튜토리얼` · 우측 액션 없음 | FR-018·TS-030 |
+| 화면 | 필요한 구성 | 현재 API로 가능한가 | 근거 |
+|---|---|---|---|
+| 친구 초대 | 제목 없음 · 우측 **[X] 아이콘** | **아니오** — 우측이 `actionLabel: String?`만 받는다 | FR-013·TS-022 |
+| 튜토리얼 스텝 1~4 | 제목 `튜토리얼` · 우측 텍스트 [건너뛰기] | 예 (`title` + `actionLabel`) | FR-017·TS-029 |
+| 튜토리얼 스텝 5 | 제목 `튜토리얼` · 우측 액션 없음 | 예 (`actionLabel = null`) | FR-018·TS-030 |
 
-**이 계획은 이 컴포넌트를 신설하지 않는다.** [프로필 계획](https://github.com/mash-up-kr/Team-MINO-Android/issues/159)과 [공동방 폼 계획](https://github.com/mash-up-kr/Team-MINO-Android/issues/146)이 각각 신설을 선언해 두었고, 셋이 같은 파일을 만들면 먼저 머지되는 하나만 유효하다([열린 항목 F](../research.md#열린-항목)).
+### 4.1 지금 API
 
-**이 계획이 남기는 요구**: 위 세 조합이 그 컴포넌트의 속성 축(제목 유무 · 우측 슬롯 종류)으로 표현되어야 한다. 표현되지 않으면 신설 소유자의 계약을 넓히는 것이 이 feature의 구현 착수 조건이다.
+`:core:design-system/component/topnavigation/MinoTopNavigation.kt`
+
+```
+fun MinoTopNavigation(
+    title: String,
+    modifier: Modifier = Modifier,
+    onBackClick: (() -> Unit)? = null,
+    actionLabel: String? = null,
+    onActionClick: () -> Unit = {},
+)
+```
+
+그 파일의 KDoc이 **"액션 아이콘·검색 등 나머지 구성은 필요한 화면이 나올 때 축을 넓힌다"** 고 적어 두었다. 친구 초대가 그 화면이다.
+
+### 4.2 이 계획이 요구하는 것
+
+우측 슬롯이 **텍스트 액션과 아이콘 액션 중 하나**를 그릴 수 있어야 한다.
+
+| 요구 | 이유 |
+|---|---|
+| 아이콘 액션을 지정하는 축이 생긴다 | 친구 초대의 [X](FR-013) |
+| 기존 파라미터의 의미와 기본값이 그대로다 | 프로필·공동방 폼이 이미 호출 중이라 깨지면 안 된다 |
+| 텍스트와 아이콘이 동시에 그려지지 않는다 | Figma 컴포넌트셋에 그런 구성이 없다 |
+| 제목 없는 구성이 가능하다 | 친구 초대는 제목이 없다 — 빈 문자열로 되는지 노드 대조로 확인한다 |
+
+**표면의 구체적 형태(파라미터 이름·타입·둘 중 하나를 강제하는 방식)는 이 계획이 정하지 않는다.** [`design-system README`](../../../../core/design-system/README.md) §6.1의 M3 패턴(Defaults·컴포넌트 토큰)을 따르되, 어느 축으로 표현할지는 **구현 착수 시 Figma 컴포넌트셋의 속성 축을 보고 정한다**([figma-design-fidelity.md](../../../conventions/figma-design-fidelity.md) §2). 슬롯을 `@Composable () -> Unit`으로 열어 아무것이나 넣게 하는 형태는 기각했다 — 디자인 시스템이 정한 구성 축이 무너진다([research.md R-025](../research.md)).
+
+### 4.3 회귀 범위
+
+이 컴포넌트를 쓰는 화면 전부가 확인 대상이다 — 최소한 `:feature:profile`·`:feature:roomform`. 기존 호출부가 컴파일되고 화면이 그대로 보이는 것으로 확인한다.
+
+**아이콘 자산**: [X]가 `MinoIcons`에 이미 있는지 구현 착수 시 확인한다. 없으면 아이콘은 `:core:design-system`이 소유하므로([`design-system README`](../../../../core/design-system/README.md) §5) 그 모듈에 더한다 — feature에 두지 않는다.
 
 ---
 
@@ -102,3 +137,5 @@
 | 이미지가 디자인 시스템에 들어가지 않았다 | `core/design-system/src/main/res/drawable-*`에 온보딩 에셋이 없다 |
 | 밀도·포맷 규칙을 지켰다 | feature의 `drawable/`(밀도 없는 디렉터리)에 래스터가 없고, 확장자가 전부 `.webp`다 |
 | 토큰·실측 판정을 했다 | 구현 착수 시 노드 대조 기록이 있다([figma-design-fidelity.md](../../../conventions/figma-design-fidelity.md) §2·§6) |
+| 상단 바를 확장했지 복제하지 않았다 | `:feature:onboarding`에 자체 상단 바 컴포저블이 없고, `MinoTopNavigation` 호출만 있다 |
+| 기존 호출부가 깨지지 않았다 | `:feature:profile`·`:feature:roomform`의 `MinoTopNavigation` 호출이 수정 없이 컴파일된다 |

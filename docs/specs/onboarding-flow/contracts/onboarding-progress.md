@@ -75,23 +75,63 @@ class ResolveOnboardingStepUseCase @Inject constructor() {
 | 4 | `lastStep = INVITE`, `createdRoomId == null` | `TUTORIAL` | FR-004·SC-004 — 방이 없으면 초대할 대상도 없다 |
 | 5 | `lastStep = TUTORIAL` | `TUTORIAL` | FR-023·EC-022 — 튜토리얼 내부 위치는 복원하지 않으므로 항상 스텝 1부터다 |
 
-- **`isCompleted`를 보지 않는다.** 완료된 설치는 온보딩을 열지 않으므로 이 함수에 도달하지 않는다. 판정 주체는 스플래시다([R-008](../research.md), [열린 항목 B](../research.md#열린-항목)).
+- **`isCompleted`를 보지 않는다.** 완료된 설치는 온보딩을 열지 않으므로 이 함수에 도달하지 않는다. 판정 주체는 스플래시이고, 그 판정의 형태는 §4가 소유한다([R-008](../research.md)·[R-024](../research.md)).
 - **#4가 이 함수를 UseCase로 만든 이유다.** 방어 규칙이 없다면 `progress.lastStep`을 그대로 읽으면 되지만, 그 조합이 실제로 만들어질 수 있다 — 공동방 스텝을 건너뛰고 `INVITE`를 기록하는 코드 경로는 없어야 하지만, 저장 값이 손상되거나 이후 스텝 구성이 바뀌면 생긴다.
 
 **단위 테스트 대상**: 위 다섯 줄 전부. Android 의존이 없으므로 JVM 테스트로 덮는다.
 
 ---
 
-## 4. 완료 표시를 밖에서 읽는 법 (스플래시)
+## 4. 완료 표시를 밖에서 읽는 법 — `ResolveSplashEntryUseCase` 확장
 
-FR-022는 **완료 표시**로 판정하라고 요구한다. 스플래시가 이 계약을 소비하는 형태는 다음 둘 중 하나이며, **어느 쪽을 고를지는 스플래시 계획의 개정이 정한다** — 이 계획은 계약을 열어 두는 데까지만 한다([열린 항목 B](../research.md#열린-항목)).
+> **plan 2.0.0에서 확정됐고, 2.0.1에서 ADR로 승격됐다.** 1.0.1은 두 안을 적고 "스플래시 계획의 개정이 정한다"로 미뤘는데, spec 1.2.0 §3.2가 **"온보딩을 띄울지 메인 탭을 띄울지 가르는 판정 기준은 이 문서(FR-021·FR-022)가 소유한다"** 로 소유자를 못박아 이 계획이 가져왔다([research.md R-024](../research.md)).
+>
+> **소유권 규칙과 호출 순서 제약의 근거는 [앱 진입 화면 판정 ADR](../../../adr/2026-08-29-onboarding-entry-decision-owned-by-onboarding.md)이 갖는다.** 아래는 이 feature에서의 구체적인 계약이다.
 
-| 안 | 형태 | 대가 |
-|---|---|---|
-| (a) 스플래시의 `ResolveSplashEntryUseCase`가 `OnboardingProgressRepository`를 함께 주입받는다 | 판정이 한 UseCase 안에 남는다 | 그 UseCase가 Repository 둘을 안다 |
-| (b) `IsOnboardingCompletedUseCase`를 이 계약에 더하고 스플래시가 조합한다 | 온보딩 쪽 표면이 자기 규칙을 든다 | UseCase가 하나 는다 |
+### 4.1 지금 구현
 
-**이 계획은 (a)를 권한다** — 판정 규칙(프로필 유무 ∧ 완료 표시)이 한 자리에 모여야 TS-038·TS-039가 한 테스트로 덮인다. 어느 쪽이든 이 문서 §1의 인터페이스는 그대로다.
+`:core:domain/usecase/ResolveSplashEntryUseCase.kt`는 근거를 하나만 본다.
+
+```
+suspend operator fun invoke(): SplashEntry =
+    if (profileRegistrationRepository.isRegistered()) SplashEntry.Main else SplashEntry.Onboarding
+```
+
+**프로필을 저장한 뒤 온보딩을 중단한 사용자가 다음 실행에서 홈으로 밀려난다.** TS-037·TS-038이 실패하고, 그 사용자는 남은 스텝을 영영 보지 못한다.
+
+### 4.2 이 계획이 요구하는 형태
+
+```
+class ResolveSplashEntryUseCase @Inject constructor(
+    private val profileRegistrationRepository: ProfileRegistrationRepository,
+    private val onboardingProgressRepository: OnboardingProgressRepository,
+) {
+    suspend operator fun invoke(): SplashEntry
+}
+```
+
+| # | 프로필 등록 | 완료 표시 | 결과 | 근거 |
+|---|---|---|---|---|
+| 1 | 없음 | 무관 | `Onboarding` | FR-021 · 스플래시 spec FR-003 |
+| 2 | 있음 | `false` | `Onboarding` | **FR-022·TS-038** — 이번에 더해지는 갈래 |
+| 3 | 있음 | `true` | `Main` | FR-021·TS-036·TS-039 |
+
+- **호출 순서가 있다.** `isRegistered()`를 먼저 부른다 — 그 판정이 미등록일 때 프로필 캐시를 비우는 부수 효과를 갖고, 온보딩 화면이 "캐시는 비어 있다"에 기대기 때문이다(`ProfileRegistrationRepository` 문서 주석 · `ProfileEntryPoint.needsRefresh`). 완료 표시를 먼저 읽어 단축 평가로 이 호출을 건너뛰면 그 보장이 깨진다.
+- **#1에서 완료 표시를 읽지 않아도 된다.** 프로필이 없으면 온보딩이 확정이다. 다만 위 순서 제약 때문에 성능상 얻는 것이 없으므로 단축 여부는 구현 재량이다.
+- **`isCompleted`의 원천은 이 설치의 DataStore 하나다.** 서버에 묻지 않는다(spec §4 가정).
+
+### 4.3 기각한 안
+
+| 안 | 기각 사유 |
+|---|---|
+| `IsOnboardingCompletedUseCase`를 온보딩 쪽에 두고 스플래시 ViewModel이 조합한다 | 판정 규칙이 ViewModel로 새어 나가 두 조건의 결합을 한 테스트로 덮을 수 없다. TS-038·TS-039가 갈라진다 |
+| 온보딩이 진입 직후 스스로 홈으로 튕겨 낸다 | 완료한 사용자가 온보딩 화면을 한 프레임 본다. SC-003 위반 |
+
+### 4.4 이 변경이 스플래시에 남기는 것
+
+- **`:feature:splash`는 손대지 않는다.** `SplashViewModel`은 UseCase를 그대로 부르고 반환 타입 `SplashEntry`도 그대로다.
+- **`ResolveSplashEntryUseCaseTest`가 회귀 대상이다.** 기존 2갈래 테스트에 #2가 더해진다.
+- 스플래시 spec·plan은 이 판정을 **소비하는 쪽**으로 개정되어야 한다. 이 계획이 그 문서를 고치지 않는다 — 완료 보고에 싣는다.
 
 ---
 
@@ -102,3 +142,5 @@ FR-022는 **완료 표시**로 판정하라고 요구한다. 스플래시가 이
 | 도메인이 Android를 모른다 | `OnboardingProgress`·`OnboardingStep`·`ResolveOnboardingStepUseCase`에 `android.*` import가 없다 |
 | 저장 시점이 전환 앞이다 | 스텝 전이 코드에서 `setCurrentStep` 호출이 `navigate`/`launch`보다 앞선다 |
 | DataStore 인스턴스가 하나다 | `preferencesDataStore(` 호출 지점이 `DataStoreModule.kt` 한 곳뿐이다 |
+| 진입 판정이 두 근거를 본다 | `ResolveSplashEntryUseCase`가 Repository 둘을 주입받고, `isRegistered()`가 먼저 불린다 |
+| 완료 표시를 서버에 묻지 않는다 | `OnboardingProgressRepositoryImpl`에 원격 DataSource 주입이 없다 |

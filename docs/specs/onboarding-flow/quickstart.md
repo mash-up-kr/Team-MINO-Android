@@ -8,14 +8,16 @@
 
 ## 1. 선행 조건
 
-| # | 무엇 | 없으면 |
-|---|---|---|
-| 1 | `:feature:profile`이 develop에 있다 | 프로필 스텝을 열 수 없다 — §4의 Fake 진입으로 대체 |
-| 2 | `:feature:roomform`이 develop에 있다 | 공동방 스텝을 열 수 없다 — 〃 |
-| 3 | `MinoTopNavigation`이 `:core:design-system`에 있다 | 두 화면의 상단 바를 그릴 수 없다 ([열린 항목 F](./research.md#열린-항목)) |
-| 4 | `:feature:splash`가 develop에 있다 | 온보딩이 앱 실행으로 열리지 않는다 — §4로 대체 |
+**1.0.x가 든 네 조건이 전부 충족됐다(2026-08-29 확인).** 이 feature는 더 기다릴 것이 없다.
 
-**1~2가 없어도 이 feature의 절반은 착수할 수 있다.** `:core:domain`(모델·Repository·UseCase 2개 + JVM 테스트), `:core:data`(로컬 저장), `:feature:onboarding`의 친구 초대·튜토리얼 화면과 셸·그래프는 전부 만들 수 있다. 막히는 것은 두 `Launcher` 주입과 결과 배선뿐이다.
+| # | 무엇 | 상태 |
+|---|---|---|
+| 1 | `:feature:profile`이 develop에 있다 | 충족 — 서버 연동(`POST /api/v1/users`)까지 |
+| 2 | `:feature:roomform`이 develop에 있다 | 충족 — 온보딩 4갈래 결과 계약까지 구현 |
+| 3 | `MinoTopNavigation`이 `:core:design-system`에 있다 | 충족. 다만 **우측 아이콘 액션 축이 없어 이 계획이 넓힌다**([design-system-additions.md §4](./contracts/design-system-additions.md)) |
+| 4 | `:feature:splash`가 develop에 있다 | 충족. 다만 **온보딩이 아니라 프로필을 직접 열고 있어 이 계획이 배선을 바꾼다**([onboarding-launcher.md §8](./contracts/onboarding-launcher.md)) |
+
+**착수 순서에 강제되는 것은 하나뿐이다** — `SplashActivity`의 전환을 `OnboardingLauncher`로 바꾸는 것은 `:feature:onboarding`이 그래프에 들어간 뒤여야 한다. 그 전까지는 프로필 직접 호출을 그대로 두어도 앱이 빌드된다.
 
 ---
 
@@ -28,8 +30,9 @@ grep -n 'feature:onboarding' settings.gradle.kts app/build.gradle.kts
 # 빌드 — 이 저장소의 확인 최소선
 ./gradlew :app:assembleQaDebug
 
-# 도메인 단위 테스트
-./gradlew :core:domain:test :core:data:test
+# 단위 테스트 (회귀 포함)
+./gradlew :core:domain:test :core:data:test \
+  :feature:splash:test :feature:profile:test :feature:roomform:test
 ```
 
 > 로컬 `./gradlew lintDebug`는 JBR JIT 이슈로 데몬이 죽을 수 있다. **이 저장소에는 PR을 검증하는 CI가 없다** — 헌법 §검증 장치의 한계. 아래 수동 시나리오가 실질적인 게이트다.
@@ -48,17 +51,21 @@ adb shell pm clear team.mino.qa      # 설치 데이터 전체 삭제 = 재설�
 |---|---|---|
 | `ResolveOnboardingStepUseCase` | 재개 지점 5갈래(`INVITE` + `roomId` 없음 → `TUTORIAL` 포함) | [onboarding-progress.md §3](./contracts/onboarding-progress.md) |
 | `OnboardingProgressRepositoryImpl` | 기본값 · 세 쓰기 왕복 · 알 수 없는 스텝 문자열의 떨어짐 | [onboarding-progress.md §2](./contracts/onboarding-progress.md) |
-| `GetInviteLinkUseCase` | 성공 · 실패 전파(`null`로 뭉개지 않음) | [invite-link.md §2](./contracts/invite-link.md) |
-| `InviteLinkBuilderImpl` | 코드 → 링크 형식 1건 | [invite-link.md §3](./contracts/invite-link.md) |
+| `GetInviteLinkUseCase` | 성공 · 실패 전파(`null`로 뭉개지 않음) | [invite-link.md §3](./contracts/invite-link.md) |
+| `RoomInvitationRepositoryImpl` | 코드 전달 · 예외 전파 | [invite-link.md §2](./contracts/invite-link.md) |
+| `InviteLinkBuilderImpl` | 코드 → 링크 형식 1건 | [invite-link.md §4](./contracts/invite-link.md) |
+| `ResolveSplashEntryUseCase` | **3갈래**(미등록 / 등록+미완료 / 등록+완료) — 기존 2갈래 테스트의 회귀 | [onboarding-progress.md §4.2](./contracts/onboarding-progress.md) |
 | `OnboardingFlowViewModel` | 전이 표 7줄 + 같은 Intent 두 번의 중복 전이 없음(EC-003) | [onboarding-flow-ui.md §2.4](./contracts/onboarding-flow-ui.md) |
 
-Fake `OnboardingProgressRepository`·`RoomRepository`·`InviteLinkBuilder`로 덮는다. Compose UI 테스트는 이 저장소에 선례가 없어 도입하지 않는다.
+Fake `OnboardingProgressRepository`·`RoomInvitationRepository`·`InviteLinkBuilder`로 덮는다. Compose UI 테스트는 이 저장소에 선례가 없어 도입하지 않는다.
+
+**회귀 대상**: `ResolveSplashEntryUseCaseTest`(`:core:domain`)와 `MinoTopNavigation`을 쓰는 두 feature의 테스트 — `./gradlew :core:domain:test :core:data:test :feature:splash:test :feature:profile:test :feature:roomform:test`.
 
 ---
 
 ## 4. 수동 검증 — 시나리오
 
-`:feature:splash`가 아직 없다면 **`:feature:onboarding`의 매니페스트에 임시로 LAUNCHER intent-filter를 붙여** 온보딩을 직접 띄운다. 스플래시가 머지되면 걷어낸다([onboarding-launcher.md §6](./contracts/onboarding-launcher.md)).
+**임시 진입점을 두지 않는다.** `SplashActivity`의 전환을 `OnboardingLauncher`로 바꾸고 나면 앱 실행이 곧 온보딩 진입이다([onboarding-launcher.md §8](./contracts/onboarding-launcher.md)). 그 배선 전에 화면만 먼저 보려면 `OnboardingActivity`를 `adb shell am start -n team.mino.qa/team.mino.feature.onboarding.OnboardingActivity`로 직접 띄운다 — 매니페스트를 고치지 않는다.
 
 ### 4.1 전 구간 완주 (유저 플로우 1)
 
@@ -97,7 +104,7 @@ Fake `OnboardingProgressRepository`·`RoomRepository`·`InviteLinkBuilder`로 �
 | 5 | 튜토리얼 스텝 4 → dot으로 스텝 1 → 시스템 뒤로가기 | — | 앱이 백그라운드로. 스텝 4로 되짚지 않는다 | EC-016 |
 | 6 | 각 스텝 상단 | 눈으로 확인 | 뒤로가기 컨트롤이 없다 | TS-007 |
 
-> **1~2를 프로필·공동방 스텝에서도 확인하려 하지 말 것.** 그 두 화면의 뒤로가기는 각자의 spec이 `무반응`으로 정의하고 있어 지금은 다르게 동작한다 — [열린 항목 A](./research.md#열린-항목).
+> **1~2를 프로필·공동방 스텝에서도 확인하려 하지 말 것.** 그 두 화면의 뒤로가기는 각자의 spec이 `무반응`으로 정의하고 **그대로 구현되어 있다** — `ProfileRoute`의 `BackHandler(enabled = !state.isBackEnabled) {}`, `RoomFormRoute`의 `state.isOnboarding -> Unit`. 제스처가 먹지 않는 것이 지금의 정상 동작이다([열린 항목 A](./research.md#열린-항목) · [R-026](./research.md)).
 
 ### 4.4 중단과 재개 (유저 플로우 5)
 
@@ -127,16 +134,24 @@ Fake `OnboardingProgressRepository`·`RoomRepository`·`InviteLinkBuilder`로 �
 
 정직하게 적는다. 아래는 이 계획의 결함이 아니라 **다른 작업이 닫는 구멍**이며, 근거는 [research.md 열린 항목](./research.md#열린-항목)이다.
 
+**1.0.x의 여섯 줄 중 넷이 사라졌다.** 선행 feature 셋이 서버 연동까지 구현되면서 확인 가능해졌거나, 이 계획이 그 변경을 가져왔다.
+
 | spec 항목 | 왜 확인할 수 없는가 | 닫히는 조건 |
 |---|---|---|
-| **SC-002** — 프로필·개인방 없이 홈에 도착하는 경우 0건 | 개인방(`내 장소`)을 만드는 코드가 아직 어디에도 없다. 프로필 계획 2.0.0이 원격 계층 전체를 후속으로 미뤘고, 개인방은 `POST /api/v1/users`가 함께 만든다 | 프로필의 원격 연동 (열린 항목 G) |
-| **TS-020** — 링크가 방금 만든 방을 가리킨다 | `RoomRepository` 뒤가 인메모리 mock이다. mock이 `inviteCode`를 채워야 눌러 볼 수 있고, 그 값이 실제 서버 코드와 같지는 않다 | 방 데이터 레이어의 서버 연동 (열린 항목 H) |
-| **TS-038·TS-039** — 완료 표시로 진입 화면이 갈린다 | 판정 주체가 스플래시이고, 그 `ResolveSplashEntryUseCase`는 아직 프로필 유무만 본다 | 스플래시 계획의 개정 (열린 항목 B) |
-| **FR-014 스텝 5의 예시 이미지** | Figma에 자리표시자만 있다 | 디자인 (열린 항목 C) |
-| **TS-020의 링크 형식** | 호스트·경로가 미확정이다 | [SYS-010] (열린 항목 D) |
-| **UX-003 토스트 40dp** | `MinoScaffold`가 아직 그 오프셋을 갖지 않는다. 소유자는 [ADR](../../adr/2026-08-24-snackbar-host-owned-by-mino-scaffold.md)이 정했고 이 계획이 그 변경을 포함하므로, 구현 뒤에는 확인할 수 있다 | 스플래시 계획이 ADR을 따르도록 개정 (열린 항목 E) |
+| **FR-014 스텝 5의 예시 이미지** | Figma에 자리표시자만 있다 | 디자인 ([열린 항목 C](./research.md#열린-항목)) |
+| **TS-020의 링크 호스트** | 코드는 실제 서버 값이지만, **QA 빌드가 어느 호스트를 써야 하는지 미정**이다. 링크를 눌러 방에 들어가 보는 것까지는 확인할 수 없다 | [SYS-010] 또는 서버팀 확정 ([열린 항목 D](./research.md#열린-항목)·협의 항목 S-1) |
+| **FR-007 프로필·공동방 스텝의 백프레스** | 두 화면이 `무반응`으로 구현되어 있고 이 계획이 고치지 않는다 | 두 spec의 개정 ([열린 항목 A](./research.md#열린-항목)) |
 
-**SC-007(완주율 90%)**은 이 범위가 계측 인프라를 두지 않는다. 온보딩 퍼널 이벤트는 spec §3.2가 비목표로 뒀다.
+### 2.0.0에서 확인 가능해진 것
+
+| spec 항목 | 어떻게 확인하는가 |
+|---|---|
+| **SC-002** — 프로필·개인방 없이 홈에 도착하는 경우 0건 | 서버가 `POST /api/v1/users`에서 개인방을 함께 만든다([R-027](./research.md)). 응답이 개인방을 싣지 않으므로 **방 목록에 `내 장소`가 보이는 것으로 간접 확인한다** — §4.2의 4번, §4.4의 4번 |
+| **TS-020** — 링크가 방금 만든 방을 가리킨다 | 발급 API가 실제 서버 코드를 준다. 같은 방에서 두 번 눌러 **같은 코드가 오는지**(서버 멱등)까지 확인할 수 있다 |
+| **TS-038·TS-039** — 완료 표시로 진입 화면이 갈린다 | 이 계획이 `ResolveSplashEntryUseCase`를 넓힌다([onboarding-progress.md §4](./contracts/onboarding-progress.md)). §4.4의 2번이 그 확인이다 |
+| **UX-003 토스트 40dp** | 이 계획이 `MinoScaffold`를 고친다. §4.1의 5번 |
+
+**SC-007(완주율 90%)** 은 이 범위가 계측 인프라를 두지 않는다. 온보딩 퍼널 이벤트는 spec §3.2가 비목표로 뒀다.
 
 ---
 

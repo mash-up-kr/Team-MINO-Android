@@ -4,7 +4,9 @@
 
 **대응 요구사항**: FR-002, FR-003, FR-004
 
-**서버 API**: `GET /api/v1/users/me` — [Team MINO API 1.0.0](https://api.gguk.org/api-docs-json), 2026-08-27T20:19:22+09:00 조회
+> **plan 4.0.0부터 이것은 진입 판정의 근거 "둘 중 하나"다.** 나머지 하나(온보딩 완료 표시)와의 조합 규칙·호출 순서는 [splash-entry-decision.md](splash-entry-decision.md)가 소유한다. 이 문서의 인터페이스와 서버 응답 대응은 3.0.2에서 바뀌지 않았다.
+
+**서버 API**: `GET /api/v1/users/me` — [Team MINO API 1.0.0](https://api.gguk.org/api-docs-json), **2026-08-29T01:44:57+09:00 재조회**(응답·`401 errorCode` enum 모두 종전과 동일)
 
 ---
 
