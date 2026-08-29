@@ -59,6 +59,9 @@ core/data/src/main/java/team/mino/core/data/
 ├── datasource/
 │   ├── ...            # 데이터 출처 추상화. 인터페이스·구현체 쌍 (internal)
 │   └── di/            # DataSource @Binds 모듈 (internal)
+├── invite/
+│   ├── ...            # 초대 링크 조립 구현 — 호스트·경로 형식을 아는 유일한 자리 (internal)
+│   └── di/            # 초대 링크 조립 @Binds 모듈 (internal)
 ├── network/
 │   ├── di/            # HttpClient 등 네트워크 인프라 제공 (internal)
 │   ├── dto/
