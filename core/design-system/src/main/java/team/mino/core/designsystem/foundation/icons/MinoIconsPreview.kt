@@ -97,6 +97,7 @@ import team.mino.core.designsystem.foundation.icons.icons.MenuThick
 import team.mino.core.designsystem.foundation.icons.icons.MoreHorizontal
 import team.mino.core.designsystem.foundation.icons.icons.MoreVertical
 import team.mino.core.designsystem.foundation.icons.icons.MoreVerticalTight
+import team.mino.core.designsystem.foundation.icons.icons.MyLocation
 import team.mino.core.designsystem.foundation.icons.icons.Pencil
 import team.mino.core.designsystem.foundation.icons.icons.PencilFill
 import team.mino.core.designsystem.foundation.icons.icons.Person
@@ -272,6 +273,7 @@ private val iconCatalog: List<ImageVector> by lazy {
         MinoIcons.MoreHorizontal,
         MinoIcons.MoreVertical,
         MinoIcons.MoreVerticalTight,
+        MinoIcons.MyLocation,
         MinoIcons.Pencil,
         MinoIcons.PencilFill,
         MinoIcons.Person,
