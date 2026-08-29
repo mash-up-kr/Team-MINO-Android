@@ -95,6 +95,7 @@ M3 `Scaffold`를 그대로 노출하는 대신 **프로젝트 표준을 안에 �
 
 - **미처리 예외 안내** — `CollectUncaughtError` + `SnackbarHost`를 셸이 소유한다. `snackbarHost`를 파라미터로 뚫지 않는 이유이며, 이 때문에 **Activity당 하나만** 열어야 한다(둘이면 같은 예외로 스낵바가 두 번 뜬다).
 - **스낵바 호스트 제공** — `LocalSnackbarHostState`로 하위에 내려준다. Route가 도메인 에러를 표시할 때 쓰고, stateless한 `XScreen`에서는 읽지 않는다. 셸 밖에서 읽으면 즉시 `error`로 실패한다.
+- **토스트 표출 규칙** — 호스트가 M3 기본 스낵바 대신 `MinoSnackbar`를 그리고, 하단 바 유무와 무관하게 **스크린 하단**을 기준으로 띄운다. 그래서 M3 `Scaffold`의 `snackbarHost` 슬롯은 비워 두고 셸이 직접 얹는다 — 그 슬롯은 호스트를 `bottomBar` 위에 놓아 화면마다 기준선이 갈린다. 화면은 오프셋도 스낵바 컴포저블도 다루지 않는다([ADR](../../../docs/adr/2026-08-24-snackbar-host-owned-by-mino-scaffold.md)).
 - **배경 표준** — 기본값은 `MinoScaffoldDefaults`가 공급한다(design-system 토큰). 화면은 배경을 다시 칠하지 않는다.
 
 파라미터는 실제 호출부가 생길 때 디폴트 인자로 늘린다([배치 규약 §3](../../../docs/conventions/component-asset-placement.md#3-컴포넌트-신설-vs-기존-확장)). 지금 `topBar`·`contentWindowInsets`가 없는 이유다 — 화면 고유 topBar는 화면이 직접 배치하고, 인셋을 무시해야 하는 화면은 M3 `Scaffold`를 직접 연다.
