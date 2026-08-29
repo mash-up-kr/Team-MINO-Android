@@ -3,11 +3,12 @@ package team.mino.core.data.repository.mapper
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
-import team.mino.core.data.network.dto.response.CardAvatarResponse
+import team.mino.core.data.network.dto.response.AvatarResponse
 import team.mino.core.data.network.dto.response.CardCreatedByResponse
 import team.mino.core.data.network.dto.response.CardPlaceResponse
 import team.mino.core.data.network.dto.response.CardResponse
 import team.mino.core.domain.model.PlaceLabel
+import team.mino.core.domain.model.ProfileAvatar
 
 /**
  * 서버 값이 계약을 벗어났을 때 덱 전체를 실패시키지 않고 흡수하는지 본다 —
@@ -44,11 +45,11 @@ class DeckMapperTest {
 
         assertEquals("", registrant.userId)
         assertEquals("", registrant.nickname)
-        assertNull(registrant.avatarId)
+        assertNull(registrant.avatar)
     }
 
     @Test
-    fun `아바타를 고르지 않은 등록자는 avatarId만 비어 있다`() {
+    fun `아바타를 고르지 않은 등록자는 아바타만 비어 있다`() {
         val registrant =
             cardResponse(
                 createdBy = CardCreatedByResponse(userId = "user-1", nickname = "구구", avatar = null),
@@ -56,7 +57,22 @@ class DeckMapperTest {
 
         assertEquals("user-1", registrant.userId)
         assertEquals("구구", registrant.nickname)
-        assertNull(registrant.avatarId)
+        assertNull(registrant.avatar)
+    }
+
+    @Test
+    fun `모르는 색은 아바타를 비운다 - 프로필과 달리 기본 아바타로 메우지 않는다`() {
+        val registrant =
+            cardResponse(
+                createdBy =
+                    CardCreatedByResponse(
+                        userId = "user-1",
+                        nickname = "구구",
+                        avatar = AvatarResponse(color = "someNewColorFromServer"),
+                    ),
+            ).toDomain().registrant
+
+        assertNull(registrant.avatar)
     }
 
     @Test
@@ -67,13 +83,13 @@ class DeckMapperTest {
         assertEquals("연남동 감자탕", card.placeName)
         assertEquals("서울 마포구 연남로 21", card.address)
         assertEquals(listOf("https://image/1", "https://image/2"), card.imageUrls)
-        assertEquals(7, card.registrant.avatarId)
+        assertEquals(ProfileAvatar.Person9, card.registrant.avatar)
     }
 
     private fun cardResponse(
         labelGroup: String = "worthVisiting",
         createdBy: CardCreatedByResponse? =
-            CardCreatedByResponse(userId = "user-1", nickname = "구구", avatar = CardAvatarResponse(id = 7)),
+            CardCreatedByResponse(userId = "user-1", nickname = "구구", avatar = AvatarResponse(color = "blue")),
     ): CardResponse =
         CardResponse(
             id = "pin-1",

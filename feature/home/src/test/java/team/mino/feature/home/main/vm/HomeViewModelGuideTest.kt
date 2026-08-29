@@ -231,7 +231,7 @@ class HomeViewModelGuideTest {
                 address = "서울시 어딘가 $index",
                 imageUrls = emptyList(),
                 label = PlaceLabel.WORTH_VISITING,
-                registrant = Registrant(userId = "user-1", nickname = "민호", avatarId = null),
+                registrant = Registrant(userId = "user-1", nickname = "민호", avatar = null),
             )
         }
 

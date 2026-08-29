@@ -39,6 +39,7 @@ import team.mino.core.designsystem.util.modifier.clickable.rippleSingleClickable
 import team.mino.core.designsystem.util.preview.UiModePreviews
 import team.mino.core.domain.model.PlaceCard
 import team.mino.core.domain.model.PlaceLabel
+import team.mino.core.domain.model.ProfileAvatar
 import team.mino.core.domain.model.Registrant
 import team.mino.feature.home.R
 
@@ -281,7 +282,7 @@ private fun PlaceCardItemPreview() {
                         address = "서울 성동구 상원4길 10",
                         imageUrls = emptyList(),
                         label = label,
-                        registrant = Registrant(userId = "u1", nickname = "미노", avatarId = 1),
+                        registrant = Registrant(userId = "u1", nickname = "미노", avatar = ProfileAvatar.Person1),
                     ),
                     isActionMenuOpen = false,
                     onMoreClick = {},

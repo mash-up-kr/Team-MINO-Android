@@ -11,17 +11,20 @@
 | 항목 | 값 |
 |---|---|
 | 출처 | `https://api.gguk.org/api-docs-json` |
-| 조회 시점 | **2026-08-27T21:12:20+09:00** |
+| 최초 조회 | 2026-08-27T21:12:20+09:00 — 오퍼레이션 24개 |
+| 재조회 | **2026-08-29 — 오퍼레이션 25개.** 늘어난 하나가 `GET /api/v1/rooms/{roomId}/cards`다 |
 | 문서 | Team MINO API 1.0.0 |
-| 오퍼레이션 | 24개 |
 
-조회는 [`.claude/skills/mino-plan/scripts/openapi_digest.py`](../../../../.claude/skills/mino-plan/scripts/openapi_digest.py)로 수행했다. 이 계약은 **위 시점의 배포 문서**와, 아직 배포되지 않은 **서버 PR [Node#94](https://github.com/mash-up-kr/Team-MINO-Node/pull/94)** 두 가지에 근거한다. 둘을 구분해 적는다.
+최초 조회는 [`.claude/skills/mino-plan/scripts/openapi_digest.py`](../../../../.claude/skills/mino-plan/scripts/openapi_digest.py)로 수행했다. 그 시점의 이 계약은 배포 문서와 미배포 서버 PR [Node#94](https://github.com/mash-up-kr/Team-MINO-Node/pull/94)를 구분해 적었으나, **재조회 시점에 그 PR이 배포되어 구분이 사라졌다.** 아래는 전부 배포된 계약이다.
 
 ---
 
 ## 2. 홈 덱의 주 계약 — `GET /api/v1/rooms/{roomId}/cards`
 
-> ⚠️ **배포 전이다.** 2026-08-27 조회 시점의 배포 문서(24개 오퍼레이션)에 이 경로가 **없다.** 서버 PR Node#94가 `OPEN` 상태이며 아직 머지되지 않았다. 아래는 그 PR이 확정한 계약이다.
+> **배포됨(2026-08-29 재조회).** 응답 코드는 `200`·`400`·`401`·`403`이다. 다만 문서와 실제 응답이 두 곳에서 어긋나므로 DTO가 방어한다.
+>
+> - 카드 객체에 `required` 배열이 없다 → `CardResponse`가 모든 필드에 기본값을 둔다.
+> - **`createdBy.avatar`를 `{ id: integer }`로 적어 두었으나 실제 응답에 `id`가 없다.** 같은 서버의 `/users/me`·`/pins`·`/pins/{pinId}`는 모두 아바타를 `{ color }`로 내려주며, 실제 `/cards` 응답도 그쪽이다. **문서가 아니라 실제 응답을 따른다** — `CardCreatedByResponse`가 프로필과 같은 `AvatarResponse`를 쓴다.
 
 FR-004 · 009~012 · 015가 이 하나에 걸려 있다. 홈 카드 덱의 전부다.
 
@@ -51,7 +54,7 @@ id          string(uuid)                 ← PlaceCard.pinId
 roomId      string(uuid)
 place       { name, address, lat, lng, category, ... }
 images      string[]                     ← 대표 이미지 2칸 그리드
-createdBy   { userId, nickname, avatar } | null   ← 등록자 아바타
+createdBy   { userId, nickname, avatar } | null   ← 등록자 아바타 (avatar는 { color }, 위 경고 참조)
 createdAt   string(date-time)
 labelGroup  enum: worthVisiting | manySaves | manyComments | manyViews
 ```
@@ -124,6 +127,8 @@ FR-005가 쓴다. spec §3.2가 복제 처리 자체를 비목표로 두었으�
 
 ## 4. mock 계약과 전환 지점
 
+> **전환 완료(2026-08-29).** 아래 세 지점을 모두 닫고 mock(`DeckMockRemoteDataSourceImpl`·`DeckMockStore`)을 삭제했다. 예고한 대로 `DeckRemoteDataSource`·`DeckMapper`·`HomeDeckRepositoryImpl`·화면은 바뀌지 않았다. 이 절은 무엇을 걷어냈는지 남기기 위해 그대로 둔다.
+
 `/cards`가 배포될 때까지 `DeckRemoteDataSource` 뒤에 mock을 둔다(R-001·R-002). `group-room-form`의 [`room-api-mock.md`](../../group-room-form/contracts/room-api-mock.md) 선례를 따른다.
 
 ```
@@ -150,13 +155,15 @@ interface DeckRemoteDataSource {
 | `labelGroup` 4종이 섞인 덱 | TS-014 |
 | 지표가 전부 0인 방(전부 `worthVisiting`) | FR-008의 라벨이 항상 존재함 |
 
+**이 다섯은 mock과 함께 사라지지 않고 테스트 픽스처로 옮겼다** — `core/data/src/test/.../network/DeckApiFixtures.kt`. 실서버는 짧은 덱도 0건 정렬도 요청한다고 내려주지 않으므로, 옮기지 않았다면 위 요구사항을 검사할 자리가 없어진다.
+
 ### 전환 지점
 
-교체는 **세 곳**이다. 그 밖은 손대지 않는다.
+교체는 **세 곳**이었고, 그 밖은 손대지 않았다.
 
-1. `core/data/.../datasource/DeckRemoteDataSourceImpl.kt` — 실제 HTTP 구현 추가
-2. `core/data/.../datasource/di/DeckDataSourceModule.kt` — `@Binds` 인자 타입을 mock → 실구현
-3. `core/data/.../network/dto/response/CardResponse.kt` — 배포된 스키마와 최종 대조
+1. ~~`core/data/.../datasource/DeckRemoteDataSourceImpl.kt`~~ → 신설 완료. 도메인 `DeckSort` → 서버 문자열 대응을 이 파일이 소유한다(`DeckApiService`는 문자열만 받는다)
+2. ~~`core/data/.../datasource/di/DeckDataSourceModule.kt`~~ → `@Binds` 인자를 실구현으로 교체 완료
+3. ~~`core/data/.../network/dto/response/CardResponse.kt`~~ → 대조 완료. 필드는 일치했고, `required` 부재에 대비해 기본값만 추가했다
 
 ---
 
@@ -166,7 +173,7 @@ interface DeckRemoteDataSource {
 
 | # | 지점 | 상태 |
 |---|---|---|
-| 1 | **`/cards` 배포 일정** | PR Node#94가 `OPEN`. 배포되면 mock을 걷는다 |
+| 1 | ~~`/cards` 배포 일정~~ | **해소(2026-08-29).** 배포 확인 후 mock을 걷었다 |
 | 2 | `users.last_viewed_room_id` | **만들지 않아도 된다** — 마지막 방은 앱이 기기에 저장한다(FR-022, R-004) |
 
 **해소된 것**: 정렬 3종 API 부재 → Node#94가 만듦 / 라벨 필드 부재 → `labelGroup` / `GET /pins` 파라미터 미문서화 → Node#94가 문서화 / `accesses` 출처 구분 → ①이 앱 전역이라 구분자 불필요(PRD 9.0.0) / `꾹 Pick` 정의 불일치 → 순위 산출이 서버 소유라 PRD·spec이 규정하지 않음(spec §3.2).
