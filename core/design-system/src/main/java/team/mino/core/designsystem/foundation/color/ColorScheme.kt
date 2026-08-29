@@ -90,6 +90,7 @@ class ColorScheme(
     internal var defaultChipColorsCached: MinoChipColors? = null
     internal var defaultContentBadgeColorsCached: MinoContentBadgeColors? = null
     internal var accentContentBadgeColorsCached: MinoContentBadgeColors? = null
+    internal var lightBlueContentBadgeColorsCached: MinoContentBadgeColors? = null
     internal var defaultMenuItemColorsCached: MinoMenuItemColors? = null
     internal var defaultPaginationDotsColorsCached: MinoPaginationDotsColors? = null
     internal var defaultTextInputColorsCached: MinoTextInputColors? = null
