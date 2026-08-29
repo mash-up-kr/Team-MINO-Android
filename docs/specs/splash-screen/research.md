@@ -222,6 +222,8 @@ SplashViewModel
 - *`ResolveSplashEntryUseCase`가 두 UseCase를 순서대로 호출* — 화면이 세션 단계와 프로필 단계를 구분하지 못해 위 이유로 기각.
 - *ViewModel이 `UserRepository`를 직접 호출하고 UseCase를 없앤다* — 분기 규칙이 Android 의존 ViewModel에 갇혀 JVM 테스트가 불가능해진다. R-009의 판단 그대로 기각.
 
+> **plan 4.0.0 재확인**: 판정 근거가 둘로 늘어도 이 결정은 그대로다. 늘어난 근거(온보딩 완료 표시)는 **로컬 값이라 지연·실패를 만들지 않으므로**, 세션 단계와 판정 단계의 경계를 흐리지 않는다. 오히려 "이 UseCase는 판정만 한다"는 성질 덕분에 근거를 하나 더 넣는 자리가 이미 마련돼 있었다([R-017](#r-017-진입-판정에-온보딩-완료-표시를-더한다-plan-400)).
+
 ---
 
 ## R-013. CEH로 새는 실패에도 재시도가 끊기지 않게 한다
@@ -261,6 +263,8 @@ SplashViewModel
 **Alternatives considered**:
 - *로컬 캐시로 판정하고 네트워크를 아예 안 탄다* — 3초 안에 끝나 빠르지만 위 두 조항이 죽고, 캐시가 비어 있는 재설치 사용자를 서버 상태와 무관하게 온보딩으로 보낸다. 기각.
 
+> **plan 4.1.0 재확인**: 이 결정이 오프라인 재실행을 막는 직접 원인임이 드러났다. 그럼에도 **유지한다** — 대체안 검토와 그 결과는 [R-020](#r-020-오프라인-재실행이-진입-판정에서-막히는-것을-받아들인다-plan-410)이 갖는다.
+
 ---
 
 ## R-016. 실패 원인 분류 — `Network` / 그 밖(`Auth`·`Http`)
@@ -276,3 +280,104 @@ SplashViewModel
 
 **Alternatives considered**:
 - *`Http(401)`을 `Auth`로 다시 매핑한다* — 매핑 지점이 validator 하나라는 성질이 깨지고, 위 ADR이 소유한 분류 기준(원천이 인증 제공자일 때만 `Auth`)을 어긴다. 기각.
+
+---
+
+## R-017. 진입 판정에 온보딩 완료 표시를 더한다 *(plan 4.0.0)*
+
+**결정**: `ResolveSplashEntryUseCase`가 `OnboardingProgressRepository`를 함께 주입받아 **두 근거를 조합**한다. 프로필이 등록되어 있고 온보딩 완료 표시도 있을 때만 `SplashEntry.Main`이며, 둘 중 하나라도 없으면 `SplashEntry.Onboarding`이다.
+
+```
+ResolveSplashEntryUseCase
+ ├ ProfileRegistrationRepository.isRegistered()   ← 이 스펙 소유 (서버 조회)
+ └ OnboardingProgressRepository.getProgress()     ← onboarding-flow 소유 (로컬 조회)
+```
+
+| 프로필 등록 | 완료 표시 | 결과 |
+|---|---|---|
+| 없음 | 무관 | `Onboarding` |
+| 있음 | `false` | `Onboarding` |
+| 있음 | `true` | `Main` |
+
+**근거**: spec 4.0.0 FR-002·FR-003·FR-004가 요구한다. 그 요구의 출처는 이 문서가 아니라 `docs/specs/onboarding-flow`(FR-021·FR-022)이며, 소유권 규칙은 [ADR 2026-08-29](../../adr/2026-08-29-onboarding-entry-decision-owned-by-onboarding.md)가 갖는다. 프로필 저장은 온보딩 네 스텝 중 첫 스텝일 뿐이라 그것만으로 완료를 판정하면 중단한 사용자가 메인 탭으로 밀려난다.
+
+**호출 순서가 고정이다** — `isRegistered()`가 먼저다. 그 판정이 미등록일 때 프로필 로컬 캐시를 비우는 부수 효과를 갖고, `:feature:profile`의 등록/수정 분기가 그 보장에 기댄다(`ProfileEntryPoint.needsRefresh`). **완료 표시를 먼저 읽고 단축 평가로 이 호출을 건너뛰면 컴파일도 이 UseCase의 테스트도 통과하면서 프로필 저장이 깨진다.** 제약의 근거와 구속력은 위 ADR이 소유한다.
+
+**모듈 경계는 그대로다.** 늘어난 의존은 `:core:domain`의 인터페이스이고 `:feature:splash`가 `:feature:onboarding`을 의존하지 않는다. 헌법 원칙 II를 어기지 않는다.
+
+**지연·실패 경로가 늘어나지 않는다.** 완료 표시는 이 설치의 로컬 값이라 네트워크가 필요 없다. FR-006~FR-010의 임계와 재시도 설계는 그대로다(R-004·R-013).
+
+**Alternatives considered**:
+- *`IsOnboardingCompletedUseCase`를 따로 두고 `SplashViewModel`이 조합* — 판정 규칙이 Android 의존 ViewModel로 새어 나가 JVM 테스트로 세 갈래를 덮을 수 없다. R-009·R-012가 이 UseCase를 둔 이유("분기 규칙을 JVM에서 테스트 가능하게")를 스스로 무너뜨린다. 기각.
+- *스플래시를 그대로 두고 온보딩이 진입 직후 스스로 홈으로 튕겨 낸다* — 완료한 사용자가 온보딩 화면을 한 프레임 본다. 온보딩 spec SC-003 위반. 기각.
+- *완료 표시를 서버가 갖고 `GET /users/me` 응답에 싣는다* — 서버 계약을 넓혀야 하고, 세션이 앱 설치에 묶여 있어 서버가 기억해도 돌려줄 대상이 없다. 기각(ADR이 같은 판단을 기록했다).
+
+---
+
+## R-018. `SplashEntry`의 리프를 그대로 두고 의미만 넓힌다 *(plan 4.0.0)*
+
+**결정**: `SplashEntry.Onboarding`·`SplashEntry.Main` 두 리프를 유지한다. 리프를 늘리거나 이름을 바꾸지 않고, `Onboarding`의 의미를 "프로필이 없다"에서 **"온보딩을 끝내지 않았다"** 로 넓힌다.
+
+**근거**: 스플래시가 **결정해야 하는 것은 여전히 둘**이다 — 온보딩으로 보낼지, 메인 탭으로 보낼지. 판정 근거가 둘로 늘어난 것은 그 결론에 이르는 과정이지 결론의 가짓수가 아니다.
+
+**리프를 늘리지 않은 것이 특히 중요하다.** `Onboarding.FromStart` / `Onboarding.Resume` 식으로 가르면 **스플래시가 온보딩의 스텝 구조를 알게 되고**, 온보딩 spec §3.2가 이 문서에 넘기지 않은 재개 지점 판정(그 spec FR-023)이 여기로 새어 들어온다. 스플래시는 "온보딩으로 보낸다"까지만 알고 어느 스텝인지는 온보딩이 정한다.
+
+**대가**: `SplashEntry.Onboarding`이라는 이름만 보면 판정 근거가 둘이라는 사실이 드러나지 않는다. KDoc이 그 의미를 든다.
+
+**Alternatives considered**:
+- *리프를 셋으로 가른다(`Onboarding.FromStart`·`Onboarding.Resume`·`Main`)* — 위 이유로 기각.
+- *`SplashEntry` 대신 `OnboardingStep`을 그대로 돌려준다* — 스플래시가 온보딩의 도메인 enum을 화면 전환 값으로 쓰게 되어 결합이 더 세진다. 기각.
+
+---
+
+## R-019. 이 개정의 코드 변경은 온보딩 작업이 실행한다 *(plan 4.0.0)*
+
+**결정**: `ResolveSplashEntryUseCase`와 그 테스트의 **설계는 이 계획이 소유**하고, **실제 코드 변경은 `docs/specs/onboarding-flow`의 구현 작업이 수행**한다. 이 계획의 `tasks.md`는 해당 작업을 `이관됨`으로 표시하고 실행 지시를 넣지 않는다.
+
+**근거**: 새 의존인 `OnboardingProgressRepository`가 **온보딩 작업에서 처음 생긴다.** 두 변경을 다른 PR로 나누면 `ResolveSplashEntryUseCase`가 존재하지 않는 타입을 참조해 **스플래시 쪽 PR이 빌드되지 않는다.** 헌법의 빌드 게이트(`./gradlew :app:assembleQaDebug` 성공)를 통과할 수 없는 작업을 tasks에 실행 가능한 항목으로 두면 안 된다.
+
+`docs/specs/onboarding-flow` plan 2.0.1이 이미 이 변경을 자기 범위 목록에 올려 두었고([contracts/onboarding-progress.md §4](../onboarding-flow/contracts/onboarding-progress.md)), 그 계획의 Constitution Check G14가 "요청 범위를 넘는 파일"로 명시적으로 판정했다.
+
+**소유와 실행을 가른 이유**: 파일의 소유자는 그것을 만든 계획이어야 다음 개정에서 근거를 찾을 자리가 흔들리지 않는다. 실행자는 빌드 가능한 단위가 정한다. 둘은 다를 수 있고, 다를 때는 문서가 그것을 밝혀야 한다 — 밝히지 않으면 두 tasks.md가 같은 파일을 각자 고치거나 서로 미룬다.
+
+**대가**: 이 계획의 tasks.md에 실행되지 않는 항목이 하나 생긴다. 온보딩 작업이 끝난 뒤 그 항목을 완료로 닫는 것은 사람의 확인이다.
+
+**Alternatives considered**:
+- *스플래시 tasks.md가 실행 가능한 작업으로 갖는다* — 온보딩이 Repository를 넣기 전에는 착수 불가라 "블록됨" 상태로 방치된다. 기각.
+- *계약까지 온보딩 계획으로 넘긴다* — `ResolveSplashEntryUseCase`는 이 계획이 만든 표면이고 spec 4.0.0이 FR로 요구한다. 소유자가 파일과 어긋나 다음 개정에서 근거를 찾을 자리가 사라진다. 기각.
+
+---
+
+## R-020. 오프라인 재실행이 진입 판정에서 막히는 것을 받아들인다 *(plan 4.1.0)*
+
+**결정**: 오프라인 재실행 사용자가 앱에 진입하지 못하는 현재 동작을 **설계로 확정한다.** 우회 경로를 만들지 않고, spec 5.0.0이 그 결과를 명세로 승인했다(그 문서 §5 TBD-5).
+
+**드러난 사실**: `SplashViewModel`은 세션 확보와 진입 판정을 **한 `runCatchingDomain` 안에 묶어** 성공할 때까지 무한 재시도한다.
+
+```
+while (true) {
+    attempt = runCatchingDomain { ensureAnonymousSession(); resolveSplashEntry() }
+    attempt.getOrNull()?.let { return it }
+    delay(RETRY_INTERVAL)
+}
+```
+
+오프라인 재실행이면 `ensureAnonymousSession()`은 네트워크 없이 통과하지만 `resolveSplashEntry()`가 `GET /api/v1/users/me`에서 `Network`로 실패한다. 루프가 끝나지 않으므로 **스플래시에 영구 정박하고 10초마다 토스트만 뜬다.** plan 3.0.x·4.0.0은 이 사실을 문서 어디에도 적지 않았고, spec FR-011·EC-002·TS-016은 반대로 "오프라인 재실행도 정상 전환"을 적고 있었다.
+
+**결정의 성격**: 이것은 설계 개선이 아니라 **문서와 코드 중 어느 쪽을 고칠지의 선택**이었다. 사용자가 코드를 고치지 않는 쪽을 택했다.
+
+**대가 — 정직하게 적는다**:
+- **오프라인 재실행은 흔한 경로다.** 지하철·비행기·데이터 소진 상태에서 앱을 여는 사용자가 이미 온보딩을 끝냈어도 저장된 장소를 볼 수 없다.
+- PRD는 오프라인 이용 불가를 **최초 실행에만** 수용했다([SCR-001] Flow E). 이 결정은 그 범위를 넘어서므로 **PRD 개정 대상 2건 중 하나**가 됐다(spec §5 TBD-5).
+- 사용자에게 보이는 것은 "네트워크 연결을 확인해주세요" 토스트가 10초마다 반복되는 스플래시다. 앱이 고장 났다는 인상을 줄 수 있으나, 안내 문구가 원인을 정확히 지목하므로 SC-003은 충족한다.
+
+**Alternatives considered** — 둘 다 이번에 검토하고 기각했다. 나중에 이 대가를 되돌리려 할 때 같은 조사를 반복하지 않도록 남긴다.
+
+- **안 ① — 완료 표시가 `true`면 서버 조회를 생략한다.** 온보딩 완료 표시는 프로필 저장 이후에만 기록되고 세션은 설치 수명 동안 만료되지 않으므로(PRD 「비회원 익명 세션」), `isCompleted == true`는 프로필 존재를 함의한다. 채택하면 **오프라인 재실행이 살아나고 재실행마다의 네트워크 왕복도 사라진다.**
+  기각 사유: `프로필 없음 + 완료 표시 있음`(저장값 손상)을 진입 시점에 감지하지 못하게 되어 spec `EC-002-2`가 무효가 되고, [ADR 2026-08-29](../../adr/2026-08-29-onboarding-entry-decision-owned-by-onboarding.md) §결정 3항의 호출 순서 제약에 예외를 세워야 한다. **spec·ADR 두 문서를 함께 고쳐야 하는 범위가 이번 선택보다 크다고 판단했다.**
+- **안 ② — `isRegistered()`가 `Network`로 실패하고 완료 표시가 `true`면 `Main`으로 폴백한다.** 온라인에서는 `EC-002-2` 감지를 유지하면서 오프라인만 로컬 근거로 통과시킨다.
+  기각 사유: spec `EC-004`의 "실패한 판정으로 임의 분기하지 않는다"를 정면으로 고쳐야 하고, 판정 규칙이 리프별 실패 처리와 얽혀 3갈래에서 5갈래로 늘어난다. 재실행마다의 네트워크 왕복도 그대로 남아 얻는 것이 절반이다.
+
+**되돌리는 조건**: 오프라인 재실행이 실사용에서 문제로 보고되면 **안 ①이 첫 후보다.** 그때 필요한 것은 spec `EC-002-2` 폐기와 ADR §결정 3항의 적용 범위 축소 두 가지이며, 근거는 위에 다 적혀 있다.
+
+**이 결정이 만드는 코드 변경**: **없다.** 이 계획이 문서를 코드에 맞췄다.

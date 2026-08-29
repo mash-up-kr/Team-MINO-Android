@@ -10,9 +10,15 @@
 
 ## 선행 조건
 
-선행 의존은 모두 `develop`에 들어와 있다 — `EnsureAnonymousSessionUseCase`·`MinoDomainException.Auth`(anonymous-auth-session), `ProfileLauncher`·`ProfileActivity`(profile). 별도 대기 없이 착수할 수 있다.
+| 선행 의존 | 상태 |
+|---|---|
+| `EnsureAnonymousSessionUseCase` · `MinoDomainException.Auth` (anonymous-auth-session) | `develop`에 있음 |
+| `ProfileLauncher` · `ProfileActivity` (profile) | `develop`에 있음 |
+| **`OnboardingProgressRepository` (onboarding-flow)** | **없음** — plan 4.0.0이 요구하는 판정에 필요하다 |
 
-서버 대조 기준: [Team MINO API 1.0.0](https://api.gguk.org/api-docs-json), 2026-08-27T20:19:22+09:00 조회.
+**세 번째가 이 문서의 §2를 막는다.** 진입 판정의 세 갈래(§2)와 그것을 눈으로 보는 시나리오(§3-H)는 온보딩 작업이 그 계약을 `:core:domain`에 넣은 뒤에 돌아간다([plan.md D-1](./plan.md) · [research.md R-019](./research.md)). **§3의 나머지 시나리오는 지금도 전부 돌아간다** — 브랜드 노출·스피너·토스트·재시도는 판정 근거와 무관하다.
+
+서버 대조 기준: [Team MINO API 1.0.0](https://api.gguk.org/api-docs-json), 2026-08-29T01:44:57+09:00 조회.
 
 ## 빌드
 
@@ -36,16 +42,21 @@ adb shell cmd package resolve-activity -c android.intent.category.LAUNCHER com.m
 
 `ResolveSplashEntryUseCase`는 `:core:domain`(Kotlin JVM)에 있어 Android 없이 돌아간다. **세션 확보는 이 UseCase의 책임이 아니다**(→ [research.md R-012](./research.md)) — 세션 계약의 검증은 `anonymous-auth-session` 스펙의 quickstart가 소유한다.
 
+**Fake 둘이 필요하다** — `ProfileRegistrationRepository`와 `OnboardingProgressRepository`. 후자는 `docs/specs/onboarding-flow`가 소유한 계약이므로, 그 작업이 들어오기 전에는 이 표의 여섯 줄을 돌릴 수 없다([plan.md D-1](./plan.md)). 계약은 [splash-entry-decision.md](./contracts/splash-entry-decision.md)가 소유한다.
+
 ```sh
 ./gradlew :core:domain:test
 ```
 
 | 검증 | Given | 기대 | 대응 |
 |---|---|---|---|
-| 최초 실행 | `isRegistered()`가 `false` | `SplashEntry.Onboarding` | FR-003 / TS-002 |
-| 재실행 | `isRegistered()`가 `true` | `SplashEntry.Main` | FR-004 / TS-003 |
+| 프로필 없음 | `isRegistered()`가 `false` | `SplashEntry.Onboarding` | FR-003 / TS-002 |
+| **프로필 있음 + 온보딩 미완료** | `isRegistered()`가 `true`, `isCompleted`가 `false` | `SplashEntry.Onboarding` | **FR-003 / TS-003-1** |
+| 온보딩 완료 | `isRegistered()`가 `true`, `isCompleted`가 `true` | `SplashEntry.Main` | FR-004 / TS-003 |
+| **호출 순서** | 두 Fake의 호출 기록을 본다 | `isRegistered()`가 `getProgress()`보다 먼저 불린다 | [ADR 2026-08-29](../../adr/2026-08-29-onboarding-entry-decision-owned-by-onboarding.md) |
 | 네트워크 실패 분리 | `isRegistered()`가 `Network` 던짐 | 전파되고 `Onboarding`으로 오판하지 않는다 | EC-004 |
 | 인증 실패 분리 | `isRegistered()`가 `Http(401)` 던짐 | 전파되고 `Onboarding`으로 오판하지 않는다 | FR-009 |
+| 로컬 조회 실패 분리 | `getProgress()`가 던짐 | 전파되고 `Main`으로 오판하지 않는다 | SC-002 |
 
 `:core:data` 쪽은 `errorCode` 분기를 따로 검증한다 — `401`+`USER_NOT_REGISTERED`는 `false`, `401`+`UNAUTHORIZED`·`TOKEN_EXPIRED`·모르는 `errorCode`는 `MinoDomainException.Http(401)` 그대로여야 한다(SC-002). `Auth`로 재매핑하지 않는다 — 그 리프는 인증 제공자 실패 전용이고, HTTP 원천의 매핑 지점은 Ktor validator 하나다([research.md R-016](./research.md)).
 
@@ -63,7 +74,7 @@ adb shell am start -n com.mino.gguk.qa/team.mino.feature.splash.SplashActivity
 1. 앱을 실행한다
 2. **기대**: 캐릭터 5종·워드마크·태그라인이 즉시 노출된다
 3. **기대**: 로딩 스피너가 **한 번도** 보이지 않는다
-4. **기대**: 3초(±0.5초) 뒤 프로필 유무에 맞는 화면으로 전환된다
+4. **기대**: 3초(±0.5초) 뒤 이 설치의 온보딩 진행 상태에 맞는 화면으로 전환된다
 5. 뒤로가기를 누른다 → **기대**: 스플래시로 돌아오지 않는다(`withFinish`)
 
 ### B. 터치 무시 (TS-005)
@@ -109,14 +120,44 @@ D 상태를 60초간 유지한다.
 
 **기대**: 토스트가 연달아 쌓이지 않고, 직전 표출로부터 최소 10초 간격으로만 다시 뜬다.
 
-### G. 재실행은 지연 경로 미진입 (TS-016·EC-002)
+### G. 온라인 재실행은 지연 경로 미진입 (TS-016-1)
 
-1. A를 한 번 완료해 세션을 저장한다
-2. 기기를 오프라인으로 만든다
-3. 앱을 콜드 스타트한다
-4. **기대**: 스피너·토스트 없이 3초 뒤 메인 탭으로 전환된다
+1. A를 한 번 완료하고 **온보딩까지 끝내** 세션과 완료 표시를 저장한다
+2. 네트워크가 정상인 상태로 앱을 콜드 스타트한다
+3. **기대**: 스피너·토스트 없이 3초 뒤 메인 탭으로 전환된다
 
 > 이 시나리오가 실패하면 세션 복원이 네트워크를 타고 있다는 뜻이다(FR-011 위반).
+>
+> 1번에서 온보딩을 끝내지 않으면 **정상적으로 온보딩이 열린다** — 실패가 아니다(FR-003).
+
+### G-1. 오프라인 재실행은 판정에서 막힌다 (TS-016·EC-002·EC-006)
+
+**이 시나리오의 기대값은 "진입 실패"다.** 결함을 확인하는 것이 아니라 spec 5.0.0이 승인한 동작을 확인한다([research.md R-020](./research.md)).
+
+1. G를 한 번 완료해 세션과 완료 표시를 저장한다
+2. 기기를 오프라인으로 만든다
+3. 앱을 콜드 스타트한다
+4. **기대**:
+   - 세션 복원 구간에서는 기다림이 없다 (FR-011의 보장이 여기까지다)
+   - 3초에 로딩 스피너가 뜬다 (FR-006)
+   - 13초에 스피너가 사라지고 `네트워크 연결을 확인해주세요` 토스트가 뜬다 (FR-007·FR-008)
+   - **메인 탭으로 전환되지 않고 스플래시에 머문다.** 10초 간격으로 토스트가 반복된다 (FR-010·UX-006·EC-006)
+5. 네트워크를 되살린다 → **앱을 다시 실행하지 않아도 메인 탭으로 전환된다** (FR-010·SC-005)
+
+> **여기서 메인 탭이 열리면 그것이 회귀다.** 판정을 건너뛰거나 실패를 `Main`으로 뭉갠 것이며, [contracts/splash-entry-decision.md §4](./contracts/splash-entry-decision.md)를 어긴다.
+>
+> 이 동작을 바꾸려면 spec `§5 TBD-5`를 다시 열어야 한다. 대체안 둘과 각각의 대가는 [research.md R-020](./research.md)이 든다.
+
+### H. 온보딩 중단자의 재진입 (TS-003-1) *(온보딩 작업 이후)*
+
+1. 앱을 초기화한다 — `adb shell pm clear team.mino.qa`
+2. 앱을 실행해 **프로필만 저장하고** 다음 스텝에서 앱을 강제 종료한다
+3. 앱을 콜드 스타트한다
+4. **기대**: 메인 탭이 아니라 **온보딩**이 열린다
+
+> **이것이 spec 4.0.0 개정의 이유다.** 3.0.2 구현에서는 이 시나리오가 메인 탭으로 떨어진다.
+>
+> 어느 스텝이 열리는지는 이 문서가 판정하지 않는다 — 온보딩의 재개 규칙이며 그 spec의 quickstart가 소유한다.
 
 ## 4. 디자인 대조
 

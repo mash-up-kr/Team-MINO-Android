@@ -10,22 +10,43 @@
 
 ## 1. 도메인 모델 (`:core:domain`)
 
-### 1.1 프로필 모델 — 이 스펙은 만들지 않는다
+### 1.1 판정에 쓰는 두 근거 — 이 스펙이 만드는 것은 하나다
 
-스플래시는 프로필의 **존재 여부**만 쓰고 필드를 하나도 읽지 않는다. 그래서 전용 모델을 두지 않고 `ProfileRegistrationRepository.isRegistered(): Boolean`으로 받는다(→ [research.md R-014](./research.md)).
+진입 판정은 근거 둘을 조합한다. 어느 것도 값 모델을 필요로 하지 않는다.
 
-프로필의 값 모델 [`Profile(nickname, avatarId)`](../../../core/domain/src/main/kotlin/team/mino/core/domain/model/Profile.kt)은 profile 스펙이 소유하며 이 스펙은 참조하지 않는다.
+| 근거 | 계약 | 소유 | 형태 |
+|---|---|---|---|
+| 프로필 등록 여부 | `ProfileRegistrationRepository.isRegistered(): Boolean` | **이 스펙** | 서버 조회 (`GET /api/v1/users/me`) |
+| 온보딩 완료 표시 | `OnboardingProgressRepository.getProgress().isCompleted` | `docs/specs/onboarding-flow` | 이 설치의 로컬 값 |
+
+- 스플래시는 프로필의 **존재 여부**만 쓰고 필드를 하나도 읽지 않는다. 그래서 전용 모델을 두지 않는다(→ [research.md R-014](./research.md)).
+- 프로필의 값 모델 [`Profile`](../../../core/domain/src/main/kotlin/team/mino/core/domain/model/Profile.kt)은 profile 스펙이, 진행 상태 모델 `OnboardingProgress`는 onboarding-flow 스펙이 소유한다. **이 스펙은 둘 다 참조하지 않는다** — `Boolean` 둘만 쓴다.
+- 온보딩 완료 표시를 읽는 데 네트워크가 필요 없으므로 이 근거가 늘어도 지연·실패 경로(FR-006~FR-010)는 변하지 않는다(→ [research.md R-017](./research.md)).
 
 ### 1.2 `SplashEntry`
 
 `ResolveSplashEntryUseCase`의 반환 타입. 스플래시가 다음에 어디로 가야 하는지를 나타내는 봉인 타입이다.
 
-| 리프 | 의미 | 근거 |
-|---|---|---|
-| `SplashEntry.Onboarding` | 프로필이 없다 → 프로필 설정으로 시작하는 온보딩 | FR-003 |
-| `SplashEntry.Main` | 프로필이 있다 → 직전 세션의 메인 탭 | FR-004 |
+| 리프 | 의미 | 조건 | 근거 |
+|---|---|---|---|
+| `SplashEntry.Onboarding` | 온보딩을 끝내지 않았다 → 온보딩으로 | 프로필 미등록 **또는** 완료 표시 없음 | FR-003 |
+| `SplashEntry.Main` | 온보딩을 끝냈다 → 직전 세션의 메인 탭 | 프로필 등록 **그리고** 완료 표시 있음 | FR-004 |
 
-- **실패는 이 타입으로 표현하지 않는다.** 실패는 `MinoDomainException`으로 던져지고 `runCatchingDomain`이 소비한다(R-011). 세션 미확보 상태에서는 `SplashEntry`가 아예 만들어지지 않아야 FR-010(진입 차단)이 타입으로 보장된다.
+- **실패는 이 타입으로 표현하지 않는다.** 실패는 `MinoDomainException`으로 던져지고 `runCatchingDomain`이 소비한다(R-016). 세션 미확보 상태에서는 `SplashEntry`가 아예 만들어지지 않아야 FR-010(진입 차단)이 타입으로 보장된다.
+- **리프를 늘리지 않는다.** 재개 지점(어느 스텝부터 여는가)은 온보딩이 정하므로 `Onboarding`을 더 가르면 그 판정이 이 스펙으로 새어 들어온다(→ [research.md R-018](./research.md)).
+
+### 1.3 판정 규칙
+
+`ResolveSplashEntryUseCase(): SplashEntry` — 이 스펙이 소유하는 유일한 비즈니스 규칙이다.
+
+| # | 프로필 등록 | 완료 표시 | 결과 | 대응 |
+|---|---|---|---|---|
+| 1 | `false` | 읽지 않아도 된다 | `Onboarding` | TS-002 |
+| 2 | `true` | `false` | `Onboarding` | **TS-003-1** |
+| 3 | `true` | `true` | `Main` | TS-003 |
+
+- **`isRegistered()`를 먼저 호출한다.** 그 판정이 미등록일 때 프로필 로컬 캐시를 비우는 부수 효과를 갖고, `:feature:profile`의 등록/수정 분기가 그 보장에 기댄다. 순서를 바꾸는 최적화는 컴파일과 이 UseCase의 테스트를 모두 통과하면서 프로필 저장을 깬다 — 제약의 소유자는 [ADR 2026-08-29](../../adr/2026-08-29-onboarding-entry-decision-owned-by-onboarding.md)다.
+- **어느 근거의 조회가 실패해도 `Onboarding`으로 뭉개지 않는다.** 예외를 그대로 던진다(EC-004·SC-002).
 
 ---
 
@@ -99,6 +120,7 @@
 |---|---|---|
 | 익명 세션 | **인증 제공자 SDK의 앱 프라이빗 저장소** | 앱이 직접 저장하지 않는다. 별도 캐싱은 진실 원천을 둘로 가르므로 금지다 — `anonymous-auth-session` 스펙 소유 |
 | 프로필 | 캐시하지 않는다 | FR-011의 "네트워크 없이 복원"은 **세션**에 대한 것이지 프로필이 아니다 |
+| **온보딩 진행 상태** | **이 설치의 Preferences DataStore** | `docs/specs/onboarding-flow` 소유. 이 스펙은 `isCompleted`를 **읽기만** 하고 쓰지 않으며, 저장 위치·키·기본값을 정의하지 않는다 |
 
 세션의 데이터 모델(`AnonymousSession`)과 그 수명은 이 스펙이 아니라 `anonymous-auth-session` 스펙이 소유한다. 스플래시는 `ensureSession()`의 정상 반환 여부만 쓰고 `userId`를 읽지 않는다.
 
@@ -110,3 +132,6 @@
 
 - 프로필 등록 여부의 판정 근거 → 배포 OpenAPI의 `401` `errorCode` enum (plan 3.0.0에서 TBD-P2 해소)
 - 익명 세션의 발급·저장 → `anonymous-auth-session` 스펙 소유 (plan 2.0.0에서 TBD-P1 해소)
+- 온보딩 완료 표시의 원천·기록 시점 → `docs/specs/onboarding-flow` 소유 (plan 4.0.0에서 진입 판정에 편입)
+
+**단, 일정 의존이 하나 있다.** `OnboardingProgressRepository`가 아직 `:core:domain`에 없다 — 설계는 확정됐고 실행 시점만 온보딩 작업에 묶여 있다([plan.md D-1](./plan.md) · [research.md R-019](./research.md)).

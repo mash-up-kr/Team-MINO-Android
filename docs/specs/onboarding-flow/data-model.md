@@ -17,14 +17,16 @@ flowchart TD
         Resolve["ResolveOnboardingStepUseCase"]
         GetLink["GetInviteLinkUseCase"]
         Builder["InviteLinkBuilder (interface)"]
-        Room["Room (기존, 확장)<br/>+ inviteCode"]
-        RoomRepo["RoomRepository (기존)"]
+        InvRepo["RoomInvitationRepository"]
+        SplashUC["ResolveSplashEntryUseCase (기존, 확장)"]
+        RegRepo["ProfileRegistrationRepository (기존)"]
     end
     subgraph data[":core:data"]
         Local["OnboardingProgressLocalDataSource<br/>DataStore(Preferences)"]
         RepoImpl["OnboardingProgressRepositoryImpl"]
+        InvRepoImpl["RoomInvitationRepositoryImpl"]
+        InvRemote["InvitationRemoteDataSource<br/>InvitationApiService"]
         BuilderImpl["InviteLinkBuilderImpl<br/>flavor host"]
-        Dto["RoomResponse (기존, 확장)<br/>+ inviteCode"]
     end
     subgraph feature[":feature:onboarding"]
         Flow["OnboardingFlowUiState"]
@@ -36,17 +38,21 @@ flowchart TD
     Repo --> Progress
     Resolve --> Progress
     Resolve --> Step
-    GetLink --> RoomRepo
+    GetLink --> InvRepo
     GetLink --> Builder
-    RoomRepo --> Room
-    Dto -. "toDomain()" .-> Room
+    SplashUC --> Repo
+    SplashUC --> RegRepo
     RepoImpl -. implements .-> Repo
     RepoImpl --> Local
+    InvRepoImpl -. implements .-> InvRepo
+    InvRepoImpl --> InvRemote
     BuilderImpl -. implements .-> Builder
     Flow --> Step
 ```
 
-**`OnboardingProgress`와 `OnboardingStep`이 도메인에 있는 이유**: 완료 표시를 읽는 주체가 온보딩 밖(스플래시)이다([research.md R-008](./research.md)). feature 안에 두면 그 소비가 불가능하다.
+**`OnboardingProgress`와 `OnboardingStep`이 도메인에 있는 이유**: 완료 표시를 읽는 주체가 온보딩 밖(스플래시)이다([research.md R-008](./research.md)). feature 안에 두면 그 소비가 불가능하다. 2.0.0에서 그 소비가 **실제 배선**이 됐다 — `ResolveSplashEntryUseCase`가 `OnboardingProgressRepository`를 함께 읽는다([R-024](./research.md)).
+
+**`Room`이 이 지도에서 빠졌다.** 1.0.x는 `Room.inviteCode`를 통해 링크를 얻는 그림이었으나, 서버가 초대를 별도 리소스로 분리해 그 경로가 사라졌다([R-010 철회](./research.md) · [R-021](./research.md)). 온보딩은 이제 방 모델을 전혀 만지지 않고 `roomId` 문자열만 다룬다.
 
 ---
 
@@ -83,15 +89,9 @@ enum class OnboardingStep { PROFILE, ROOM_FORM, INVITE, TUTORIAL }
 - **최대 1개 규칙**(UX-001)은 이 필드가 이미 차 있으면 공동방 스텝을 다시 열지 않는 것으로 지켜진다.
 - 프로필·개인방의 존재 여부는 여기 담지 않는다. 그것은 프로필·방 스펙의 원천이 갖는다(spec §2.3 "온보딩 결과물").
 
-### `Room` — 기존 모델의 확장
+### `Room` — 건드리지 않는다
 
-`:core:domain/model/Room.kt`는 [공동방 폼 계획](https://github.com/mash-up-kr/Team-MINO-Android/issues/146)이 소유한다. 이번 범위가 더하는 것은 한 필드다.
-
-| 필드 | 타입 | 제약 | 근거 |
-|---|---|---|---|
-| `inviteCode` | `String` | swagger `Room.inviteCode` — 최대 16자. 개인방 코드는 초대에 쓸 수 없다 | FR-008 · [research.md R-010](./research.md) |
-
-그 모델의 `data-model.md` §2가 `inviteCode`를 "다른 feature가 필요로 할 때 더한다"로 열어 둔 자리다. 나머지 필드(`type`·`createdAt`·`pinCount`·`memberCount`)는 여전히 넣지 않는다.
+1.0.0은 `:core:domain/model/Room.kt`에 `inviteCode`를 더하기로 했으나 **2.0.0에서 철회했다.** 서버 응답에 그런 필드가 없다([research.md R-010](./research.md)). `Room`·`RoomResponse`·`RoomMapper` 세 파일은 이번 범위의 변경 대상이 아니며, `type`·`createdAt`·`pinCount`·`memberCount`를 넣지 않는 기존 방침도 그대로다.
 
 ---
 
@@ -101,8 +101,8 @@ enum class OnboardingStep { PROFILE, ROOM_FORM, INVITE, TUTORIAL }
 
 | 계약 | 소유 문서 |
 |---|---|
-| `OnboardingProgressRepository` · `ResolveOnboardingStepUseCase` | [contracts/onboarding-progress.md](./contracts/onboarding-progress.md) |
-| `InviteLinkBuilder` · `GetInviteLinkUseCase` | [contracts/invite-link.md](./contracts/invite-link.md) |
+| `OnboardingProgressRepository` · `ResolveOnboardingStepUseCase` · 확장된 `ResolveSplashEntryUseCase` | [contracts/onboarding-progress.md](./contracts/onboarding-progress.md) |
+| `RoomInvitationRepository` · `InviteLinkBuilder` · `GetInviteLinkUseCase` | [contracts/invite-link.md](./contracts/invite-link.md) |
 | `OnboardingLauncher`와 진입 인자 | [contracts/onboarding-launcher.md](./contracts/onboarding-launcher.md) |
 
 ---
@@ -123,16 +123,27 @@ enum class OnboardingStep { PROFILE, ROOM_FORM, INVITE, TUTORIAL }
 - 읽기는 `getProgress()` 한 번의 조회다. `Flow`로 관찰하지 않는다 — 진행 상태를 구독해야 할 화면이 없다.
 - 쓰기는 스텝 전환마다 한 번, 완료 시 한 번이다(FR-024).
 
-### 4.2 원격 — 이번 범위가 새로 만드는 API 호출은 없다
+### 4.2 원격 — 새로 부르는 엔드포인트는 하나다
 
-| 필요한 것 | 어디서 오는가 | swagger |
-|---|---|---|
-| 방 조회(초대 코드) | `RoomRepository.getRoom(roomId)` — 공동방 폼 계획 소유 | `GET /api/v1/rooms/{roomId}` |
-| 방 생성 | 공동방 폼이 한다 | `POST /api/v1/rooms` |
-| 유저 등록(+개인방 생성) | 프로필이 한다 | `POST /api/v1/users` |
-| 프로필 존재 판정 | 스플래시가 한다 | `GET /api/v1/users/me` |
+근거 문서와 조회 시점은 [plan.md 기술 컨텍스트](./plan.md)가 든다. 스키마 대조 결과는 [contracts/invite-link.md §1](./contracts/invite-link.md)이 소유한다.
 
-`RoomResponse`(DTO)와 `RoomMapper`에 `inviteCode`를 더하는 변경만 이번 범위가 낸다. 그 뒤의 `DataSource`가 아직 인메모리 mock이라는 사실은 [열린 항목 H](./research.md#열린-항목)가 든다.
+| 필요한 것 | 누가 부르는가 | 엔드포인트 | 이번 범위 |
+|---|---|---|---|
+| **초대 코드 발급** | `RoomInvitationRepository` — **이번에 만든다** | `POST /api/v1/rooms/{roomId}/invitations` | **신규** |
+| 방 생성 | `:feature:roomform` | `POST /api/v1/rooms` | 결과의 `roomId`만 받는다 |
+| 유저 등록(+개인방 자동 생성) | `:feature:profile` | `POST /api/v1/users` | 결과 코드(`RESULT_OK`)만 받는다 |
+| 프로필 등록 여부 | `:feature:splash` | `GET /api/v1/users/me` | 판정에 완료 표시를 더한다([R-024](./research.md)) |
+
+**`invitation` 태그의 계층을 새로 세운다**([R-022](./research.md) · [ADR](../../adr/2026-08-28-api-service-owned-per-server-tag.md)).
+
+| 파일 | 역할 |
+|---|---|
+| `network/service/InvitationApiService.kt` | `invitation` 태그의 오퍼레이션. 지금은 발급 하나 |
+| `network/dto/response/InvitationResponse.kt` | `{ code: String }` — 봉투(`MinoResponse`) 해제는 ApiService가 한다([ADR](../../adr/2026-08-27-response-envelope-unwrapped-in-apiservice.md)) |
+| `datasource/InvitationRemoteDataSource.kt`(+`Impl`) | 서비스를 감싼다 |
+| `repository/RoomInvitationRepositoryImpl.kt` | DTO → `String`(code). DTO가 이 클래스 밖으로 나가지 않는다 |
+
+**`RoomApiService`·`RoomResponse`·`RoomMapper`를 넓히지 않는다.** 태그가 다르고, 다른 세 feature가 쓰는 파일이라 회귀 범위가 넓어진다.
 
 ---
 
@@ -201,4 +212,5 @@ stateDiagram-v2
 |---|---|---|
 | `lastStep == INVITE`이면 `createdRoomId != null`이다 | `ResolveOnboardingStepUseCase`가 어긋난 조합을 `TUTORIAL`로 떨어뜨린다 | FR-004·SC-004 |
 | 한 온보딩에서 `createdRoomId`는 한 번만 채워진다 | 이미 차 있으면 공동방 스텝을 열지 않는다 | UX-001·SC-008 |
-| `isCompleted == true`인 설치에는 온보딩을 열지 않는다 | 스플래시의 분기 — 온보딩 밖 | FR-021·SC-003 |
+| `isCompleted == true`인 설치에는 온보딩을 열지 않는다 | `ResolveSplashEntryUseCase` — **2.0.0에서 이 계획이 배선한다**([contracts/onboarding-progress.md §4](./contracts/onboarding-progress.md)) | FR-021·SC-003 |
+| 프로필이 있어도 `isCompleted == false`면 온보딩을 연다 | 〃 | FR-022·TS-038 |

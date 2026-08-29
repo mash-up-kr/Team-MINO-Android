@@ -16,6 +16,8 @@
 | `OnboardingInvite(roomId: String)` | 친구 초대 스텝 | `roomId` — `String`이라 `typeMap` 불필요 | FR-008~FR-013 |
 | `OnboardingTutorial` | 공유 방법 튜토리얼 스텝 | 없음 | FR-014~FR-020 |
 
+이 골격은 이미 머지된 `:feature:splash`·`:feature:profile`·`:feature:roomform` 셋과 같다 — `XActivity` → `XShell`(`MinoScaffold` + `TrackScreenViews`) → `XNavHost` → `XRoute`.
+
 **셸(`OnboardingShell`)이 `MinoScaffold`를 열되 `bottomBar`를 넘기지 않는다** — 그것이 FR-005(온보딩 전 구간 바텀 네비 비노출)의 구현이다. `TrackScreenViews(navController)`도 셸이 갖는다.
 
 **전환은 모두 `popUpTo(현재) { inclusive = true }`를 동반한다.** 온보딩 백스택에 앞 스텝이 남지 않는 것이 FR-006·TS-007의 구조적 보장이다([research.md R-006](../research.md)).
@@ -86,7 +88,7 @@ Activity 스코프 ViewModel이다. 스텝 전이 규칙 전체를 여기가 소
 |---|---|---|---|
 | 튜토리얼 스텝 2~5 | 한 스텝 앞으로 | 튜토리얼 Route의 `BackHandler(enabled = page > 0)` | FR-007·TS-034·EC-014 |
 | 그 밖의 온보딩 소유 지점 | `moveTaskToBack(true)` | 셸의 `BackHandler` → Activity 콜백 | FR-007·TS-035·EC-015·EC-016 |
-| 프로필·공동방 스텝 | **이 계획이 정하지 않는다** — 그 두 Activity가 소유한다 | — | [열린 항목 A](../research.md#열린-항목) |
+| 프로필·공동방 스텝 | **이 계획이 정하지 않는다** — 그 두 Activity가 소유하고, 현재 둘 다 제스처를 삼켜 `무반응`이다 | — | [열린 항목 A](../research.md#열린-항목) · [R-026](../research.md) |
 
 - `moveTaskToBack`은 온보딩을 끝낸 것으로 보지 않는다. 완료 표시를 기록하지 않고 스텝도 바꾸지 않는다(spec §5).
 - 중첩 `BackHandler`는 안쪽의 활성 핸들러가 이긴다 — 튜토리얼 핸들러가 셸 핸들러보다 먼저 먹는다.
@@ -102,7 +104,7 @@ Activity 스코프 ViewModel이다. 스텝 전이 규칙 전체를 여기가 소
 
 | 요소 | 내용 | 근거 |
 |---|---|---|
-| 상단 바 | `MinoTopNavigation` — 우상단 [X]. 제목 없음 | FR-013 · [design-system-additions.md](design-system-additions.md) |
+| 상단 바 | `MinoTopNavigation` — 우상단 [X] 아이콘. 제목 없음. **그 축이 지금은 없어 이 계획이 넓힌다** | FR-013 · [design-system-additions.md §4](design-system-additions.md) |
 | 제목 | `친구들을 초대해볼까요?` | FR-009 |
 | 본문 | `"여기 어때?"는 이제 그만 친구가 들어오면 저장한 장소가 한눈에 모여요. 다음 약속 장소, 여기서 같이 골라요.` | FR-009 |
 | 일러스트 | 캐릭터·구름 배경 (feature 소유 에셋) | [research.md R-016](../research.md) |
@@ -117,6 +119,8 @@ Activity 스코프 ViewModel이다. 스텝 전이 규칙 전체를 여기가 소
 | `inviteLink` | `String?` | `null` | 확보한 링크. `null`이면 아직 없거나 실패했다 | FR-008·EC-008 |
 
 `roomId`는 `savedStateHandle.toRoute<OnboardingInvite>()`로 복원하며 상태에 두지 않는다 — 화면이 읽지 않는 값이다.
+
+**링크를 얻는 경로는 `GetInviteLinkUseCase(roomId)` 하나다.** 그 뒤에서 발급 API를 부르는 것은 도메인 아래의 일이고, 서버가 멱등을 보장하므로 재개 진입에서도 같은 링크가 온다([invite-link.md §1.1](invite-link.md)). 화면은 코드도 API도 모른다.
 
 **두 액션은 언제나 활성이다**(UX-002·TS-009). `inviteLink == null`이어도 비활성화하지 않고, 눌리면 실패를 알린다(§3.4).
 
