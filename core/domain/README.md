@@ -43,6 +43,7 @@ ViewModel은 UseCase 또는 Repository 인터페이스만 알고, 구현체(`Rep
 
 ```
 core/domain/src/main/kotlin/team/mino/core/domain/
+├── invite/         # 초대 링크 조립 계약 (인터페이스)
 ├── model/          # 도메인 모델 (Entity, VO)
 ├── repository/     # Repository 인터페이스
 └── usecase/        # UseCase (필요한 경우에만)
@@ -50,6 +51,7 @@ core/domain/src/main/kotlin/team/mino/core/domain/
 
 | 디렉터리 | 배치 기준 |
 |---|---|
+| `invite/` | 초대 코드를 링크로 조립하는 계약(인터페이스). 도메인은 **호스트도 경로도 모른다** — 형식을 아는 구현은 `:core:data`에 위치 ([초대 링크 조립 ADR](../../docs/adr/2026-08-24-invite-link-assembly-domain-interface.md)) |
 | `model/` | 비즈니스 개념을 표현하는 순수 Kotlin 데이터 타입. DTO·Room Entity 아님. `enum`·`sealed class`도 비즈니스 개념이면 함께 둔다. 파일이 늘어나면 `model/enum`·`model/state` 등으로 하위 분리 가능 |
 | `repository/` | 데이터 접근의 계약(인터페이스). 구현체는 `:core:data`에 위치 |
 | `usecase/` | 여러 Repository 조합·비즈니스 규칙·재사용 행위만 위치. 기준은 4장 참조 |
