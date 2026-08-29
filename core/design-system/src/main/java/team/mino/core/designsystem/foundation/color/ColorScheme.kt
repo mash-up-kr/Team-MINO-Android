@@ -13,6 +13,7 @@ import team.mino.core.designsystem.component.checkbox.MinoCheckboxColors
 import team.mino.core.designsystem.component.chip.MinoChipColors
 import team.mino.core.designsystem.component.contentbadge.MinoContentBadgeColors
 import team.mino.core.designsystem.component.menu.MinoMenuItemColors
+import team.mino.core.designsystem.component.pagination.MinoPaginationDotsColors
 import team.mino.core.designsystem.component.textinput.MinoTextInputColors
 import team.mino.core.designsystem.foundation.color.token.ColorAccessKeyToken
 import team.mino.core.designsystem.foundation.color.token.ColorDarkTokens
@@ -90,6 +91,7 @@ class ColorScheme(
     internal var defaultContentBadgeColorsCached: MinoContentBadgeColors? = null
     internal var accentContentBadgeColorsCached: MinoContentBadgeColors? = null
     internal var defaultMenuItemColorsCached: MinoMenuItemColors? = null
+    internal var defaultPaginationDotsColorsCached: MinoPaginationDotsColors? = null
     internal var defaultTextInputColorsCached: MinoTextInputColors? = null
 
     fun copy(
