@@ -155,8 +155,7 @@ class HomeDeckRepositoryImplTest {
 
         override suspend fun getRoom(roomId: String): RoomResponse = throw IllegalStateException("부르지 않는다")
 
-        override suspend fun createRoom(request: RoomRequest): RoomResponse =
-            throw IllegalStateException("부르지 않는다")
+        override suspend fun createRoom(request: RoomRequest): RoomResponse = throw IllegalStateException("부르지 않는다")
 
         override suspend fun updateRoom(
             roomId: String,

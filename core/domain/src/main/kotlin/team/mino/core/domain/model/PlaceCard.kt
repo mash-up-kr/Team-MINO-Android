@@ -26,11 +26,12 @@ data class PlaceCard(
 /**
  * 카드 헤더에 아바타로 보이는 등록자.
  *
- * [avatarId]는 아바타 목록의 한 항목을 가리키는 식별자이며 [Profile.avatarId]와 같은 값 체계를 쓴다.
- * 아바타를 고르지 않은 사용자가 있으므로 nullable이고, 그 경우의 대체 표시는 feature가 정한다.
+ * [avatar]는 [Profile.avatar]와 같은 [ProfileAvatar] 값 체계를 쓴다 — 서버가 아바타를 색 하나로 표현하고,
+ * 그 색과 아바타의 대응은 `:core:data`가 안다. 아바타를 고르지 않은 사용자가 있으므로 nullable이고,
+ * 그 경우의 대체 표시는 feature가 정한다.
  */
 data class Registrant(
     val userId: String,
     val nickname: String,
-    val avatarId: Int?,
+    val avatar: ProfileAvatar?,
 )

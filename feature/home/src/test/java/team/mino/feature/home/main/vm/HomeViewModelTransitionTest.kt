@@ -401,7 +401,7 @@ class HomeViewModelTransitionTest {
             address = "서울시 어딘가",
             imageUrls = emptyList(),
             label = PlaceLabel.WORTH_VISITING,
-            registrant = Registrant(userId = "user-1", nickname = "민호", avatarId = null),
+            registrant = Registrant(userId = "user-1", nickname = "민호", avatar = null),
         )
 
     /** 방 전환 대상이 되도록 [RoomSummary.placeCount]를 0보다 크게 둔다(FR-013). */

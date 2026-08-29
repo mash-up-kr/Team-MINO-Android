@@ -159,11 +159,20 @@ class HomeViewModelDeckTest {
                 viewModel.processIntent(HomeIntent.SwipeForward)
                 viewModel.processIntent(HomeIntent.TransitionSettled)
             }
-            assertEquals(cards.take(2), viewModel.state.value.undoStack.toList())
+            assertEquals(
+                cards.take(2),
+                viewModel.state.value.undoStack
+                    .toList(),
+            )
 
             viewModel.processIntent(HomeIntent.SwipeBackward)
             viewModel.processIntent(HomeIntent.TransitionSettled)
-            assertEquals("두 번째로 넘긴 카드가 먼저 돌아온다", cards.drop(1), viewModel.state.value.cards.toList())
+            assertEquals(
+                "두 번째로 넘긴 카드가 먼저 돌아온다",
+                cards.drop(1),
+                viewModel.state.value.cards
+                    .toList(),
+            )
 
             viewModel.processIntent(HomeIntent.SwipeBackward)
             viewModel.processIntent(HomeIntent.TransitionSettled)
@@ -222,7 +231,11 @@ class HomeViewModelDeckTest {
             viewModel.processIntent(HomeIntent.SwipeForward)
             viewModel.processIntent(HomeIntent.TransitionSettled)
             assertEquals("소진되면 같은 방의 다음 덱으로 넘어가 있어야 한다", DeckSort.LATEST, viewModel.state.value.sort)
-            assertTrue("덱이 바뀌는 순간 이력이 비워져야 한다", viewModel.state.value.undoStack.isEmpty())
+            assertTrue(
+                "덱이 바뀌는 순간 이력이 비워져야 한다",
+                viewModel.state.value.undoStack
+                    .isEmpty(),
+            )
 
             viewModel.processIntent(HomeIntent.SwipeBackward)
 
@@ -367,7 +380,7 @@ class HomeViewModelDeckTest {
                 address = "서울시 어딘가 $index",
                 imageUrls = emptyList(),
                 label = PlaceLabel.WORTH_VISITING,
-                registrant = Registrant(userId = "user-1", nickname = "민호", avatarId = null),
+                registrant = Registrant(userId = "user-1", nickname = "민호", avatar = null),
             )
         }
 

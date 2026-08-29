@@ -42,6 +42,7 @@ import team.mino.core.designsystem.theme.MinoAndroidTheme
 import team.mino.core.designsystem.util.preview.UiModePreviews
 import team.mino.core.domain.model.PlaceCard
 import team.mino.core.domain.model.PlaceLabel
+import team.mino.core.domain.model.ProfileAvatar
 import team.mino.core.domain.model.Registrant
 import team.mino.feature.home.R
 import kotlin.math.abs
@@ -405,5 +406,5 @@ private fun previewCard(
     address = "서울 성동구 상원4길 10",
     imageUrls = emptyList(),
     label = label,
-    registrant = Registrant(userId = "u1", nickname = "미노", avatarId = 1),
+    registrant = Registrant(userId = "u1", nickname = "미노", avatar = ProfileAvatar.Person1),
 )

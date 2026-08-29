@@ -9,7 +9,6 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -240,7 +239,7 @@ class HomeViewModelRoomSheetTest {
                 address = "서울시 어딘가 $index",
                 imageUrls = emptyList(),
                 label = PlaceLabel.WORTH_VISITING,
-                registrant = Registrant(userId = "user-1", nickname = "민호", avatarId = null),
+                registrant = Registrant(userId = "user-1", nickname = "민호", avatar = null),
             )
         }
 

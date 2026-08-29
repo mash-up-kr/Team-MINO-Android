@@ -54,11 +54,12 @@ private fun String.toPlaceLabel(): PlaceLabel = LABELS_BY_IDENTIFIER[this] ?: Pl
  * feature가 정한다 — `RoomSummary.description`이 `null`을 빈 문자열로 흡수하는 것과 같은 규칙이다.
  *
  * [CardCreatedByResponse.avatar]가 `null`인 것은 결손이 아니라 **아바타를 고르지 않은 상태**이므로
- * [Registrant.avatarId]에 `null`을 그대로 싣는다.
+ * [Registrant.avatar]에 `null`을 그대로 싣는다. 기본 아바타로 메우지 않는 것이 프로필과 다른 점이며,
+ * 대체 표시는 카드를 그리는 feature가 정한다.
  */
 private fun CardCreatedByResponse?.toRegistrant(): Registrant =
     Registrant(
         userId = this?.userId.orEmpty(),
         nickname = this?.nickname.orEmpty(),
-        avatarId = this?.avatar?.id,
+        avatar = this?.avatar.toProfileAvatarOrNull(),
     )

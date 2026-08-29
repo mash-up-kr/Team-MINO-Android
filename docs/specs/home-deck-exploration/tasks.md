@@ -213,6 +213,19 @@ Android 다중 모듈이다. 모듈 경계와 파일 배치는 [plan.md](./plan.
 - [X] T064 `./gradlew :app:assembleQaDebug` 통과 확인 — 헌법이 정한 빌드 확인의 최소선
 - [ ] T065 [quickstart.md](./quickstart.md) §4의 수동 시나리오 8절 전부 실행
 
+### 실서버 전환 (`/cards` 배포 후 — 2026-08-29)
+
+`GET /api/v1/rooms/{roomId}/cards`가 배포되어 [contracts/deck-api.md](./contracts/deck-api.md) §4의 전환 지점 셋을 닫은 작업이다. 인터페이스(`DeckRemoteDataSource`)·Mapper·Repository·화면은 바뀌지 않았다.
+
+- [X] T066 `core/data/.../network/service/DeckApiService.kt` 신설 — `GET api/v1/rooms/{roomId}/cards`, `sort`·`lat`·`lng` 질의, `MinoResponse<List<CardResponse>>` 봉투 벗기기 (계약 §2.1·2.2)
+- [X] T067 `core/data/.../datasource/DeckRemoteDataSourceImpl.kt` 신설 — 전환 지점 ①. 도메인 `DeckSort` → 서버 문자열(`ggukPick`·`latest`·`nearby`) 대응을 이 파일이 소유한다. T066에 의존
+- [X] T068 `core/data/.../datasource/di/DeckDataSourceModule.kt`의 `@Binds` 인자를 mock → 실구현으로 교체 — 전환 지점 ②. T067에 의존
+- [X] T069 `core/data/.../network/dto/response/CardResponse.kt` 대조 — 전환 지점 ③. 배포 스키마와 필드가 일치해 변경이 없으나, 스키마에 `required`가 없어 **모든 필드에 기본값을 뒀다**. 한 필드가 빠졌다고 덱 전체가 직렬화 실패로 떨어지지 않게 하는 방어이며, `DeckMapper`가 이미 세운 「카드 한 장 때문에 덱이 실패하지 않는다」를 응답을 읽는 자리까지 이은 것이다
+- [X] T070 mock 제거 — `DeckMockRemoteDataSourceImpl.kt`·`datasource/mock/DeckMockStore.kt`와 그 테스트를 삭제. T068에 의존
+- [X] T071 `core/data/src/test/.../network/DeckApiFixtures.kt`·`DeckApiServiceTest.kt`·`datasource/DeckRemoteDataSourceImplTest.kt` 작성 — **mock이 재현하던 계약 §4의 「반드시 재현해야 하는 경우」를 픽스처로 이관한다.** 실서버는 짧은 덱·0건 정렬·전부 `worthVisiting`을 마음대로 만들어 주지 않으므로, 이관하지 않으면 TS-005·TS-014·TS-017·TS-023·EC-013을 검사할 자리가 사라진다. T066·T067에 의존
+- [X] T073 등록자 아바타를 실제 서버 표현으로 정정 — 실기기에서 덱 조회가 `JsonConvertException: Field 'id' is required ... CardAvatarResponse`로 죽었다. `/cards` 문서만 아바타를 `{ id: integer }`로 적어 두었고 실제 응답에는 그 필드가 없다. `CardAvatarResponse`를 지우고 프로필과 같은 `AvatarResponse`(`{ color }`)를 쓰며, 색→아바타 대응표는 `ProfileMapper`가 계속 단독으로 소유한다(`toProfileAvatarOrNull` 공유). 도메인 `Registrant.avatarId: Int?`도 문서 오류에서 나온 모델이라 `avatar: ProfileAvatar?`로 바꿨다. 프로필과 달리 기본 아바타로 메우지 않는다 — 「고르지 않음」을 그대로 싣고 대체 표시는 feature가 정한다
+- [ ] T072 실서버로 [quickstart.md](./quickstart.md) §4 재수행 — 특히 **저장한 장소가 그 방의 덱에 실제로 뜨는지**, 정렬 3종 전환, 위치 권한 거부 시 `가까운순`이 빈 덱→소진으로 흡수되는지(EC-009)를 본다
+
 ---
 
 ## 커버리지 대조표
@@ -385,4 +398,4 @@ Task: "feature/home/.../component/EmptyContent.kt 작성"
 - 피해야 할 것: 모호한 작업, 같은 파일 동시 수정, 스토리 독립성을 깨는 의존성
 - **`HomeViewModel`은 여러 스토리가 함께 만지는 유일한 파일이다.** T032·T037·T038·T046~T051·T055·T058·T059가 모두 여기 들어가므로 병렬 배정 시 충돌에 주의한다
 - 커밋 단위는 [`commit-message.md`](../../conventions/commit-message.md)의 쪼개기 원칙을 따른다
-- **미결 사항 1건**: `GET /api/v1/rooms/{roomId}/cards`가 배포되면 T015(mock)를 걷고 실제 구현으로 교체해야 한다. 전환 지점은 [contracts/deck-api.md](./contracts/deck-api.md) §4의 세 파일이고, 서버 PR [Node#94](https://github.com/mash-up-kr/Team-MINO-Node/pull/94)가 아직 `OPEN`이다
+- **미결 사항 1건 해소(2026-08-29)**: `GET /api/v1/rooms/{roomId}/cards`가 배포되어 T066~T071로 mock을 걷고 실제 구현으로 교체했다. 전환 지점 셋은 [contracts/deck-api.md](./contracts/deck-api.md) §4가 적은 그대로였고 그 밖은 손대지 않았다. 남은 것은 실기기 재검증(T072)뿐이다
