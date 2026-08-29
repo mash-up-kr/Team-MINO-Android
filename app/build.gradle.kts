@@ -53,6 +53,7 @@ dependencies {
     implementation(project(":feature:main"))
     implementation(project(":feature:sharereceiver"))
     implementation(project(":feature:splash"))
+    implementation(project(":feature:onboarding"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
