@@ -21,8 +21,11 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import team.mino.core.domain.model.AnonymousSession
+import team.mino.core.domain.model.OnboardingProgress
+import team.mino.core.domain.model.OnboardingStep
 import team.mino.core.domain.model.SplashEntry
 import team.mino.core.domain.repository.AnonymousAuthRepository
+import team.mino.core.domain.repository.OnboardingProgressRepository
 import team.mino.core.domain.repository.ProfileRegistrationRepository
 import team.mino.core.domain.usecase.EnsureAnonymousSessionUseCase
 import team.mino.core.domain.usecase.ResolveSplashEntryUseCase
@@ -196,13 +199,18 @@ class SplashViewModelTest {
     private fun TestScope.splash(
         session: suspend () -> AnonymousSession = { AnonymousSession(USER_ID) },
         isRegistered: suspend () -> Boolean = { true },
+        isOnboardingCompleted: suspend () -> Boolean = { true },
         assertions: (Recording) -> Unit,
     ) {
         val authRepository = FakeAnonymousAuthRepository(session)
         val viewModel =
             SplashViewModel(
                 ensureAnonymousSession = EnsureAnonymousSessionUseCase(authRepository),
-                resolveSplashEntry = ResolveSplashEntryUseCase(FakeProfileRegistrationRepository(isRegistered)),
+                resolveSplashEntry =
+                    ResolveSplashEntryUseCase(
+                        profileRegistrationRepository = FakeProfileRegistrationRepository(isRegistered),
+                        onboardingProgressRepository = FakeOnboardingProgressRepository(isOnboardingCompleted),
+                    ),
             )
 
         val states = mutableListOf<SplashUiState>()
@@ -250,12 +258,32 @@ class SplashViewModelTest {
             callCount++
             return session()
         }
+
+        override suspend fun currentSession(): AnonymousSession? =
+            error("스플래시는 세션을 확보한다 — 조회만 하는 currentSession()은 쓰지 않는다(research.md R-012).")
     }
 
     private class FakeProfileRegistrationRepository(
         private val isRegistered: suspend () -> Boolean,
     ) : ProfileRegistrationRepository {
         override suspend fun isRegistered(): Boolean = isRegistered.invoke()
+    }
+
+    /**
+     * 진입 판정의 두 번째 근거. 이 화면의 관심사는 확보·지연·실패이지 판정 표가 아니므로
+     * 기본값은 완료(`true`)로 둔다 — 등록 여부만으로 [SplashEntry]가 갈리던 때의 기대를 그대로 유지한다.
+     * 판정 표 자체는 `:core:domain`의 `ResolveSplashEntryUseCaseTest`가 전수로 고정한다.
+     */
+    private class FakeOnboardingProgressRepository(
+        private val isCompleted: suspend () -> Boolean,
+    ) : OnboardingProgressRepository {
+        override suspend fun getProgress(): OnboardingProgress = OnboardingProgress(isCompleted = isCompleted.invoke())
+
+        override suspend fun setCurrentStep(step: OnboardingStep) = error("스플래시는 진행 상태를 쓰지 않는다")
+
+        override suspend fun setCreatedRoomId(roomId: String) = error("스플래시는 진행 상태를 쓰지 않는다")
+
+        override suspend fun markCompleted() = error("스플래시는 진행 상태를 쓰지 않는다")
     }
 
     private companion object {
