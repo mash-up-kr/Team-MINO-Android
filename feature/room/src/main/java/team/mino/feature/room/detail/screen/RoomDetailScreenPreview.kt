@@ -87,6 +87,7 @@ private fun RoomDetailScreenPreviewContainer(
                     isPersonalRoom = false,
                 ),
                 onIntent = {},
+                onCurrentLocationClick = {},
             )
         }
     }

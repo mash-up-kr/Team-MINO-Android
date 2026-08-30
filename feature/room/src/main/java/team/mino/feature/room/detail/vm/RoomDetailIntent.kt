@@ -103,8 +103,5 @@ internal sealed interface RoomDetailIntent : Intent {
      */
     data class OnRoomFormResult(val updated: Boolean) : RoomDetailIntent
 
-    /** [research.md D10] 현재 위치 버튼 — room-list와 같은 동작(FR-011 부속). */
-    data object OnCurrentLocationClick : RoomDetailIntent
-
     data class OnLocationPermissionResult(val granted: Boolean) : RoomDetailIntent
 }

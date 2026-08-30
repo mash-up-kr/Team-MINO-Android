@@ -122,7 +122,6 @@ internal class RoomDetailViewModel @AssistedInject constructor(
             is RoomDetailIntent.OnOwnerDelegateSelected -> onOwnerDelegateSelected(intent.memberId)
             RoomDetailIntent.OnOwnerDelegateConfirm -> onOwnerDelegateConfirm()
             is RoomDetailIntent.OnRoomFormResult -> onRoomFormResult(intent.updated)
-            RoomDetailIntent.OnCurrentLocationClick -> onCurrentLocationClick()
             is RoomDetailIntent.OnLocationPermissionResult -> onLocationPermissionResult(intent.granted)
         }
     }
@@ -542,15 +541,6 @@ internal class RoomDetailViewModel @AssistedInject constructor(
                         .onSuccess { postSideEffect(RoomDetailSideEffect.NavigateToRoomList) }
                         .onDomainFailure(::emitDomainError)
                 }.onDomainFailure(::emitDomainError)
-        }
-    }
-
-    /** [research.md D10] 현재 위치 버튼 최소 구현 — room-list와 같은 동작으로 `mapCenter`만 갱신한다. */
-    private fun onCurrentLocationClick() {
-        if (!hasLocationPermission()) return
-        launchSafely {
-            val center = resolveMapCenter(granted = true)
-            updateState { copy(mapCenter = center, mapCenterRequestId = mapCenterRequestId + 1) }
         }
     }
 

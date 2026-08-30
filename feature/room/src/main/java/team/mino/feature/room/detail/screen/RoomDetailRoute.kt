@@ -39,11 +39,15 @@ import team.mino.feature.room.detail.vm.RoomDetailViewModel
  * [BoxScope] 확장인 이유: 호출부([RoomListScreen])가 지도([RoomListMap])를 담은 같은 `Box` 안에서
  * 이 Route를 그려야 지도가 리스트↔상세 전환에도 살아남는다 — 그 `Box`의 [BoxScope]를 그대로 받아
  * [RoomDetailScreen]의 컨트롤·바텀시트가 `Modifier.align`으로 위치를 잡을 수 있게 한다.
+ *
+ * @param onCurrentLocationClick 현재 위치 버튼 클릭 — 지도를 실제로 그리는 `RoomListViewModel`에게
+ *   전달해야 하므로 호출부(`RoomListRoute`)가 넘겨준다([RoomDetailScreen] KDoc 참고).
  */
 @Composable
 internal fun BoxScope.RoomDetailRoute(
     roomId: String,
     onBack: () -> Unit,
+    onCurrentLocationClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val viewModel: RoomDetailViewModel = hiltViewModel<RoomDetailViewModel, RoomDetailViewModel.Factory>(
@@ -159,6 +163,7 @@ internal fun BoxScope.RoomDetailRoute(
     RoomDetailScreen(
         state = state,
         onIntent = viewModel::processIntent,
+        onCurrentLocationClick = onCurrentLocationClick,
         modifier = modifier,
     )
 }

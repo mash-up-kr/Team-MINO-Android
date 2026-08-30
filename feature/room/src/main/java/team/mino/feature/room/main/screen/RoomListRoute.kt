@@ -20,6 +20,7 @@ import team.mino.core.common.ui.scaffold.LocalBottomNavVisibility
 import team.mino.core.navigation.activity.launcher.EXTRA_ROOM_FORM_RESULT_ROOM_ID
 import team.mino.feature.room.detail.screen.RoomDetailRoute
 import team.mino.feature.room.detail.vm.RoomDetailViewModel
+import team.mino.feature.room.main.model.BottomSheetLevel
 import team.mino.feature.room.main.vm.RoomListIntent
 import team.mino.feature.room.main.vm.RoomListSideEffect
 import team.mino.feature.room.main.vm.RoomListViewModel
@@ -91,19 +92,10 @@ internal fun RoomListRoute(
     }
 
     // 상세 시트가 Full인지(=지도가 안 새어 나와야 하는지)는 상세 자신의 sheetLevel로만 판정할 수 있다.
-    // 같은 key(roomId)로 hiltViewModel을 다시 조회하면 RoomDetailRoute가 쓰는 것과 같은 ViewModel
-    // 인스턴스를 그대로 얻는다(ViewModelStore가 key로 캐시) — 런처·SideEffect 배선을 중복시키지 않고
-    // 이 화면(RoomListScreen)이 필요로 하는 sheetLevel 하나만 읽는다.
-    val detailSheetLevel = if (selectedRoomId != null) {
-        val detailViewModel = hiltViewModel<RoomDetailViewModel, RoomDetailViewModel.Factory>(
-            key = selectedRoomId,
-            creationCallback = { factory -> factory.create(selectedRoomId) },
-        )
-        val detailState by detailViewModel.state.collectAsStateWithLifecycle()
-        detailState.sheetLevel
-    } else {
-        null
-    }
+    // rememberDetailSheetLevel이 같은 key(roomId)로 hiltViewModel을 다시 조회해 RoomDetailRoute가 쓰는
+    // 것과 같은 ViewModel 인스턴스를 그대로 얻는다(ViewModelStore가 key로 캐시) — 런처·SideEffect 배선을
+    // 중복시키지 않고 이 화면(RoomListScreen)이 필요로 하는 sheetLevel 하나만 읽는다.
+    val detailSheetLevel = selectedRoomId?.let { rememberDetailSheetLevel(it) }
 
     RoomListScreen(
         state = state,
@@ -115,10 +107,29 @@ internal fun RoomListRoute(
                 RoomDetailRoute(
                     roomId = selectedRoomId,
                     onBack = { viewModel.processIntent(RoomListIntent.OnCloseRoomDetailClick) },
+                    onCurrentLocationClick = { viewModel.processIntent(RoomListIntent.OnCurrentLocationClick) },
                 )
             }
         } else {
             null
         },
     )
+}
+
+/**
+ * [selectedRoomId]로 열린 방 상세의 현재 [BottomSheetLevel]. [RoomDetailRoute]와 같은 `roomId` key로
+ * [RoomDetailViewModel]을 다시 조회해 같은 인스턴스를 얻는다(ViewModelStore가 key로 캐시) — `viewModel`을
+ * 기본 파라미터로 둬야 [hiltViewModel] 호출이 컴포저블 시그니처에서 명시적으로 드러난다
+ * (compose-lints `ViewModels` 규칙).
+ */
+@Composable
+private fun rememberDetailSheetLevel(
+    roomId: String,
+    viewModel: RoomDetailViewModel = hiltViewModel<RoomDetailViewModel, RoomDetailViewModel.Factory>(
+        key = roomId,
+        creationCallback = { factory -> factory.create(roomId) },
+    ),
+): BottomSheetLevel {
+    val detailState by viewModel.state.collectAsStateWithLifecycle()
+    return detailState.sheetLevel
 }
