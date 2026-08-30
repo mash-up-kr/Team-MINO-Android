@@ -53,8 +53,8 @@ internal fun RoomResponse.toDomain(): Room =
         description = description.orEmpty(),
         color = color.toRoomColor(),
         ownerId = ownerId,
-        // 단건 조회 응답에는 목록 전용 집계 필드가 없다 — room-list가 다시 채울 때까지 플레이스홀더.
-        isPersonal = false,
+        isPersonal = type == ROOM_TYPE_PERSONAL,
+        // 단건 조회 응답에는 목록 전용 집계 필드(장소 수 등)가 없다 — room-list가 다시 채울 때까지 플레이스홀더.
         placeCount = 0,
         thumbnail = RoomThumbnail.ColorAndCharacter(color = color),
         memberSummary = RoomMemberSummary(visibleAvatars = emptyList(), overflowCount = 0),

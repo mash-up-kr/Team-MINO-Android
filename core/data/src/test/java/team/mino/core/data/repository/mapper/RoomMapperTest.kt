@@ -36,14 +36,17 @@ class RoomMapperTest {
 
     private fun draft(color: RoomColor?) = RoomDraft(name = "맛집 탐방", description = "동네 맛집", color = color)
 
-    private fun response(color: String) =
-        RoomResponse(
-            id = "r1",
-            name = "맛집 탐방",
-            description = "동네 맛집",
-            color = color,
-            ownerId = "u1",
-        )
+    private fun response(
+        color: String,
+        type: String? = null,
+    ) = RoomResponse(
+        id = "r1",
+        name = "맛집 탐방",
+        description = "동네 맛집",
+        color = color,
+        ownerId = "u1",
+        type = type,
+    )
 
     @Test
     fun `13색이 서버 enum과 같은 식별자로 나간다`() {
@@ -86,5 +89,16 @@ class RoomMapperTest {
     @Test
     fun `대소문자가 다른 식별자는 아는 색으로 치지 않는다`() {
         assertEquals(RoomColor.GRAY, response("RED").toDomain().color)
+    }
+
+    @Test
+    fun `단건 조회 응답의 type이 personal이면 개인방으로 읽는다`() {
+        assertEquals(true, response(color = "gray", type = "personal").toDomain().isPersonal)
+    }
+
+    @Test
+    fun `단건 조회 응답의 type이 shared거나 없으면 공동방으로 읽는다`() {
+        assertEquals(false, response(color = "gray", type = "shared").toDomain().isPersonal)
+        assertEquals(false, response(color = "gray", type = null).toDomain().isPersonal)
     }
 }
