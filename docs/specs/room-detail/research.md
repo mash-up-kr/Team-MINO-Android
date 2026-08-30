@@ -119,6 +119,7 @@
 - **Rationale**: PRD [SYS-007]이 요구하는 동작(위임 없이 나가기 시도 시 막힘, 마지막 1인 방장은 방 삭제)이 서버 에러 코드로 이미 표현돼 있어, 클라이언트는 `409 OWNER_TRANSFER_REQUIRED`를 `LeaveDialogState.DelegateOwner`로 분기하면 된다(별도 사전 조회로 멤버 수를 세지 않아도 서버가 상태를 판정해 준다 — 클라이언트 로직 단순화).
 - **Alternatives considered**: 멤버 수·방장 여부를 클라이언트가 미리 계산해 분기 — 기각. 서버가 나가기 시도 자체에 대해 `409`로 판정 결과를 내려주므로 클라이언트가 같은 규칙을 중복 구현할 이유가 없다(SSOT는 서버).
 - **(plan 2.0.0에서 결정 — D12의 TBD를 해소)**
+- **뒤집힘 (2026-08-30)**: "멤버 수를 사전에 세지 않는다" 부분은 실기기 확인 결과 폐기했다 — `409`를 기다리는 동안 공유방 방장에게도 `ConfirmOwnerSingle`("혼자라 삭제된다")의 잘못된 문구가 먼저 보이는 결함으로 드러나, 이미 로드돼 있는 `RoomMemberSummary`로 `OnLeaveClick` 시점에 바로 분기하도록 되돌렸다. `409` 자체(엔드포인트·상태 코드)는 그대로 유효하고 방어선으로 남아 있다. 상세: [failures/2026-08-30-leave-flow-member-count.md](../../failures/2026-08-30-leave-flow-member-count.md).
 
 ## D16. 초대 링크 발급 API 확정 ([SYS-006]) — `RoomMember` 신규 도입
 

@@ -27,10 +27,12 @@ import team.mino.core.common.android.architecture.MviContainer
 import team.mino.core.common.android.architecture.mviContainer
 import team.mino.core.common.android.extension.launchSafely
 import team.mino.core.common.kotlin.geo.GeoPoint
+import team.mino.core.domain.invite.InviteLinkBuilder
 import team.mino.core.domain.model.MapMarkerSortOption
 import team.mino.core.domain.model.Place
 import team.mino.core.domain.model.PlaceCategoryFilter
 import team.mino.core.domain.model.Room
+import team.mino.core.domain.model.RoomMemberSummary
 import team.mino.core.domain.repository.ProfileRepository
 import team.mino.core.domain.repository.RoomPlacesRepository
 import team.mino.core.domain.repository.RoomRepository
@@ -43,6 +45,7 @@ import team.mino.core.navigation.activity.launcher.RoomFormLauncher
 import team.mino.feature.room.detail.model.PlaceViewType
 import team.mino.feature.room.main.component.DefaultMapCenter
 import team.mino.feature.room.main.model.BottomSheetLevel
+import team.mino.feature.room.main.model.toMemberSummary
 import kotlin.coroutines.resume
 import kotlin.time.Duration.Companion.seconds
 
@@ -62,6 +65,7 @@ internal class RoomDetailViewModel @AssistedInject constructor(
     private val roomRepository: RoomRepository,
     private val roomPlacesRepository: RoomPlacesRepository,
     private val profileRepository: ProfileRepository,
+    private val inviteLinkBuilder: InviteLinkBuilder,
     val roomFormLauncher: RoomFormLauncher,
 ) : ViewModel(),
     MviContainer<RoomDetailUiState, RoomDetailSideEffect> by mviContainer(RoomDetailUiState()),
@@ -76,6 +80,13 @@ internal class RoomDetailViewModel @AssistedInject constructor(
      * 있는다 — [RoomDetailUiState.places]는 이 값에서 파생된 정렬·필터 결과만 노출한다.
      */
     private var rawPlaces: List<Place> = emptyList()
+
+    /**
+     * [loadRoomMembers]가 조회한 실제 멤버 아바타. [loadRoom]과 서로 다른 왕복이라 어느 쪽이 먼저
+     * 끝날지 보장이 없다 — [loadRoomMembers]가 먼저 끝나면 아직 `room`이 `null`이라 그 자리에 바로
+     * 못 얹으므로 여기 들고 있다가, [loadRoom]이 방을 채울 때 함께 적용한다.
+     */
+    private var pendingMemberSummary: RoomMemberSummary? = null
 
     fun processIntent(intent: RoomDetailIntent) {
         when (intent) {
@@ -102,6 +113,8 @@ internal class RoomDetailViewModel @AssistedInject constructor(
             RoomDetailIntent.OnMoreMenuDismiss -> onMoreMenuDismiss()
             RoomDetailIntent.OnInviteClick -> onInviteClick()
             RoomDetailIntent.OnInviteSheetDismiss -> onInviteSheetDismiss()
+            RoomDetailIntent.OnInviteConfirmClick -> onInviteConfirmClick()
+            RoomDetailIntent.OnCopyInviteLinkClick -> onCopyInviteLinkClick()
             RoomDetailIntent.OnEditRoomClick -> onEditRoomClick()
             RoomDetailIntent.OnLeaveClick -> onLeaveClick()
             RoomDetailIntent.OnLeaveConfirm -> onLeaveConfirm()
@@ -125,6 +138,7 @@ internal class RoomDetailViewModel @AssistedInject constructor(
      */
     private fun onScreenEntered() {
         launchSafely { loadRoom() }
+        launchSafely { loadRoomMembers() }
         if (hasLocationPermission()) {
             launchSafely {
                 val center = resolveMapCenter(granted = true)
@@ -153,9 +167,20 @@ internal class RoomDetailViewModel @AssistedInject constructor(
      * 방 리스트로 복귀할 때 이 화면 전용 오버레이 상태를 지운다 — 이 인스턴스가 같은 `roomId`로 다시
      * 열릴 때 재사용되므로([RoomDetailIntent.OnScreenExited] KDoc), 여기서 지우지 않으면 예전에 열어
      * 두고 안 닫은 "다른 방에 공유" 시트가 다음 진입에 그대로 다시 뜬다.
+     *
+     * [leaveDialogState]·[selectedDelegateMemberId]도 같은 이유로 지운다 — 실기기 확인된 결함:
+     * 위임 대상 선택 화면([LeaveDialogState.DelegateOwner])까지 열어 두고 확정하지 않은 채(뒤로가기 등)
+     * 이 화면을 벗어나면, 다음 재진입에 그 선택 화면이 그대로 다시 뜬다.
      */
     private fun onScreenExited() {
-        updateState { copy(showRoomSelectSheet = false, placeToShare = null) }
+        updateState {
+            copy(
+                showRoomSelectSheet = false,
+                placeToShare = null,
+                leaveDialogState = LeaveDialogState.None,
+                selectedDelegateMemberId = null,
+            )
+        }
     }
 
     /**
@@ -187,21 +212,42 @@ internal class RoomDetailViewModel @AssistedInject constructor(
 
     // 방 조회와 내 user id 조회는 서로 결과를 기다릴 필요가 없어 async로 함께 시작한다 — 순서대로
     // await하면 방 조회가 끝날 때까지 user id 요청이 시작조차 되지 않아 왕복이 그대로 더해진다.
+    @OptIn(kotlin.time.ExperimentalTime::class)
     private suspend fun loadRoom() =
         coroutineScope {
             val currentUserIdDeferred = async { profileRepository.currentUserId() }
             runCatchingDomain { roomRepository.getRoom(roomId) }
                 .onSuccess { room ->
                     val currentUserId = currentUserIdDeferred.await()
+                    // 단건 조회 응답에는 멤버 아바타가 없다([RoomMapper.RoomResponse.toDomain]) —
+                    // loadRoomMembers가 먼저 끝나 이미 실제 값을 구해 뒀다면 여기서 덮어쓰지 않고 이어받는다.
+                    val roomWithMembers = pendingMemberSummary?.let { room.copy(memberSummary = it) } ?: room
                     updateState {
                         copy(
-                            room = room,
+                            room = roomWithMembers,
                             isOwner = room.ownerId == currentUserId,
                             isPersonalRoom = room.isPersonal,
                         )
                     }
                 }.onDomainFailure { updateState { copy(loadError = it) } }
         }
+
+    /**
+     * 헤더 첫 줄의 참여자 아바타 그룹이 보여줄 실제 멤버를 조회한다(`GET /rooms/{roomId}/members`).
+     * [loadRoom]과 서로 다른 왕복이라 어느 쪽이 먼저 끝날지 보장이 없다 — [pendingMemberSummary] KDoc 참고.
+     *
+     * 실패해도 화면을 막지 않는다 — 아바타가 잠깐 안 보이는 것뿐이라 [loadRoom]처럼 `loadError`로
+     * 올리지 않고 조용히 둔다.
+     */
+    @OptIn(kotlin.time.ExperimentalTime::class)
+    private suspend fun loadRoomMembers() {
+        runCatchingDomain { roomRepository.getMembers(roomId) }
+            .onSuccess { members ->
+                val summary = members.toMemberSummary()
+                pendingMemberSummary = summary
+                updateState { copy(room = room?.copy(memberSummary = summary)) }
+            }
+    }
 
     /** [contracts/room-detail-main-contract.md 「분기 규칙 — 시트 드래그 전이」] room-list와 동일 패턴. */
     private fun onSheetDraggedUp() {
@@ -370,6 +416,22 @@ internal class RoomDetailViewModel @AssistedInject constructor(
         updateState { copy(showInviteSheet = false, inviteCode = null, roomMembers = persistentListOf()) }
     }
 
+    /**
+     * [FR-011] "초대하기" — 이미 발급받은 [RoomDetailUiState.inviteCode]를 링크로 조립해 OS 공유 시트를
+     * 연다. 버튼이 `inviteCode != null`일 때만 활성화되므로([RoomInviteSheet]) 여기서 다시 null을
+     * 검사할 필요는 없지만, 방어적으로 null이면 아무 것도 하지 않는다.
+     */
+    private fun onInviteConfirmClick() {
+        val code = state.value.inviteCode ?: return
+        launchSafely { postSideEffect(RoomDetailSideEffect.ShareInviteLink(inviteLinkBuilder.build(code))) }
+    }
+
+    /** [FR-011] "링크 복사하기" — 같은 규칙으로 링크를 조립해 클립보드 복사를 요청한다. */
+    private fun onCopyInviteLinkClick() {
+        val code = state.value.inviteCode ?: return
+        launchSafely { postSideEffect(RoomDetailSideEffect.CopyInviteLink(inviteLinkBuilder.build(code))) }
+    }
+
     /** [FR-012] 방 편집 — 전환 결정만 발행한다(실제 launch 호출은 Route가 수행, T054). */
     private fun onEditRoomClick() {
         launchSafely { postSideEffect(RoomDetailSideEffect.NavigateToRoomForm) }
@@ -389,21 +451,46 @@ internal class RoomDetailViewModel @AssistedInject constructor(
     }
 
     /**
-     * [SYS-007] 나가기 시작 — 방 멤버 수를 사전에 세지 않는다([contracts/room-detail-main-contract.md]
-     * "분기 규칙 — 나가기 플로우"). `isOwner` 여부로 확인 모달만 고른다.
+     * [SYS-007] 나가기 시작 — `isOwner`와 [RoomDetailUiState.room]의 [RoomMemberSummary]로 이미
+     * 알고 있는 실제 멤버 수를 함께 본다.
+     *
+     * 예전엔 방장이면 멤버 수와 무관하게 항상 `ConfirmOwnerSingle`("나가면 방이 삭제돼요")부터 띄우고
+     * `leaveRoom` 호출의 `409`로만 [LeaveDialogState.DelegateOwner]로 전이했다(서버 판정을 SSOT로 삼아
+     * 클라이언트가 멤버 수를 중복 계산하지 않는다는 판단, `research.md` D15). 그런데 실기기 확인 결과
+     * 공유 중인 방(멤버 2명 이상)의 방장에게도 "혼자라 방이 삭제된다"는 **사실과 다른 문구**가 먼저 보이는
+     * 결함으로 드러났다 — 서버가 옳게 판정해도 그 사이 화면이 거짓말을 하는 것 자체가 문제였다.
+     * [RoomDetailUiState.room]의 `memberSummary`는 화면 진입 시 [loadRoomMembers]가 이미
+     * `GET /rooms/{roomId}/members` 실측으로 채워 두므로, 추가 왕복 없이 지금 바로 정확한 모달을
+     * 고를 수 있다.
      */
     private fun onLeaveClick() {
+        val memberCount = state.value.room
+            ?.memberSummary
+            ?.let { it.visibleAvatars.size + it.overflowCount }
+            ?: 0
         updateState {
             copy(
-                leaveDialogState =
-                    if (isOwner) LeaveDialogState.ConfirmOwnerSingle else LeaveDialogState.ConfirmMember,
+                leaveDialogState = when {
+                    !isOwner -> LeaveDialogState.ConfirmMember
+                    memberCount > 1 -> LeaveDialogState.DelegateOwner
+                    else -> LeaveDialogState.ConfirmOwnerSingle
+                },
             )
+        }
+        if (state.value.leaveDialogState == LeaveDialogState.DelegateOwner) {
+            launchSafely {
+                runCatchingDomain { roomRepository.getMembers(roomId) }
+                    .onSuccess { members -> updateState { copy(roomMembers = members.toImmutableList()) } }
+                    .onDomainFailure(::emitDomainError)
+            }
         }
     }
 
     /**
      * [SYS-007] 나가기 확정 — `leaveRoom` 호출 자체의 성공/`409` 응답으로 서버가 판정한 결과를
-     * 그대로 분기에 반영한다. `409 OWNER_TRANSFER_REQUIRED`면 위임 대상 선택으로 전이한다.
+     * 그대로 분기에 반영한다. [onLeaveClick]이 이미 멤버 수로 [LeaveDialogState.DelegateOwner]를
+     * 골랐다면 이 경로는 타지 않지만, 그 판단 이후 다른 멤버가 방을 나가는 등 경합이 생겨도 서버가
+     * 최종 판정하므로 `409` 방어선은 그대로 둔다.
      */
     private fun onLeaveConfirm() {
         launchSafely {
@@ -434,12 +521,23 @@ internal class RoomDetailViewModel @AssistedInject constructor(
 
     /**
      * [SYS-007] 방장 위임 확정 — `transferOwner` 성공 후 이어서 `leaveRoom`을 호출한다(계약 명시 순서).
+     *
+     * `transferOwner`가 성공하는 즉시 `isOwner`를 내려놓고 모달을 닫는다 — 서버는 이미 방장이 바뀐
+     * 상태이므로, 뒤이은 `leaveRoom`이 실패해 이 화면에 남더라도 "더보기"에 방장 전용 항목(방 편집)이나
+     * 위임 대상 선택 화면이 잘못 남아있지 않게 한다(실기기 확인된 결함).
      */
     private fun onOwnerDelegateConfirm() {
         val nextOwnerId = state.value.selectedDelegateMemberId ?: return
         launchSafely {
             runCatchingDomain { roomRepository.transferOwner(roomId, nextOwnerId) }
                 .onSuccess {
+                    updateState {
+                        copy(
+                            isOwner = false,
+                            leaveDialogState = LeaveDialogState.None,
+                            selectedDelegateMemberId = null,
+                        )
+                    }
                     runCatchingDomain { roomRepository.leaveRoom(roomId) }
                         .onSuccess { postSideEffect(RoomDetailSideEffect.NavigateToRoomList) }
                         .onDomainFailure(::emitDomainError)
