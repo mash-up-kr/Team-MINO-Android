@@ -6,9 +6,11 @@ import team.mino.core.common.android.architecture.UiState
 import team.mino.core.common.kotlin.geo.GeoPoint
 import team.mino.core.domain.model.MapMarkerSortOption
 import team.mino.core.domain.model.PlaceCategoryFilter
+import team.mino.core.domain.model.ProfileAvatar
 import team.mino.core.domain.model.Room
 import team.mino.core.domain.model.RoomListSortOption
 import team.mino.feature.room.main.model.BottomSheetLevel
+import team.mino.feature.room.main.model.MapPinUiModel
 
 /**
  * 방 리스트 탭의 유일한 Route(RoomListMain) 상태.
@@ -18,6 +20,16 @@ import team.mino.feature.room.main.model.BottomSheetLevel
 data class RoomListUiState(
     val sheetLevel: BottomSheetLevel = BottomSheetLevel.HALF,
     val personalRoom: Room? = null,
+    /**
+     * 내가 속한 모든 방(개인 방 + 공동방)에 저장된 장소 전체 — 지도에 얹을 핀과 그 색을 함께 든다.
+     * 방 목록이 바뀌거나 방마다의 장소 조회가 끝날 때마다 [RoomListViewModel]이 다시 계산한다.
+     */
+    val mapPins: ImmutableList<MapPinUiModel> = persistentListOf(),
+    /**
+     * 내 프로필 아바타 — 개인 방은 `RoomColor.GRAY`(색 미선택)라 지도 핀 색을 방에서 가져올 수 없다.
+     * 개인 방 핀([RoomListMap.PersonalPlacePin])은 이 색을 대신 쓴다.
+     */
+    val myProfileAvatar: ProfileAvatar? = null,
     val groupRooms: ImmutableList<Room> = persistentListOf(),
     val roomListSort: RoomListSortOption = RoomListSortOption.ALL,
     val mapMarkerSort: MapMarkerSortOption = MapMarkerSortOption.ALL,

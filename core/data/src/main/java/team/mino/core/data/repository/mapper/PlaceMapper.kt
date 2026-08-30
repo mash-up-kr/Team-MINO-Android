@@ -2,6 +2,7 @@
 
 package team.mino.core.data.repository.mapper
 
+import team.mino.core.common.kotlin.geo.GeoPoint
 import team.mino.core.data.network.dto.response.PinResponse
 import team.mino.core.domain.model.Place
 import team.mino.core.domain.model.PlaceCategoryFilter
@@ -33,6 +34,7 @@ internal fun PinResponse.toDomain(): Place =
         isGgukPick = false,
         // 클라이언트 위치 계산이 필요한 필드 — 이 매퍼 책임 밖.
         distanceMeters = null,
+        location = GeoPoint(latitude = place.lat, longitude = place.lng),
     )
 
 /**

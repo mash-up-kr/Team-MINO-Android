@@ -1,5 +1,6 @@
 package team.mino.core.domain.model
 
+import team.mino.core.common.kotlin.geo.GeoPoint
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
@@ -13,6 +14,8 @@ import kotlin.time.Instant
  *
  * [commentCount]·[isGgukPick]은 서버 응답에 없어 구현 시 임시 목데이터/플레이스홀더로 채운다
  * (`docs/specs/room-detail/data-model.md` §4 `[TBD]`).
+ *
+ * [location]은 서버가 `Pin.place.lat`·`Pin.place.lng`로 내려주는 실좌표다 — 지도 마커가 이 값을 그대로 쓴다.
  */
 @OptIn(ExperimentalTime::class)
 data class Place(
@@ -25,4 +28,5 @@ data class Place(
     val commentCount: Int,
     val isGgukPick: Boolean,
     val distanceMeters: Double?,
+    val location: GeoPoint,
 )
