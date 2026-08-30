@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import kotlinx.collections.immutable.persistentListOf
+import team.mino.core.common.kotlin.geo.GeoPoint
 import team.mino.core.designsystem.theme.MinoAndroidAppTheme
 import team.mino.core.designsystem.theme.MinoAndroidTheme
 import team.mino.core.designsystem.util.preview.UiModePreviews
@@ -42,6 +43,7 @@ private val PREVIEW_GRID_PLACES = persistentListOf(
         commentCount = 3,
         isGgukPick = false,
         distanceMeters = null,
+        location = GeoPoint(latitude = 37.4979, longitude = 127.0276),
     ),
     Place(
         id = "preview-grid-place-2",
@@ -53,6 +55,7 @@ private val PREVIEW_GRID_PLACES = persistentListOf(
         commentCount = 0,
         isGgukPick = true,
         distanceMeters = null,
+        location = GeoPoint(latitude = 37.4979, longitude = 127.0276),
     ),
     Place(
         id = "preview-grid-place-3",
@@ -64,5 +67,6 @@ private val PREVIEW_GRID_PLACES = persistentListOf(
         commentCount = 12,
         isGgukPick = false,
         distanceMeters = null,
+        location = GeoPoint(latitude = 37.4979, longitude = 127.0276),
     ),
 )
