@@ -58,11 +58,18 @@ import team.mino.feature.room.main.model.BottomSheetLevel
  * (리스트↔상세 전환에도 지도 인스턴스를 하나만 유지하기 위함, `RoomListScreen`/`RoomDetailRoute` KDoc
  * 참고). 더보기[⋮]는 화면 레벨 플로팅이 아니라 [RoomDetailBottomSheet] 헤더 줄 안에서 그려진다
  * (Figma `2542:125409`(Peek)·`2542:125383`(Half) 대조 결과 — [RoomDetailBottomSheet] KDoc 참고).
+ *
+ * @param onCurrentLocationClick 현재 위치 버튼 클릭. 지도가 이 화면 소유가 아니므로(위 문단)
+ *   `RoomDetailIntent`로 처리하지 않는다 — 지도를 실제로 그리는 `RoomListViewModel`의
+ *   `OnCurrentLocationClick`으로 직접 연결해야 지도가 움직인다(호출부 `RoomListRoute`가 배선).
+ *   실기기 확인된 결함: 예전엔 이 버튼이 `RoomDetailViewModel`의 `mapCenter`를 갱신했는데, 그 상태를
+ *   읽는 화면이 없어 버튼이 눌려도 지도가 안 움직였다.
  */
 @Composable
 internal fun BoxScope.RoomDetailScreen(
     state: RoomDetailUiState,
     onIntent: (RoomDetailIntent) -> Unit,
+    onCurrentLocationClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val isMapControlVisible = state.sheetLevel != BottomSheetLevel.FULL
@@ -84,7 +91,7 @@ internal fun BoxScope.RoomDetailScreen(
 
         val sheetHeight = roomDetailBottomSheetHeightOrNull(state.sheetLevel) ?: 0.dp
         RoomDetailCurrentLocationButton(
-            onClick = { onIntent(RoomDetailIntent.OnCurrentLocationClick) },
+            onClick = onCurrentLocationClick,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(end = 20.dp, bottom = sheetHeight + RoomDetailCurrentLocationButtonTokens.GapAboveSheet),
