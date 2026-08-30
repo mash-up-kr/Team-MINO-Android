@@ -102,6 +102,4 @@ internal sealed interface RoomDetailIntent : Intent {
      * `false`(취소·그 외 결과)면 아무 것도 하지 않는다.
      */
     data class OnRoomFormResult(val updated: Boolean) : RoomDetailIntent
-
-    data class OnLocationPermissionResult(val granted: Boolean) : RoomDetailIntent
 }

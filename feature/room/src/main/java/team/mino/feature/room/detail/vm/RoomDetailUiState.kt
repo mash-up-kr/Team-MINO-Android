@@ -3,7 +3,6 @@ package team.mino.feature.room.detail.vm
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import team.mino.core.common.android.architecture.UiState
-import team.mino.core.common.kotlin.geo.GeoPoint
 import team.mino.core.domain.model.MapMarkerSortOption
 import team.mino.core.domain.model.Place
 import team.mino.core.domain.model.PlaceCategoryFilter
@@ -26,9 +25,6 @@ internal data class RoomDetailUiState(
     // "꾹 Pick"으로 보여 room-list와 달라 보인다.
     val sortOption: MapMarkerSortOption = MapMarkerSortOption.ALL,
     val categoryFilter: PlaceCategoryFilter = PlaceCategoryFilter.ALL,
-    val mapCenter: GeoPoint? = null,
-    /** [RoomListUiState.mapCenterRequestId]와 같은 이유로 둔다 — 좌표값이 같아도 이동 요청을 신호할 수 있어야 한다. */
-    val mapCenterRequestId: Int = 0,
     val viewType: PlaceViewType = PlaceViewType.LIST,
     val isOwner: Boolean = false,
     val isPersonalRoom: Boolean = false,
