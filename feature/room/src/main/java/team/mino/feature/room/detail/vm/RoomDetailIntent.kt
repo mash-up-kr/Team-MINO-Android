@@ -73,6 +73,16 @@ internal sealed interface RoomDetailIntent : Intent {
 
     data object OnInviteSheetDismiss : RoomDetailIntent
 
+    /**
+     * 초대 시트의 "초대하기" 버튼 — `inviteCode`를 링크로 조립해 OS 공유 시트를 연다
+     * ([RoomDetailSideEffect.ShareInviteLink]). Figma `3261-204321`의 전용 화면 전환은 아직
+     * 범위 밖이다(spec.md "초대 링크 생성·공유 로직 자체는 SYS-006이 정의한다").
+     */
+    data object OnInviteConfirmClick : RoomDetailIntent
+
+    /** 초대 시트의 "링크 복사하기" 버튼 — 같은 링크를 클립보드에 쓴다([RoomDetailSideEffect.CopyInviteLink]). */
+    data object OnCopyInviteLinkClick : RoomDetailIntent
+
     data object OnEditRoomClick : RoomDetailIntent
 
     data object OnLeaveClick : RoomDetailIntent

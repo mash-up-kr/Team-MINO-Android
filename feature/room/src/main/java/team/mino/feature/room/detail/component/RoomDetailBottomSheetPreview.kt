@@ -9,12 +9,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import team.mino.core.common.kotlin.geo.GeoPoint
 import team.mino.core.designsystem.theme.MinoAndroidAppTheme
 import team.mino.core.designsystem.theme.MinoAndroidTheme
 import team.mino.core.designsystem.util.preview.UiModePreviews
 import team.mino.core.domain.model.MapMarkerSortOption
 import team.mino.core.domain.model.Place
 import team.mino.core.domain.model.PlaceCategoryFilter
+import team.mino.core.domain.model.ProfileAvatar
 import team.mino.core.domain.model.Room
 import team.mino.core.domain.model.RoomColor
 import team.mino.core.domain.model.RoomMemberSummary
@@ -105,7 +107,7 @@ private val PREVIEW_ROOM = Room(
     isPersonal = false,
     placeCount = 2,
     thumbnail = RoomThumbnail.ColorAndCharacter(color = "orange"),
-    memberSummary = RoomMemberSummary(visibleAvatarUrls = persistentListOf(null), overflowCount = 0),
+    memberSummary = RoomMemberSummary(visibleAvatars = persistentListOf(ProfileAvatar.Person1), overflowCount = 0),
     lastPlaceSavedAt = null,
     commentCount = 0,
 )
@@ -121,6 +123,7 @@ private val PREVIEW_PLACES = persistentListOf(
         commentCount = 0,
         isGgukPick = false,
         distanceMeters = null,
+        location = GeoPoint(latitude = 37.4979, longitude = 127.0276),
     ),
     Place(
         id = "preview-place-2",
@@ -132,5 +135,6 @@ private val PREVIEW_PLACES = persistentListOf(
         commentCount = 0,
         isGgukPick = false,
         distanceMeters = null,
+        location = GeoPoint(latitude = 37.4979, longitude = 127.0276),
     ),
 ).toImmutableList()

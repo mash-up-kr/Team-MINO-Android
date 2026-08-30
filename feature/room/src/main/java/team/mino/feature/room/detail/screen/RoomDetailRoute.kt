@@ -2,17 +2,22 @@ package team.mino.feature.room.detail.screen
 
 import android.Manifest
 import android.app.Activity
+import android.content.ClipData
+import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.toClipEntry
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -48,6 +53,7 @@ internal fun BoxScope.RoomDetailRoute(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val activity = LocalContext.current as Activity
     val snackbarHostState = LocalSnackbarHostState.current
+    val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
 
     // [FR-012] 방 편집 — RoomFormLauncher 결과 계약은
@@ -113,12 +119,32 @@ internal fun BoxScope.RoomDetailRoute(
             // (research.md D12, T032와 동일한 onBack 콜백을 재사용).
             RoomDetailSideEffect.NavigateToRoomList -> onBack()
 
-            // 나머지 SideEffect는 각 사용자 스토리 구현 태스크에서 연결한다.
-            else -> Unit
+            // [FR-011] "초대하기" — OS 공유 시트. `OnboardingActivity.shareInviteLink`와 같은 패턴
+            // (createChooser로 감싸는 이유도 같다 — 기본 앱이 정해져 있어도 매번 시트를 띄운다).
+            is RoomDetailSideEffect.ShareInviteLink -> {
+                val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_TEXT, effect.link)
+                }
+                activity.startActivity(Intent.createChooser(sendIntent, null))
+            }
+
+            // [FR-011] "링크 복사하기" — 클립보드에 쓰고 완료를 알린다(`InviteRoute`의 CopyInviteLink와 같은 패턴).
+            is RoomDetailSideEffect.CopyInviteLink ->
+                scope.launch {
+                    clipboard.setClipEntry(ClipData.newPlainText(INVITE_LINK_CLIP_LABEL, effect.link).toClipEntry())
+                    snackbarHostState.showSnackbar("클립 보드에 초대링크가 복사되었어요")
+                }
+
+            // 장소 상세 진입은 아직 이 스펙 범위 밖이라 이 화면에서 소비하지 않는다.
+            is RoomDetailSideEffect.NavigateToPlaceDetail -> Unit
         }
     }
 
-    LaunchedEffect(Unit) {
+    // ON_RESUME마다 다시 보낸다 — 인스타그램 공유 시트 등 외부 앱에 다녀온 뒤 이 화면으로 돌아왔을 때도
+    // 방·장소가 새로고침돼야 한다(`RoomDetailViewModel.onScreenEntered` KDoc 참고). 최초 진입도
+    // 이 이벤트로 커버된다 — 컴포지션 시점에 이미 RESUMED면 즉시 한 번 발행된다.
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         viewModel.processIntent(RoomDetailIntent.OnScreenEntered)
     }
 
@@ -139,3 +165,6 @@ internal fun BoxScope.RoomDetailRoute(
 
 /** [UX-002] 공유 완료 토스트 노출 시간. */
 private const val SHARE_COMPLETE_TOAST_DURATION_MS = 3000L
+
+/** 클립 항목의 식별자 — 화면에 나오는 문구가 아니라 고정 문자열이다(`InviteRoute.CLIP_LABEL`과 같은 이유). */
+private const val INVITE_LINK_CLIP_LABEL = "invite_link"

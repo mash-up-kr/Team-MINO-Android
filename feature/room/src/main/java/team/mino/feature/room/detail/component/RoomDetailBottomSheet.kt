@@ -43,9 +43,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import kotlinx.collections.immutable.toImmutableList
-import team.mino.core.designsystem.component.avatar.MinoAvatarGroup
-import team.mino.core.designsystem.component.avatar.MinoAvatarGroupSize
-import team.mino.core.designsystem.component.avatar.MinoAvatarVariant
 import team.mino.core.designsystem.component.category.CategorySize
 import team.mino.core.designsystem.component.category.MinoCategory
 import team.mino.core.designsystem.component.menu.AnchoredDropdownPositionProvider
@@ -56,7 +53,6 @@ import team.mino.core.designsystem.foundation.icons.MinoIcons
 import team.mino.core.designsystem.foundation.icons.icons.CaretDown
 import team.mino.core.designsystem.foundation.icons.icons.Close
 import team.mino.core.designsystem.foundation.icons.icons.MoreVertical
-import team.mino.core.designsystem.foundation.icons.icons.PersonPlus
 import team.mino.core.designsystem.foundation.icons.icons.Thumbnail
 import team.mino.core.designsystem.theme.MinoAndroidTheme
 import team.mino.core.designsystem.util.modifier.clickable.rippleSingleClickable
@@ -66,6 +62,7 @@ import team.mino.core.domain.model.Room
 import team.mino.core.domain.model.RoomMemberSummary
 import team.mino.feature.room.detail.model.PlaceViewType
 import team.mino.feature.room.main.model.BottomSheetLevel
+import team.mino.feature.room.main.model.image
 import kotlin.math.roundToInt
 import team.mino.core.designsystem.foundation.icons.icons.List as ListPlaceIcon
 
@@ -88,7 +85,6 @@ private object RoomDetailBottomSheetTokens {
     val HandleWidth = 36.dp
     val HandleHeight = 4.dp
     val DragThreshold = 24.dp
-    val InviteButtonIconSize = 24.dp
     val HeaderRowPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp)
     val HeaderRowSpacing = 8.dp
 
@@ -366,29 +362,15 @@ private fun RoomDetailHeaderRow(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(RoomDetailBottomSheetTokens.HeaderRowSpacing),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            MinoAvatarGroup(
-                imageUrls = memberSummary.visibleAvatarUrls.toImmutableList(),
-                variant = MinoAvatarVariant.Person,
-                size = MinoAvatarGroupSize.XSmall,
-                trailingContent = if (memberSummary.overflowCount > 0) {
-                    { RoomDetailMemberOverflowLabel(overflowCount = memberSummary.overflowCount) }
-                } else {
-                    null
-                },
-            )
-            Icon(
-                modifier = Modifier
-                    .size(RoomDetailBottomSheetTokens.InviteButtonIconSize)
-                    .rippleSingleClickable(onClick = onInviteClick),
-                imageVector = MinoIcons.PersonPlus,
-                contentDescription = "친구 초대",
-                tint = MinoAndroidTheme.colors.labelNormal,
-            )
-        }
+        RoomMemberAvatarStack(
+            profileAvatars = memberSummary.visibleAvatars.map { it.image }.toImmutableList(),
+            overflowLabel = if (memberSummary.overflowCount > 0) {
+                formatMemberOverflowLabel(memberSummary.overflowCount)
+            } else {
+                null
+            },
+            onInviteClick = onInviteClick,
+        )
         Row(horizontalArrangement = Arrangement.spacedBy(RoomDetailBottomSheetTokens.HeaderRowSpacing)) {
             // 더보기 버튼 자신을 앵커로 삼아야 메뉴가 정확히 이 버튼 기준으로 뜬다 — 예전엔 헤더 줄
             // 전체를 감싼 Box에 Modifier.align으로 위치를 흉내 냈는데, `RoomMoreMenu`의 `Popup`은
@@ -465,23 +447,13 @@ private fun RoomDetailBottomSheetDragHandle(modifier: Modifier = Modifier) {
     }
 }
 
-@Composable
-private fun RoomDetailMemberOverflowLabel(
-    overflowCount: Int,
-    modifier: Modifier = Modifier,
-) {
-    val overflowText = if (overflowCount > MAX_DISPLAYED_OVERFLOW_COUNT) {
+/** [RoomMemberAvatarStack]의 초과 인원 뱃지 문구(Figma `state=more`). 99 초과는 "+99+"로 클램핑한다. */
+private fun formatMemberOverflowLabel(overflowCount: Int): String =
+    if (overflowCount > MAX_DISPLAYED_OVERFLOW_COUNT) {
         "+$MAX_DISPLAYED_OVERFLOW_COUNT+"
     } else {
         "+$overflowCount"
     }
-    Text(
-        text = overflowText,
-        modifier = modifier,
-        color = MinoAndroidTheme.colors.labelAlternative,
-        style = MinoAndroidTheme.typography.label1NormalRegular,
-    )
-}
 
 private const val MAX_DISPLAYED_OVERFLOW_COUNT = 99
 

@@ -165,6 +165,7 @@ internal fun BoxScope.RoomDetailScreen(
 
     if (state.showInviteSheet) {
         RoomDetailInviteOverlay(
+            room = state.room,
             inviteCode = state.inviteCode,
             roomMembers = state.roomMembers,
             onIntent = onIntent,
@@ -208,6 +209,7 @@ internal fun BoxScope.RoomDetailScreen(
  */
 @Composable
 private fun RoomDetailInviteOverlay(
+    room: Room?,
     inviteCode: String?,
     roomMembers: ImmutableList<RoomMember>,
     onIntent: (RoomDetailIntent) -> Unit,
@@ -222,9 +224,12 @@ private fun RoomDetailInviteOverlay(
             .rippleSingleClickable(onClick = { onIntent(RoomDetailIntent.OnInviteSheetDismiss) }),
     ) {
         RoomInviteSheet(
+            room = room,
             inviteCode = inviteCode,
             roomMembers = roomMembers,
             onDismiss = { onIntent(RoomDetailIntent.OnInviteSheetDismiss) },
+            onInviteClick = { onIntent(RoomDetailIntent.OnInviteConfirmClick) },
+            onCopyLinkClick = { onIntent(RoomDetailIntent.OnCopyInviteLinkClick) },
             // 시트 콘텐츠 자체의 빈 여백을 눌러도 바깥 스크림 클릭으로 잘못 전달돼 닫히지 않도록
             // 클릭 이벤트를 여기서 소비한다(별도 시각 효과 없음, indication = null) —
             // RoomDetailRoomSelectOverlay와 같은 이유(T048).

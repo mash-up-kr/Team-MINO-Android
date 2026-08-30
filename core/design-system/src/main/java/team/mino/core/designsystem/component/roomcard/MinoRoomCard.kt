@@ -8,7 +8,7 @@ import androidx.compose.ui.Modifier
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import team.mino.core.designsystem.component.avatar.MinoAvatarGroup
-import team.mino.core.designsystem.component.avatar.MinoAvatarVariant
+import team.mino.core.designsystem.component.profileavatar.MinoProfileAvatar
 import team.mino.core.designsystem.component.roomcard.token.RoomCardTokens
 import team.mino.core.designsystem.util.modifier.clickable.rippleSingleClickable
 
@@ -21,21 +21,21 @@ import team.mino.core.designsystem.util.modifier.clickable.rippleSingleClickable
  * @param placeCountLabel 저장된 장소 개수 텍스트(예: "장소 12개"). 포맷은 호출부가 결정한다.
  * @param thumbnail 카드 왼쪽 썸네일 슬롯. 사진 콜라주와 폴백 중 무엇을 그릴지는 호출부가 정한다.
  * @param memo 방 설명. null이면 Figma `Show memo=off`.
- * @param participantImageUrls 참여자 아바타 이미지 URL 목록(각각 null이면 placeholder).
+ * @param participantAvatars 참여자 아바타 목록 — 서버가 `avatar.color`로 내려주는 번들 아바타다.
  */
 @Composable
 fun MinoRoomCard(
     title: String,
     placeCountLabel: String,
-    participantImageUrls: ImmutableList<String?>,
+    participantAvatars: ImmutableList<MinoProfileAvatar>,
     onClick: () -> Unit,
     thumbnail: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     memo: String? = null,
 ) {
-    val visibleImageUrls =
-        remember(participantImageUrls) {
-            participantImageUrls.take(RoomCardTokens.MAX_AVATAR_COUNT).toImmutableList()
+    val visibleAvatars =
+        remember(participantAvatars) {
+            participantAvatars.take(RoomCardTokens.MAX_AVATAR_COUNT).toImmutableList()
         }
 
     RoomCardContent(
@@ -49,8 +49,7 @@ fun MinoRoomCard(
         thumbnail = thumbnail,
     ) {
         MinoAvatarGroup(
-            imageUrls = visibleImageUrls,
-            variant = MinoAvatarVariant.Person,
+            profileAvatars = visibleAvatars,
             size = RoomCardTokens.AvatarSize,
         )
     }

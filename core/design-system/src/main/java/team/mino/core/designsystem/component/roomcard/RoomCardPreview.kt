@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import kotlinx.collections.immutable.persistentListOf
+import team.mino.core.designsystem.component.profileavatar.MinoProfileAvatar
 import team.mino.core.designsystem.component.roomthumbnail.MinoRoomThumbnail
 import team.mino.core.designsystem.foundation.color.token.ColorAccessKeyToken
 import team.mino.core.designsystem.foundation.color.token.value
@@ -35,7 +36,11 @@ private fun RoomCardPreview() {
             MinoRoomCard(
                 title = PREVIEW_TITLE,
                 placeCountLabel = PREVIEW_PLACE_COUNT_LABEL,
-                participantImageUrls = persistentListOf(null, null, null),
+                participantAvatars = persistentListOf(
+                    MinoProfileAvatar.Person1,
+                    MinoProfileAvatar.Person2,
+                    MinoProfileAvatar.Person3,
+                ),
                 onClick = {},
                 thumbnail = { PreviewThumbnail() },
                 memo = PREVIEW_MEMO,
