@@ -138,10 +138,12 @@ internal fun roomDetailBottomSheetHeightOrNull(sheetLevel: BottomSheetLevel): Dp
  * @param content `Half`/`Full`에서 헤더 아래에 그릴 장소 목록 슬롯. `Peek`은 헤더만 그린다.
  * @param onInviteClick [친구 +] 초대 트리거 클릭([RoomInviteSheet] 열기, FR-011). **정확한 Figma 배치는
  *   후속 대조가 필요하다** — 이 트리거 버튼 자체가 spec·contracts 어디에도 배치 노드가 지정돼 있지 않아
- *   ([RoomDetailHeaderRow] 옆) 최소 아이콘 버튼으로 임시 배치했다(T059).
+ *   ([RoomDetailHeaderRow] 옆) 최소 아이콘 버튼으로 임시 배치했다(T059). [isPersonalRoom]이면 PRD
+ *   "개인방 — 초대 불가"에 따라 이 버튼 자체를 안 그린다.
  * @param onMoreMenuClick 더보기[⋮] 클릭 — 이전에는 화면 레벨 플로팅 버튼([RoomDetailScreen])이었으나,
  *   Figma 대조 결과 시트 헤더 줄에 속해 이 컴포저블 안으로 옮겼다. 앵커([RoomMoreMenu] 펼침 위치)도 이
- *   버튼 자리를 기준으로 한다.
+ *   버튼 자리를 기준으로 한다. [isPersonalRoom]이면 PRD "개인방 — 삭제/나가기 금지"에 따라 이 버튼
+ *   자체를 안 그린다(눌러도 반응 없는 버튼을 남기지 않는다).
  * @param onCloseClick [X] 닫기 — `room-list`는 `Full`에서만 [X]를 보이지만, 방 상세는 Peek/Half/Full
  *   **모든 단계**에서 항상 노출한다(방 상세 자체를 벗어나는 액션이라 시트 단계와 무관해야 한다는
  *   피드백 반영). [RoomDetailIntent.OnCloseClick]으로 이어진다.
@@ -369,28 +371,37 @@ private fun RoomDetailHeaderRow(
             } else {
                 null
             },
-            onInviteClick = onInviteClick,
+            // PRD "개인방 — 초대 불가: 다른 멤버를 초대할 수 없으며, 오직 혼자서만 장소를 모으고
+            // 관리한다"를 그대로 반영한다 — RoomMemberAvatarStack은 onInviteClick이 null이면 버튼
+            // 자체를 숨긴다.
+            onInviteClick = if (isPersonalRoom) null else onInviteClick,
         )
         Row(horizontalArrangement = Arrangement.spacedBy(RoomDetailBottomSheetTokens.HeaderRowSpacing)) {
-            // 더보기 버튼 자신을 앵커로 삼아야 메뉴가 정확히 이 버튼 기준으로 뜬다 — 예전엔 헤더 줄
-            // 전체를 감싼 Box에 Modifier.align으로 위치를 흉내 냈는데, `RoomMoreMenu`의 `Popup`은
-            // 레이아웃 Modifier(align/padding/offset)를 전혀 보지 않고 자신을 호출한 컴포저블의 실제
-            // 앵커 좌표로만 위치를 정해서 화면 엉뚱한 곳(지도 위쪽)에 뜨는 결함이 있었다.
-            Box {
-                RoomDetailHeaderIconButton(
-                    icon = MinoIcons.MoreVertical,
-                    contentDescription = "더보기",
-                    onClick = onMoreMenuClick,
-                )
-                RoomMoreMenu(
-                    expanded = showMoreMenu,
-                    isOwner = isOwner,
-                    isPersonalRoom = isPersonalRoom,
-                    expandUpward = moreMenuExpandUpward,
-                    onDismiss = onMoreMenuDismiss,
-                    onEditRoomClick = onEditRoomClick,
-                    onLeaveClick = onLeaveClick,
-                )
+            // PRD "개인방 — 삭제/나가기 금지: 어떤 경우에도 제공하지 않는다"·[SYS-007] Flow C("나가기
+            // 메뉴 자체를 노출하지 않는다")를 그대로 반영한다. RoomMoreMenu 자체는 isPersonalRoom이면
+            // expanded와 무관하게 아무것도 그리지 않지만(팝업이 안 열림), 그것만으로는 눌러도 반응
+            // 없는 [⋮] 버튼이 그대로 남는다 — 버튼 자체를 렌더링하지 않아야 한다(실기기 확인된 결함).
+            if (!isPersonalRoom) {
+                // 더보기 버튼 자신을 앵커로 삼아야 메뉴가 정확히 이 버튼 기준으로 뜬다 — 예전엔 헤더 줄
+                // 전체를 감싼 Box에 Modifier.align으로 위치를 흉내 냈는데, `RoomMoreMenu`의 `Popup`은
+                // 레이아웃 Modifier(align/padding/offset)를 전혀 보지 않고 자신을 호출한 컴포저블의 실제
+                // 앵커 좌표로만 위치를 정해서 화면 엉뚱한 곳(지도 위쪽)에 뜨는 결함이 있었다.
+                Box {
+                    RoomDetailHeaderIconButton(
+                        icon = MinoIcons.MoreVertical,
+                        contentDescription = "더보기",
+                        onClick = onMoreMenuClick,
+                    )
+                    RoomMoreMenu(
+                        expanded = showMoreMenu,
+                        isOwner = isOwner,
+                        isPersonalRoom = isPersonalRoom,
+                        expandUpward = moreMenuExpandUpward,
+                        onDismiss = onMoreMenuDismiss,
+                        onEditRoomClick = onEditRoomClick,
+                        onLeaveClick = onLeaveClick,
+                    )
+                }
             }
             RoomDetailHeaderIconButton(
                 icon = MinoIcons.Close,
