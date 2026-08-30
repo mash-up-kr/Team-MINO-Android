@@ -8,11 +8,12 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import team.mino.core.common.ui.architecture.CollectSideEffect
 import team.mino.core.common.ui.scaffold.LocalBottomNavVisibility
@@ -68,7 +69,10 @@ internal fun RoomListRoute(
         }
     }
 
-    LaunchedEffect(Unit) {
+    // ON_RESUME마다 다시 보낸다 — 인스타그램 공유 시트 등 외부 앱에 다녀온 뒤 이 화면으로 돌아왔을 때도
+    // 방 목록·장소·멤버가 새로고침돼야 한다(RoomListViewModel.observeMyRooms KDoc 참고). 최초 진입도
+    // 이 이벤트로 커버된다 — 컴포지션 시점에 이미 RESUMED면 즉시 한 번 발행된다.
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         viewModel.processIntent(RoomListIntent.OnScreenEntered)
     }
 

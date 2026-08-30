@@ -57,7 +57,7 @@ internal fun RoomResponse.toDomain(): Room =
         isPersonal = false,
         placeCount = 0,
         thumbnail = RoomThumbnail.ColorAndCharacter(color = color),
-        memberSummary = RoomMemberSummary(visibleAvatarUrls = emptyList(), overflowCount = 0),
+        memberSummary = RoomMemberSummary(visibleAvatars = emptyList(), overflowCount = 0),
         lastPlaceSavedAt = null,
         commentCount = 0,
     )
@@ -90,8 +90,8 @@ internal fun String.toRoomColor(): RoomColor = COLORS_BY_IDENTIFIER[this] ?: Roo
  * 두 매퍼가 같은 응답 DTO에 같은 이름(`toDomain`)의 확장 함수를 갖게 되는 충돌을 피하려고 이름을 다르게
  * 뒀다.
  *
- * 서버가 아직 콜라주 이미지 URL·아바타 URL을 각각 `thumbnailList`·`?showUsers=true`로만 내려주고
- * room-list는 이 둘을 아직 쓰지 않는다 — [memberCount]로 개수만 반영하고 아바타는 자리표시(`null`)로 채운다.
+ * 이 응답에는 멤버 아바타가 없다 — [memberSummary]는 빈 값으로 두고, 실제 아바타는 room-list 화면이
+ * `GET /rooms/{roomId}/members`로 방마다 따로 채운다(`RoomListViewModel.loadRoomMembers`).
  */
 internal fun RoomSummaryResponse.toRoomListDomain(): Room =
     Room(
@@ -103,7 +103,7 @@ internal fun RoomSummaryResponse.toRoomListDomain(): Room =
         isPersonal = type == ROOM_TYPE_PERSONAL,
         placeCount = pinCount,
         thumbnail = toThumbnail(),
-        memberSummary = toMemberSummary(),
+        memberSummary = RoomMemberSummary(visibleAvatars = emptyList(), overflowCount = 0),
         // 목록 응답에 없는 필드 — 서버가 확정하면 채운다.
         lastPlaceSavedAt = null,
         commentCount = 0,
@@ -118,19 +118,6 @@ private fun RoomSummaryResponse.toThumbnail(): RoomThumbnail {
     }
 }
 
-private fun RoomSummaryResponse.toMemberSummary(): RoomMemberSummary =
-    if (memberCount <= MAX_VISIBLE_AVATAR_COUNT) {
-        RoomMemberSummary(
-            visibleAvatarUrls = List(memberCount) { null },
-            overflowCount = 0,
-        )
-    } else {
-        RoomMemberSummary(
-            visibleAvatarUrls = List(OVERFLOW_VISIBLE_AVATAR_COUNT) { null },
-            overflowCount = memberCount - OVERFLOW_VISIBLE_AVATAR_COUNT,
-        )
-    }
-
 /** `GET /api/v1/rooms/{roomId}/members` 응답 원소 → 도메인. */
 internal fun RoomMemberDetailResponse.toDomain(): RoomMember =
     RoomMember(
@@ -143,5 +130,3 @@ internal fun RoomMemberDetailResponse.toDomain(): RoomMember =
 
 private const val ROOM_TYPE_PERSONAL = "personal"
 private const val MAX_COLLAGE_IMAGE_COUNT = 4
-private const val MAX_VISIBLE_AVATAR_COUNT = 4
-private const val OVERFLOW_VISIBLE_AVATAR_COUNT = 3

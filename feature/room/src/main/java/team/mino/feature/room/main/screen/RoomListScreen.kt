@@ -120,8 +120,7 @@ internal fun RoomListScreen(
         RoomListMap(
             mapCenter = state.mapCenter,
             mapCenterRequestId = state.mapCenterRequestId,
-            personalRoom = state.personalRoom,
-            groupRooms = state.groupRooms,
+            mapPins = state.mapPins,
             modifier = Modifier
                 .fillMaxWidth()
                 .layout { measurable, constraints ->

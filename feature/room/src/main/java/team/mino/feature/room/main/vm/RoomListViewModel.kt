@@ -19,13 +19,24 @@ import team.mino.core.common.android.architecture.MviContainer
 import team.mino.core.common.android.architecture.mviContainer
 import team.mino.core.common.android.extension.launchSafely
 import team.mino.core.common.kotlin.geo.GeoPoint
+import team.mino.core.common.kotlin.geo.distanceMetersTo
+import team.mino.core.domain.model.MapMarkerSortOption
+import team.mino.core.domain.model.Place
+import team.mino.core.domain.model.PlaceCategoryFilter
 import team.mino.core.domain.model.Room
 import team.mino.core.domain.model.RoomListSortOption
+import team.mino.core.domain.model.RoomMemberSummary
+import team.mino.core.domain.repository.ProfileRepository
+import team.mino.core.domain.repository.RoomPlacesRepository
 import team.mino.core.domain.repository.RoomRepository
 import team.mino.core.domain.usecase.EnsureAnonymousSessionUseCase
 import team.mino.core.navigation.activity.launcher.RoomFormLauncher
 import team.mino.feature.room.main.component.DefaultMapCenter
 import team.mino.feature.room.main.model.BottomSheetLevel
+import team.mino.feature.room.main.model.MapPinUiModel
+import team.mino.feature.room.main.model.chip
+import team.mino.feature.room.main.model.roomColor
+import team.mino.feature.room.main.model.toMemberSummary
 import javax.inject.Inject
 import kotlin.coroutines.resume
 import kotlin.time.Duration.Companion.seconds
@@ -44,12 +55,23 @@ import kotlin.time.Instant
 class RoomListViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val roomRepository: RoomRepository,
+    private val roomPlacesRepository: RoomPlacesRepository,
+    private val profileRepository: ProfileRepository,
     private val ensureAnonymousSessionUseCase: EnsureAnonymousSessionUseCase,
     val roomFormLauncher: RoomFormLauncher,
 ) : ViewModel(),
     MviContainer<RoomListUiState, RoomListSideEffect> by mviContainer(RoomListUiState()) {
+    /** 방마다 조회한 장소. 방 목록·프로필이 바뀌어도 이미 받아 둔 장소는 유지하려고 상태 밖에 둔다. */
+    private var placesByRoomId: Map<String, List<Place>> = emptyMap()
+
     init {
         observeMyRooms()
+        launchSafely {
+            profileRepository.observeProfile().collect { profile ->
+                updateState { copy(myProfileAvatar = profile?.avatar) }
+                refreshMapPins()
+            }
+        }
     }
 
     /**
@@ -57,6 +79,15 @@ class RoomListViewModel @Inject constructor(
      * `RoomRepository.observeMyRooms()` 구독으로 항상 최신 유지된다. `groupRooms`가 갱신될 때마다
      * `showNudge`·`showGhostCard`를 `groupRooms.isEmpty()` 파생값으로 함께 계산한다
      * (FR-008~FR-010, [contracts/room-list-main-contract.md 「분기 규칙 — Nudge·Ghost Card 노출」]).
+     *
+     * **`init`·[onScreenEntered]·[onCloseRoomDetailClick]·[onRoomFormResult] 네 곳에서 부른다.**
+     * 인스타그램 공유 시트처럼 외부 앱에 잠깐 다녀오는 동안 이 Activity는 살아있지만(프로세스가 죽지
+     * 않는다) 화면 밖에서 핀이 새로 저장될 수 있다 — `Route`가 `ON_RESUME`마다
+     * [RoomListIntent.OnScreenEntered]를 다시 보내므로, 그때도 이 함수를 다시 불러야 돌아올 때마다
+     * 목록이 새로고침된다. 방 상세는 별도 Navigation 목적지가 아니라 이 화면 안의 로컬 상태 전환이라
+     * 닫혀도 `ON_RESUME`이 안 나므로 [onCloseRoomDetailClick]에서 명시적으로 부른다. 콜드 스타트 시
+     * `init` 직후 첫 `OnScreenEntered`가 한 번 더 부르는 중복은 무해하다(전부 1회성 조회라 구독이
+     * 쌓이지 않는다).
      *
      * `ensureAnonymousSessionUseCase()`를 먼저 기다리는 이유: 앱을 콜드 스타트하면 이 `init`이 익명
      * 로그인이 끝나기도 전에 실행돼 `observeMyRooms()`의 첫 요청이 신원 증명 없이 나가 실패했다
@@ -85,6 +116,70 @@ class RoomListViewModel @Inject constructor(
                 showGhostCard = sortedGroup.isEmpty(),
             )
         }
+        refreshMapPins()
+        rooms.forEach { room ->
+            loadRoomPlaces(room.id)
+            loadRoomMembers(room.id)
+        }
+    }
+
+    /**
+     * 방 카드·지도 카드가 보여줄 멤버 아바타를 채운다(`GET /rooms/{roomId}/members`).
+     *
+     * `RoomSummaryResponse`(방 목록 조회)에는 멤버 아바타가 없어 [memberCount]만 아는 채로 방 목록이
+     * 먼저 그려지고, 방마다 이 호출이 끝나는 대로 [RoomListUiState.personalRoom]·[RoomListUiState.groupRooms]의
+     * 해당 방 [Room.memberSummary]를 갈아 끼운다.
+     */
+    @OptIn(ExperimentalTime::class)
+    private fun loadRoomMembers(roomId: String) {
+        launchSafely {
+            val summary = roomRepository.getMembers(roomId).toMemberSummary()
+            updateState {
+                copy(
+                    personalRoom = personalRoom?.replaceMemberSummary(roomId, summary),
+                    groupRooms = groupRooms.map { it.replaceMemberSummary(roomId, summary) }.toImmutableList(),
+                )
+            }
+        }
+    }
+
+    /**
+     * 방 하나에 저장된 장소를 조회한다 — 개인 방·공동방 모두 같은 방식으로 지도에 실좌표
+     * (`Place.location`) 핀을 얹는다(PRD 「자신이 저장한 모든 장소를 지도뷰로 볼 수 있다」).
+     */
+    private fun loadRoomPlaces(roomId: String) {
+        launchSafely {
+            roomPlacesRepository.observePlaces(roomId).collect { places ->
+                placesByRoomId = placesByRoomId + (roomId to places)
+                refreshMapPins()
+            }
+        }
+    }
+
+    /**
+     * [placesByRoomId]·현재 방 목록·내 프로필로 지도 핀 목록을 다시 만든다. 조회가 끝날 때마다뿐 아니라
+     * 정렬·필터·`mapCenter`가 바뀔 때도 다시 불러 [RoomListUiState.mapPins]를 최신으로 맞춘다.
+     *
+     * 개인 방은 `RoomColor.GRAY`(색 미선택)라 방 색을 핀에 쓸 수 없어 내 프로필 색으로 대신한다
+     * ([ProfileAvatarMapping.roomColor]). 공동방은 방 대표 색을 그대로 쓴다([RoomColorMapping.chip]).
+     *
+     * **정렬·필터는 전부 클라이언트 처리다.** `GET /pins` 계약이 "정렬/필터(5종)... 기획 TBD"로 못박아
+     * 서버 파라미터가 없다 — `거리순`은 애초에 서버가 알 수 없는 사용자 위치 기준 계산이라 항상
+     * 클라이언트 몫이다. `코멘트순`·`꾹 Pick`은 서버가 아직 `commentCount`를 안 내려줘 지금은 `전체`와
+     * 같게 둔다(값이 전부 0이라 정렬해도 의미가 없다).
+     */
+    private fun refreshMapPins() {
+        val rooms = listOfNotNull(state.value.personalRoom) + state.value.groupRooms
+        val myColor = state.value.myProfileAvatar?.roomColor
+        val allPins = rooms.flatMap { room ->
+            val color = if (room.isPersonal) myColor else room.color.chip
+            placesByRoomId[room.id].orEmpty().map { place -> MapPinUiModel(place = place, color = color) }
+        }
+        val center = state.value.mapCenter ?: DefaultMapCenter
+        val pins = allPins
+            .filteredByCategory(state.value.categoryFilter)
+            .sortedByMapMarkerOption(state.value.mapMarkerSort, center)
+        updateState { copy(mapPins = pins.toImmutableList()) }
     }
 
     fun processIntent(intent: RoomListIntent) {
@@ -92,8 +187,8 @@ class RoomListViewModel @Inject constructor(
             RoomListIntent.OnScreenEntered -> onScreenEntered()
             RoomListIntent.OnSheetDraggedUp -> onSheetDraggedUp()
             RoomListIntent.OnSheetDraggedDown -> onSheetDraggedDown()
-            is RoomListIntent.OnMapSortSelected -> updateState { copy(mapMarkerSort = intent.option) }
-            is RoomListIntent.OnCategoryFilterSelected -> updateState { copy(categoryFilter = intent.category) }
+            is RoomListIntent.OnMapSortSelected -> onMapSortSelected(intent.option)
+            is RoomListIntent.OnCategoryFilterSelected -> onCategoryFilterSelected(intent.category)
             RoomListIntent.OnCurrentLocationClick -> onCurrentLocationClick()
             is RoomListIntent.OnLocationPermissionResult -> onLocationPermissionResult(intent.granted)
             is RoomListIntent.OnRoomListSortSelected -> onRoomListSortSelected(intent.option)
@@ -116,10 +211,12 @@ class RoomListViewModel @Inject constructor(
      * 재진입마다 `groupRooms.isEmpty()`로 `showNudge`·`showGhostCard`를 다시 계산한다([research.md D9]).
      */
     private fun onScreenEntered() {
+        observeMyRooms()
         if (hasLocationPermission()) {
             launchSafely {
                 val center = resolveMapCenter(granted = true)
                 updateState { copy(mapCenter = center, mapCenterRequestId = mapCenterRequestId + 1) }
+                refreshMapPins()
             }
         } else {
             launchSafely { postSideEffect(RoomListSideEffect.RequestLocationPermission) }
@@ -131,6 +228,7 @@ class RoomListViewModel @Inject constructor(
         launchSafely {
             val center = resolveMapCenter(granted)
             updateState { copy(mapCenter = center, mapCenterRequestId = mapCenterRequestId + 1) }
+            refreshMapPins()
         }
     }
 
@@ -140,7 +238,20 @@ class RoomListViewModel @Inject constructor(
         launchSafely {
             val center = resolveMapCenter(granted = true)
             updateState { copy(mapCenter = center, mapCenterRequestId = mapCenterRequestId + 1) }
+            refreshMapPins()
         }
+    }
+
+    /** [FR-011] 지도 마커 정렬 드롭다운 — `NEARBY`는 [refreshMapPins]가 `mapCenter` 기준 3km 반경으로 거른다. */
+    private fun onMapSortSelected(option: MapMarkerSortOption) {
+        updateState { copy(mapMarkerSort = option) }
+        refreshMapPins()
+    }
+
+    /** [FR-011] 카테고리 칩 — 전체/카페/음식점. */
+    private fun onCategoryFilterSelected(category: PlaceCategoryFilter) {
+        updateState { copy(categoryFilter = category) }
+        refreshMapPins()
     }
 
     /** 거부 시 기본 디폴트 좌표, 허용 시 실제 위치로 해석한다(EC-002). 세 호출부가 공유하는 단일 규칙. */
@@ -187,9 +298,17 @@ class RoomListViewModel @Inject constructor(
         updateState { copy(selectedRoomId = roomId) }
     }
 
-    /** 방 상세 [X] 닫기 — 리스트로 복귀한다. */
+    /**
+     * 방 상세 [X] 닫기 — 리스트로 복귀한다.
+     *
+     * [observeMyRooms]를 [onRoomFormResult]와 같은 이유로 다시 부른다 — 방 상세는 별도 Navigation
+     * 목적지가 아니라 이 화면 안의 로컬 상태 전환이라 닫을 때 `ON_RESUME`이 발생하지 않는다. 방 상세에서
+     * 방을 나가면([SYS-007]) 이 화면으로 돌아오는데, 여기서 다시 불러오지 않으면 이미 나간 방이 목록에
+     * 그대로 남는다(실기기 확인된 결함).
+     */
     private fun onCloseRoomDetailClick() {
         updateState { copy(selectedRoomId = null) }
+        observeMyRooms()
     }
 
     /** [FR-007] 시트 우상단 [+] → [RoomListSideEffect.NavigateToRoomForm] 발행(전환 결정만, 실제 호출은 Route). */
@@ -243,6 +362,7 @@ class RoomListViewModel @Inject constructor(
     }
 
     /** [requestSingleUpdate]는 API 21부터 지원한다(minSdk 29) — `getCurrentLocation`(API 30+)보다 넓은 범위를 커버한다. */
+    @SuppressLint("MissingPermission")
     private suspend fun requestSingleLocationUpdate(
         locationManager: LocationManager,
         provider: String,
@@ -280,3 +400,38 @@ private fun List<Room>.sortedByRoomListOption(option: RoomListSortOption): List<
         RoomListSortOption.RECENTLY_SAVED -> sortedByDescending { it.lastPlaceSavedAt ?: Instant.DISTANT_PAST }
         RoomListSortOption.MOST_COMMENTED -> sortedByDescending { it.commentCount }
     }
+
+private fun List<MapPinUiModel>.filteredByCategory(categoryFilter: PlaceCategoryFilter): List<MapPinUiModel> =
+    if (categoryFilter == PlaceCategoryFilter.ALL) this else filter { it.place.category == categoryFilter }
+
+/**
+ * `ALL`·`GGUK_PICK`·`MOST_COMMENTED`는 서버 파라미터도 없고(`GET /pins` 계약 "정렬/필터 TBD")
+ * `commentCount`도 서버가 아직 안 내려줘(항상 0) 지금은 원래 순서를 그대로 둔다. `NEARBY`(거리순)는
+ * 서버가 알 수 없는 사용자 위치 기준이라 원래부터 클라이언트 계산이다 — [center] 3km 반경으로 거르고
+ * 가까운 순으로 정렬한다.
+ */
+@OptIn(ExperimentalTime::class)
+private fun List<MapPinUiModel>.sortedByMapMarkerOption(
+    option: MapMarkerSortOption,
+    center: GeoPoint,
+): List<MapPinUiModel> =
+    when (option) {
+        MapMarkerSortOption.ALL,
+        MapMarkerSortOption.GGUK_PICK,
+        MapMarkerSortOption.MOST_COMMENTED,
+        -> this
+
+        MapMarkerSortOption.LATEST -> sortedByDescending { it.place.savedAt }
+
+        MapMarkerSortOption.NEARBY ->
+            filter { center.distanceMetersTo(it.place.location) <= NEARBY_RADIUS_METERS }
+                .sortedBy { center.distanceMetersTo(it.place.location) }
+    }
+
+private const val NEARBY_RADIUS_METERS = 3_000.0
+
+@OptIn(ExperimentalTime::class)
+private fun Room.replaceMemberSummary(
+    roomId: String,
+    summary: RoomMemberSummary,
+): Room = if (id == roomId) copy(memberSummary = summary) else this
