@@ -13,7 +13,11 @@ import team.mino.core.designsystem.theme.MinoAndroidAppTheme
 import team.mino.core.designsystem.theme.MinoAndroidTheme
 import team.mino.core.designsystem.util.preview.UiModePreviews
 import team.mino.core.domain.model.ProfileAvatar
+import team.mino.core.domain.model.Room
+import team.mino.core.domain.model.RoomColor
 import team.mino.core.domain.model.RoomMember
+import team.mino.core.domain.model.RoomMemberSummary
+import team.mino.core.domain.model.RoomThumbnail
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
@@ -29,15 +33,18 @@ private fun RoomInviteSheetPreview() {
             contentAlignment = Alignment.BottomCenter,
         ) {
             RoomInviteSheet(
+                room = PREVIEW_ROOM,
                 inviteCode = "MOCK05",
                 roomMembers = PREVIEW_INVITE_MEMBERS,
                 onDismiss = {},
+                onInviteClick = {},
+                onCopyLinkClick = {},
             )
         }
     }
 }
 
-/** [RoomInviteSheet] 프리뷰 — 초대 코드 발급 중 상태. */
+/** [RoomInviteSheet] 프리뷰 — 초대 코드 발급 중 상태(버튼 비활성). */
 @UiModePreviews
 @Composable
 private fun RoomInviteSheetIssuingPreview() {
@@ -49,13 +56,31 @@ private fun RoomInviteSheetIssuingPreview() {
             contentAlignment = Alignment.BottomCenter,
         ) {
             RoomInviteSheet(
+                room = PREVIEW_ROOM,
                 inviteCode = null,
                 roomMembers = PREVIEW_INVITE_MEMBERS,
                 onDismiss = {},
+                onInviteClick = {},
+                onCopyLinkClick = {},
             )
         }
     }
 }
+
+@OptIn(ExperimentalTime::class)
+private val PREVIEW_ROOM = Room(
+    id = "preview-room",
+    name = "민호야 잘하자",
+    description = "",
+    color = RoomColor.RED,
+    ownerId = "user-me",
+    isPersonal = false,
+    placeCount = 9,
+    thumbnail = RoomThumbnail.ColorAndCharacter(color = "red"),
+    memberSummary = RoomMemberSummary(visibleAvatars = emptyList(), overflowCount = 0),
+    lastPlaceSavedAt = null,
+    commentCount = 0,
+)
 
 private val PREVIEW_INVITE_MEMBERS = persistentListOf(
     RoomMember(

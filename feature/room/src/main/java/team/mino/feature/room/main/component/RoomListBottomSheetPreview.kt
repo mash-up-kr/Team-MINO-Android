@@ -12,6 +12,7 @@ import kotlinx.collections.immutable.toImmutableList
 import team.mino.core.designsystem.theme.MinoAndroidAppTheme
 import team.mino.core.designsystem.theme.MinoAndroidTheme
 import team.mino.core.designsystem.util.preview.UiModePreviews
+import team.mino.core.domain.model.ProfileAvatar
 import team.mino.core.domain.model.Room
 import team.mino.core.domain.model.RoomMemberSummary
 import team.mino.core.domain.model.RoomThumbnail
@@ -85,7 +86,7 @@ private val PERSONAL_ROOM = Room(
     isPersonal = true,
     placeCount = 0,
     thumbnail = RoomThumbnail.ColorAndCharacter(color = null),
-    memberSummary = RoomMemberSummary(visibleAvatarUrls = emptyList(), overflowCount = 0),
+    memberSummary = RoomMemberSummary(visibleAvatars = emptyList(), overflowCount = 0),
     lastPlaceSavedAt = null,
     commentCount = 0,
 )
@@ -98,7 +99,10 @@ private val GROUP_ROOM = Room(
     isPersonal = false,
     placeCount = 12,
     thumbnail = RoomThumbnail.ColorAndCharacter(color = "cyan"),
-    memberSummary = RoomMemberSummary(visibleAvatarUrls = persistentListOf(null, null), overflowCount = 0),
+    memberSummary = RoomMemberSummary(
+        visibleAvatars = persistentListOf(ProfileAvatar.Person1, ProfileAvatar.Person2),
+        overflowCount = 0,
+    ),
     lastPlaceSavedAt = null,
     commentCount = 3,
 )

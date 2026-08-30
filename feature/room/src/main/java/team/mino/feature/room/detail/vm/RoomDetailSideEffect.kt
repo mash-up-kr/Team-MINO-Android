@@ -24,4 +24,10 @@ internal sealed interface RoomDetailSideEffect : SideEffect {
     data object NavigateToRoomList : RoomDetailSideEffect
 
     data object RequestLocationPermission : RoomDetailSideEffect
+
+    /** [FR-011] 초대 시트 "초대하기" — OS 공유 시트를 [link]로 연다(`OnboardingActivity.shareInviteLink`와 같은 패턴). */
+    data class ShareInviteLink(val link: String) : RoomDetailSideEffect
+
+    /** [FR-011] 초대 시트 "링크 복사하기" — [link]를 클립보드에 쓴다. */
+    data class CopyInviteLink(val link: String) : RoomDetailSideEffect
 }

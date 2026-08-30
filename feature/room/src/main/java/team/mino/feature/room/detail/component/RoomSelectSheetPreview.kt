@@ -10,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentSetOf
+import team.mino.core.common.kotlin.geo.GeoPoint
 import team.mino.core.designsystem.theme.MinoAndroidAppTheme
 import team.mino.core.designsystem.theme.MinoAndroidTheme
 import team.mino.core.designsystem.util.preview.UiModePreviews
@@ -57,6 +58,7 @@ private val PREVIEW_PLACE = Place(
     commentCount = 3,
     isGgukPick = false,
     distanceMeters = null,
+    location = GeoPoint(latitude = 37.4979, longitude = 127.0276),
 )
 
 private val PREVIEW_ROOMS = persistentListOf(
@@ -69,7 +71,7 @@ private val PREVIEW_ROOMS = persistentListOf(
         isPersonal = false,
         placeCount = 12,
         thumbnail = RoomThumbnail.ColorAndCharacter(color = "cyan"),
-        memberSummary = RoomMemberSummary(visibleAvatarUrls = emptyList(), overflowCount = 0),
+        memberSummary = RoomMemberSummary(visibleAvatars = emptyList(), overflowCount = 0),
         lastPlaceSavedAt = null,
         commentCount = 3,
     ),
@@ -82,7 +84,7 @@ private val PREVIEW_ROOMS = persistentListOf(
         isPersonal = false,
         placeCount = 2,
         thumbnail = RoomThumbnail.ColorAndCharacter(color = "orange"),
-        memberSummary = RoomMemberSummary(visibleAvatarUrls = emptyList(), overflowCount = 0),
+        memberSummary = RoomMemberSummary(visibleAvatars = emptyList(), overflowCount = 0),
         lastPlaceSavedAt = null,
         commentCount = 0,
     ),
@@ -95,7 +97,7 @@ private val PREVIEW_ROOMS = persistentListOf(
         isPersonal = false,
         placeCount = 3,
         thumbnail = RoomThumbnail.ColorAndCharacter(color = "green"),
-        memberSummary = RoomMemberSummary(visibleAvatarUrls = emptyList(), overflowCount = 0),
+        memberSummary = RoomMemberSummary(visibleAvatars = emptyList(), overflowCount = 0),
         lastPlaceSavedAt = null,
         commentCount = 0,
     ),
