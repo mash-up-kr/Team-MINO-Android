@@ -37,6 +37,7 @@ import team.mino.core.designsystem.foundation.icons.icons.CaretDown
 import team.mino.core.designsystem.foundation.icons.icons.CaretUp
 import team.mino.core.designsystem.foundation.icons.icons.Check
 import team.mino.core.designsystem.foundation.icons.icons.CheckThick
+import team.mino.core.designsystem.foundation.icons.icons.ChevronLeft
 import team.mino.core.designsystem.foundation.icons.icons.CircleCheck
 import team.mino.core.designsystem.foundation.icons.icons.CircleCheckFill
 import team.mino.core.designsystem.foundation.icons.icons.CircleExclamation
@@ -96,6 +97,7 @@ import team.mino.core.designsystem.foundation.icons.icons.MenuThick
 import team.mino.core.designsystem.foundation.icons.icons.MoreHorizontal
 import team.mino.core.designsystem.foundation.icons.icons.MoreVertical
 import team.mino.core.designsystem.foundation.icons.icons.MoreVerticalTight
+import team.mino.core.designsystem.foundation.icons.icons.MyLocation
 import team.mino.core.designsystem.foundation.icons.icons.Pencil
 import team.mino.core.designsystem.foundation.icons.icons.PencilFill
 import team.mino.core.designsystem.foundation.icons.icons.Person
@@ -211,6 +213,7 @@ private val iconCatalog: List<ImageVector> by lazy {
         MinoIcons.CaretUp,
         MinoIcons.Check,
         MinoIcons.CheckThick,
+        MinoIcons.ChevronLeft,
         MinoIcons.CircleCheck,
         MinoIcons.CircleCheckFill,
         MinoIcons.CircleExclamation,
@@ -270,6 +273,7 @@ private val iconCatalog: List<ImageVector> by lazy {
         MinoIcons.MoreHorizontal,
         MinoIcons.MoreVertical,
         MinoIcons.MoreVerticalTight,
+        MinoIcons.MyLocation,
         MinoIcons.Pencil,
         MinoIcons.PencilFill,
         MinoIcons.Person,

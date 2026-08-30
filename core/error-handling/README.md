@@ -22,7 +22,7 @@ MinoAndroid의 **에러 처리 기반 모듈**. 도메인 예외 계층(`MinoDom
 
 | API | 역할 |
 |---|---|
-| `MinoDomainException` | 예상 가능한 실패의 sealed 계층. 초기 리프는 `Network`(연결 불가·타임아웃)·`Http(code)`(non-2xx) 2개. |
+| `MinoDomainException` | 예상 가능한 실패의 sealed 계층. 리프는 `Network`(연결 불가·타임아웃)·`Http(code)`(non-2xx)·`Auth`(인증 제공자가 세션·신원 증명 발급에 실패) 3개. |
 | `runCatchingDomain(block)` | 예외 → `Result` 변환 지점(규약상 유일). **`MinoDomainException`만** `Result.failure`로 잡고, 버그·`CancellationException`은 통과시켜 CEH로 보낸다. |
 | `Result.onDomainFailure(action)` | 표준 `onFailure` 대신 쓰는 소비 확장. failure에 `MinoDomainException`만 담긴다는 사실을 타입으로 복원해 sealed `when` 분기를 가능하게 한다. |
 | `DomainErrorEmitter` / `domainErrorEmitter()` | **ViewModel 인스턴스별** 도메인 에러 채널(`Channel(BUFFERED)`). `mviContainer`처럼 `by` 위임으로 합성하고, 액션 일회성 실패를 `emitDomainError`로 방출한다. |
@@ -40,6 +40,9 @@ sealed class MinoDomainException(
 
     /** non-2xx HTTP 응답. 상태 코드는 세분화하지 않고 code로 통일 */
     class Http(val code: Int, cause: Throwable) : MinoDomainException(cause = cause)
+
+    /** 연결은 됐으나 인증 제공자가 세션·신원 증명을 발급하지 못했다. */
+    class Auth(cause: Throwable) : MinoDomainException(cause = cause)
 }
 ```
 
@@ -48,26 +51,26 @@ sealed class MinoDomainException(
 ```kotlin
 @HiltViewModel
 class SampleViewModel @Inject constructor(
-    private val githubRepository: GithubRepository,
+    private val xxxRepository: XxxRepository,
 ) : ViewModel(),
     MviContainer<SampleUiState, SampleSideEffect> by mviContainer(SampleUiState()),
     DomainErrorEmitter by domainErrorEmitter() {
 
     // 주 데이터 로드 실패 → State에 리프를 담는다 (문구 매핑은 화면이)
-    private fun loadTeamMembers() {
+    private fun loadXxx(id: String) {
         launchSafely {
             updateState { copy(status = Loading) }
-            runCatchingDomain { githubRepository.getUser("mash-up-kr") }
+            runCatchingDomain { xxxRepository.getXxx(id) }
                 .onSuccess { updateState { copy(status = Success(it)) } }
                 .onDomainFailure { e -> updateState { copy(status = Error(e)) } }
         }
     }
 
     // 사용자 액션의 일회성 실패 → 매핑 없이 리프 그대로 방출
-    private fun follow(login: String) {
+    private fun bookmarkXxx(id: String) {
         launchSafely {
-            runCatchingDomain { githubRepository.follow(login) }
-                .onSuccess { postSideEffect(ShowToast("팔로우 완료")) }
+            runCatchingDomain { xxxRepository.bookmarkXxx(id) }
+                .onSuccess { postSideEffect(ShowToast("저장 완료")) }
                 .onDomainFailure(::emitDomainError)
         }
     }
@@ -103,8 +106,9 @@ core/error-handling/src/main/kotlin/team/mino/core/errorhandling/
 | 반드시 `class` (`object` 금지) | `Throwable` 싱글턴은 stacktrace가 최초 생성 시점 한 번으로 고정·공유되어 발생 지점을 추적할 수 없다 |
 | 원본 예외를 기본값 없는 필수 파라미터 `cause`로 받는다 | 보존을 잊는 실수를 구조적으로 차단, 크래시 리포팅 시 원인 추적 근거 |
 | 사용자 노출 문구를 담지 않는다 | UI 문구는 presentation에서 리프 타입 → string resource로 매핑 |
-| `core:data`의 validator 화이트리스트와 **짝으로** 추가한다 | 매핑되지 않는 리프는 죽은 타입이고, 리프 없는 매핑은 컴파일이 깨진다 |
+| `core:data`의 **매핑 지점 화이트리스트와 짝으로** 추가한다 | 매핑되지 않는 리프는 죽은 타입이고, 리프 없는 매핑은 컴파일이 깨진다 |
 
+- 짝이 될 지점은 **하나가 아니다.** 매핑 지점은 원천마다 하나씩 있으므로(HTTP validator·인증 제공자 SDK 변환 지점) 어느 원천의 화이트리스트에 다는지를 함께 정한다 — 지점 목록과 판단 기준은 [`docs/conventions/error_handling.md`](../../docs/conventions/error_handling.md) §3이 소유한다.
 - **탈출구 리프(`Unknown`류) 금지** — 매핑 규칙에 걸리지 않는 예외는 버그이며 CEH 소관이다. 탈출구가 있으면 버그가 도메인 예외로 오분류되어 조용히 소비된다.
 - feature 고유 비즈니스 에러(서버 에러 코드 체계)의 리프 확장 정책은 API 스펙 확정 시 재논의한다.
 - 새 코드가 Android API를 만지면 [`core:common:android`](../common/android/README.md), Composable이면 [`core:common:ui`](../common/ui/README.md)로 — 이 모듈은 순수 Kotlin 에러 인프라만 담는다.

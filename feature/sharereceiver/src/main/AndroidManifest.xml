@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <!--
+          이 feature가 외부 세계에 노출하는 유일한 표면이다(contracts/share-intent.md §1).
+          런처 Activity가 아니라 스플래시를 거치지 않는 별도 진입점이다(FR-019, UX-010).
+
+          taskAffinity를 비워 앱의 태스크와 분리한다. 선언하지 않으면 기본값이 applicationId라
+          MainActivity와 같은 affinity가 되고, 공유 시트가 쓰는 FLAG_ACTIVITY_NEW_TASK가 그 태스크를
+          찾아 통째로 전면에 올린다 — 앱이 실행 중일 때만 꾹 화면이 튀어나오던 원인이다
+          (FR-003, TS-027, TS-028, research.md R-023).
+        -->
+        <activity
+            android:name=".ShareReceiverActivity"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:taskAffinity=""
+            android:theme="@style/Theme.Mino.Transparent">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>

@@ -1,7 +1,7 @@
 <!--
 Sync Impact Report
 
-이 파일은 1.0.0에서 2.0.1로 한 번에 올라간다. 아래 두 개정을 순서대로 기록한다.
+이 파일은 1.0.0에서 2.1.0으로 올라간다. 아래 세 개정을 순서대로 기록한다.
 
 ## 1.0.0 → 2.0.0 (MAJOR)
 - 수정된 섹션: 기술 표준과 제약 §스택과 구조 — 디자인 토큰 조항 재정의
@@ -47,15 +47,43 @@ Sync Impact Report
     단일 출처를 지목하지 않는다. 이슈 #124 SDD 개편이 파이프라인 문서를 확정하면 원칙 IV의 출처에 그
     문서를 추가하고 MINOR 개정한다. (현재 파이프라인 문서 자체가 없어 `../CLAUDE.md` 네비게이션 표에도
     해당 줄이 없다. 후속 범위는 `adr/2026-08-07-sdd-single-skill-per-stage.md` §결과가 함께 든다.)
+
+## 2.0.1 → 2.1.0 (MINOR)
+- 수정된 섹션: 기술 표준과 제약 §스택과 구조 — 이미지 에셋·UI 컴포넌트의 소속 모듈 조항 추가
+- 수정된 원칙: 없음
+- 추가된 섹션: 없음
+- 제거된 섹션: 없음
+- 유예된 플레이스홀더: 없음
+- MINOR 판정 근거: Governance §버저닝 정책의 "원칙·섹션의 추가, 또는 실질적으로 범위가 넓어진 규정"에
+  해당한다. 헌법이 규율하지 않던 축(자산의 소속 모듈)이 하나 늘었을 뿐, 기존 조항의 의미가 바뀌거나
+  무효화되는 작업 방식이 없다. 지금까지의 관행(기본은 그것을 쓰는 feature, 공유가 실제로 생기면 공용
+  모듈로 승격)을 성문화한 것이라 MAJOR가 아니다.
+- 개정 경위: 컴포넌트·이미지를 어느 모듈에 만드는지의 판정 기준이 `../core/common/ui/README.md` §5와
+  ADR 여러 건에 흩어져 있었고, 정작 그 판정을 하는 주체(feature UI를 구현하는 사람·에이전트)가 모듈
+  README에 도달하지 못했다. 2.0.1이 Figma 판정 절차를 모듈 README 대신 규약 문서로 옮긴 것과 같은
+  이유로, 판정의 소유자를 새 규약 문서 `conventions/component-asset-placement.md`로 정했다. 그 문서를
+  만들면서 `../core/common/ui/README.md` §4·§5와 `../core/design-system/README.md` §6.1의 해당 규칙을
+  이관하고, 두 README에는 링크만 남겼다.
+- 판정 대상에서 제외한 것: 아이콘은 `../core/design-system/README.md` §5가 이미 소유하므로 조항에 넣지
+  않았다. 디자인 토큰과 `Modifier` 확장도 같은 이유로 제외했고, 새 문서의 경계표가 그 소유자를 지목한다.
+- 조항에 담지 않은 것: 규약 §1.2의 예외(`AtomicColorToken`의 원시 색을 직접 참조해야 해서 다른 모듈에서
+  만들 수 없는 컴포넌트)는 규약 문서가 소유한다. 예외의 조건과 가드를 헌법이 다시 쓰면 SSOT가 갈린다.
+  조항 본문은 Figma 디자인 시스템 컴포넌트(사용처 수와 무관하게 `:core:design-system`)와 그 밖의 것
+  (feature에 두었다가 승격) 두 갈래만 규정한다.
+- 근거 ADR: `adr/2026-08-14-room-color-palette-in-design-system.md` ·
+  `adr/2026-08-03-category-item-dedicated-chip.md` · `adr/2026-07-31-common-shell-mino-scaffold.md`
+  (이번 조항 전용 ADR은 만들지 않았다 — 실질 근거를 위 세 건이 이미 소유한다)
+- 해소된 TODO: 없음
+- 후속 TODO: 없음
 -->
 
 # MinoAndroid 헌법(Constitution)
 
 | 항목 | 내용 |
 |---|---|
-| **버전** | 2.0.1 |
+| **버전** | 2.1.0 |
 | **제정일** | 2026-08-07 |
-| **최종 개정일** | 2026-08-14 |
+| **최종 개정일** | 2026-08-19 |
 | **최초 제정자** | Jaesung Lee |
 | **최종 개정자** | Jaesung Lee |
 
@@ -178,6 +206,11 @@ Sync Impact Report
   실측값을 직접 쓴다. 토큰이 없다는 이유로 구현을 멈추거나 토큰 신설을 선행 조건으로 삼지 않으며,
   준수 여부는 코드에 적힌 근거가 아니라 Figma 원본과의 대조로 판정한다. 그 판정과 대조를 수행하는
   절차는 [`conventions/figma-design-fidelity.md`](conventions/figma-design-fidelity.md)를 따른다.
+- 이미지 에셋과 UI 컴포넌트가 feature와 `:core:common:ui`·`:core:design-system` 중 어느 모듈에
+  속하는지는 [`conventions/component-asset-placement.md`](conventions/component-asset-placement.md)를
+  단일 출처로 한다. Figma 디자인 시스템에 컴포넌트로 존재하는 것은 사용처 수와 무관하게
+  `:core:design-system`이 소유하고, 그 밖의 것은 그것을 쓰는 feature에 두었다가 같은 문서의 승격 기준을
+  충족할 때 `:core:common:ui`로 옮긴다.
 - 디자인 시스템 컴포넌트 API는 Material3 컴포넌트 패턴(Defaults·Colors·컴포넌트 토큰)을 따른다. 본문은
   [`../core/design-system/README.md`](../core/design-system/README.md), 근거는
   [`adr/2026-07-25-design-system-component-m3-pattern.md`](adr/2026-07-25-design-system-component-m3-pattern.md)가 소유한다.

@@ -21,9 +21,10 @@ internal object ContentBadgeTokens {
     val NeutralContentColor = ColorAccessKeyToken.LabelAlternative
     val NeutralBorderColor = ColorAccessKeyToken.LineNormalNeutral
 
-    // Accent는 Cyan 한 색에서 세 슬롯을 알파로 파생한다. 글자는 100%, 배경 8%, 테두리 43%
-    // (Figma 컴포넌트셋 16215:25365의 Color=Accent variant 6개가 모두 이 한 색을 쓴다).
+    // Accent 계열은 `Accent/Foreground/*` 한 색에서 글자·배경·테두리 세 슬롯을 알파로 파생한다.
+    // 색 축이 늘어나도 파생 규칙은 그대로라 불투명도는 축과 무관하게 공유한다.
     val AccentColor = ColorAccessKeyToken.AccentForegroundCyan
+    val LightBlueColor = ColorAccessKeyToken.AccentForegroundLightBlue
     val AccentTintOpacity = AtomicOpacityToken.Opacity8
     val AccentBorderOpacity = AtomicOpacityToken.Opacity43
 }

@@ -10,6 +10,7 @@ enum class FlavorDimension {
 
 enum class Flavor(
     val dimension: FlavorDimension,
+    // qa·prod가 같은 주소를 쓴다 — 서버가 환경을 분리하면 flavor별로 갈라진다
     val apiBaseUrl: String,
     val appName: String,
     val applicationIdSuffix: String? = null,
@@ -17,15 +18,15 @@ enum class Flavor(
 ) {
     qa(
         dimension = FlavorDimension.env,
-        apiBaseUrl = "https://qa-api.example.com/",
-        appName = "Mino-Android QA",
+        apiBaseUrl = "https://api.gguk.org/",
+        appName = "GGUK QA",
         applicationIdSuffix = ".qa",
         versionNameSuffix = "-qa",
     ),
     prod(
         dimension = FlavorDimension.env,
-        apiBaseUrl = "https://api.example.com/",
-        appName = "Mino-Android",
+        apiBaseUrl = "https://api.gguk.org/",
+        appName = "GGUK",
     ),
 }
 

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <application
         android:name=".MinoApplication"
@@ -8,14 +9,27 @@
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.MinoAndroid">
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="${MAPS_API_KEY}" />
+
+        <!--
+          WorkManager 온디맨드 초기화. MinoApplication이 Configuration.Provider로 HiltWorkerFactory를
+          넘기므로 기본 초기화를 꺼야 한다. 이 provider는 emoji2·ProcessLifecycle 등 다른 초기화도 함께
+          싣고 있어 node를 통째로 제거하지 않고 WorkManager meta-data만 걷어낸다.
+        -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
+        </provider>
     </application>
-
-
 
 </manifest>
