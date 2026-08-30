@@ -38,13 +38,15 @@ import team.mino.feature.room.detail.vm.LeaveDialogState
  * `docs/specs/room-detail/contracts/room-detail-main-contract.md` "분기 규칙 — 나가기 플로우"
  * 대로 [leaveDialogState]에 따라 서로 다른 콘텐츠를 그린다.
  *
- * - [LeaveDialogState.ConfirmOwnerSingle](1인 방) — 확인 문구만. `leaveRoom` 호출 시 서버가
- *   방을 자동 삭제한다. 정확한 문구는 spec.md·PRD 어디에도 지정이 없어 [RoomLeaveConfirmDialog]와
+ * - [LeaveDialogState.ConfirmOwnerSingle](방장 혼자뿐인 방) — 확인 문구만. `leaveRoom` 호출 시
+ *   서버가 방을 자동 삭제한다. 정확한 문구는 spec.md·PRD 어디에도 지정이 없어 [RoomLeaveConfirmDialog]와
  *   같은 근거로 [TBD] 최소 구현.
- * - [LeaveDialogState.DelegateOwner](N인 방) — `leaveRoom` 호출이 `409 OWNER_TRANSFER_REQUIRED`로
- *   응답한 뒤 전이되는 상태. 위임 대상 멤버 목록(체크박스 단일 선택) + [다음] 버튼을 그린다.
- *   멤버 한 명당 레이아웃(48x48dp 원형 아바타 + 이름 + 16x16dp 체크박스)은 Figma node 2542:125613
- *   (리드가 조회) 기준이다.
+ * - [LeaveDialogState.DelegateOwner](멤버 2명 이상인 방의 방장) — 위임 대상 멤버 목록(체크박스 단일
+ *   선택) + [다음] 버튼을 그린다. `RoomDetailViewModel.onLeaveClick`이 이미 로드된 멤버 수로 곧장 이
+ *   상태를 고른다 — 예전엔 `leaveRoom` 호출의 `409 OWNER_TRANSFER_REQUIRED` 응답을 받아야만 전이됐는데,
+ *   그러면 그 사이 [ConfirmOwnerSingle]의 "혼자라 방이 삭제돼요" 문구가 먼저 잘못 보이는 결함이 실기기
+ *   확인됐다(`docs/failures` 참고). 멤버 한 명당 레이아웃(48x48dp 원형 아바타 + 이름 + 16x16dp
+ *   체크박스)은 Figma node 2542:125613(리드가 조회) 기준이다.
  * - 그 외 상태([LeaveDialogState.None]·[LeaveDialogState.ConfirmMember])에서는 아무것도 그리지
  *   않는다 — `ConfirmMember`는 [RoomLeaveConfirmDialog]가 담당한다.
  *
@@ -229,13 +231,14 @@ private fun OwnerDelegateCheckbox(
 }
 
 /**
- * [OwnerDelegateMemberRow]·[OwnerDelegateCheckbox] 치수 토큰. 실측 근거는 Figma
- * node 2542:125613(리드가 직접 조회) — 브리프 "멤버 선택 리스트 UI" 절 참고.
+ * [OwnerDelegateMemberRow]·[OwnerDelegateCheckbox] 치수 토큰. 행 레이아웃 실측 근거는 Figma
+ * node 2542:125613(리드가 직접 조회) — 브리프 "멤버 선택 리스트 UI" 절 참고. 리스트 스크롤 영역
+ * 높이([MemberListMaxHeight])는 node `3276-208669`(리드 확인) 기준 288dp.
  */
 private object OwnerDelegateTokens {
     val RowVerticalPadding = 8.dp
     val RowContentSpacing = 12.dp
-    val MemberListMaxHeight = 240.dp
+    val MemberListMaxHeight = 288.dp
     val CheckboxSize = 16.dp
     val CheckboxShape = RoundedCornerShape(4.dp)
     val CheckboxBorderWidth = 1.5.dp

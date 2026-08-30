@@ -119,15 +119,16 @@ room-list의 [분기 규칙](../../room-list/contracts/room-list-main-contract.m
 | `false` | `false` | 나가기 |
 | `true`/`false` | `true`(개인방) | (항목 없음 — 메뉴 자체를 비노출하거나 빈 상태로 둔다. 개인방은 방장 개념이 없어 `isOwner`도 의미가 없다) |
 
-## 분기 규칙 — 나가기 플로우 (SYS-007, research.md D12·D15)
+## 분기 규칙 — 나가기 플로우 (SYS-007, research.md D12·D15·[failures/2026-08-30-leave-flow-member-count.md](../../../failures/2026-08-30-leave-flow-member-count.md))
 
 | `isOwner` | 방 멤버 수 | `leaveDialogState` 전이 | 서버 호출 |
 |---|---|---|---|
 | `false` | - | `None` → `ConfirmMember` → (확인) `NavigateToRoomList` | `RoomRepository.leaveRoom(roomId)` → `200` |
 | `true` | 1인(본인만) | `None` → `ConfirmOwnerSingle` → (확인) 즉시 삭제 → `NavigateToRoomList` | `leaveRoom(roomId)` → `200`(서버가 방을 자동 삭제) |
-| `true` | N인 | `None` → `ConfirmOwnerSingle`류 확인 모달 → (확인 시도) `leaveRoom(roomId)` 호출 → `409 OWNER_TRANSFER_REQUIRED` → `DelegateOwner` → 멤버 선택(`roomMembers`) → `OnOwnerDelegateConfirm` | `transferOwner(roomId, nextOwnerId)` → `200` → 이어서 `leaveRoom(roomId)` → `200` |
+| `true` | N인(2명 이상) | `None` → **곧장** `DelegateOwner` → 멤버 선택(`roomMembers`) → `OnOwnerDelegateConfirm` | `transferOwner(roomId, nextOwnerId)` → `200` → 이어서 `leaveRoom(roomId)` → `200` |
 
-- 클라이언트는 방 멤버 수를 사전에 세지 않는다 — `leaveRoom` 호출 자체의 성공/`409` 응답으로 서버가 이미 판정한 결과를 그대로 분기에 반영한다([research.md D15](../research.md)).
+- **클라이언트가 멤버 수를 미리 본다.** [RoomDetailUiState.room]의 `memberSummary`(화면 진입 시 `GET /rooms/{roomId}/members`로 이미 채워짐)로 `OnLeaveClick` 시점에 곧장 올바른 모달을 고른다 — `leaveRoom` 호출의 `409`를 기다려 뒤늦게 `DelegateOwner`로 바꾸던 이전 방식은 그사이 "혼자라 방이 삭제돼요" 문구가 멤버 2명 이상인 방에도 잘못 보이는 결함으로 실기기에서 확인됐다([failures/2026-08-30-leave-flow-member-count.md](../../../failures/2026-08-30-leave-flow-member-count.md), `research.md` D15의 "클라이언트는 방 멤버 수를 사전에 세지 않는다" 판단을 뒤집음).
+- `onLeaveConfirm`의 `409 OWNER_TRANSFER_REQUIRED` 처리는 방어선으로 남긴다 — 판단 이후 경합(다른 멤버 탈퇴 등)이 생겨도 서버가 최종 판정한다.
 - 위 표의 서버 계약은 [contracts/place-repository.md](./place-repository.md) "`RoomRepository` 확장" 절 참조.
 
 ## 재조회
