@@ -1,5 +1,9 @@
+@file:OptIn(ExperimentalTime::class)
+
 package team.mino.core.domain.usecase
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
@@ -8,9 +12,12 @@ import team.mino.core.domain.model.Room
 import team.mino.core.domain.model.RoomColor
 import team.mino.core.domain.model.RoomDraft
 import team.mino.core.domain.model.RoomMember
+import team.mino.core.domain.model.RoomMemberSummary
 import team.mino.core.domain.model.RoomSummary
+import team.mino.core.domain.model.RoomThumbnail
 import team.mino.core.domain.repository.RoomRepository
 import java.io.IOException
+import kotlin.time.ExperimentalTime
 
 /**
  * 미선택 색을 [RoomColor.GRAY]로 확정하는 책임이 이 UseCase에 있는지 본다(FR-006·TS-007).
@@ -71,6 +78,12 @@ class CreateRoomUseCaseTest {
                     description = "설명",
                     color = RoomColor.RED,
                     ownerId = "owner-1",
+                    isPersonal = false,
+                    placeCount = 0,
+                    thumbnail = RoomThumbnail.ColorAndCharacter(color = null),
+                    memberSummary = RoomMemberSummary(visibleAvatars = emptyList(), overflowCount = 0),
+                    lastPlaceSavedAt = null,
+                    commentCount = 0,
                 )
             roomRepository.createdRoom = created
 
@@ -126,10 +139,18 @@ private class FakeRoomRepository : RoomRepository {
             description = "설명",
             color = RoomColor.GRAY,
             ownerId = "owner-1",
+            isPersonal = false,
+            placeCount = 0,
+            thumbnail = RoomThumbnail.ColorAndCharacter(color = null),
+            memberSummary = RoomMemberSummary(visibleAvatars = emptyList(), overflowCount = 0),
+            lastPlaceSavedAt = null,
+            commentCount = 0,
         )
 
     /** 값이 있으면 [createRoom]이 생성 대신 이 예외를 던진다. */
     var createFailure: Throwable? = null
+
+    override fun observeMyRooms(): Flow<List<Room>> = flowOf(listOf(createdRoom))
 
     override suspend fun getRooms(): List<RoomSummary> = error("CreateRoomUseCase는 getRooms를 부르지 않는다.")
 
