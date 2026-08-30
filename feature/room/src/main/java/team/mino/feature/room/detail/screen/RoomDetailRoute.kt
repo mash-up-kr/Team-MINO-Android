@@ -1,6 +1,5 @@
 package team.mino.feature.room.detail.screen
 
-import android.Manifest
 import android.app.Activity
 import android.content.ClipData
 import android.content.Intent
@@ -77,23 +76,9 @@ internal fun BoxScope.RoomDetailRoute(
         viewModel.processIntent(RoomDetailIntent.OnShareRoomFormResult(createdRoomId))
     }
 
-    // [research.md D10] room-list와 같은 현재 위치 권한 요청 플로우.
-    val locationPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestMultiplePermissions(),
-    ) { grants ->
-        val granted = grants[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
-            grants[Manifest.permission.ACCESS_COARSE_LOCATION] == true
-        viewModel.processIntent(RoomDetailIntent.OnLocationPermissionResult(granted))
-    }
-
     CollectSideEffect(sideEffect = viewModel.sideEffect) { effect ->
         when (effect) {
             RoomDetailSideEffect.NavigateBack -> onBack()
-
-            RoomDetailSideEffect.RequestLocationPermission ->
-                locationPermissionLauncher.launch(
-                    arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION),
-                )
 
             RoomDetailSideEffect.NavigateToRoomForm -> {
                 val roomId = state.room?.id

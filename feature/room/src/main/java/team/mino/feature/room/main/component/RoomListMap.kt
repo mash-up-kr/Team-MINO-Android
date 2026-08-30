@@ -78,9 +78,8 @@ private fun PlacePin(pin: MapPinUiModel) {
 
 /**
  * [EC-002] 기본 디폴트 좌표 — 강남역(PRD [SYS-004] Flow A "현재 강남역으로 임시 지정, 추후 변경될 수 있음").
- * 위치 권한 미허용 시 [RoomListMap]·ViewModel이 함께 참조한다.
- *
- * `feature.room.detail.component.RoomDetailMap`도 같은 기본 지도 중심을 쓴다 — feature 내부 다른 화면 패키지가
- * 참조해야 해서 `internal`(모듈 전체 가시성)로 둔다.
+ * 위치 권한 미허용 시 [RoomListMap]·[RoomListViewModel][team.mino.feature.room.main.vm.RoomListViewModel]이
+ * 함께 참조한다 — 다른 패키지가 참조해야 해서 `internal`(모듈 전체 가시성)로 둔다. 방 상세는 이제 이 지도를
+ * 그대로 공유해 쓰므로 별도로 참조하지 않는다(`RoomListRoute`/`RoomDetailRoute` KDoc 참고).
  */
 internal val DefaultMapCenter = GeoPoint(latitude = 37.4979, longitude = 127.0276)

@@ -1,32 +1,19 @@
 package team.mino.feature.room.detail.vm
 
-import android.Manifest
-import android.annotation.SuppressLint
-import android.content.Context
-import android.content.pm.PackageManager
-import android.location.Location
-import android.location.LocationListener
-import android.location.LocationManager
-import android.os.Looper
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlinx.coroutines.withTimeoutOrNull
 import team.mino.core.common.android.architecture.MviContainer
 import team.mino.core.common.android.architecture.mviContainer
 import team.mino.core.common.android.extension.launchSafely
-import team.mino.core.common.kotlin.geo.GeoPoint
 import team.mino.core.domain.invite.InviteLinkBuilder
 import team.mino.core.domain.model.MapMarkerSortOption
 import team.mino.core.domain.model.Place
@@ -43,11 +30,8 @@ import team.mino.core.errorhandling.onDomainFailure
 import team.mino.core.errorhandling.runCatchingDomain
 import team.mino.core.navigation.activity.launcher.RoomFormLauncher
 import team.mino.feature.room.detail.model.PlaceViewType
-import team.mino.feature.room.main.component.DefaultMapCenter
 import team.mino.feature.room.main.model.BottomSheetLevel
 import team.mino.feature.room.main.model.toMemberSummary
-import kotlin.coroutines.resume
-import kotlin.time.Duration.Companion.seconds
 
 /**
  * 방 상세의 유일한 화면(`RoomListScreen`이 `RoomMain` 안에서 로컬 상태로 그리는 상세 모드)의 ViewModel.
@@ -60,7 +44,6 @@ import kotlin.time.Duration.Companion.seconds
  */
 @HiltViewModel(assistedFactory = RoomDetailViewModel.Factory::class)
 internal class RoomDetailViewModel @AssistedInject constructor(
-    @ApplicationContext private val context: Context,
     @Assisted private val roomId: String,
     private val roomRepository: RoomRepository,
     private val roomPlacesRepository: RoomPlacesRepository,
@@ -122,7 +105,6 @@ internal class RoomDetailViewModel @AssistedInject constructor(
             is RoomDetailIntent.OnOwnerDelegateSelected -> onOwnerDelegateSelected(intent.memberId)
             RoomDetailIntent.OnOwnerDelegateConfirm -> onOwnerDelegateConfirm()
             is RoomDetailIntent.OnRoomFormResult -> onRoomFormResult(intent.updated)
-            is RoomDetailIntent.OnLocationPermissionResult -> onLocationPermissionResult(intent.granted)
         }
     }
 
@@ -138,14 +120,6 @@ internal class RoomDetailViewModel @AssistedInject constructor(
     private fun onScreenEntered() {
         launchSafely { loadRoom() }
         launchSafely { loadRoomMembers() }
-        if (hasLocationPermission()) {
-            launchSafely {
-                val center = resolveMapCenter(granted = true)
-                updateState { copy(mapCenter = center, mapCenterRequestId = mapCenterRequestId + 1) }
-            }
-        } else {
-            launchSafely { postSideEffect(RoomDetailSideEffect.RequestLocationPermission) }
-        }
         launchSafely {
             roomPlacesRepository
                 .observePlaces(roomId)
@@ -542,66 +516,6 @@ internal class RoomDetailViewModel @AssistedInject constructor(
                         .onDomainFailure(::emitDomainError)
                 }.onDomainFailure(::emitDomainError)
         }
-    }
-
-    /** [EC-002] 거부 시 기본 디폴트 좌표, 허용 시 실제 위치로 `mapCenter`를 설정한다. */
-    private fun onLocationPermissionResult(granted: Boolean) {
-        launchSafely {
-            val center = resolveMapCenter(granted)
-            updateState { copy(mapCenter = center, mapCenterRequestId = mapCenterRequestId + 1) }
-        }
-    }
-
-    /** 거부 시 기본 디폴트 좌표, 허용 시 실제 위치로 해석한다(EC-002). room-list와 같은 규칙. */
-    private suspend fun resolveMapCenter(granted: Boolean): GeoPoint =
-        if (granted) currentDeviceLocation() ?: DefaultMapCenter else DefaultMapCenter
-
-    private fun hasLocationPermission(): Boolean =
-        ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) ==
-            PackageManager.PERMISSION_GRANTED ||
-            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) ==
-            PackageManager.PERMISSION_GRANTED
-
-    /** [RoomListViewModel.currentDeviceLocation]과 같은 이유·같은 구현 — `:core:map`에 위치 조회 인프라가 없다. */
-    @SuppressLint("MissingPermission")
-    private suspend fun currentDeviceLocation(): GeoPoint? {
-        val locationManager = context.getSystemService(LocationManager::class.java) ?: return null
-        val cached = locationManager.allProviders
-            .mapNotNull { provider -> runCatching { locationManager.getLastKnownLocation(provider) }.getOrNull() }
-            .maxByOrNull { it.time }
-        if (cached != null) return cached.toGeoPoint()
-
-        val provider = when {
-            locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) -> LocationManager.GPS_PROVIDER
-            locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER) -> LocationManager.NETWORK_PROVIDER
-            else -> return null
-        }
-        return withTimeoutOrNull(LOCATION_FETCH_TIMEOUT) { requestSingleLocationUpdate(locationManager, provider) }
-    }
-
-    private suspend fun requestSingleLocationUpdate(
-        locationManager: LocationManager,
-        provider: String,
-    ): GeoPoint? =
-        suspendCancellableCoroutine { continuation ->
-            val listener = object : LocationListener {
-                override fun onLocationChanged(location: Location) {
-                    locationManager.removeUpdates(this)
-                    if (continuation.isActive) continuation.resume(location.toGeoPoint())
-                }
-            }
-            continuation.invokeOnCancellation { locationManager.removeUpdates(listener) }
-            runCatching {
-                locationManager.requestSingleUpdate(provider, listener, Looper.getMainLooper())
-            }.onFailure {
-                if (continuation.isActive) continuation.resume(null)
-            }
-        }
-
-    private fun Location.toGeoPoint(): GeoPoint = GeoPoint(latitude = latitude, longitude = longitude)
-
-    private companion object {
-        val LOCATION_FETCH_TIMEOUT = 10.seconds
     }
 }
 
