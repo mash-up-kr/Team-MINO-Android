@@ -29,9 +29,17 @@ render.experimental.xml
 # Keystore files
 *.jks
 *.keystore
+keystore.properties
 
 # Google Services (e.g. APIs or Firebase)
 google-services.json
+
+# Fastlane
+fastlane/play-service-account.json
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/test_output/
+fastlane/README.md
 
 # Android Profiling
 *.hprof
@@ -235,3 +243,6 @@ fabric.properties
 /build
 /captures
 .cxx
+
+# Claude Code worktrees (병렬 작업용 격리 워크트리)
+.claude/worktrees/

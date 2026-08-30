@@ -7,4 +7,11 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!--
+        시스템 스플래시 배경. MinoScaffold의 containerColor(ColorLightTokens.BackgroundNormalNormal)와
+        같은 값을 XML에서 다시 적는다 — 테마에서 Compose 색 토큰을 참조할 수 없다.
+        토큰이 바뀌면 values-night/colors.xml의 짝과 함께 갱신한다.
+    -->
+    <color name="splash_background">#FFFFFFFF</color>
 </resources>

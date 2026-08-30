@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!--
+      공유 인텐트 수신 Activity 전용 테마.
+      시트는 Compose가 딤과 함께 직접 그리므로, 창은 아무것도 그리지 않고 자리만 내준다.
+    -->
+    <style name="Theme.Mino.Transparent" parent="android:Theme.Material.Light.NoActionBar">
+        <!-- 창을 불투명으로 취급하지 않아, 공유를 보낸 앱 화면이 뒤에 계속 그려진다 -->
+        <item name="android:windowIsTranslucent">true</item>
+        <!-- 부모 테마가 물려주는 불투명 배경을 지운다 -->
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <!-- 창 전환 애니메이션을 없애 진입·종료 흔적을 남기지 않는다 -->
+        <item name="android:windowAnimationStyle">@null</item>
+    </style>
+</resources>

@@ -1,0 +1,75 @@
+name: CD - Internal Testing
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: "릴리스 버전명 (예: 1.0.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cd-internal
+  cancel-in-progress: false
+
+jobs:
+  internal:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-android-build
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+
+      - name: Restore signing config
+        uses: ./.github/actions/restore-signing
+        with:
+          keystore-properties: ${{ secrets.KEYSTORE_PROPERTIES_B64 }}
+          prod-keystore: ${{ secrets.KEYSTORE_PROD_B64 }}
+
+      - name: Restore google-services.json
+        uses: ./.github/actions/restore-google-services
+        with:
+          google-services-json: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
+
+      - name: Restore Play service account
+        uses: ./.github/actions/restore-play-credentials
+        with:
+          service-account-json: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+
+      - name: Build & upload to internal track
+        env:
+          VERSION_CODE: ${{ github.run_number }}
+          VERSION_NAME: ${{ inputs.version_name }}
+        run: bundle exec fastlane internal
+
+      - name: Notify Discord (success)
+        if: success()
+        uses: ./.github/actions/discord-notify
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          title: "🧪 내부테스트 배포 완료"
+          description: |
+            버전 `${{ inputs.version_name }}` (build ${{ github.run_number }})
+            브랜치 `${{ github.ref_name }}` · `${{ github.sha }}`
+          url: ${{ vars.PLAY_INTERNAL_OPT_IN_URL }}
+          color: "3447003"
+
+      - name: Notify Discord (failure)
+        if: failure()
+        uses: ./.github/actions/discord-notify
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          title: "❌ 내부테스트 배포 실패"
+          description: |
+            버전 `${{ inputs.version_name }}` (build ${{ github.run_number }})
+            [워크플로 로그 보기](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          color: "15158332"

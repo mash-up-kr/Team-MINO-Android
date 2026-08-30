@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="onboarding_invite_title">친구들을 초대해볼까요?</string>
+    <string name="onboarding_invite_description">\"여기 어때?\"는 이제 그만\n친구가 들어오면 저장한 장소가 한눈에 모여요.\n다음 약속 장소, 여기서 같이 골라요.</string>
+    <string name="onboarding_invite_action_share">친구 초대하기</string>
+    <string name="onboarding_invite_action_copy">초대 링크 복사</string>
+    <string name="onboarding_invite_link_copied">클립 보드에 초대링크가 복사되었어요</string>
+    <string name="onboarding_invite_error_link_unavailable">초대 링크를 가져오지 못했어요. 잠시 후 다시 시도해주세요.</string>
+
+    <string name="onboarding_tutorial_title">튜토리얼</string>
+    <string name="onboarding_tutorial_action_skip">건너뛰기</string>
+    <string name="onboarding_tutorial_action_start">꾹 시작하기</string>
+    <string name="onboarding_tutorial_step_1_guide">인스타그램 공유 버튼\n찾아서 눌러주기</string>
+    <string name="onboarding_tutorial_step_2_guide">공유 대상 버튼\n찾아서 눌러주기</string>
+    <string name="onboarding_tutorial_step_3_guide">앱 목록을 쓸어넘겨\n더보기 버튼 눌러주기</string>
+    <string name="onboarding_tutorial_step_4_guide">앱 목록을 쓸어내려\n꾹 앱 눌러주기</string>
+    <string name="onboarding_tutorial_step_5_guide">꾹에 공유하기만 하면\n지도에 추가 완료</string>
+</resources>

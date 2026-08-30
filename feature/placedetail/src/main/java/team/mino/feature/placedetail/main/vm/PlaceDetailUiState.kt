@@ -1,0 +1,96 @@
+package team.mino.feature.placedetail.main.vm
+
+import androidx.compose.runtime.Immutable
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentSetOf
+import team.mino.core.common.android.architecture.UiState
+import team.mino.core.domain.model.PlaceDetail
+import team.mino.core.domain.model.RoomColor
+import team.mino.core.errorhandling.MinoDomainException
+import team.mino.feature.placedetail.main.model.PlaceCommentUiModel
+import team.mino.feature.placedetail.main.model.PlaceHeaderMode
+import team.mino.feature.placedetail.main.model.PlaceSheetLevel
+import team.mino.feature.placedetail.main.model.RoomPickerItem
+
+/**
+ * 장소 상세 화면의 상태.
+ *
+ * 화면이 그리려고 계산하는 값(제출 버튼 활성·[원문보기] 활성)은 필드가 아니라 아래의 파생 프로퍼티다. 필드로 두면
+ * 근거가 되는 값이 바뀔 때 함께 갱신하는 것을 빠뜨려 두 출처가 갈린다.
+ *
+ * **200자 상한을 여기서 강제하지 않는다.** 입력 컴포저블이 201자째를 받지 않는 것으로 막으므로 이 타입에 도달한
+ * [commentDraft]는 이미 상한 안이다(spec EC-011).
+ *
+ * @property place `null`이 로딩 중이다. 헤더·캐러셀·액션 행이 아직 그려지지 않는 구간이며, 화면 상태를 sealed로
+ *  가르지 않고 필드로 두는 근거는 `docs/adr/2026-07-25-uistate-isloading-over-sealed-status.md`.
+ * @property loadError 주 데이터(핀 상세·최신 코멘트·방 목록) 조회의 실패. 채워지면 화면 전체가 재시도 가능한
+ *  오류로 바뀐다. 문구가 아니라 리프를 담는 것도, 이 실패만 여기로 오고 사용자 액션의 일회성 실패는
+ *  방출자로 나가는 것도 `docs/conventions/error_handling.md` §5의 규정이다.
+ * @property roomColor 마커가 쓰는 방 대표 색. 핀 상세 응답에 없어 방 목록에서 채우므로 [place]와 도착 시점이
+ *  다르다 — 아직 `null`인 동안에는 마커를 그리지 않는다
+ *  (`docs/specs/place-detail/contracts/place-detail-main-contract.md` §5.1).
+ * @property headerMode [sheetLevel]에서 파생시키지 않는다. 두 값을 가르는 근거가 서로 달라서이며 그 이유는
+ *  [PlaceHeaderMode]가 소유한다.
+ * @property carouselPage 외부 지도·원문 링크로 나갔다 돌아와도 보고 있던 장이 유지되어야 한다(spec UX-009).
+ * @property comments 오래된 것이 위다. 이전 페이지를 받으면 목록 앞에 붙는다(spec FR-010 · 역방향 페이징).
+ * @property commentPage 마지막으로 받아 든 코멘트 페이지. 0이 최신이고 위로 갈수록 커진다.
+ * @property shareSheet `null`이 닫힘이다. 열림 여부 플래그를 따로 두지 않아 목록 없이 열린 시트가 생기지 않는다.
+ */
+@Immutable
+internal data class PlaceDetailUiState(
+    val pinId: String,
+    val place: PlaceDetail? = null,
+    val roomColor: RoomColor? = null,
+    val loadError: MinoDomainException? = null,
+    val sheetLevel: PlaceSheetLevel = PlaceSheetLevel.HALF,
+    val headerMode: PlaceHeaderMode = PlaceHeaderMode.EXPANDED,
+    val carouselPage: Int = 0,
+    val comments: ImmutableList<PlaceCommentUiModel> = persistentListOf(),
+    val commentPage: Int = 0,
+    val hasOlderComments: Boolean = false,
+    val isLoadingOlderComments: Boolean = false,
+    val commentDraft: String = "",
+    val isSubmittingComment: Boolean = false,
+    val shareSheet: ShareSheetUiState? = null,
+) : UiState {
+    /** 공백만 있는 입력은 보낼 것이 없다. 전송 중에도 같은 코멘트가 두 번 올라가지 않게 잠근다(spec EC-012). */
+    val isSubmitEnabled: Boolean
+        get() = commentDraft.isNotBlank() && !isSubmittingComment
+
+    /** 원문 링크가 없는 장소에서는 [원문보기]가 열 곳이 없다(spec EC-017). */
+    val isSourceEnabled: Boolean
+        get() = place?.sourceUrl != null
+
+    /**
+     * 항상 `false`다.
+     *
+     * 저장된 방 전환(spec 유저 플로우 7)이 이번 범위 밖이라 버튼은 자리만 지키고 눌리지 않는다. 조건을 만들어
+     * 넣지 않는다 — 그 조건이 성립할 화면이 아직 없다
+     * (`docs/specs/place-detail/contracts/place-detail-main-contract.md` §6).
+     */
+    val isSavedRoomsEnabled: Boolean
+        get() = false
+}
+
+/**
+ * [다른방에 공유] 시트의 상태.
+ *
+ * 선택은 [selectedRoomIds] 한 곳에만 있다. 카드가 자기 선택 여부를 들지 않으므로 목록이 다시 그려지거나 시트가
+ * 스크롤돼도 선택이 흩어지지 않는다.
+ *
+ * @property rooms `hasPlace`가 `true`인 방은 체크된 채 비활성이라 [selectedRoomIds]에 들어오지 않는다
+ *  (spec FR-018 · FR-022).
+ * @property isSubmitting 공유 요청이 도는 동안 CTA를 잠가 같은 방에 두 번 보내지지 않게 한다.
+ */
+@Immutable
+internal data class ShareSheetUiState(
+    val rooms: ImmutableList<RoomPickerItem> = persistentListOf(),
+    val selectedRoomIds: ImmutableSet<String> = persistentSetOf(),
+    val isSubmitting: Boolean = false,
+) {
+    /** 하나라도 고른 뒤에야 보낼 곳이 정해진다. */
+    val isShareEnabled: Boolean
+        get() = selectedRoomIds.isNotEmpty() && !isSubmitting
+}

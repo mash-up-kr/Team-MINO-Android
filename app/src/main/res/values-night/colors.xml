@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- ColorDarkTokens.BackgroundNormalNormal(CoolNeutral15)과 같은 값. values/colors.xml 참고. -->
+    <color name="splash_background">#FF1B1C1E</color>
+</resources>

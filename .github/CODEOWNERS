@@ -1,0 +1,12 @@
+# CODEOWNERS — PR 생성 시 GitHub가 자동으로 리뷰를 요청한다.
+# PR 작성자 본인은 리뷰어 목록에서 자동 제외된다.
+#
+# 참고:
+# - 리뷰 요청이 "강제"되려면 리포 설정에서 Branch protection rules의
+#   "Require review from Code Owners"를 활성화해야 한다.
+# - 모듈/경로별로 오너를 세분화해야 할 경우 아래 `*` 라인 밑에 규칙을 추가.
+
+*       @JaesungLeee @simeunseok @KateteDeveloper
+
+# SDD 스펙 문서 — MASC 대시보드가 자동 생성하는 PR (docs/specs/{slug}/spec.md·plan.md)
+docs/specs/**   @JaesungLeee @simeunseok @KateteDeveloper
