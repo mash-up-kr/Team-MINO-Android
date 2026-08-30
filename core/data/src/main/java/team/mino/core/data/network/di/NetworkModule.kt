@@ -38,7 +38,7 @@ internal object NetworkModule {
             install(Logging) {
                 // SLF4J 프로바이더가 없는 Android에서 기본 Logger.DEFAULT는 NOPLogger로 떨어져 아무것도 남지 않는다.
                 logger = Logger.ANDROID
-                level = LogLevel.ALL // TODO: 스웨거 확인용 임시 변경 — 커밋 전 원복 필요 (헤더의 Authorization 토큰 확인 목적)
+                level = if (BuildConfig.FLAVOR == "qa") LogLevel.BODY else LogLevel.NONE
             }
             // defaultRequest가 Before 단계에서 base URL을 채운 뒤 이 플러그인의 host 판정이 돈다
             // — 상대 경로 호출도 Mino host로 확정된 상태에서 A-1 판정을 받는다.
