@@ -158,7 +158,7 @@ internal class FakeRoomRepository : RoomRepository {
             isPersonal = false,
             placeCount = 0,
             thumbnail = RoomThumbnail.ColorAndCharacter(color = null),
-            memberSummary = RoomMemberSummary(visibleAvatarUrls = emptyList(), overflowCount = 0),
+            memberSummary = RoomMemberSummary(visibleAvatars = emptyList(), overflowCount = 0),
             lastPlaceSavedAt = null,
             commentCount = 0,
         )

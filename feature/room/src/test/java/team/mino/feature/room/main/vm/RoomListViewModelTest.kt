@@ -26,7 +26,9 @@ import team.mino.core.domain.model.RoomThumbnail
 import team.mino.core.domain.usecase.EnsureAnonymousSessionUseCase
 import team.mino.feature.room.fake.FakeAnonymousAuthRepository
 import team.mino.feature.room.fake.FakeLocationContext
+import team.mino.feature.room.fake.FakeProfileRepository
 import team.mino.feature.room.fake.FakeRoomFormLauncher
+import team.mino.feature.room.fake.FakeRoomPlacesRepository
 import team.mino.feature.room.fake.FakeRoomRepository
 import team.mino.feature.room.main.component.DefaultMapCenter
 import team.mino.feature.room.main.model.BottomSheetLevel
@@ -48,6 +50,8 @@ import kotlin.time.Instant
 @OptIn(ExperimentalCoroutinesApi::class, ExperimentalTime::class)
 class RoomListViewModelTest {
     private val roomRepository = FakeRoomRepository()
+    private val roomPlacesRepository = FakeRoomPlacesRepository()
+    private val profileRepository = FakeProfileRepository()
 
     @Before
     fun setUp() {
@@ -330,6 +334,8 @@ class RoomListViewModelTest {
         RoomListViewModel(
             context = FakeLocationContext(permissionGranted = permissionGranted),
             roomRepository = roomRepository,
+            roomPlacesRepository = roomPlacesRepository,
+            profileRepository = profileRepository,
             ensureAnonymousSessionUseCase = EnsureAnonymousSessionUseCase(FakeAnonymousAuthRepository()),
             roomFormLauncher = FakeRoomFormLauncher(),
         )
@@ -356,7 +362,7 @@ class RoomListViewModelTest {
             isPersonal = isPersonal,
             placeCount = 0,
             thumbnail = RoomThumbnail.ColorAndCharacter(color = null),
-            memberSummary = RoomMemberSummary(visibleAvatarUrls = emptyList(), overflowCount = 0),
+            memberSummary = RoomMemberSummary(visibleAvatars = emptyList(), overflowCount = 0),
             lastPlaceSavedAt = lastPlaceSavedAt,
             commentCount = 0,
         )

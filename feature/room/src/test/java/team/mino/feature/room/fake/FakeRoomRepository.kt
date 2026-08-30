@@ -19,9 +19,15 @@ import team.mino.core.domain.repository.RoomRepository
  */
 internal class FakeRoomRepository : RoomRepository {
     private val rooms = MutableStateFlow<List<Room>>(emptyList())
+    private var members: List<RoomMember> = emptyList()
 
     fun givenRooms(vararg values: Room) {
         rooms.value = values.toList()
+    }
+
+    /** [RoomListViewModel]이 방마다 무조건 부르므로(멤버 아바타 채우기) 기본값은 빈 목록이다. */
+    fun givenMembers(vararg values: RoomMember) {
+        members = values.toList()
     }
 
     override fun observeMyRooms(): Flow<List<Room>> = rooms
@@ -37,8 +43,7 @@ internal class FakeRoomRepository : RoomRepository {
         draft: RoomDraft,
     ): Room = error("FakeRoomRepository는 updateRoom을 지원하지 않는다.")
 
-    override suspend fun getMembers(roomId: String): List<RoomMember> =
-        error("FakeRoomRepository는 getMembers를 지원하지 않는다.")
+    override suspend fun getMembers(roomId: String): List<RoomMember> = members
 
     override suspend fun createInvitation(roomId: String): String =
         error("FakeRoomRepository는 createInvitation을 지원하지 않는다.")
