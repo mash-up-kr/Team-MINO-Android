@@ -1,8 +1,8 @@
 package team.mino.feature.room.main.screen
 
 import android.Manifest
-import android.app.Activity
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.BoxScope
@@ -10,7 +10,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
@@ -40,7 +39,7 @@ internal fun RoomListRoute(
     viewModel: RoomListViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val activity = LocalContext.current as Activity
+    val activity = checkNotNull(LocalActivity.current) { "RoomListRoute는 Activity 컨텍스트 안에서만 그려진다." }
     val selectedRoomId = state.selectedRoomId
 
     val locationPermissionLauncher = rememberLauncherForActivityResult(

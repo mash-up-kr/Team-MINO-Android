@@ -1,8 +1,8 @@
 package team.mino.feature.room.detail.screen
 
-import android.app.Activity
 import android.content.ClipData
 import android.content.Intent
+import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.BoxScope
@@ -12,7 +12,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboard
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.toClipEntry
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -54,7 +53,7 @@ internal fun BoxScope.RoomDetailRoute(
         creationCallback = { factory -> factory.create(roomId) },
     )
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val activity = LocalContext.current as Activity
+    val activity = checkNotNull(LocalActivity.current) { "RoomDetailRoute는 Activity 컨텍스트 안에서만 그려진다." }
     val snackbarHostState = LocalSnackbarHostState.current
     val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
