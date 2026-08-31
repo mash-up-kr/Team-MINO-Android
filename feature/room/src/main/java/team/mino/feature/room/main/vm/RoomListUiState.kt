@@ -58,7 +58,16 @@ data class RoomListUiState(
      * [RoomListRoute] 둘 다 이 값을 봐야 한다(Route는 바텀 네비게이션을 숨기려고, Screen은 시트
      * 자체를 그리려고). 한쪽만 고치고 다른 쪽을 안 고치는 사고를 막으려고 한 곳에서만 계산한다.
      * `Full`에서는 인라인 넛지 카드([RoomNudgeSheet])만 있고 이 팝업 자체가 없으므로 제외한다.
+     *
+     * **`selectedRoomId != null`(방 상세를 보는 중)이면 항상 `false`다.** 호출부가 각자 `isDetailMode`를
+     * 따로 AND하는 방식에 기대지 않는다 — 공동방 생성 직후 `OnRoomFormResult`가 `selectedRoomId`를
+     * 동기적으로 채우는 시점과 `ON_RESUME`의 `OnScreenEntered`가 비동기로 `groupRooms`를 새로고침하는
+     * 시점 사이에 경합이 있어, `groupRooms`가 아직 새 방을 반영하기 전(`showNudge`가 stale하게
+     * `true`)이면서 `nudgeSheetDismissed`가 막 `false`로 리셋된 찰나에 이 값이 잘못 `true`로 튈 수
+     * 있었다(실기기 확인 — 그 스파이크가 `RoomListRoute`의 바텀 네비게이션 토글을 오발화시켜 그 아래
+     * `GoogleMap`이 하얗게 남는 문제로 이어짐). 이 조건 자체에 `selectedRoomId == null`을 넣어야
+     * 호출부의 타이밍과 무관하게 항상 안전하다.
      */
     val isNudgeSheetVisible: Boolean
-        get() = showNudge && !nudgeSheetDismissed && sheetLevel != BottomSheetLevel.FULL
+        get() = selectedRoomId == null && showNudge && !nudgeSheetDismissed && sheetLevel != BottomSheetLevel.FULL
 }
