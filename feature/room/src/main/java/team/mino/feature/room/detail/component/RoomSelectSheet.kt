@@ -1,6 +1,7 @@
 package team.mino.feature.room.detail.component
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,12 +17,18 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import kotlinx.collections.immutable.ImmutableList
@@ -50,6 +57,11 @@ import team.mino.core.domain.model.RoomThumbnail
  *
  * 헤더("새 방 만들기" 텍스트버튼 포함)는 장소 공유 대상 방 목록과 무관한 부가 요소라 이번 구현
  * 범위에서 생략했다 — 이 시트의 핵심 요구는 슬라이드 영역(방 목록) 고정 높이다.
+ *
+ * **슬라이드 영역은 `Peek`/`Full` 2단이다** — 이전엔 `Full` 하나(416dp)로 고정 구현했지만, Figma
+ * `2392-128669`(peek)·`2542-10516`(full, 방 4개 이하)·`2392-128693`(full, 방 5개 이상) 대조 결과
+ * 디자이너 확인(Minhokim, 2026-08-31)까지 거쳐 드래그로 여닫는 2단 시트가 맞다고 확정됐다. 디폴트는
+ * `Peek`(방 카드 2개+짤린 3번째로 스크롤 힌트), 위로 끌면 `Full`로 펼쳐진다.
  */
 private object RoomSelectSheetTokens {
     val SheetShape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
@@ -58,7 +70,18 @@ private object RoomSelectSheetTokens {
     val HandleTopPadding = 8.dp
     val HandleBottomPadding = 8.dp
 
-    val SlideAreaHeight = 416.dp
+    // Figma `2392-128669`("011-1-1 다른 방에 공유_peek") 실측 — 방 개수와 무관하게 고정.
+    val PeekSlideAreaHeight = 240.dp
+
+    // Figma `2542-10516`("011-1-2-1 다른 방에 공유_full_4개") 실측 — 방 4개 이하면 카드가 잘리지 않고
+    // 딱 맞는다(104dp × 4).
+    val FullSlideAreaHeightUpToFourRooms = 416.dp
+
+    // Figma `2392-128693`("011-1-2-2 다른 방에 공유_full_4개 이상") 실측 — 방 5개 이상이면 4번째 카드
+    // 다음에 5번째가 일부만 보이도록 32dp를 더 얹어 스크롤 힌트를 남긴다.
+    val FullSlideAreaHeightManyRooms = 448.dp
+
+    val DragThreshold = 24.dp
 
     val CardHorizontalPadding = 20.dp
     val CardVerticalPadding = 12.dp
@@ -95,17 +118,31 @@ private object RoomSelectSheetTokens {
     val ActionAreaPadding = 20.dp
 }
 
+/** [RoomSelectSheet] 슬라이드 영역의 두 단계(디자이너 확인, 2026-08-31 — 디폴트는 `Peek`). */
+private enum class RoomSelectSheetLevel { PEEK, FULL }
+
+/** 방 개수에 따라 달라지는 `Full` 슬라이드 영역 높이(Figma `2542-10516`·`2392-128693`). */
+private fun fullSlideAreaHeight(roomCount: Int): Dp =
+    if (roomCount <= 4) {
+        RoomSelectSheetTokens.FullSlideAreaHeightUpToFourRooms
+    } else {
+        RoomSelectSheetTokens.FullSlideAreaHeightManyRooms
+    }
+
 /**
  * "다른 방에 공유" 바텀시트([SYS-003], FR-009) — 방 다중 선택 카드 목록 + 공유하기 버튼.
  *
- * 슬라이드 영역(방 목록)은 [RoomSelectSheetTokens.SlideAreaHeight](416dp)로 고정한다(spec.md
- * 유저 플로우 3, "슬라이드 영역 416px 고정"). 전체 시트 높이(676dp)는 이 영역 + 구분선 + 액션
- * 영역을 쌓으면 자연히 근접하므로 별도로 강제하지 않는다 — 헤더를 생략한 채 정확히 676dp로
- * 강제하면 오히려 내용과 어긋난다.
+ * 슬라이드 영역(방 목록)은 `Peek`(240dp 고정)/`Full`(방 4개 이하 416dp, 5개 이상 448dp) 2단이다
+ * — 드래그 핸들을 위/아래로 끌어 전환하고, 디폴트는 `Peek`이다(디자이너 확인, 2026-08-31). 예전엔
+ * `Full` 하나(676dp)로 고정 구현했으나 Figma `2392-128669`(peek)·`2542-10516`/`2392-128693`(full)
+ * 대조로 2단 시트가 맞다고 정정됐다. [RoomSelectSheetLevel]은 이 컴포저블이 화면에서 빠졌다 다시
+ * 붙을 때마다(시트를 다시 열 때마다) 초기화되는 로컬 상태라 — 별도로 `Peek`으로 되돌리는 코드가
+ * 없어도 매번 여는 시점엔 `Peek`부터 시작한다.
  *
  * @param place 공유 대상 장소(Figma `2862-175301`) — 시트 상단에 썸네일+이름+주소로 보여준다.
  *   `null`이면 이 헤더 블록 자체를 그리지 않는다.
- * @param rooms 공유 대상으로 고를 수 있는 전체 방 목록(`RoomRepository.observeMyRooms()`).
+ * @param rooms 공유 대상으로 고를 수 있는 전체 방 목록(`RoomRepository.observeMyRooms()`) —
+ *   [fullSlideAreaHeight]가 이 개수로 `Full` 높이를 정한다.
  * @param alreadySavedRoomIds 이 장소가 이미 저장돼 있는 방 id 집합(EC-004) — [selectedRoomIds]와
  *   무관하게 항상 체크됨+비활성으로 그리며, 클릭해도 토글되지 않는다.
  * @param selectedRoomIds 사용자가 새로 고른(아직 저장되지 않은) 방 id 집합.
@@ -126,6 +163,12 @@ internal fun RoomSelectSheet(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var sheetLevel by remember { mutableStateOf(RoomSelectSheetLevel.PEEK) }
+    val slideAreaHeight = when (sheetLevel) {
+        RoomSelectSheetLevel.PEEK -> RoomSelectSheetTokens.PeekSlideAreaHeight
+        RoomSelectSheetLevel.FULL -> fullSlideAreaHeight(rooms.size)
+    }
+
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -134,7 +177,10 @@ internal fun RoomSelectSheet(
                 containerColor = MinoAndroidTheme.colors.backgroundElevatedNormal,
             ),
     ) {
-        RoomSelectDragHandle()
+        RoomSelectDragHandle(
+            onDraggedUp = { sheetLevel = RoomSelectSheetLevel.FULL },
+            onDraggedDown = { sheetLevel = RoomSelectSheetLevel.PEEK },
+        )
 
         if (place != null) {
             RoomSelectPlaceHeader(place = place, onCreateRoomClick = onCreateRoomClick)
@@ -145,7 +191,7 @@ internal fun RoomSelectSheet(
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(RoomSelectSheetTokens.SlideAreaHeight),
+                .height(slideAreaHeight),
         ) {
             items(items = rooms, key = { it.id }) { room ->
                 val isAlreadySaved = room.id in alreadySavedRoomIds
@@ -233,15 +279,37 @@ private fun RoomSelectPlaceHeader(
     }
 }
 
+/**
+ * `Peek`↔`Full` 드래그 핸들. `RoomListBottomSheet`의 헤더 드래그 감지(`detectVerticalDragGestures` +
+ * 임계값)와 같은 패턴 — 표준 Compose 드래그 감지로 2단 전이만 판정하는 최소 구현이다.
+ */
 @Composable
-private fun RoomSelectDragHandle(modifier: Modifier = Modifier) {
+private fun RoomSelectDragHandle(
+    onDraggedUp: () -> Unit,
+    onDraggedDown: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(
-                top = RoomSelectSheetTokens.HandleTopPadding,
-                bottom = RoomSelectSheetTokens.HandleBottomPadding,
-            ),
+            .padding(top = RoomSelectSheetTokens.HandleTopPadding, bottom = RoomSelectSheetTokens.HandleBottomPadding)
+            .pointerInput(onDraggedUp, onDraggedDown) {
+                var accumulatedDrag = 0f
+                val thresholdPx = RoomSelectSheetTokens.DragThreshold.toPx()
+                detectVerticalDragGestures(
+                    onDragStart = { accumulatedDrag = 0f },
+                    onVerticalDrag = { change, dragAmount ->
+                        accumulatedDrag += dragAmount
+                        change.consume()
+                    },
+                    onDragEnd = {
+                        when {
+                            accumulatedDrag <= -thresholdPx -> onDraggedUp()
+                            accumulatedDrag >= thresholdPx -> onDraggedDown()
+                        }
+                    },
+                )
+            },
         contentAlignment = Alignment.Center,
     ) {
         Box(

@@ -144,7 +144,7 @@
 
 - [X] T042 [P] [US3] `feature/room/src/main/java/team/mino/feature/room/detail/component/PlaceActionMenu.kt` 작성 — 장소 카드 더보기, "다른 방에 공유"·"장소 삭제" 2항목만 고정(`MinoMenu`, EC-007)
 - [X] T043 [US3] `RoomDetailViewModel`에 `OnPlaceMoreClick` 처리 추가(T009 의존)
-- [X] T044 [P] [US3] `feature/room/src/main/java/team/mino/feature/room/detail/component/RoomSelectSheet.kt` 작성 — `Full` 676dp 고정, 슬라이드 영역 416dp, 방 다중 선택. `RoomRepository.observeMyRooms()` 재사용해 이미 저장된 방은 체크+비활성(EC-004)
+- [X] T044 [P] [US3] `feature/room/src/main/java/team/mino/feature/room/detail/component/RoomSelectSheet.kt` 작성 — `Peek`(디폴트, 240dp)/`Full`(방 4개 이하 416dp·5개 이상 448dp) 2단 드래그, 방 다중 선택. `RoomRepository.observeMyRooms()` 재사용해 이미 저장된 방은 체크+비활성(EC-004)
 - [X] T045 [US3] `RoomDetailViewModel`에 `OnShareToOtherRoomClick`/`OnRoomSelectConfirm`/`OnRoomSelectDismiss` 처리 추가 — `PlaceRepository.sharePlaces(pinId, targetRoomIds)` 호출(`POST /pins/{pinId}/duplicate`, [contracts/place-repository.md](./contracts/place-repository.md)), `409 DUPLICATE_PIN_IN_ROOM` 도메인 예외 처리, 성공 시 `ShowShareCompleteToast` 발행(FR-009, UX-002, T024 의존)
 - [X] T046 [P] [US3] `feature/room/src/main/java/team/mino/feature/room/detail/component/PlaceDeleteConfirmDialog.kt` 작성 — UX-001 문구(`이 장소를 삭제할까요?`/`장소에 등록된 사진과 댓글이 모두 삭제되며, 다시 되돌릴 수 없어요.`) 그대로 고정
 - [X] T047 [US3] `RoomDetailViewModel`에 `OnPlaceDeleteClick`/`OnPlaceDeleteConfirm`/`OnPlaceDeleteCancel` 처리 추가 — `PlaceRepository.deletePlace` 호출, `places` 즉시 갱신(FR-010, SC-003, T024 의존)

@@ -73,7 +73,10 @@
 
 ## D10. [SYS-003] 다른 방에 공유 시트는 `:feature:room/detail/component/`의 내부 바텀시트다
 
-- **Decision**: [FR-009] [다른 방에 공유] 클릭 시 여는 방 선택 시트(`Full` 676dp 단일 고정, [spec.md 유저 플로우 3](./spec.md))를 `RoomSelectSheet`(`detail/component/`)로 구현한다. `:core:navigation` Launcher 계약을 두지 않는다.
+- **Decision**: [FR-009] [다른 방에 공유] 클릭 시 여는 방 선택 시트(`Peek`(디폴트)/`Full` 2단 드래그,
+  [spec.md 유저 플로우 3](./spec.md) — 2.2.0에서 `Full` 676dp 단일 고정 서술을 디자이너 확인 거쳐
+  정정)를 `RoomSelectSheet`(`detail/component/`)로 구현한다. `:core:navigation` Launcher 계약을
+  두지 않는다.
 - **Rationale**: 이 시트는 "탐색 중이던 화면 Context를 유지"([PRD SYS-003])해야 하고 높이가 고정된 모달형 바텀시트라, `feature-module.md` 1장이 구분하는 "진입형 feature"(Activity 진입점·독립 플로우)의 특징과 맞지 않는다 — room-list의 자체 3단 바텀시트(`RoomListBottomSheet`)가 `:feature:room` 내부 컴포넌트인 것과 같은 성격이다. 데이터 소스는 `RoomRepository.observeMyRooms()`(room-list가 이미 정의, [room-list/contracts/room-repository.md](../room-list/contracts/room-repository.md))를 그대로 재사용할 수 있다 — 방 목록 자체는 이미 SSOT가 있다.
 - **미구현/미확정 사항**: "이미 저장된 방을 체크된 채 비활성으로 표시"하는 규칙은 spec이 확정했지만([spec.md EC-004](./spec.md)), **실제 복제 실행 API(어떤 요청으로 여러 방에 한 번에 저장하는지)는 이 spec 범위 밖([SYS-003] 전용 spec 소관, `spec.md §3.2`)이라 `PlaceRepository.sharePlaces`의 서버 계약은 `[TBD]`로 남긴다**(구현 시 목데이터로 메운다, room-list D12와 같은 패턴). [시트의 [새 방 만들기] 버튼 → SYS-001 재호출](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8) 흐름은 PRD [SYS-003] Flow B에 있으나 `spec.md`의 FR/유저 플로우에는 명시돼 있지 않다 — spec에 없는 요구사항이라 이 plan도 추가하지 않는다(spec 개정이 필요하면 `/mino-spec` 몫).
 - **Alternatives considered**: `:core:navigation`에 `RoomSelectLauncher` 계약을 만들고 향후 [SCR-006] 장소 상세도 같은 시트를 쓰게 대비 — 기각. 아직 두 번째 소비자가 이 plan 범위 안에 없고, 그 경우도 Activity가 아니라 컴포넌트 승격(→ `:core:common:ui`) 문제라 Launcher 패턴과 무관하다.

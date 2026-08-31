@@ -111,7 +111,7 @@ feature/room/src/main/java/team/mino/feature/room/
         ├── PlaceCardList.kt · PlaceCardGrid.kt   # 리스트형/카드형 장소 카드
         ├── PlaceActionMenu.kt          # 장소 카드 더보기 — 다른 방에 공유·삭제
         ├── PlaceDeleteConfirmDialog.kt # UX-001 문구 고정
-        ├── RoomSelectSheet.kt          # [SYS-003] 다른 방에 공유 — Full 676dp 고정
+        ├── RoomSelectSheet.kt          # [SYS-003] 다른 방에 공유 — Peek(디폴트)/Full 2단 드래그
         ├── RoomInviteSheet.kt          # [SYS-006] Flow B — 424dp 고정, 참여자 목록 288dp 스크롤
         ├── RoomMoreMenu.kt             # 화면 더보기[⋮] — 방 편집(방장 전용)/나가기, Peek 상단·그 외 하단(FR-003)
         ├── RoomLeaveConfirmDialog.kt   # [SYS-007] Flow A — 일반 멤버
