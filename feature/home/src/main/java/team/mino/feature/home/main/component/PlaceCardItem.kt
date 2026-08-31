@@ -57,7 +57,9 @@ import team.mino.feature.home.R
  *
  * @param card 그릴 카드. 이 컴포저블은 상태를 갖지 않는다.
  * @param isActionMenuOpen 이 카드의 액션 메뉴가 열려 있는가. 판정은 호출자가 하고 여기서는 그리기만 한다.
- * @param onMoreClick `[...]` 클릭.
+ * @param onMoreClick `[...]` 클릭. `null`이면 클릭 영역을 **아예 붙이지 않는다** — 덱의 뒷장이나 가이드
+ *  사본처럼 보여 주기만 하는 자리에 쓴다. 클릭 영역이 있으면 그 위에서 시작한 제스처의 down을 먼저
+ *  삼키므로, 조작을 받지 않는 카드는 영역 자체를 두지 않는다.
  * @param onSaveToAnotherRoom 액션 메뉴의 `다른 방 저장` 선택.
  * @param onDismissActionMenu 메뉴 바깥 탭·뒤로가기. 스와이프로 닫는 경로는
  *  [team.mino.feature.home.main.vm.HomeViewModel]이 판정하므로 여기서 다시 만들지 않는다.
@@ -66,7 +68,7 @@ import team.mino.feature.home.R
 internal fun PlaceCardItem(
     card: PlaceCard,
     isActionMenuOpen: Boolean,
-    onMoreClick: () -> Unit,
+    onMoreClick: (() -> Unit)?,
     onSaveToAnotherRoom: () -> Unit,
     onDismissActionMenu: () -> Unit,
     modifier: Modifier = Modifier,
@@ -98,7 +100,7 @@ internal fun PlaceCardItem(
 private fun PlaceCardHeader(
     card: PlaceCard,
     isActionMenuOpen: Boolean,
-    onMoreClick: () -> Unit,
+    onMoreClick: (() -> Unit)?,
     onSaveToAnotherRoom: () -> Unit,
     onDismissActionMenu: () -> Unit,
     modifier: Modifier = Modifier,
@@ -122,13 +124,18 @@ private fun PlaceCardHeader(
             }
             // 메뉴는 이 Box를 앵커로 잡는다 — `[...]` 바로 아래에서 열려야 어느 카드의 메뉴인지 드러난다(spec UX-002).
             Box {
+                val clickable = if (onMoreClick != null) {
+                    Modifier.rippleSingleClickable(onClick = onMoreClick)
+                } else {
+                    Modifier
+                }
                 Icon(
                     imageVector = MinoIcons.MoreVertical,
                     contentDescription = stringResource(R.string.home_card_more),
                     tint = MinoAndroidTheme.colors.labelNormal,
                     modifier = Modifier
                         .clip(CircleShape)
-                        .rippleSingleClickable(onClick = onMoreClick)
+                        .then(clickable)
                         .padding(7.dp)
                         .size(18.dp),
                 )

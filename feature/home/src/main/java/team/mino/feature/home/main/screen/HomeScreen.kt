@@ -122,7 +122,7 @@ internal fun HomeScreen(
                         PlaceCardItem(
                             card = frontCard,
                             isActionMenuOpen = false,
-                            onMoreClick = {},
+                            onMoreClick = null,
                             onSaveToAnotherRoom = {},
                             onDismissActionMenu = {},
                             modifier = Modifier
