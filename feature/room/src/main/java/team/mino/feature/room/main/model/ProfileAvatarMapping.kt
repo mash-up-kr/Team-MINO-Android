@@ -1,7 +1,6 @@
 package team.mino.feature.room.main.model
 
 import team.mino.core.designsystem.component.profileavatar.MinoProfileAvatar
-import team.mino.core.designsystem.component.roomcolorchip.MinoRoomColor
 import team.mino.core.domain.model.ProfileAvatar
 
 /**
@@ -30,29 +29,4 @@ internal val ProfileAvatar.image: MinoProfileAvatar
             ProfileAvatar.Person10 -> MinoProfileAvatar.Person10
             ProfileAvatar.Person11 -> MinoProfileAvatar.Person11
             ProfileAvatar.Person12 -> MinoProfileAvatar.Person12
-        }
-
-/**
- * 프로필 아바타와 방 대표 색의 대응 — 둘 다 서버 표현이 같은 색 식별자(`red`, `cyan`...)를 공유한다
- * (`:core:data`의 `ProfileMapper.AVATAR_COLORS`·`RoomMapper.COLOR_IDENTIFIERS` 참고, 각각 `internal`이라
- * 이 feature에서 직접 재사용할 수 없어 표를 다시 적는다).
- *
- * 개인 방 지도 핀(`RoomListMap.PersonalPlacePin`)에 "내 프로필 색" 핀을 얹는 데 쓴다 — 개인 방은
- * `RoomColor.GRAY`(색 미선택)라 방 색을 그대로 쓸 수 없다.
- */
-internal val ProfileAvatar.roomColor: MinoRoomColor
-    get() =
-        when (this) {
-            ProfileAvatar.Person1 -> MinoRoomColor.Red
-            ProfileAvatar.Person2 -> MinoRoomColor.RedOrange
-            ProfileAvatar.Person3 -> MinoRoomColor.Orange
-            ProfileAvatar.Person4 -> MinoRoomColor.Green
-            ProfileAvatar.Person5 -> MinoRoomColor.Purple
-            ProfileAvatar.Person6 -> MinoRoomColor.Lime
-            ProfileAvatar.Person7 -> MinoRoomColor.Cyan
-            ProfileAvatar.Person8 -> MinoRoomColor.Pink
-            ProfileAvatar.Person9 -> MinoRoomColor.Blue
-            ProfileAvatar.Person10 -> MinoRoomColor.Brown
-            ProfileAvatar.Person11 -> MinoRoomColor.LightBlue
-            ProfileAvatar.Person12 -> MinoRoomColor.Violet
         }

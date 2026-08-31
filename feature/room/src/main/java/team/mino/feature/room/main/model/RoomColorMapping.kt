@@ -9,7 +9,7 @@ import team.mino.core.domain.model.RoomColor
  * (`docs/adr/2026-08-14-room-color-palette-in-design-system.md`).
  *
  * 지도 핀(`RoomListMap`)이 공동방 핀 색을 정하는 데 쓴다 — 개인 방([RoomColor.GRAY])은 칩이 없어
- * `null`이고, 그 자리는 내 프로필 색([ProfileAvatarMapping.roomColor])이 대신한다.
+ * `null`이고, [RoomMapPin]이 `null`을 기본(검정) 핀으로 그린다.
  */
 internal val RoomColor.chip: MinoRoomColor?
     get() = when (this) {
