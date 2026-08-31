@@ -85,8 +85,11 @@ internal fun RoomListRoute(
     // LocalBottomNavVisibility로 대체(core/common/ui/scaffold/LocalBottomNavVisibility.kt KDoc 참고).
     val bottomNavVisibility = LocalBottomNavVisibility.current
     val isDetailMode = selectedRoomId != null
-    DisposableEffect(isDetailMode) {
-        bottomNavVisibility.value = !isDetailMode
+    // [state.isNudgeSheetVisible]이 화면 전체(바텀 네비게이션 자리까지)를 덮는 딤 팝업([RoomNudgeAutoSheet])의
+    // 표출 여부다 — 팝업이 떠 있는 동안엔 셸의 바텀 네비게이션도 함께 숨겨야 실기기에서 팝업 액션 영역
+    // 아래로 네비게이션 바가 비쳐 보이지 않는다(실기기 확인된 결함).
+    DisposableEffect(isDetailMode, state.isNudgeSheetVisible) {
+        bottomNavVisibility.value = !isDetailMode && !state.isNudgeSheetVisible
         onDispose { bottomNavVisibility.value = true }
     }
 

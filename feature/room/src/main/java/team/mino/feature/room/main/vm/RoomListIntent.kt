@@ -34,6 +34,9 @@ sealed interface RoomListIntent : Intent {
 
     data object OnNudgeCreateClick : RoomListIntent
 
+    /** [FR-008] 자동 팝업 Nudge의 [나중에 만들래요] 클릭 또는 딤 영역 탭 — 팝업만 닫는다. */
+    data object OnNudgeDismissClick : RoomListIntent
+
     data class OnRoomFormResult(val createdRoomId: String?) : RoomListIntent
 
     data object OnCurrentLocationClick : RoomListIntent
