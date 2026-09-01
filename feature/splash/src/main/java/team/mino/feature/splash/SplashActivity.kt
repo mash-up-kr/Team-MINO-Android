@@ -1,7 +1,9 @@
 package team.mino.feature.splash
 
+import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
@@ -32,7 +34,13 @@ class SplashActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        enableEdgeToEdge()
+        // 마스코트가 화면 바닥까지 닿아야 하는데(SplashShell), 시스템이 3버튼 내비바에 까는 대비
+        // 스크림이 그 아래를 덮어 눈 아랫부분을 잘라낸다. 이 화면은 내비바 자리까지 아트가 차지하는
+        // 것이 디자인이므로 스크림을 끄고, 대신 어두운 마스코트 위에서 읽히도록 내비 아이콘을 밝게 둔다.
+        // 상단은 배경이 밝아 기본값 그대로다.
+        enableEdgeToEdge(navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT))
+        window.isNavigationBarContrastEnforced = false
+
         setContent {
             MinoAndroidAppTheme {
                 SplashShell(
