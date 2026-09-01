@@ -22,7 +22,7 @@ import team.mino.core.domain.model.RoomThumbnail
 data class RoomCardUiModel(
     val title: String,
     val placeCountLabel: String,
-    val participantAvatars: ImmutableList<MinoProfileAvatar>,
+    val participantAvatars: ImmutableList<MinoProfileAvatar?>,
     val thumbnail: RoomThumbnail,
     val memo: String?,
 )

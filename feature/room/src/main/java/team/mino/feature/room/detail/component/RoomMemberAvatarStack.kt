@@ -39,13 +39,14 @@ import team.mino.feature.room.detail.component.token.RoomMemberAvatarStackTokens
  * 받는다.
  *
  * @param profileAvatars 표시할 멤버 아바타 목록(이미 최대 4개로 잘려 온다, [RoomMemberSummary]).
+ *   항목의 `null`은 아바타를 고르지 않은 멤버이며 기본 아바타로 그려진다.
  * @param overflowLabel 스택 끝에 겹쳐 붙는 초과 인원 뱃지 문구(Figma `state=more`, 예: "+5", "+99+").
  *   `null`이면 뱃지를 숨긴다.
  * @param onInviteClick 초대(+) 버튼 콜백(Figma `state=add`). `null`이면 버튼을 숨긴다.
  */
 @Composable
 internal fun RoomMemberAvatarStack(
-    profileAvatars: ImmutableList<MinoProfileAvatar>,
+    profileAvatars: ImmutableList<MinoProfileAvatar?>,
     modifier: Modifier = Modifier,
     overflowLabel: String? = null,
     onInviteClick: (() -> Unit)? = null,
@@ -65,8 +66,8 @@ internal fun RoomMemberAvatarStack(
         profileAvatars.forEach { avatar ->
             RingedSlot(ringColor = ringColor, shape = slotShape) {
                 MinoAvatar(
-                    size = RoomMemberAvatarStackTokens.AvatarSize,
                     profileAvatar = avatar,
+                    size = RoomMemberAvatarStackTokens.AvatarSize,
                 )
             }
         }

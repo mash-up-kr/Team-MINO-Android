@@ -21,7 +21,6 @@ import androidx.compose.ui.unit.dp
 import kotlinx.collections.immutable.ImmutableList
 import team.mino.core.designsystem.component.avatar.MinoAvatar
 import team.mino.core.designsystem.component.avatar.MinoAvatarSize
-import team.mino.core.designsystem.component.avatar.MinoAvatarVariant
 import team.mino.core.designsystem.foundation.icons.MinoIcons
 import team.mino.core.designsystem.foundation.icons.icons.Check
 import team.mino.core.designsystem.theme.MinoAndroidTheme
@@ -29,8 +28,8 @@ import team.mino.core.designsystem.util.modifier.clickable.rippleSingleClickable
 import team.mino.core.designsystem.util.modifier.selectable.rippleSingleSelectable
 import team.mino.core.designsystem.util.modifier.surface.surface
 import team.mino.core.domain.model.RoomMember
-import team.mino.feature.room.detail.model.image
 import team.mino.feature.room.detail.vm.LeaveDialogState
+import team.mino.feature.room.main.model.image
 
 /**
  * 방장 나가기 확인·위임 모달([SYS-007] Flow B).
@@ -167,9 +166,8 @@ private fun OwnerDelegateMemberRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         MinoAvatar(
-            variant = MinoAvatarVariant.Person,
-            size = MinoAvatarSize.Large,
             profileAvatar = member.avatar.image,
+            size = MinoAvatarSize.Large,
             contentDescription = member.nickname,
         )
 
