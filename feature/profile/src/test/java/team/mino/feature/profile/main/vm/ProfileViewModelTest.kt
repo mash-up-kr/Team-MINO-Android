@@ -22,11 +22,11 @@ import org.junit.Before
 import org.junit.Test
 import team.mino.core.designsystem.component.profileavatar.MinoProfileAvatar
 import team.mino.core.domain.model.Profile
+import team.mino.core.domain.model.ProfileAvatar
 import team.mino.core.domain.usecase.SaveProfileUseCase
 import team.mino.core.domain.usecase.ValidateNicknameUseCase
 import team.mino.core.errorhandling.MinoDomainException
 import team.mino.feature.profile.fake.FakeProfileRepository
-import team.mino.feature.profile.main.model.DefaultProfileAvatar
 import team.mino.feature.profile.main.model.ProfileEntryPoint
 import team.mino.feature.profile.main.model.profileAvatar
 import java.io.IOException
@@ -79,7 +79,6 @@ class ProfileViewModelTest {
 
             val state = viewModel.state.value
             assertEquals(second, state.selectedAvatar)
-            assertEquals(second, state.displayedAvatar)
         }
 
     @Test
@@ -97,6 +96,30 @@ class ProfileViewModelTest {
             assertEquals(Profile(nickname = "민호", avatar = avatar.profileAvatar), profileRepository.savedProfile)
             assertEquals(listOf(ProfileSideEffect.SaveCompleted), sideEffects)
             assertFalse(viewModel.state.value.isSaving)
+        }
+
+    /**
+     * 아바타는 선택 입력이라 고르지 않아도 저장된다. 그때 나가는 값은 **선택 12종 밖의 기본 아바타**다
+     * (FR-015 · EC-002 · TS-023).
+     *
+     * [ProfileAvatar.Default]와만 비교해서는 판정이 서지 않는다 — 기본값이 어느 항목을 가리키는지는
+     * 도메인이 언제든 옮길 수 있어, 12종 중 하나를 보내는 구현도 그 비교를 통과할 수 있다. 그래서 나간 값이
+     * 목록 12종에 **속하지 않는다**는 것을 함께 본다(`research.md` D53).
+     */
+    @Test
+    fun `아바타를 고르지 않고 저장하면 선택 12종이 아닌 기본 아바타가 나간다`() =
+        runTest {
+            val viewModel = createViewModel()
+
+            viewModel.processIntent(ProfileIntent.NicknameChanged("민호"))
+            assertNull(viewModel.state.value.selectedAvatar)
+
+            viewModel.processIntent(ProfileIntent.SaveClicked)
+            advanceUntilIdle()
+
+            val saved = requireNotNull(profileRepository.savedProfile)
+            assertEquals(ProfileAvatar.Default, saved.avatar)
+            assertFalse(SELECTABLE_AVATARS.contains(saved.avatar))
         }
 
     @Test
@@ -155,7 +178,6 @@ class ProfileViewModelTest {
             val state = viewModel.state.value
             assertEquals("민호", state.nickname)
             assertEquals(avatar, state.selectedAvatar)
-            assertEquals(avatar, state.displayedAvatar)
             assertTrue(state.isNicknameValid)
             assertTrue(state.isSaveEnabled)
         }
@@ -187,9 +209,32 @@ class ProfileViewModelTest {
             val state = viewModel.state.value
             assertEquals("", state.nickname)
             assertNull(state.selectedAvatar)
-            assertEquals(DefaultProfileAvatar, state.displayedAvatar)
             assertFalse(state.isNicknameValid)
             assertFalse(state.isSaveEnabled)
+        }
+
+    /**
+     * 기본 아바타로 저장된 프로필은 **아바타를 고르지 않은 프로필**이다. 프리필이 그것을 선택으로 복원하면
+     * 사용자가 고른 적 없는 값이 골라진 것이 되고, `지우기`가 첫 화면부터 활성이 된다(FR-005 · TS-016).
+     *
+     * 성립의 근거는 `ProfileAvatar.image`가 기본 아바타에서만 `null`을 낸다는 것이다(`research.md` D53).
+     * 닉네임은 유효하게 채워 두어 `지우기`가 아바타 조건 하나 때문에 비활성인 것을 드러낸다 —
+     * 닉네임까지 무효면 어느 조건이 막았는지 갈리지 않는다.
+     */
+    @Test
+    fun `기본 아바타로 저장된 프로필을 프리필하면 고르지 않은 상태가 된다`() =
+        runTest {
+            profileRepository.givenProfile(Profile(nickname = "민호", avatar = ProfileAvatar.Default))
+
+            val viewModel = createViewModel()
+            advanceUntilIdle()
+
+            val state = viewModel.state.value
+            assertEquals("민호", state.nickname)
+            assertNull(state.selectedAvatar)
+            assertTrue(state.isNicknameValid)
+            assertTrue(state.isSaveEnabled)
+            assertFalse(state.isClearEnabled)
         }
 
     @Test
@@ -404,6 +449,64 @@ class ProfileViewModelTest {
             assertFalse(state.isSaveEnabled)
         }
 
+    /**
+     * 상한은 판정이 아니라 입력 차단이다 — 16번째 글자는 오류가 되는 것이 아니라 아예 들어가지 않는다
+     * (TS-017 · FR-014). 자르는 주체는 ViewModel이다 — `MinoTextField`에는 `maxLength`가 없다
+     * (`research.md` D51, screen 계약 §Intent).
+     */
+    @Test
+    fun `닉네임 15자를 채운 뒤 들어온 16번째 글자는 반영되지 않는다`() =
+        runTest {
+            val viewModel = createViewModel()
+
+            viewModel.processIntent(ProfileIntent.NicknameChanged(NICKNAME_AT_LIMIT))
+            assertEquals(NICKNAME_AT_LIMIT, viewModel.state.value.nickname)
+
+            viewModel.processIntent(ProfileIntent.NicknameChanged(NICKNAME_AT_LIMIT + "호"))
+
+            val state = viewModel.state.value
+            assertEquals(NICKNAME_AT_LIMIT, state.nickname)
+            assertEquals(NICKNAME_MAX_LENGTH, state.nickname.length)
+            assertTrue(state.isNicknameValid)
+            assertFalse(state.isNicknameErrorVisible)
+            assertTrue(state.isSaveEnabled)
+        }
+
+    /** 붙여넣기는 상한을 한 번에 넘겨 온다. 요청 전체를 버리지 않고 앞 15자만 남긴다(TS-020 · FR-014). */
+    @Test
+    fun `상한을 넘겨 붙여넣은 닉네임은 앞 15자만 반영된다`() =
+        runTest {
+            val viewModel = createViewModel()
+
+            viewModel.processIntent(ProfileIntent.NicknameChanged(PASTED_NICKNAME))
+
+            val state = viewModel.state.value
+            assertEquals(NICKNAME_AT_LIMIT, state.nickname)
+            assertEquals(NICKNAME_MAX_LENGTH, state.nickname.length)
+            assertTrue(state.isNicknameValid)
+            assertFalse(state.isNicknameErrorVisible)
+            assertTrue(state.isSaveEnabled)
+        }
+
+    /**
+     * **자르고 나서 판정한다** — 원본으로 판정하면 화면에 없는 16번째 글자가 오류를 만든다
+     * (`research.md` D51, screen 계약 §Intent). 잘려 나간 숫자는 판정 대상이 아니므로
+     * 상한 초과가 오류 상태로 새지 않는다(TS-021 · UX-007).
+     */
+    @Test
+    fun `잘려 나간 16번째 글자가 무효 문자여도 오류가 되지 않는다`() =
+        runTest {
+            val viewModel = createViewModel()
+
+            viewModel.processIntent(ProfileIntent.NicknameChanged(NICKNAME_AT_LIMIT + "1"))
+
+            val state = viewModel.state.value
+            assertTrue(state.isNicknameValid)
+            assertFalse(state.isNicknameErrorVisible)
+            assertTrue(state.isSaveEnabled)
+            assertEquals(NICKNAME_AT_LIMIT, state.nickname)
+        }
+
     @Test
     fun `닉네임을 고쳐 유효해지면 오류 표시가 사라진다`() =
         runTest {
@@ -433,7 +536,6 @@ class ProfileViewModelTest {
             val state = viewModel.state.value
             assertEquals("", state.nickname)
             assertNull(state.selectedAvatar)
-            assertEquals(DefaultProfileAvatar, state.displayedAvatar)
             assertFalse(state.isNicknameValid)
             assertFalse(state.isNicknameTouched)
             assertFalse(state.isNicknameErrorVisible)
@@ -518,6 +620,15 @@ class ProfileViewModelTest {
 
     private companion object {
         /**
+         * 사용자가 고를 수 있는 아바타 12종을 도메인 값으로 옮긴 목록.
+         *
+         * 목록을 여기 적지 않고 [MinoProfileAvatar.entries]에서 얻는다 — 아바타 그리드가 도는 것과 같은
+         * 출처여서, 화면에 실제로 뜨는 12칸과 어긋날 수 없다. 기본 아바타는 이 열거에 없으므로
+         * (`research.md` D53) 이 목록에도 들어오지 않는다.
+         */
+        val SELECTABLE_AVATARS: List<ProfileAvatar> = MinoProfileAvatar.entries.map { it.profileAvatar }
+
+        /**
          * `ProfileMain(entryPoint)`의 인자 이름. **지우면 모든 케이스가 깨진다.**
          *
          * `RouteDecoder`는 핸들에 키가 없으면 그 필드를 기본값에 맡기는데 `ProfileMain.entryPoint`에는 기본값이
@@ -525,5 +636,14 @@ class ProfileViewModelTest {
          * 비어 있어 언제나 `MyPage`로 복원된다(`createViewModel` 참고). 즉 필요한 것은 키의 존재뿐이다.
          */
         const val ENTRY_POINT_ARG = "entryPoint"
+
+        /** FR-014의 닉네임 상한. 오류가 되는 하한과 달리 판정에 들어가지 않고 입력 차단으로만 드러난다. */
+        const val NICKNAME_MAX_LENGTH = 15
+
+        /** 정확히 [NICKNAME_MAX_LENGTH]자. 조합 없이 한 글자가 한 자로 세어지는 완성형 한글만 쓴다. */
+        const val NICKNAME_AT_LIMIT = "민호민호민호민호민호민호민호민"
+
+        /** 상한의 두 배(30자)를 한 번에 넘겨 오는 붙여넣기 값. */
+        const val PASTED_NICKNAME = "민호민호민호민호민호민호민호민호민호민호민호민호민호민호민호"
     }
 }

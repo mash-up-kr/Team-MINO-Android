@@ -9,6 +9,7 @@ import team.mino.core.common.android.architecture.MviContainer
 import team.mino.core.common.android.architecture.mviContainer
 import team.mino.core.common.android.extension.launchSafely
 import team.mino.core.designsystem.component.profileavatar.MinoProfileAvatar
+import team.mino.core.domain.model.ProfileAvatar
 import team.mino.core.domain.repository.ProfileRepository
 import team.mino.core.domain.usecase.SaveProfileUseCase
 import team.mino.core.domain.usecase.ValidateNicknameUseCase
@@ -108,11 +109,19 @@ internal class ProfileViewModel
             }
         }
 
+        /**
+         * 닉네임의 상한을 여기서 자른다 — 상한은 오류가 아니라 입력 차단이라
+         * [ValidateNicknameUseCase]는 길이를 모르고 입력 컴포넌트에도 상한을 넘길 자리가 없다.
+         * 상한을 넘겨 붙여넣은 값도 요청 전체를 버리지 않고 앞부분만 남긴다.
+         *
+         * 판정은 잘라낸 값으로 다시 받는다. 원본으로 판정하면 화면에 없는 글자가 오류를 만든다.
+         */
         private fun changeNickname(value: String) {
+            val nickname = value.take(NICKNAME_MAX_LENGTH)
             updateState {
                 copy(
-                    nickname = value,
-                    isNicknameValid = validateNickname(value),
+                    nickname = nickname,
+                    isNicknameValid = validateNickname(nickname),
                     isNicknameTouched = true,
                 )
             }
@@ -140,6 +149,9 @@ internal class ProfileViewModel
         /**
          * 저장 중에 들어온 저장은 버린다 — 가드는 코루틴 밖에서 걸어야 두 번째 요청이 시작조차 하지 못한다.
          *
+         * 아바타는 선택 입력이라 고르지 않은 채로도 저장된다. 그때 나가는 값은 [ProfileAvatar.Default]이며,
+         * 어느 항목인지는 여기서 다시 유도하지 않는다 — 기본값을 아는 곳은 도메인 하나다.
+         *
          * 실패해도 입력값은 손대지 않는다. 되돌리는 것은 `isSaving`뿐이라 사용자가 그대로 다시 시도할 수 있다.
          */
         private fun save() {
@@ -151,7 +163,7 @@ internal class ProfileViewModel
                 runCatchingDomain {
                     saveProfile(
                         rawNickname = current.nickname,
-                        avatar = current.displayedAvatar.profileAvatar,
+                        avatar = current.selectedAvatar?.profileAvatar ?: ProfileAvatar.Default,
                     )
                 }.onSuccess {
                     postSideEffect(ProfileSideEffect.SaveCompleted)
@@ -160,5 +172,10 @@ internal class ProfileViewModel
                 }
                 updateState { copy(isSaving = false) }
             }
+        }
+
+        private companion object {
+            /** 닉네임의 허용 문자는 모두 코드 유닛 하나라 [String.length]가 화면 글자 수와 같다. */
+            const val NICKNAME_MAX_LENGTH = 15
         }
     }

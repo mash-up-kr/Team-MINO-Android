@@ -16,10 +16,11 @@ import team.mino.core.domain.model.ProfileAvatar
  * **선언 순서에서 파생하지 않는다.** 위 대응은 [ProfileAvatar]·`RoomColor`의 선언 순서와 어긋나므로
  * (`Person4`·`Person5`·`Person6`이 `green`·`purple`·`lime`), `ordinal`이나 `entries.zip(...)`으로 이으면
  * 컴파일도 되고 테스트도 도는 채로 서버에 틀린 색이 나간다(`docs/specs/profile/research.md` D44).
- * 그래서 12줄을 손으로 적는다. 도메인 이름이 바뀌었을 때 서버 계약이 따라 바뀌어서도 안 된다.
+ * 그래서 13줄을 손으로 적는다. 도메인 이름이 바뀌었을 때 서버 계약이 따라 바뀌어서도 안 된다.
  *
- * 서버 `enum`의 13번째 값 `gray`는 여기에 없다 — 방에서 "색을 고르지 않음"을 뜻하는 값이고
- * 프로필에는 그 상태가 저장되지 않으므로 내보낼 일이 없다.
+ * **`gray`도 이 표의 한 행이다.** 아바타를 고르지 않고 저장한 프로필이 이 값으로 나가며, 방에서 `gray`가
+ * "색을 고르지 않은 방"의 값인 것과 같은 뜻이다 — `RoomMapper`가 미선택 방을 `gray`로 확정해 보내는 것과
+ * 같은 규칙이다(spec FR-015 · EC-002). 서버 `enum`의 13개 값이 전부 쓰인다.
  */
 private val AVATAR_COLORS: Map<ProfileAvatar, String> =
     mapOf(
@@ -35,6 +36,7 @@ private val AVATAR_COLORS: Map<ProfileAvatar, String> =
         ProfileAvatar.Person10 to "brown",
         ProfileAvatar.Person11 to "light_blue",
         ProfileAvatar.Person12 to "violet",
+        ProfileAvatar.Basic to "gray",
     )
 
 /** [RoomMapper]도 같은 표를 쓴다 — 방 멤버 아바타도 같은 `{ color }` 서버 표현을 공유한다. */
@@ -59,11 +61,13 @@ internal fun ProfileResponse.toDomain(): Profile =
  * 서버가 준 아바타를 읽는다. **아바타가 없거나 표에 없는 색이면 `null`** — 무엇으로 메울지는 부르는 쪽이 정한다.
  * 프로필은 기본 아바타로 메우고(위), 홈 카드는 「고르지 않음」을 그대로 도메인에 싣는다(`DeckMapper`).
  *
+ * `gray`는 표에 있으므로 여기서 `null`이 아니라 기본 아바타 항목으로 읽힌다 — 고르지 않은 프로필이 실제로 갖는
+ * 값이기 때문이다. `null` 아바타만 「고르지 않음」으로 남는다.
+ *
  * 색 표를 이 파일 밖으로 내보내지 않기 위한 자리다 — 표가 하나여야 서버가 대응을 바꿀 때 고칠 곳도 하나다.
  */
 internal fun AvatarResponse?.toProfileAvatarOrNull(): ProfileAvatar? = this?.let { AVATARS_BY_COLOR[it.color] }
 
-/** 아바타 12종만 나간다 — `gray`를 내보내는 경로는 없다. */
 internal fun Profile.toRequest(): ProfileRequest =
     ProfileRequest(
         nickname = nickname,

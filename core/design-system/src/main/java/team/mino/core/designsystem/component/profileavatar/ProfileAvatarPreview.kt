@@ -19,7 +19,8 @@ import team.mino.core.designsystem.util.preview.previewValues
  * - `contentDescription` — 시각 축이 아니다
  *
  * `avatar` 블록을 네 개씩 끊어 쌓은 것은 프리뷰 폭에 맞추기 위해서다. 실제 그리드 배치는
- * 이 컴포넌트가 아니라 화면이 소유한다.
+ * 이 컴포넌트가 아니라 화면이 소유한다. `avatar` 축은 12종과 `null` 두 블록으로 나뉘는데,
+ * `null`이 열거 항목이 아니어서 `previewValues()`가 잇지 못하기 때문이다.
  */
 @UiModePreviews
 @Composable
@@ -32,6 +33,13 @@ private fun ProfileAvatarPreview() {
                         MinoProfileAvatarImage(avatar = avatar)
                     }
                 }
+            }
+        }
+        // null은 팔레트 12종이 아니라 기본 아바타를 그린다. 위 블록 바로 아래 두어 12종과 다른
+        // 그림이라는 것이 카탈로그에서 바로 보이게 한다. 크기 스윕은 아래 size 축이 소유한다.
+        PreviewProperty(name = "avatar", values = "null") {
+            PreviewRow {
+                MinoProfileAvatarImage(avatar = null)
             }
         }
         PreviewProperty(name = "size", values = MinoProfileAvatarSize.entries.previewValues()) {
