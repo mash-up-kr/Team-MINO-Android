@@ -5,7 +5,7 @@ import kotlinx.coroutines.flow.flow
 import team.mino.core.data.datasource.PlaceRemoteDataSource
 import team.mino.core.data.repository.mapper.toDomain
 import team.mino.core.domain.model.Place
-import team.mino.core.domain.repository.PlaceRepository
+import team.mino.core.domain.repository.RoomPlacesRepository
 import javax.inject.Inject
 
 /**
@@ -16,9 +16,9 @@ import javax.inject.Inject
  * `HttpClient`의 `convertDomainException`이 `MinoDomainException`으로 매핑해 던지고, 이 클래스는 그대로
  * 위로 전파한다(`docs/conventions/error_handling.md`).
  */
-internal class PlaceRepositoryImpl @Inject constructor(
+internal class RoomPlacesRepositoryImpl @Inject constructor(
     private val remoteDataSource: PlaceRemoteDataSource,
-) : PlaceRepository {
+) : RoomPlacesRepository {
     override fun observePlaces(roomId: String): Flow<List<Place>> =
         flow {
             emit(remoteDataSource.getPins(roomId).map { it.toDomain() })

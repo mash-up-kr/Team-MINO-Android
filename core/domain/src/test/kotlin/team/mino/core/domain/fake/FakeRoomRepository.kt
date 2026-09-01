@@ -1,5 +1,6 @@
 package team.mino.core.domain.fake
 
+import kotlinx.coroutines.flow.Flow
 import team.mino.core.domain.model.Room
 import team.mino.core.domain.model.RoomDraft
 import team.mino.core.domain.model.RoomMember
@@ -24,6 +25,8 @@ class FakeRoomRepository : RoomRepository {
     /** [getRooms]가 호출된 횟수. */
     var getRoomsCallCount: Int = 0
         private set
+
+    override fun observeMyRooms(): Flow<List<Room>> = error("방 목록 조회는 observeMyRooms를 부르지 않는다.")
 
     override suspend fun getRooms(): List<RoomSummary> {
         getRoomsCallCount++

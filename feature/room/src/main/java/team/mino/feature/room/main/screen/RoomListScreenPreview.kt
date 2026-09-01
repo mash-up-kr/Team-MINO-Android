@@ -14,6 +14,7 @@ import team.mino.core.designsystem.theme.MinoAndroidTheme
 import team.mino.core.designsystem.util.preview.UiModePreviews
 import team.mino.core.domain.model.ProfileAvatar
 import team.mino.core.domain.model.Room
+import team.mino.core.domain.model.RoomColor
 import team.mino.core.domain.model.RoomMemberSummary
 import team.mino.core.domain.model.RoomThumbnail
 import team.mino.feature.room.main.model.BottomSheetLevel
@@ -89,8 +90,9 @@ private fun RoomListScreenPreviewContainer(
 private val PERSONAL_ROOM = Room(
     id = "personal",
     name = "내 장소",
-    description = null,
-    color = null,
+    description = "",
+    color = RoomColor.GRAY,
+    ownerId = "me",
     isPersonal = true,
     placeCount = 0,
     thumbnail = RoomThumbnail.ColorAndCharacter(color = null),
@@ -103,7 +105,8 @@ private val GROUP_ROOM_1 = Room(
     id = "group-1",
     name = "민호야 잘하자",
     description = "팀 회식 장소 모음",
-    color = "cyan",
+    color = RoomColor.CYAN,
+    ownerId = "me",
     isPersonal = false,
     placeCount = 12,
     thumbnail = RoomThumbnail.ColorAndCharacter(color = "cyan"),
@@ -119,7 +122,8 @@ private val GROUP_ROOM_2 = Room(
     id = "group-2",
     name = "주말 산책 코스",
     description = "걷기 좋은 길만 모아요",
-    color = "lime",
+    color = RoomColor.LIME,
+    ownerId = "me",
     isPersonal = false,
     placeCount = 4,
     thumbnail = RoomThumbnail.ColorAndCharacter(color = "lime"),
@@ -131,8 +135,9 @@ private val GROUP_ROOM_2 = Room(
 private val GROUP_ROOM_3 = Room(
     id = "group-3",
     name = "카페 탐방",
-    description = null,
-    color = "orange",
+    description = "",
+    color = RoomColor.ORANGE,
+    ownerId = "me",
     isPersonal = false,
     placeCount = 7,
     thumbnail = RoomThumbnail.ColorAndCharacter(color = "orange"),

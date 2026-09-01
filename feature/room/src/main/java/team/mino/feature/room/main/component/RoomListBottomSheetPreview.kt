@@ -14,6 +14,7 @@ import team.mino.core.designsystem.theme.MinoAndroidTheme
 import team.mino.core.designsystem.util.preview.UiModePreviews
 import team.mino.core.domain.model.ProfileAvatar
 import team.mino.core.domain.model.Room
+import team.mino.core.domain.model.RoomColor
 import team.mino.core.domain.model.RoomMemberSummary
 import team.mino.core.domain.model.RoomThumbnail
 import team.mino.feature.room.main.model.BottomSheetLevel
@@ -81,8 +82,9 @@ private fun RoomListBottomSheetPreviewContainer(
 private val PERSONAL_ROOM = Room(
     id = "personal",
     name = "내 장소",
-    description = null,
-    color = null,
+    description = "",
+    color = RoomColor.GRAY,
+    ownerId = "me",
     isPersonal = true,
     placeCount = 0,
     thumbnail = RoomThumbnail.ColorAndCharacter(color = null),
@@ -95,7 +97,8 @@ private val GROUP_ROOM = Room(
     id = "group-1",
     name = "민호야 잘하자",
     description = "팀 회식 장소 모음",
-    color = "cyan",
+    color = RoomColor.CYAN,
+    ownerId = "me",
     isPersonal = false,
     placeCount = 12,
     thumbnail = RoomThumbnail.ColorAndCharacter(color = "cyan"),

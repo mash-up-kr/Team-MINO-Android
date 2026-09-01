@@ -1,5 +1,6 @@
 package team.mino.core.domain.repository
 
+import kotlinx.coroutines.flow.Flow
 import team.mino.core.domain.model.Room
 import team.mino.core.domain.model.RoomDraft
 import team.mino.core.domain.model.RoomMember
@@ -8,12 +9,16 @@ import team.mino.core.domain.model.RoomSummary
 /**
  * 방의 목록·조회·생성·수정 계약.
  *
- * 네 함수 모두 1회성 요청이라 `Flow`를 흘리지 않으며, 실패를 `Result`로 감싸지 않고 `MinoDomainException`으로 던진다.
- * 취소는 그대로 전파한다.
+ * room-list(목록 관찰)·group-room-form(생성·편집)·shared-link-receiver(방 선택 시트)가 각자 만들었다가
+ * develop 병합 과정에서 합쳐졌다. [observeMyRooms]만 `Flow`를 흘리고 나머지는 1회성 요청이다 — 실패를
+ * `Result`로 감싸지 않고 `MinoDomainException`으로 던지며, 취소는 그대로 전파한다.
  */
 interface RoomRepository {
+    /** 내가 속한 모든 방(개인방 + 공동방)을 실시간 관찰. 개인방은 항상 포함된다. */
+    fun observeMyRooms(): Flow<List<Room>>
+
     /**
-     * 참여 중인 방 목록을 가져온다.
+     * 참여 중인 방 목록을 가져온다. 방 선택 시트(shared-link-receiver)가 쓰는 얕은 모델이다.
      *
      * **정렬 책임을 갖지 않는다** — 받은 순서를 그대로 돌려주고, 개인방을 최상단에 고정하는 판정은
      * `GetRoomPickerRoomsUseCase`가 한다.
