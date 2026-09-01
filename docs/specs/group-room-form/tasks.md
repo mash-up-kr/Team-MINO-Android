@@ -2,11 +2,11 @@
 
 **대상 스펙 경로**: `docs/specs/group-room-form`
 
-**기준 plan 버전**: 3.0.1
+**기준 plan 버전**: 3.1.0
 
 **최초 작성일**: 2026-08-25
 
-**최종 수정일**: 2026-08-28
+**최종 수정일**: 2026-08-31
 
 **사전 조건**: [plan.md](./plan.md) · [spec.md](./spec.md) · [data-model.md](./data-model.md) · [research.md](./research.md) · [contracts/](./contracts/) · [quickstart.md](./quickstart.md)
 
@@ -250,7 +250,7 @@
 - [X] T067 [P] ADR 승격을 제안한다 — ~~R-002(mock 데이터 레이어 전략)~~ · R-006(디자인 시스템 컴포넌트 판정) · R-022(DS 컴포넌트의 글자 수 단위)([plan.md](./plan.md) 헌법 게이트 G4). **R-002는 plan 2.0.0에서 후보에서 내려갔다** — 전제("서버가 없다")가 사라져 다른 feature를 구속할 수 없다(R-024). 그 ADR은 쓰이지 않았으므로 폐기할 문서도 없다. 봉투(R-025)는 승격 대상이 아니라 **기존 ADR 준수**다
 - [X] T076 `./gradlew :app:assembleQaDebug`와 `./gradlew :core:domain:test :core:data:testQaDebugUnitTest :feature:roomform:testQaDebugUnitTest`를 실행해 전부 통과시킨다 — T063과 같은 확인을 **실서버 전환 후에 다시** 하는 것이며, `:core:data` 테스트가 새로 들어간다([quickstart.md](./quickstart.md) §2)
 - [X] T084 [quickstart.md](./quickstart.md) §3의 **S-10(합병 회귀)** 을 확인한다 — T081~T083이 합친 경로를 무는 것은 이 폼이 아니라 **`:feature:sharereceiver`의 방 선택 시트**라, 폼을 아무리 눌러도 회귀가 드러나지 않는다. 시트를 열어 ① 방 목록이 그대로 그려지는지 ② 개인방이 최상단인지 ③ S-1로 만든 새 방이 목록에 나타나는지를 본다. **세션 배선 전이면 셋 다 401로 막히므로**, 그때는 **기존 `RoomApiServiceTest` 케이스가 무수정으로 통과하는지**로 대신한다 — 기존 케이스를 고쳐야 했다면 `listRooms()`의 동작이 바뀐 것이다([quickstart.md](./quickstart.md) §3 S-10 · [research.md](./research.md) R-032) — *US3·US4*
-- [X] T077 [quickstart.md](./quickstart.md) §3의 S-1~S-9를 임시 진입점으로 눌러 확인한다 — S-3은 S-1이 만든 방으로 진입하고(시드가 없다), S-9는 서버 수정 반영을 확인한다. **세션·유저 등록이 배선되기 전이면 전부 401로 막힌다** — 그때는 통과가 아니라 **"미검증"으로 기록한다**([quickstart.md](./quickstart.md) §1·§4 · [plan.md](./plan.md) §열린 항목 H)
+- [X] T077 [quickstart.md](./quickstart.md) §3의 S-1~S-9를 임시 진입점으로 눌러 확인한다 — S-3은 S-1이 만든 방으로 진입하고(시드가 없다), **S-9는 이제 다섯 항목이 전부 통과해야 하는 확인이다**(plan 3.1.0에서 서버가 마지막 어긋남을 닫아 "배포 대기"로 빼 둘 항목이 없어졌다 — [research.md](./research.md) R-035). **세션·유저 등록이 배선되기 전이면 전부 401로 막힌다** — 그때는 통과가 아니라 **"미검증"으로 기록한다**([quickstart.md](./quickstart.md) §1·§4 · [plan.md](./plan.md) §열린 항목 H)
 
 ---
 
@@ -291,7 +291,7 @@ plan 2.0.0이 데이터 출처를 mock에서 실서버로 바꾸면서(R-024) �
 
 | spec 항목 | 남는 이유 | 어디서 닫히는가 |
 |---|---|---|
-| FR-011 진입점별 도착점 이동 | 온보딩·방 리스트 탭·홈 탭·복제 시트·방 상세가 하나도 없다 | 각 진입점 feature |
+| FR-011 진입점별 도착점 이동 | 도착점 화면을 **다른 spec이 소유한다.** 폼은 `created`·`updated`·`skipped`와 `roomId`를 돌려주는 데까지다 | 각 진입점 feature. **홈 방 시트만 방 상세가 아니라 홈 덱 전환이다**(spec 4.0.0 FR-011) — [`home-deck-exploration`](../home-deck-exploration/spec.md) |
 | FR-012 `방 생성 완료!` · FR-015 스낵바 | 표출 자리가 도착 화면이다(UX-006) | 도착점 feature |
 | FR-014 방장 전용 [편집] 노출 · SC-006 | 방 상세가 없다 | PRD [SCR-005] |
 | FR-016 편집 결과의 다른 화면 반영 | 방 목록·지도 마커·방 뱃지가 없다 | PRD [SCR-004] 등 |
@@ -302,7 +302,9 @@ plan 2.0.0이 데이터 출처를 mock에서 실서버로 바꾸면서(R-024) �
 ### 미결 사항
 
 1. **`MinoTopNavigation`이 이미 존재한다.** [plan.md](./plan.md) 1.4.1의 소스 트리는 이 컴포넌트를 `[신규]`로 적었으나, 2026-08-25 `597ea97`(다른 이슈)로 `:core:design-system`에 이미 들어와 develop에 있다. 그래서 T020은 **신설이 아니라 확장**이다. 파라미터 이름·구성이 [contracts/design-system-additions.md](./contracts/design-system-additions.md) §1의 API 초안과 어긋나는 문제는 **현 구현 방식을 따르는 것으로 확정됐다**(2026-08-25 사용자 결정) — 이미 develop에 들어와 다른 화면이 쓰기 시작한 시그니처를 문서 초안에 맞추자고 흔드는 편이 대가가 크다. 그 결정을 T020이 담고 있으므로 착수 시 다시 판단할 것이 없다. **계약 §1의 초안 코드 블록은 2026-08-28 plan 2.2.1이 실제 시그니처로 맞췄다**(`onNavigateBack` → `onBackClick`, `colors` 파라미터 없음). 초안과 실제가 갈린 자리가 사라졌으므로 **이 항목은 닫혔다.**
-2. **열린 항목 D가 한 건으로 줄었고, 이 목록이 떠안는 것은 없다.** 2026-08-28T00:55:30 조회에서 서버가 `color`에 13색 `enum`을 배포한 것이 확인돼 어긋남 2·4가 해소됐다([research.md](./research.md) R-030). **그 `enum`의 회색이 `"gray"`여서 plan 2.1.0이 `"grey"`로 확정했던 판정이 뒤집혔고, T014의 표가 원래 맞았으므로 고칠 코드가 없다** — 그 정정으로 T069가 이 목록에서 사라졌다. 남은 어긋남은 `description.maxLength: 20`(spec은 30자) 하나이며 **21~30자 설명은 지금도 서버가 거절한다.** 반영 여부는 T077이 [quickstart.md](./quickstart.md) S-9의 4번으로 확인하고, **그 4번이 실패하는 것은 이 목록의 결함이 아니다.** 반면 **S-9의 1~3은 통과해야 한다** — 실패하면 T014의 표가 `enum`과 어긋난 것이고, 그것을 잡는 것이 T079다.
+2. ~~**열린 항목 D가 한 건으로 줄었고, 이 목록이 떠안는 것은 없다.**~~ **해소(plan 3.1.0).** 색 계약은 2026-08-28T00:55:30 조회에서 서버가 `color`에 13색 `enum`을 배포해 어긋남 2·4가 닫혔고([research.md](./research.md) R-030 — 그 `enum`의 회색이 `"gray"`여서 plan 2.1.0의 `"grey"` 판정이 뒤집혔고 T014의 표가 원래 맞았으므로 고칠 코드가 없었다. 그 정정으로 T069가 이 목록에서 사라졌다), 마지막 한 건인 `description.maxLength: 20`은 **2026-08-31T12:51:29 재조회에서 서버가 상한 자체를 걷어내며 닫혔다**(R-035). **어긋남은 0건이고 이 목록이 떠안은 것도 없다** — 21~30자 설명이 더는 거절되지 않으므로 S-9는 다섯 항목이 전부 통과해야 하는 확인이 됐고(T077), 실패하면 그것은 서버 스키마가 다시 바뀐 것이다. S-9의 1~3이 실패하는 경우의 판정은 그대로다 — T014의 표가 `enum`과 어긋난 것이고, 그것을 잡는 것이 T079다.
+
+   **같은 조회가 드러낸 새 사실 하나는 작업을 만들지 않는다.** `name.maxLength: 15`도 함께 사라져 **15자 상한의 유일한 수문장이 클라이언트**가 됐다. 이 폼은 `NameChanged`에서 잘라 16번째 글자를 만들지 않으므로 상한을 넘는 요청이 나갈 경로가 없고, 서버가 새로 넣은 `pattern`은 FR-004와 같은 집합(자모 포함)이라 검증을 조일 이유도 없다(R-035). **T043(`NameChanged`의 15자 절단)·T037(그 상한의 테스트)·T012(문자 종류 판정)의 산출물은 그대로다.**
 3. **열린 항목 G(`graphemeLength`의 가시성)도 그대로다.** 방 이름을 `length`로 세는 근거는 FR-004의 허용 문자가 전부 코드 유닛 1개라는 것이며([contracts/room-form-ui.md](./contracts/room-form-ui.md) §1), 허용 문자가 넓어지면 `:core:common:kotlin` 승격이 필요해진다. 그 조건은 [plan.md](./plan.md) §복잡도 추적이 추적한다.
 4. **`MinoTextArea`의 grapheme 변경은 이 목록에 없다.** plan 1.3.0이 `/mino-task`를 거치지 않고 낸 코드이며 트리에 `[완료]`로 표기됐다([plan.md](./plan.md) §복잡도 추적). 다시 작업으로 만들지 않는다.
 5. **T071이 다른 브랜치를 기다린다 — 기다리기로 확정했다**(2026-08-28 사용자 결정). `MinoResponse<T>`와 [응답 봉투 ADR](../../adr/2026-08-27-response-envelope-unwrapped-in-apiservice.md)은 `feature/158-instagram-share-receive`가 갖고 있고 **이 목록은 그 파일을 만들지 않는다**([research.md](./research.md) R-025). 여기서 같은 타입을 따로 만들면 머지 때 충돌한다.
@@ -393,7 +395,7 @@ T073 · T074 · T079 · T080 · T083 ──► T076 (빌드·테스트)
 
 ### 병렬 처리 기회
 
-- Phase 2에서 [P]가 붙은 T004·T005·T006·T007·T008·T009·T013·T015·T020·T021·T023·T029·T031·T032·T034는 동시에 진행할 수 있다
+- Phase 2에서 [P]가 붙은 T004·T005·T006·T007·T008·T009·T013·~~T015~~·T020·T021·T023·T029·T031·T032·T034는 동시에 진행할 수 있다 *(T015는 plan 2.0.0에서 폐기됐다 — §폐기된 작업)*
 - 세 모듈(`:core:domain` · `:core:data` · `:core:design-system`)의 기반 작업은 서로를 기다리지 않는다
 - 스토리 안에서 [P]가 붙은 컴포넌트 작업(T038·T039 / T044)은 동시에 만들 수 있다
 - T047·T049는 `:core:domain`이라 feature 작업과 병렬이다

@@ -642,6 +642,8 @@ red · red_orange · orange · lime · green · cyan · violet · pink · blue �
 
 ## R-033. 어긋남 한 건은 여전히 열려 있다 — 2026-08-28 재조회 *(plan 3.0.0)*
 
+> **상태 갱신(plan 3.1.0)** — 이 항목이 "여전히 열려 있다"고 적은 `description.maxLength: 20`은 **2026-08-31T12:51 재조회에서 사라졌다.** 아래 결정(30자 유지)은 그대로 유효하고, 바뀐 것은 그것을 막고 있던 서버 제약이다 → [R-035](#r-035-어긋남이-0건이-됐다--서버가-descriptionname의-상한을-걷어냈다-plan-310).
+
 **Decision**: `description`의 상한은 **30자를 유지한다**([R-029](#r-029-색-어휘와-어긋남-네-건의-협의-결과-plan-210)의 판정 그대로). 이번 조회에서도 서버는 `20`이다. 코드는 바뀌지 않는다.
 
 **Rationale**: 2026-08-28T11:39:53+09:00 재조회. 세 오퍼레이션의 요청 스키마가 여전히 `"description": { "anyOf": [{ "type": "string", "maxLength": 20 }, { "type": "null" }] }`다. 색 `enum` 13색은 [R-030](#r-030-서버-enum-배포로-색-어휘가-확정됐다--grey-판정을-되돌린다-plan-220)이 확인한 그대로이고 변동이 없다.
@@ -667,3 +669,44 @@ red · red_orange · orange · lime · green · cyan · violet · pink · blue �
 **이 계획이 더 할 일은 없다.** 에셋도 컴포넌트도 이미 서 있고 폼이 이미 쓰고 있다. 트리 표기만 실측과 맞춘다.
 
 **Alternatives considered**: 없다. 이미 머지되어 두 feature가 함께 쓰는 상태이고, 되돌리면 방 선택 시트가 에셋을 잃는다.
+
+---
+
+## R-035. 어긋남이 0건이 됐다 — 서버가 `description`·`name`의 상한을 걷어냈다 *(plan 3.1.0)*
+
+**Decision**: **방 설명 30자를 그대로 두고, 방 이름 15자는 이제 클라이언트만 강제한다.** 코드는 한 줄도 바뀌지 않으나 **[plan.md](./plan.md) §열린 항목 D가 닫힌다.**
+
+**Rationale**: 2026-08-31T12:51:29+09:00 재조회. 두 요청 스키마가 바뀌었다.
+
+| 필드 | 2026-08-28T11:39 | 2026-08-31T12:51 |
+|---|---|---|
+| `name` | `minLength: 1`, **`maxLength: 15`** | `minLength: 1`, **`pattern: "^[\uAC00-\uD7A3\u3131-\u314E\u314F-\u3163A-Za-z0-9 ]+$"`** (상한 제거) |
+| `description` | `anyOf: [{ string, **maxLength: 20** }, null]` | `anyOf: [{ string }, null]` (상한 제거) |
+
+[R-029](#r-029-색-어휘와-어긋남-네-건의-협의-결과-plan-210)가 협의로 확정하고 [R-033](#r-033-어긋남-한-건은-여전히-열려-있다--2026-08-28-재조회-plan-300)이 두 번 미반영으로 확인한 **어긋남 1번이 닫혔다.** 서버가 협의한 `30`을 넣는 대신 상한 자체를 걷어냈으므로, spec의 30자와 부딪힐 값이 남아 있지 않다. 이로써 이 계약의 어긋남은 **0건**이다.
+
+**`name`의 `pattern`은 FR-004와 정확히 같다.** 유니코드 구간이 완성형(`AC00-D7A3`)·자음(`3131-314E`)·모음(`314F-3163`)·영문·숫자·공백이며, **자모 단독을 허용한다** — spec 3.1.0이 [R-021](#r-021-방-이름의-자모-단독-허용-plan-120)로 확정한 그 판정을 서버가 독립적으로 같게 내렸다. 클라이언트 검증을 느슨하게 할 이유도, 조일 이유도 없다.
+
+**15자 상한이 이제 클라이언트에만 있다.** 서버가 길이를 보지 않으므로 16자 이름이 요청으로 나가면 그대로 저장된다. 이 폼은 `NameChanged`에서 잘라 16번째 글자를 만들지 않으므로([data-model.md](./data-model.md) §입력 규칙) 실제로 그런 요청이 나갈 경로가 없고, **그래서 코드를 더하지 않는다.** 다만 상한의 유일한 수문장이 클라이언트라는 사실은 [contracts/room-api.md](./contracts/room-api.md) §1이 기록한다 — 다른 클라이언트가 붙으면 그쪽에도 같은 규칙이 필요하다.
+
+**Alternatives considered**:
+
+- *서버가 상한을 안 보니 클라이언트 상한도 푼다* — FR-003·TS-003이 15자를 요구한다. 서버 제약이 느슨해진 것은 spec을 바꿀 근거가 아니다.
+- *길이를 서버에서도 강제해 달라고 다시 요청한다* — 상한 제거가 협의(30으로 늘린다)의 결과일 가능성이 높고, 지금 어긋나는 것이 없어 협의를 다시 열 근거가 없다. 실제로 문제가 되는 것은 **다른 클라이언트가 붙을 때**이며 그때 열면 된다.
+
+---
+
+## R-036. 도착점 feature 지형이 바뀌었다 — `:feature:home`이 홈 방 시트를 갖고 있다 *(plan 3.1.0)*
+
+**Decision**: **이 계획의 범위는 그대로다.** FR-011의 도착점 이동은 여전히 이 계획이 만들지 않는다. 바뀌는 것은 [plan.md](./plan.md) §범위 경계가 그 사실을 설명하는 **근거**다 — "도착점 feature가 하나도 없다"에서 "도착점 feature는 다른 spec이 소유한다"로 옮긴다.
+
+**Rationale**: plan 2.2.1이 2026-08-28에 적은 *"`:feature:home`은 아직 Sample 버튼만 있는 골격"*이 낡았다. 실측하면 그 모듈은 [`HomeRoomSheet.kt`](../../../feature/home/src/main/java/team/mino/feature/home/main/component/HomeRoomSheet.kt)로 **홈 방 시트를 이미 그리고 있고**, 첫 칸 `방 만들기`가 `HomeSideEffect.NavigateToRoomForm`으로 나가며, 그 신호를 어디로 배선할지는 [`HomeNavigation.kt`](../../../feature/home/src/main/java/team/mino/feature/home/HomeNavigation.kt)의 `onNavigateToRoomForm` 콜백을 받는 셸이 정한다.
+
+**이것이 `RoomFormLauncher` 계약을 흔들지 않는다.** 오히려 계약이 노린 모양 그대로다 — 홈은 폼을 **열 신호만** 내고 도착점을 스스로 정하며, `:feature:home`의 `build.gradle.kts` 어디에도 `:feature:roomform`이 없다.
+
+**spec 4.0.0이 바꾼 홈 분기(방 상세 → 홈 덱 전환)가 실제로 닿는 곳은 그 모듈이다.** 지금 `onNavigateToRoomForm: () -> Unit`은 **결과를 되받는 표면이 없어**, 폼이 돌려주는 `created` + `roomId`로 보는 방을 바꾸려면 그 콜백이 결과를 받는 형태로 넓어져야 한다. 그것은 [`docs/specs/home-deck-exploration`](../home-deck-exploration/spec.md)의 몫이고, 이 계획이 대신 설계하지 않는다 — 폼 쪽 계약([contracts/room-form-launcher.md](./contracts/room-form-launcher.md) §3)은 이미 그 값을 싣고 있어 더할 것이 없다.
+
+**Alternatives considered**:
+
+- *이 계획이 홈 쪽 배선까지 맡는다* — `:feature:home`은 다른 spec이 소유하는 모듈이라 이 계획이 손대면 두 spec이 같은 파일을 두고 갈린다. 계약이 이미 필요한 값을 싣고 있으므로 넘길 것도 없다.
+- *`RoomFormLauncher`에 도착점 힌트를 싣는다* — [R-004](#r-004-폼은-도착점을-모른다-plan-100)가 기각한 것과 같은 안이다. 홈 분기가 바뀌었다는 사실은 그 기각을 흔들기는커녕, 도착점을 폼 밖에 둔 덕에 **폼을 한 글자도 안 고치고 넘어간** 근거가 된다.
