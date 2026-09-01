@@ -22,12 +22,13 @@ import team.mino.core.designsystem.util.modifier.clickable.rippleSingleClickable
  * @param thumbnail 카드 왼쪽 썸네일 슬롯. 사진 콜라주와 폴백 중 무엇을 그릴지는 호출부가 정한다.
  * @param memo 방 설명. null이면 Figma `Show memo=off`.
  * @param participantAvatars 참여자 아바타 목록 — 서버가 `avatar.color`로 내려주는 번들 아바타다.
+ *   항목의 `null`은 아바타를 고르지 않은 참여자이며 기본 아바타로 그려진다.
  */
 @Composable
 fun MinoRoomCard(
     title: String,
     placeCountLabel: String,
-    participantAvatars: ImmutableList<MinoProfileAvatar>,
+    participantAvatars: ImmutableList<MinoProfileAvatar?>,
     onClick: () -> Unit,
     thumbnail: @Composable () -> Unit,
     modifier: Modifier = Modifier,
