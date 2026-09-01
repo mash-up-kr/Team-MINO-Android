@@ -6,11 +6,11 @@
 
 **최초 작성일**: 2026-08-20
 
-**최종 수정일**: 2026-08-29
+**최종 수정일**: 2026-08-31
 
 **상태**: CREATED
 
-**버전**: 1.2.0
+**버전**: 1.2.1
 
 **입력**: 사용자 설명: "피그마 링크를 참고해 전체 온보딩 플로우에 대한 스펙을 작성한다. 별도의 스펙으로 작성된 부분들은 이 스펙에서 맹점으로 다루지 않는다. 별도 스펙들은 각 브랜치의 spec.md로 확인 가능하다. https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=1728-114613&m=dev"
 
@@ -148,7 +148,7 @@
 
 앱의 유일한 장소 추가 경로인 "외부 앱 공유 시트로 꾹에 보내기"를 5스텝으로 짚어준다. 가상의 인스타그램 게시글을 소재로 손동작만 보여줄 뿐, 실제 저장은 일어나지 않는다.
 
-**Figma**: [000-1 튜토리얼_step 1](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=3798-167079&m=dev) · [000-2 튜토리얼_step 2](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=3798-167094&m=dev) · [000-3 튜토리얼_step 3](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=3798-167109&m=dev) · [000-4 튜토리얼_step 4](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=3798-167124&m=dev) · [000-5 튜토리얼_step 5](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=3798-167139&m=dev)
+**Figma**: [000-1 튜토리얼_step 1](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=3798-167079&m=dev) · [000-2 튜토리얼_step 2](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=3798-167094&m=dev) · [000-3 튜토리얼_step 3](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=3798-167109&m=dev) · [000-4 튜토리얼_step 4](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=3798-167124&m=dev) · [000-5 튜토리얼_step 6](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=4396-184972&m=dev)
 
 **진입 조건**: 친구 초대 스텝을 마쳤거나 공동방 생성 스텝을 건너뛰어 튜토리얼 스텝 1이 열린 상태. 상단에는 제목 `튜토리얼`과 [건너뛰기]가, 하단에는 dot 5개가 보이고 하단 CTA는 없다.
 
@@ -250,7 +250,7 @@
 - **FR-015**: 시스템은 반드시 튜토리얼 하단에 dot 5개를 노출하고 현재 스텝 하나만 선택 상태로 표시한다. (근거: Figma `000-1 튜토리얼` 주석 #1 "총 5개의 화면으로, 모달 내 dot는 5개 표출합니다")
 - **FR-016**: 시스템은 반드시 dot을 눌러 해당 스텝으로 곧바로 이동할 수 있게 한다. 앞 스텝으로 되돌아가는 이동도 허용한다. (근거: Figma `000-1 튜토리얼` 주석 #1 "사용자가 현재 페이지와 다른 페이지로 쉽게 이동할 수 있도록 돕습니다", PRD [SCR-002] Flow D)
 - **FR-017**: 시스템은 반드시 튜토리얼 스텝 1~4에서 상단에 [건너뛰기]를 노출하고 하단 CTA를 노출하지 않는다. (근거: Figma `000-1`~`000-4 튜토리얼` — Action Area 숨김)
-- **FR-018**: 시스템은 반드시 튜토리얼 스텝 5에서 상단 [건너뛰기]를 노출하지 않고 하단 CTA `꾹 시작하기`를 노출한다. (근거: Figma `000-5 튜토리얼_step 5`(노드 `3798-167139`) — Action Area 노출, 상단 [건너뛰기] 없음)
+- **FR-018**: 시스템은 반드시 튜토리얼 스텝 5에서 상단 [건너뛰기]를 노출하지 않고 하단 CTA `꾹 시작하기`를 노출한다. (근거: Figma `000-5 튜토리얼_step 6`(노드 `4396-184972`) — Action Area 노출, 상단 [건너뛰기] 없음)
 - **FR-019**: 시스템은 반드시 튜토리얼의 [건너뛰기] 또는 `꾹 시작하기`가 눌리면 온보딩을 끝내고 홈 탭을 연다. (근거: PRD [SCR-002] Flow D, Figma `000-1 튜토리얼` 주석 #2 "클릭 시 002[홈]으로 이동합니다")
 - **FR-020**: 시스템은 반드시 튜토리얼 안의 예시 이미지를 조작에 반응하지 않는 안내물로만 다루며, 튜토리얼을 거치는 동안 장소를 저장하거나 외부 앱을 열지 않는다. (근거: PRD [SCR-002] Flow D "실제 저장 없이 연습시키는 구간")
 

@@ -4,10 +4,10 @@
 
 배포된 [Team MINO API](https://api.gguk.org/api-docs-json) `1.0.0` 중 이 feature가 쓰는 엔드포인트의 계약이다.
 
-**조회 시점**: **2026-08-28T11:39:53+09:00.** 이 문서의 스키마 제약은 그 시점의 문서를 원문 그대로 인용한 것이다.
+**조회 시점**: **2026-08-31T12:51:29+09:00.** 이 문서의 스키마 제약은 그 시점의 문서를 원문 그대로 인용한 것이다.
 
-> [!NOTE]
-> 이 재조회에서 세 오퍼레이션의 스키마에 **변동이 없음**을 확인했다 — 색 `enum` 13색은 그대로이고, 남은 어긋남도 `description.maxLength` 하나 그대로다(§2 · [research.md](../research.md) R-033). 그것이 고쳐지면 아래 인용을 다시 대조한다.
+> [!IMPORTANT]
+> **이 재조회에서 요청 스키마가 바뀌었다.** `name.maxLength: 15`와 `description.maxLength: 20`이 **둘 다 사라지고**, `name`에 문자 종류를 거르는 `pattern`이 생겼다. 이로써 §2의 어긋남이 **0건**이 됐다([research.md](../research.md) R-035). 색 `enum` 13색과 응답 스키마는 변동이 없다.
 
 > 레이어 구성·작성 규칙(`ApiService`·`DataSource`·`RepositoryImpl`·Mapper)은 [`core/data/README.md`](../../../../core/data/README.md)가 소유한다.
 
@@ -33,8 +33,9 @@
 {
   "type": "object",
   "properties": {
-    "name":        { "type": "string", "minLength": 1, "maxLength": 15 },
-    "description": { "anyOf": [{ "type": "string", "maxLength": 20 }, { "type": "null" }] },
+    "name":        { "type": "string", "minLength": 1,
+                     "pattern": "^[\\uAC00-\\uD7A3\\u3131-\\u314E\\u314F-\\u3163A-Za-z0-9 ]+$" },
+    "description": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
     "color":       { "type": "string",
                      "enum": ["red","red_orange","orange","lime","green","cyan",
                               "violet","pink","blue","brown","light_blue","purple","gray"] }
@@ -42,6 +43,10 @@
   "required": ["name", "color"]     // PATCH는 "required": []
 }
 ```
+
+**`name`의 `pattern`은 FR-004와 같은 집합이다** — 완성형 한글(`AC00-D7A3`) · 자음(`3131-314E`) · 모음(`314F-3163`) · 영문 · 숫자 · 공백. **자모 단독을 허용한다**는 점까지 spec 3.1.0의 판정([research.md](../research.md) R-021)과 일치하므로, 클라이언트 검증을 조이거나 풀 이유가 없다.
+
+**길이 상한의 유일한 수문장은 이제 클라이언트다.** 서버가 `name`·`description`의 길이를 보지 않으므로 16자 이름이나 31자 설명이 요청으로 나가면 그대로 저장된다. 이 폼은 상한을 넘는 입력 자체를 만들지 않으므로([data-model.md](../data-model.md) §입력 규칙) 그런 요청이 나갈 경로가 없다 — **코드를 더하지 않는다.** 다른 클라이언트가 이 엔드포인트에 붙는다면 같은 규칙을 그쪽에서도 걸어야 한다([research.md](../research.md) R-035).
 
 ### 응답 본문 스키마 (원문)
 
@@ -66,11 +71,11 @@
 
 ## 2. 계약이 spec과 어긋나는 지점
 
-**서버가 `enum`을 배포해 색 계약이 확정됐다**(2026-08-28T00:55 조회 · [research.md](../research.md) R-030). 네 건 중 **둘이 해소, 하나가 부분 해소, 하나가 미해소**다. 같은 날 11:39 재조회에서도 이 표는 그대로다(R-033).
+**어긋남이 0건이 됐다.** 색 계약은 2026-08-28에 서버가 `enum`을 배포해 확정됐고([research.md](../research.md) R-030), 마지막 한 건인 방 설명 길이는 **2026-08-31T12:51 재조회에서 상한 자체가 제거되며 닫혔다**(R-035).
 
 | # | 어긋남 | 상태 | 이 구현 |
 |---|---|---|---|
-| 1 | `description.maxLength: 20` vs FR-005 · PRD의 **30자** | **미해소.** 협의(30으로 늘린다)가 아직 반영되지 않았다. 2026-08-28T11:39 재조회에서도 `20`이다(R-033) | 30자 유지 — spec을 따른다. **21~30자는 서버가 거절한다** |
+| 1 | `description.maxLength: 20` vs FR-005 · PRD의 **30자** | **해소(2026-08-31).** 서버가 협의한 `30`을 넣는 대신 **상한을 걷어냈다.** spec의 30자와 부딪힐 값이 남아 있지 않다(R-035) | 30자 유지 — 무변경. **더는 서버가 거절하지 않는다** |
 | 2 | `color.maxLength: 7`이 `red_orange`·`light_blue`를 자른다 | **해소.** 상한이 제거되고 `enum`으로 대체됐다 | 무변경 |
 | 3 | 색 표현의 자기모순 | **부분 해소.** 방 응답은 `enum` + `example: "red"`로 정리됐으나 `InvitationPreview.room.color`는 여전히 hex 예시다 | 무변경 — **이 feature는 초대 미리보기를 쓰지 않는다** |
 | 4 | `color`에 `enum`이 없다 | **해소.** 13색이 명시됐다 | 무변경 |

@@ -133,7 +133,7 @@ sealed interface RoomNameValidation {
 | 최대 길이 | 공백 포함 30자. 자르는 주체와 세는 단위는 [contracts/room-form-ui.md](./contracts/room-form-ui.md) §1이 소유한다 | FR-005·TS-004 |
 | 문자 종류 | 제한 없음 | EC-006 |
 
-**swagger는 20자로 적었으나 30자를 따른다** — [research.md](./research.md) R-003.
+**swagger의 20자 상한은 2026-08-31에 제거됐다** — 30자와 부딪힐 서버 제약이 더는 없다([research.md](./research.md) R-003 → R-035).
 
 **방 이름과 달리 설명에는 카운터가 있다** — 디자인이 방 설명을 `Textinput/Textarea`로 그렸고 그 컴포넌트가 카운터를 갖는다. 방 이름은 `Textinput/Textfield`이고 카운터가 없다(FR-003·TS-045). UX-007·SC-002도 "미리보기 카드와 **방 설명의** 글자 수 표시"로 범위가 좁혀져 있다.
 
@@ -240,7 +240,7 @@ sealed interface RoomFormDialog {
 
 | 필드 | 타입 | 기본값 | 비고 |
 |---|---|---|---|
-| `name` | `String` | 없음 | 폼이 항상 보낸다. 서버 `maxLength: 15` — FR-003과 일치한다 |
+| `name` | `String` | 없음 | 폼이 항상 보낸다. 서버는 길이를 보지 않고 `pattern`으로 문자 종류만 거른다 — FR-004와 같은 집합이고, **15자 상한은 클라이언트만 강제한다**(R-035) |
 | `description` | `String?` | **두지 않는다** | 빈 문자열은 `null`로 보낸다. 기본값을 두면 `null`이 본문에서 빠져 "지운 설명"이 전달되지 않는다([research.md](./research.md) R-027). **서버 `maxLength`는 여전히 20이다** — 30으로 고치기로 협의됐으나 미반영(R-030) |
 | `color` | `String` | 없음 | `RoomDraft.color ?: GRAY`가 확정한 값의 식별자. **서버 `enum` 밖의 값은 거절된다** — 어휘는 [contracts/room-api.md](./contracts/room-api.md) §2 |
 

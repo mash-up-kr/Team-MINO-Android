@@ -4,7 +4,7 @@
 
 `:feature:onboarding`의 화면 계약이다. MVI 기반 타입(`MviContainer`·`UiState`·`Intent`·`SideEffect`)의 정의는 [`core/common/android/README.md`](../../../../core/common/android/README.md), Route↔Screen 구성 규칙은 [`feature-module.md`](../../../architecture/feature-module.md) 4장이 소유한다.
 
-> **Figma 노드**: 친구 초대 `2314-95550` · 복사 토스트 `2370-67386` · 튜토리얼 `3798-167079`·`3798-167094`·`3798-167109`·`3798-167124`·`3798-167139`.
+> **Figma 노드**: 친구 초대 `2314-95550` · 복사 토스트 `2370-67386` · 튜토리얼 `3798-167079`·`3798-167094`·`3798-167109`·`3798-167124`·`4396-184972`.
 
 ---
 
@@ -107,7 +107,7 @@ Activity 스코프 ViewModel이다. 스텝 전이 규칙 전체를 여기가 소
 | 상단 바 | `MinoTopNavigation` — 우상단 [X] 아이콘. 제목 없음. **그 축이 지금은 없어 이 계획이 넓힌다** | FR-013 · [design-system-additions.md §4](design-system-additions.md) |
 | 제목 | `친구들을 초대해볼까요?` | FR-009 |
 | 본문 | `"여기 어때?"는 이제 그만 친구가 들어오면 저장한 장소가 한눈에 모여요. 다음 약속 장소, 여기서 같이 골라요.` | FR-009 |
-| 일러스트 | 캐릭터·구름 배경 (feature 소유 에셋) | [research.md R-016](../research.md) |
+| 일러스트 | 캐릭터 일러스트 한 장 (feature 소유 에셋) | [research.md R-016](../research.md) |
 | 액션 | `MinoActionArea` — [친구 초대하기] · [초대 링크 복사] | FR-011·FR-012 |
 | **없는 것** | 참여자 목록 · [건너뛰기] 텍스트 버튼 · 진행 표시 | FR-010·FR-013·UX-006 |
 
@@ -168,7 +168,7 @@ Activity 스코프 ViewModel이다. 스텝 전이 규칙 전체를 여기가 소
 
 ## 4. 튜토리얼 (`tutorial/`)
 
-**Figma**: `3798-167079`~`3798-167139`
+**Figma**: `3798-167079`·`3798-167094`·`3798-167109`·`3798-167124`·`4396-184972`
 
 ### 4.1 화면 구성
 
