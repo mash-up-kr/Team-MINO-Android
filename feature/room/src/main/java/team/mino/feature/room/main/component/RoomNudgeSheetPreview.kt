@@ -31,7 +31,7 @@ private fun RoomNudgeSheetPreview() {
 private fun RoomNudgeAutoSheetPreview() {
     MinoAndroidAppTheme {
         Box(modifier = Modifier.fillMaxSize()) {
-            RoomNudgeAutoSheet(onCreateClick = {}, onDismissRequest = {})
+            RoomNudgeAutoSheet(visible = true, onCreateClick = {}, onDismissRequest = {})
         }
     }
 }

@@ -197,12 +197,14 @@ internal fun RoomListScreen(
             // [FR-008] 공동방 0개 상태로 탭에 진입할 때마다 자동으로 뜨는 딤 팝업. `Full`에서는 인라인
             // 넛지 카드([RoomListRoomCardList]의 showNudge)가 이미 같은 CTA를 보여주므로
             // [RoomListUiState.isNudgeSheetVisible]가 중복 노출을 피한다.
-            if (state.isNudgeSheetVisible) {
-                RoomNudgeAutoSheet(
-                    onCreateClick = { onIntent(RoomListIntent.OnNudgeCreateClick) },
-                    onDismissRequest = { onIntent(RoomListIntent.OnNudgeDismissClick) },
-                )
-            }
+            //
+            // `if`로 이 컴포저블 자체를 넣고 빼지 않고 항상 그려 둔 채 [RoomNudgeAutoSheet.visible]로
+            // 넘긴다 — 그래야 소멸 애니메이션이 재생될 시간(컴포지션에 남아 있는 동안)을 얻는다.
+            RoomNudgeAutoSheet(
+                visible = state.isNudgeSheetVisible,
+                onCreateClick = { onIntent(RoomListIntent.OnNudgeCreateClick) },
+                onDismissRequest = { onIntent(RoomListIntent.OnNudgeDismissClick) },
+            )
 
             if (isMapControlVisible && sortMenuExpanded) {
                 RoomListSortMenu(
