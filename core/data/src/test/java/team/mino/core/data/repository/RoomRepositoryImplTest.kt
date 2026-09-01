@@ -5,11 +5,12 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import team.mino.core.data.datasource.FakeRoomRemoteDataSource
+import team.mino.core.data.network.dto.response.RoomResponse
 import team.mino.core.data.network.dto.response.RoomSummaryResponse
 
 class RoomRepositoryImplTest {
     private val dataSource = FakeRoomRemoteDataSource()
-    private val repository = RoomRepositoryImpl(dataSource = dataSource)
+    private val repository = RoomRepositoryImpl(remoteDataSource = dataSource)
 
     @Test
     fun `observeMyRooms는 데이터소스가 내려준 방을 도메인 모델로 매핑해 방출한다`() =
@@ -23,23 +24,13 @@ class RoomRepositoryImplTest {
         }
 
     @Test
-    fun `getRoom은 id가 일치하는 방을 찾아 반환한다`() =
+    fun `getRoom은 데이터소스의 단건 조회 결과를 그대로 반환한다`() =
         runTest {
-            dataSource.rooms = listOf(response(id = "room-1"), response(id = "room-2"))
+            dataSource.room = roomResponse(id = "room-2")
 
             val room = repository.getRoom("room-2")
 
             assertEquals("room-2", room.id)
-        }
-
-    @Test
-    fun `getRoom은 일치하는 방이 없으면 예외를 던진다`() =
-        runTest {
-            dataSource.rooms = listOf(response(id = "room-1"))
-
-            val result = runCatching { repository.getRoom("missing") }
-
-            assertEquals(true, result.isFailure)
         }
 
     private fun response(
@@ -51,11 +42,18 @@ class RoomRepositoryImplTest {
             type = type,
             name = "테스트 방",
             description = null,
-            color = null,
+            color = "gray",
             ownerId = "owner-1",
-            inviteCode = "invite-1",
-            createdAt = "2026-08-25T00:00:00Z",
             pinCount = 0,
             memberCount = 1,
+        )
+
+    private fun roomResponse(id: String): RoomResponse =
+        RoomResponse(
+            id = id,
+            name = "테스트 방",
+            description = null,
+            color = "gray",
+            ownerId = "owner-1",
         )
 }
