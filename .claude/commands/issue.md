@@ -270,8 +270,12 @@ git checkout -b "<prefix>/<issue-number>-<slug>/base"
 git fetch origin
 git worktree add ".claude/worktrees/<issue-number>-<slug>" -b "<prefix>/<issue-number>-<slug>/base" origin/develop
 git config "branch.<prefix>/<issue-number>-<slug>/base.merge" "refs/heads/<prefix>/<issue-number>-<slug>/base"
-for f in local.properties keystore.properties app/google-services.json; do
-  [ -f "$f" ] && cp "$f" ".claude/worktrees/<issue-number>-<slug>/$f"
+# 복사 대상은 .worktreeinclude가 단일 출처. git이 그 파일의 gitignore 문법을 해석하므로
+# 목록을 여기에 옮겨 적지 않는다 (추적 파일은 워크트리에 이미 있으니 자동으로 빠진다).
+dst=".claude/worktrees/<issue-number>-<slug>"
+git ls-files -o -i --exclude-from=.worktreeinclude | while read -r f; do
+  mkdir -p "$dst/$(dirname "$f")"
+  cp "$f" "$dst/$f"
 done
 ```
 
