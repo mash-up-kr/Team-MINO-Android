@@ -1,5 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="profile_title">프로필 설정</string>
+    <string name="profile_guide">친구들에게 어떻게 보일까요?</string>
+
+    <string name="profile_nickname_label">이름 또는 닉네임</string>
+    <string name="profile_nickname_placeholder">한글·영문 2글자 이상</string>
+    <string name="profile_nickname_helper">최대 15자까지 입력할 수 있어요.</string>
+    <string name="profile_nickname_error">한글·영문 2글자 이상을 입력해주세요.</string>
+
+    <string name="profile_avatar_section_label">프로필 이미지 선택</string>
+    <string name="profile_avatar_thumbnail_description">현재 프로필 이미지</string>
+
+    <string name="profile_action_save">저장</string>
+    <string name="profile_action_clear">지우기</string>
+
     <string name="profile_error_network">네트워크 연결을 확인한 뒤 다시 시도해주세요.</string>
     <string name="profile_error_save_failed">프로필을 저장하지 못했어요. 잠시 후 다시 시도해주세요.</string>
     <string name="profile_error_auth_expired">로그인이 만료되어 저장하지 못했어요. 다시 로그인해주세요.</string>

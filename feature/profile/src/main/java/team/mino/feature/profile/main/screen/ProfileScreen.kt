@@ -12,6 +12,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import team.mino.core.designsystem.component.actionarea.ActionAreaAction
 import team.mino.core.designsystem.component.actionarea.ActionAreaVariant
@@ -22,6 +23,7 @@ import team.mino.core.designsystem.component.textinput.MinoTextField
 import team.mino.core.designsystem.component.textinput.MinoTextFieldStatus
 import team.mino.core.designsystem.component.topnavigation.MinoTopNavigation
 import team.mino.core.designsystem.theme.MinoAndroidTheme
+import team.mino.feature.profile.R
 import team.mino.feature.profile.main.component.ProfileAvatarGrid
 import team.mino.feature.profile.main.vm.ProfileIntent
 import team.mino.feature.profile.main.vm.ProfileUiState
@@ -45,7 +47,7 @@ internal fun ProfileScreen(
 ) {
     Column(modifier = modifier.fillMaxSize()) {
         MinoTopNavigation(
-            title = "프로필 설정",
+            title = stringResource(R.string.profile_title),
             // 뒤로 갈 수 없는 진입점에서는 버튼 자리를 비운다. 비활성 버튼을 보여 주지 않는다.
             onBackClick = if (state.isBackEnabled) onBackClick else null,
         )
@@ -60,25 +62,31 @@ internal fun ProfileScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                text = "친구들에게 어떻게 보일까요?",
+                text = stringResource(R.string.profile_guide),
                 style = MinoAndroidTheme.typography.title3Bold,
                 color = MinoAndroidTheme.colors.primaryNormal,
             )
 
+            // 고르지 않은 상태를 그대로 넘긴다. 무엇으로 채울지는 컴포넌트가 정한다.
             MinoProfileAvatarImage(
-                avatar = state.displayedAvatar,
+                avatar = state.selectedAvatar,
                 size = MinoProfileAvatarSize.Thumbnail,
-                contentDescription = "현재 프로필 이미지",
+                contentDescription = stringResource(R.string.profile_avatar_thumbnail_description),
             )
 
             MinoTextField(
                 value = state.nickname,
                 onValueChange = { onIntent(ProfileIntent.NicknameChanged(it)) },
                 modifier = Modifier.fillMaxWidth(),
-                label = "이름 또는 닉네임",
+                label = stringResource(R.string.profile_nickname_label),
                 required = true,
-                placeholder = "한글·영문 2글자 이상",
-                helperText = "한글·영문 2글자 이상을 입력해주세요.",
+                placeholder = stringResource(R.string.profile_nickname_placeholder),
+                // 안내 문구는 자리를 지킨 채 글자만 갈린다 — 오류가 떠도 아래 요소가 밀리지 않는다.
+                helperText = if (state.isNicknameErrorVisible) {
+                    stringResource(R.string.profile_nickname_error)
+                } else {
+                    stringResource(R.string.profile_nickname_helper)
+                },
                 status = if (state.isNicknameErrorVisible) {
                     MinoTextFieldStatus.Negative
                 } else {
@@ -92,7 +100,7 @@ internal fun ProfileScreen(
             ) {
                 Text(
                     modifier = Modifier.fillMaxWidth(),
-                    text = "프로필 이미지 선택",
+                    text = stringResource(R.string.profile_avatar_section_label),
                     style = MinoAndroidTheme.typography.label1NormalBold,
                     color = MinoAndroidTheme.colors.labelNeutral,
                 )
@@ -105,13 +113,13 @@ internal fun ProfileScreen(
 
         MinoActionArea(
             mainAction = ActionAreaAction(
-                text = "저장",
+                text = stringResource(R.string.profile_action_save),
                 onClick = { onIntent(ProfileIntent.SaveClicked) },
                 enabled = state.isSaveEnabled,
             ),
             variant = ActionAreaVariant.Neutral,
             alternativeAction = ActionAreaAction(
-                text = "지우기",
+                text = stringResource(R.string.profile_action_clear),
                 onClick = { onIntent(ProfileIntent.ClearClicked) },
                 enabled = state.isClearEnabled,
             ),

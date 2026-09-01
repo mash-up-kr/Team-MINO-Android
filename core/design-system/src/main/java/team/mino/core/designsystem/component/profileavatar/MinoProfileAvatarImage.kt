@@ -1,5 +1,6 @@
 package team.mino.core.designsystem.component.profileavatar
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -11,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import team.mino.core.designsystem.R
 import team.mino.core.designsystem.util.modifier.selectable.rippleSingleSelectable
 
 /**
@@ -20,7 +22,9 @@ import team.mino.core.designsystem.util.modifier.selectable.rippleSingleSelectab
  * 테두리만 얹는다. 아바타 여러 개를 늘어놓는 **배치는 화면이 소유한다** — 이 컴포넌트는
  * 자기 한 칸만 안다.
  *
- * @param avatar 그릴 아바타.
+ * @param avatar 그릴 아바타. `null`은 아직 고르지 않은 상태이며 기본 아바타를 그린다 — 기본 아바타는
+ *   팔레트 12종에 끼지 않는 별개의 그림이라 [MinoProfileAvatar] 항목이 아니고, 고르지 않았다는 뜻은
+ *   소비처가 `null`로 든다.
  * @param size 아바타가 놓이는 자리([MinoProfileAvatarSize]). 지름과 테두리 두께가 함께 정해진다.
  * @param selected 선택 여부. **디자인에 선택 표시가 정의되어 있지 않아 시각적으로는 아무것도
  *   그리지 않고**, 스크린 리더가 현재 선택을 읽도록 접근성 시맨틱에만 싣는다. 시맨틱은 선택을
@@ -33,7 +37,7 @@ import team.mino.core.designsystem.util.modifier.selectable.rippleSingleSelectab
  */
 @Composable
 fun MinoProfileAvatarImage(
-    avatar: MinoProfileAvatar,
+    avatar: MinoProfileAvatar?,
     modifier: Modifier = Modifier,
     size: MinoProfileAvatarSize = MinoProfileAvatarSize.Grid,
     selected: Boolean = false,
@@ -58,10 +62,14 @@ fun MinoProfileAvatarImage(
             ),
     ) {
         Image(
-            painter = painterResource(avatar.drawableRes),
+            painter = painterResource(avatar.imageRes),
             contentDescription = contentDescription,
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop,
         )
     }
 }
+
+@get:DrawableRes
+private val MinoProfileAvatar?.imageRes: Int
+    get() = this?.drawableRes ?: R.drawable.profile_avatar_default
