@@ -184,6 +184,7 @@ Phase 0 산출물. `plan.md`에서 내린 설계 결정을 누적한다. 항목�
 - **Rationale**: plan은 spec에 없는 요구사항을 만들지 않는다(헌법 원칙 IV). 상한 15자를 클라이언트에 심으면 spec §5가 "상한을 두지 않는다"로 확정한 결정을 설계가 뒤집는 꼴이 된다. 반대로 서버 규칙을 무시할 수도 없으므로, 어긋남을 삼키지 않고 실패로 드러낸다.
 - **후속 필요**: 두 규칙 중 무엇이 옳은지는 기획·서버와 맞춰 spec을 개정해야 한다. 어긋나는 지점은 두 곳이다 — **상한**(spec 없음 / 서버 15자)과 **공백**(spec 불가 / 서버 허용). 완료 보고에서 `/mino-spec` 개정을 제안한다.
 - **T083 실측 보정(2026-08-28) — 거절 코드는 `400 Bad Request`다.** 4.0.0이 "문서에 없다"로 남긴 마지막 빈칸을 기기 확인이 채웠다([quickstart §4-3](quickstart.md) 20번). 16자 이상 닉네임을 저장하면 서버가 `400`으로 거절하고, `expectSuccess = true` → `convertDomainException`이 그것을 `MinoDomainException.Http(400)`으로 바꿔 화면이 저장 실패 스낵바를 띄운다. **이 결정이 예측한 경로가 그대로 관측됐다** — 클라이언트에 상한을 심지 않고 서버 거절을 저장 실패로 받는다는 판단이 실측으로 확인됐으므로 [spec](spec.md) §5·EC-014를 고칠 이유가 없다. [API 계약 §2](contracts/profile-api-contract.md)의 협의 항목 4가 이것으로 닫혔다.
+- **plan 5.1.0 보정 — 어긋남이 양쪽에서 닫혀 이 결정의 전제가 사라졌다.** 두 지점이 **서로 다른 쪽에서** 해소됐다. **상한**은 [spec 3.0.0](spec.md)이 PRD 10.0.0을 따라 15자를 채택하면서 닫혔고(§5, FR-014 신설), **공백**은 **서버가 `pattern`에서 공백을 뺐다**(2026-08-31 재조회, [D52](#d52-서버-문서-재조회2026-08-31--닉네임-pattern에서-공백이-빠졌다)). 이제 클라이언트 규칙과 서버 스키마가 `2~15자 · 한글·영문 · 공백 불가`로 **완전히 같다.** 이 결정이 감수하기로 한 "어긋남을 저장 실패로 드러낸다"는 **더 이상 발화하지 않는다** — 길이 초과는 [D51](#d51-닉네임-15자-상한의-강제-지점--viewmodel이-자른다)의 입력 차단이, 공백은 `ValidateNicknameUseCase`가 서버에 닿기 전에 막는다. 결정 자체를 뒤집는 것이 아니라 **적용 대상이 없어진 것**이므로 취소선을 긋지 않는다. T083이 실측한 `400`은 관측 기록으로 남되, 닉네임 길이로는 재현되지 않는다.
 - **plan 4.1.0 보정 — spec이 확정해 이 항목이 닫힌다.** [spec 2.0.0](spec.md) §5가 두 지점을 모두 확정했다 — **상한**은 두지 않고(16자 이상은 서버가 거절해 저장 실패로 보인다, 신설 EC-014), **공백**은 불가를 유지한다(클라이언트가 더 좁아 서버까지 가지 않으므로 실패가 없다). 즉 이 결정의 "클라이언트는 spec을 따른다"가 spec 자신의 확정으로 승격됐고, "후속 필요"로 남겨 둔 spec 개정도 끝났다. **협의 항목에서 내린다** — 어긋남은 남지만 알고 받아들이기로 한 어긋남이다.
 - **plan 4.0.0 보정 — 어긋남이 드러난다.** 배포 문서가 `nickname`을 `minLength 2 · maxLength 15 · pattern ^[\uAC00-\uD7A3A-Za-z ]+$`로 확정했다(2026-08-27 조회). spec과 어긋나는 두 지점(**상한**: spec 없음 / 서버 15자, **공백**: spec 불가 / 서버 허용)이 그대로다. 클라이언트가 spec을 따른다는 결정은 유지하고, 16자 이상 닉네임은 서버가 거절해 FR-012의 저장 실패로 사용자에게 보인다. **거절 시의 상태 코드가 문서에 없다** — `POST`는 401·409만, `PATCH`는 401만 문서화되어 있다. `expectSuccess = true`가 어떤 비2xx든 `MinoDomainException.Http`로 바꾸므로 화면 동작은 성립하지만, 코드 확정은 서버팀 협의 항목이다([API 계약](contracts/profile-api-contract.md) §2).
 - **plan 2.0.0 보정**: 이번 범위에는 서버 거절 경로가 없으므로 어긋남이 **드러나지 않는다** — 15자를 넘는 닉네임이 로컬에 그대로 저장되고 아무 실패도 나지 않는다. 어긋남이 사용자에게 처음 보이는 시점은 원격 연동 작업이며, 그전에 spec을 정리하는 편이 낫다. 클라이언트가 spec을 따른다는 결정 자체는 그대로다.
@@ -593,3 +594,80 @@ Phase 0 산출물. `plan.md`에서 내린 설계 결정을 누적한다. 항목�
   - **현행 유지.** 동작은 옳고 낭비는 온보딩 1회뿐이다. 그러나 그 1회가 하필 **앱 시작 경로**에 있고, 없애는 비용이 조건 한 줄이다. 기각.
 - (2026-08-28 확정)
 
+
+## D51. 닉네임 15자 상한의 강제 지점 — ViewModel이 자른다
+
+- **Decision**: [spec 3.0.0](spec.md) FR-014의 15자 상한을 **`ProfileViewModel.changeNickname()`이 `value.take(NICKNAME_MAX_LENGTH)`로 자른다.** `ValidateNicknameUseCase`에는 상한을 넣지 않고, `MinoTextField`에도 `maxLength` 파라미터를 더하지 않는다. 자른 값으로 판정을 다시 받는다.
+- **Rationale**: 세 가지가 같은 곳을 가리킨다.
+  - **spec이 상한을 판정에서 뺐다.** FR-002가 "길이 상한 15자는 이 판정에 넣지 않는다"로 명시하고, FR-014가 그것을 입력 차단으로 돌린다. 상한을 UseCase에 심으면 spec이 나눈 두 개념(오류가 되는 하한 / 오류가 아닌 상한)이 한 판정으로 뭉개지고, 디자인에 없는 "15자 초과" 오류 문구를 만들어야 한다.
+  - **같은 저장소에 선례가 있다.** 방 이름 15자가 정확히 이 형태다 — [`RoomFormViewModel.changeName()`](../../../feature/roomform/src/main/java/team/mino/feature/roomform/form/vm/RoomFormViewModel.kt)이 `value.take(NAME_MAX_LENGTH)`로 자르고 `ValidateRoomNameUseCase`는 길이를 모른다. 원인도 같다 — **`MinoTextField`에는 `maxLength`가 없고 `MinoTextArea`에만 있다.** 두 번째 사례이므로 승격 후보로 든다(완료 보고).
+  - **세는 단위는 이미 규율돼 있다.** [ADR 2026-08-25](../../adr/2026-08-25-grapheme-count-for-text-input.md)가 grapheme cluster를 원칙으로 두되 **"허용 문자가 전부 BMP 안이면 코드 유닛으로 세도 된다"**를 방 이름에 적용했다. 닉네임의 허용 문자(한글 음절 `가`–`힣` · 영문)는 그 방 이름 집합의 **부분집합**이므로 같은 판정이 그대로 성립한다. spec §4의 "사용자가 보는 문자 단위"는 유효한 값 전부에서 `String.take`와 일치한다.
+- **자르고 나서 판정하는 순서가 중요하다**: 원본으로 판정하면 화면에 없는 16번째 글자가 오류를 만든다. `RoomFormViewModel`의 KDoc이 같은 이유를 든다.
+- **감수하는 것**: 상한을 넘는 **무효** 입력(이모지 등)을 붙여넣으면 `take`가 서로게이트 쌍을 가를 수 있다. 그 값은 어차피 `ValidateNicknameUseCase`가 무효로 판정해 오류 상태가 되므로 저장 경로에 닿지 않는다. ADR이 방 이름에 대해 감수한 것과 같은 범위다.
+- **Alternatives considered**:
+  - **`MinoTextField`에 `maxLength`를 더한다.** 자르는 주체가 컴포넌트로 모여 두 필드의 비대칭이 사라진다. 그러나 `:core:design-system`을 넓히는 일이고, `MinoTextArea`의 `maxLength`는 **카운터의 분모**를 겸하는데 디자인에 닉네임 카운터가 없다(UX-007) — 카운터 없는 `maxLength`를 위해 파라미터 축을 하나 더 여는 셈이다. 이 plan의 범위 밖이기도 하다(design-system은 손대지 않는다). 기각하되, 세 번째 사례가 나오면 재검토 대상이다.
+  - **`ValidateNicknameUseCase`에 상한을 넣는다.** 한 곳에서 다 판정해 단순하다. 그러나 spec FR-002가 명시적으로 배제했고, 오류 상태가 되면 디자인에 없는 문구가 필요해진다. 기각.
+  - **자르지 않고 서버 거절에 맡긴다(5.0.0까지의 동작).** spec 3.0.0이 이 선택지를 닫았다. 기각.
+- (plan 5.1.0에서 결정)
+
+## D52. 서버 문서 재조회(2026-08-31) — 닉네임 `pattern`에서 공백이 빠졌다
+
+- **Decision**: [API 계약](contracts/profile-api-contract.md)의 근거 조회본을 **2026-08-31T12:44:57+09:00**으로 갱신한다. 설계는 바꾸지 않는다 — 바뀐 것이 이미 클라이언트가 지키고 있던 방향이기 때문이다.
+- **무엇이 바뀌었나**: `POST /api/v1/users`·`PATCH /api/v1/users/me`의 `nickname.pattern`이 `^[\uAC00-\uD7A3A-Za-z ]+$`에서 **`^[\uAC00-\uD7A3A-Za-z]+$`** 로 좁아졌고(문자 클래스 끝의 공백이 빠졌다), `PATCH`의 description이 `닉네임(공백 포함 한글/영문 2~15자)` → **`닉네임(한글/영문 2~15자, 공백·숫자 불가)`** 로 바뀌었다. 나머지(아바타 13종 `enum`, `id: uuid`, `401`·`409` 코드와 `errorCode` 열거, `PATCH`의 `required: []`)는 2026-08-28 조회본과 **동일**했다.
+- **Rationale**: 이 변화는 클라이언트에 **아무 작업도 만들지 않는다.** `ValidateNicknameUseCase`가 이미 공백을 무효로 판정하고 있었고([D19](#d19-닉네임-규칙-불일치--클라이언트는-spec을-따르고-서버-거절은-저장-실패로-받는다)), 서버가 그 좁은 쪽으로 따라온 것이다. 바뀌는 것은 **문서의 어긋남 목록**뿐이며, [API 계약 §2](contracts/profile-api-contract.md)의 3번이 "spec이 알고 받아들인 어긋남"에서 **"어긋남이 아니다"** 로 내려간다.
+- **이번 조회가 값어치를 한 지점**: [D51](#d51-닉네임-15자-상한의-강제-지점--viewmodel이-자른다)의 근거를 세우려고 상한을 확인하러 갔다가 **묻지 않은 것이 바뀐 것**을 발견했다. plan 4.0.0의 `avatar.color` enum 사건(3시간 만의 값 도메인 변경), 4.3.0의 옛 트리 대조에 이어 **세 번째로 재조회가 사실을 뒤집었다.** [quickstart §2](quickstart.md)의 착수 직전 재조회 규칙을 유지할 근거가 하나 더 쌓였다.
+- **감수하는 것**: 서버 문서에 변경 이력이 없어 **언제 바뀌었는지 알 수 없다.** 8-28과 8-31 사이라는 것만 안다. 이 저장소가 조회 시점을 적는 것이 유일한 시간 축이다.
+- (plan 5.1.0에서 결정)
+
+## D53. 기본 아바타의 자리 — 도메인은 13항목, 디자인 시스템 팔레트는 12종 그대로
+
+- **Decision**: [spec 4.0.0](spec.md) FR-015가 확정한 "선택 목록 12종 밖의 기본 아바타"를 **레이어마다 다른 형태로 든다.**
+  - **`:core:domain`의 `ProfileAvatar`** — 13번째 항목을 **마지막에** 더하고 `Default`가 그것을 가리킨다. 프로필이 가리키는 값은 언제나 이 13종 중 하나다.
+  - **`:core:design-system`의 `MinoProfileAvatar`** — **12종 그대로 둔다.** 기본 그림은 열거 항목이 아니라 `MinoProfileAvatarImage(avatar: MinoProfileAvatar?)`의 **`null` 갈래**가 그린다.
+  - **`:feature:profile`의 매핑** — `ProfileAvatar.image`의 반환 타입이 `MinoProfileAvatar?`가 되고 기본 아바타만 `null`로 간다. 반대 방향은 12종 그대로다.
+  - **`:core:data`의 `ProfileMapper`** — 색 표가 13행이 되고, 기본 아바타가 `enum`의 13번째 색에 대응한다.
+- **Rationale**: **저장소가 같은 문제를 이미 풀어 두었고, 그 답을 그대로 쓴다.** 방 대표 색이 정확히 이 구조다.
+
+  | 자리 | 방 대표 색 | 프로필 아바타(이 결정) |
+  |---|---|---|
+  | 도메인 | [`RoomColor`](../../../core/domain/src/main/kotlin/team/mino/core/domain/model/RoomColor.kt) — 13항목, `GRAY` 포함 | `ProfileAvatar` — 13항목 |
+  | 디자인 시스템 | [`MinoRoomColor`](../../../core/design-system/src/main/java/team/mino/core/designsystem/component/roomcolorchip/MinoRoomColor.kt) — **12종.** KDoc이 "회색 기본값·표시 이름·서버 식별자·그리드 배치는 여기에 없다"로 못박는다 | `MinoProfileAvatar` — **12종 그대로** |
+  | 미선택 표현 | 소비처의 `MinoRoomColor?`의 `null` | 소비처의 `MinoProfileAvatar?`의 `null` |
+  | 기본 그림 | [`RoomThumbnailFallback`](../../../core/common/ui/src/main/java/team/mino/core/common/ui/component/RoomThumbnailFallback.kt)이 `MinoRoomColor?`를 받아 `null -> room_thumbnail_gray` | `MinoProfileAvatarImage`가 `MinoProfileAvatar?`를 받아 `null -> 기본 그림` |
+  | 서버 표 | [`RoomMapper`](../../../core/data/src/main/java/team/mino/core/data/repository/mapper/RoomMapper.kt) — 13행. `null`은 `GRAY`로 확정해 보내고, 모르는 값은 `GRAY`로 읽는다 | `ProfileMapper` — 13행. 같은 규칙 |
+
+  `RoomColor`의 KDoc이 든 이유가 spec §4의 문장과 같다 — **"`GRAY`는 '값 없음'이 아니라 색을 고르지 않은 방이 갖게 되는 색이다."** spec 4.0.0이 기본 아바타를 두고 "화면에만 있는 자리 표시가 아니라 어엿한 값"이라 적은 것과 같은 말이다.
+- **이 형태가 실제로 사게 되는 것 셋**:
+  - **`ProfileAvatarGrid`가 한 줄도 바뀌지 않는다.** `MinoProfileAvatar.entries`가 여전히 12개라 4열 × 3행이 그대로 서고, 기본 아바타를 걸러 내는 필터를 두지 않는다. 13항목으로 넓혔다면 `entries - 기본`이 필요하고, 그것을 빠뜨려도 컴파일은 통과해 **13칸짜리 그리드가 조용히 그려진다.**
+  - **`MinoProfileAvatar`의 KDoc이 지켜진다** — "저장 식별자·'미선택'·그리드 배치는 갖지 않는다". 13번째 항목은 이름을 무엇으로 짓든 역할(기본값)을 담게 되고, 그 문장을 어긴다.
+  - **`prefill()`이 저절로 맞는다.** 서버가 13번째 색을 준 프로필은 `image`가 `null`을 내므로 `selectedAvatar = null`, 즉 "고르지 않음"으로 복원된다. 실제로 사용자가 고르지 않은 상태이므로 `지우기` 활성 조건(FR-005)도 옳게 계산된다. 13항목으로 넓혔다면 기본 아바타가 **선택된 것처럼** 복원돼 `지우기`가 활성이 된다.
+- **감수하는 것**: `MinoProfileAvatarImage`의 `avatar`가 nullable이 되면서 **"null이면 기본 그림"이라는 규칙이 `:core:design-system`에 들어간다.** 방 쪽은 그 규칙이 `:core:common:ui`에 있어 모듈이 다르다. 그러나 아바타는 [ADR 2026-08-25](../../adr/2026-08-25-profile-avatar-assets-in-design-system.md)가 에셋과 컴포넌트를 이 모듈에 두기로 이미 정했고, 기본 그림만 다른 모듈로 빼면 테두리·지름·선택 시맨틱을 복제해야 한다. 규칙 자체는 `RoomThumbnailFallback`이 든 것과 글자 그대로 같다.
+- **호출부 파급은 없다**: `MinoProfileAvatarImage`를 쓰는 곳은 `:feature:profile`(썸네일·그리드)과 모듈 내부 Preview뿐이다. 그리드는 12종을 넘기므로 non-null이 그대로 통하고, 썸네일만 nullable을 받는다.
+- **Alternatives considered**:
+  - **`MinoProfileAvatar`를 13항목으로 넓힌다.** `MinoProfileAvatarImage`의 시그니처가 그대로여서 변경 폭이 가장 작아 보인다. 그러나 위 셋(그리드 필터·KDoc·프리필)을 모두 잃고, `MinoRoomColor`가 같은 상황에서 고르지 않은 쪽이다. 기각.
+  - **기본 그림을 `:core:common:ui`에 둔다.** `RoomThumbnailFallback`과 모듈까지 같아진다. 그러나 썸네일의 기하(120dp·5dp 테두리)를 그 모듈이 다시 알아야 하고, ADR 2026-08-25의 에셋 소유 결정과 어긋난다. 기각.
+  - **기본 아바타를 12종 중 하나로 둔다(현행).** 코드가 하나도 안 바뀐다. spec 4.0.0 FR-015가 정면으로 닫았다 — 디자인의 기본 썸네일이 목록 첫 항목과 다른 그림이다. 기각.
+- (plan 6.0.0에서 결정)
+
+## D54. 닉네임 안내 문구 — 평상시와 오류를 다른 문구로 가른다
+
+- **Decision**: `MinoTextField`의 `helperText`를 상태에 따라 갈아 끼운다. 평상시에는 `최대 15자까지 입력할 수 있어요.`, `isNicknameErrorVisible`이면 `한글·영문 2글자 이상을 입력해주세요.`다. 문자열 둘 다 `:feature:profile`의 `strings.xml`이 갖고, **화면이 고른다** — `ProfileUiState`에 필드를 더하지 않는다.
+- **Rationale**:
+  - **spec 4.0.0 FR-011이 두 문구를 각각 지정했다.** 사용자가 확정한 것은 "디자인대로 한 문구를 색만 바꾸는" 쪽이 아니라 **사유별로 가르는** 쪽이다 — 1글자를 입력했을 때 상한을 말하는 문구가 빨갛게 뜨는 것이 무엇이 잘못됐는지 알려 주지 못하기 때문이다.
+  - **화면 구조는 디자인 그대로다.** 안내 문구 자리가 하나뿐인 것도, 오류일 때 색이 바뀌는 것도 원본과 같다. 바뀌는 것은 그 자리에 놓이는 **글자**뿐이라 [figma-design-fidelity](../../conventions/figma-design-fidelity.md)의 대조에서 새로 재는 값이 없다.
+  - **상태에 새 필드가 필요 없다.** 갈림의 조건이 이미 있는 파생 값 `isNicknameErrorVisible`(= `isNicknameTouched && !isNicknameValid`)과 정확히 같다. 문구 선택은 그리는 일이므로 화면이 한다.
+- **상한용 오류 문구는 만들지 않는다**: 상한 초과는 [D51](#d51-닉네임-15자-상한의-강제-지점--viewmodel이-자른다)의 입력 차단이 막아 오류 상태 자체가 생기지 않는다(FR-014·UX-007). 문구는 평상시 자리에서 상한을 **미리** 알려 주는 역할만 한다.
+- **이번 개정이 드러낸 것**: `profile_nickname_helper`가 이미 `최대 15자까지 입력할 수 있어요.`였다(`feature/273-onboarding-branding` 브랜치의 **미커밋 작업분** — 하드코딩돼 있던 화면 문자열을 리소스로 뽑으면서 디자인의 문구를 그대로 넣었다) — 즉 **구현이 디자인을 따랐고, spec 3.0.0 FR-011과 [화면 계약](contracts/profile-screen-contract.md)만 옛 문구(`한글·영문 2글자 이상을 입력해주세요.`)를 들고 있었다.** 어긋남이 화면에 드러나지 않은 이유는 그 문구가 오류일 때만 다르게 보였어야 하는데 오류 갈래가 아예 없었기 때문이다. [D45](#d45-프리필과-갱신의-순서--캐시로-먼저-채우고-갱신이-성공하면-조건부로-한-번-더)의 "문서가 코드보다 앞서간" 사례와 방향이 반대인 **"코드가 문서보다 앞서간"** 첫 사례다.
+- **Alternatives considered**:
+  - **디자인대로 한 문구만 두고 색만 바꾼다.** 원본과 글자까지 같아진다. 사용자가 spec 4.0.0에서 이 선택지를 검토하고 기각했다. 기각.
+  - **`ProfileUiState`가 `@StringRes helperTextRes`를 든다.** 화면의 분기가 사라진다. 그러나 상태가 안드로이드 리소스 식별자를 알게 되고, 같은 상태를 쓰는 Preview·테스트가 리소스에 묶인다. 기각.
+  - **`MinoTextField`에 `errorText`를 더한다.** 컴포넌트가 두 문구를 받아 상태로 고른다. `:core:design-system`을 넓히는 일이고, 다른 화면에 같은 요구가 아직 없다. 기각하되 두 번째 사례가 나오면 재검토한다.
+- (plan 6.0.0에서 결정)
+
+## D55. 서버 문서 재조회(2026-08-31 16:03) — 바뀐 것이 없다
+
+- **Decision**: [API 계약](contracts/profile-api-contract.md)의 근거 조회본을 **2026-08-31T16:03:55+09:00**으로 갱신한다. 계약 본문은 아바타 값 표가 13행이 되는 것([D53](#d53-기본-아바타의-자리--도메인은-13항목-디자인-시스템-팔레트는-12종-그대로)) 말고는 바뀌지 않는다.
+- **무엇을 확인했나**: 세 오퍼레이션을 원문으로 다시 펼쳐 [D52](#d52-서버-문서-재조회2026-08-31--닉네임-pattern에서-공백이-빠졌다)의 조회본(같은 날 12:44)과 대조했다. `nickname`의 `minLength 2`·`maxLength 15`·`pattern ^[가-힣A-Za-z]+$`, `avatar.color`의 13개 `enum`, `POST`의 `required: ["nickname","avatar"]`, `PATCH`의 `required: []`, `401`·`409`의 `errorCode` 열거까지 **전부 동일**했다.
+- **이번 재조회가 값어치를 한 지점**: 사용자가 제시한 서버 닉네임 정책표가 문서와 같은지 확인하는 것이 이번 개정의 출발점이었다. **여섯 항목 중 다섯이 문서에 있고 정확히 일치했다** — 길이·허용 문자·불허 문자·앞뒤 공백 처리(`pattern`이 공백을 배제하므로 trim 없이는 통과할 수 없다는 사실로 뒷받침)·필수 여부. 확인 결과 spec 3.0.0과 이미 같아 **닉네임 쪽에는 아무 작업도 생기지 않았고**, 이번 개정의 실질은 전부 아바타와 문구 쪽이다.
+- **문서에 없는 것 하나**: 정책표의 `수정 시 각각 optional (단 최소 한 필드 필요)` 중 **"최소 한 필드"** 는 `PATCH`의 스키마에 없다(`required: []`이므로 빈 객체도 스키마상 통과한다). 서버가 스키마 밖에서 거는 규칙이며, **이 앱은 언제나 두 값을 함께 보내므로 닿지 않는다**([API 계약 §1](contracts/profile-api-contract.md)). 협의 항목으로 세우지 않고 사실만 기록한다.
+- (plan 6.0.0에서 결정)
