@@ -8,9 +8,9 @@ package team.mino.core.domain.model
  * 서버 표현(`avatar.color`)과의 대응표는 `:core:data`의 `ProfileMapper`가 소유하며, 그 표의 값은
  * `docs/specs/profile/contracts/profile-api-contract.md` §2 아바타 값 표가 정한다.
  *
- * 선언 순서는 디자인 목록의 배치 순서(좌→우, 상→하)이고 [Basic]이 그 뒤에 온다. 다만 그림 대응(`:feature:profile`)도
- * 서버 문자열 표(`:core:data`)도 이 순서에서 파생하지 않는다 — 둘 다 항목을 하나씩 적어 두므로, 목록이 늘면 그쪽
- * 컴파일이 깨져 함께 고치도록 강제된다.
+ * 선언 순서는 디자인 목록의 배치 순서(좌→우, 상→하)이고 [Basic]이 그 뒤에 온다. 다만 그림 대응(`:feature:profile`·
+ * `:feature:room`)도 서버 문자열 표(`:core:data`)도 이 순서에서 파생하지 않는다 — 모두 항목을 하나씩 적어 두므로,
+ * 목록이 늘면 그쪽 컴파일이 깨져 함께 고치도록 강제된다.
  *
  * [Basic]은 "값 없음"이 아니라 **아바타를 고르지 않은 프로필이 갖게 되는 값**이다 — `RoomColor.GRAY`와 같은
  * 성격이며, 화면에만 있는 자리 표시가 아니라 저장되고 서버로 나가는 값이다(`docs/specs/profile/spec.md` FR-015 · EC-002).
@@ -42,8 +42,8 @@ enum class ProfileAvatar {
          * 사용자가 고르지 않았거나 서버 값을 알아볼 수 없을 때 채워지는 값.
          *
          * 항목을 이름이 아니라 **역할**로 부르는 자리다 — "고르지 않았다"를 값으로 옮기는 곳은 이 값을 쓰고
-         * [Basic]을 직접 적지 않는다. 항목을 이름으로 적는 곳은 두 목록뿐이며(`:core:data`의 색 표,
-         * `:feature:profile`의 그림 대응) 둘 다 전수로 적어야 목록이 늘 때 컴파일이 깨진다.
+         * [Basic]을 직접 적지 않는다. 항목을 이름으로 적는 곳은 세 목록뿐이며(`:core:data`의 색 표,
+         * `:feature:profile`·`:feature:room`의 그림 대응) 셋 다 전수로 적어야 목록이 늘 때 컴파일이 깨진다.
          */
         val Default: ProfileAvatar = Basic
     }
