@@ -8,6 +8,7 @@ import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import team.mino.core.navigation.screen.ImmersiveRouteRegistry
 
 /**
  * 탭 전환. 탭 이동 이력이 백스택에 쌓이지 않도록 시작 목적지까지 되감되, 떠난 탭의 상태는 저장했다가 복원한다.
@@ -35,5 +36,19 @@ internal fun NavHostController.currentTab(): MainTab? {
                 it.hierarchy.any { parent -> parent.hasRoute(tab.route::class) }
             }
         }
+    }
+}
+
+/**
+ * 현재 목적지가 바텀 네비게이션을 숨겨야 하는 몰입 화면([team.mino.core.navigation.screen.ImmersiveRoute])인지.
+ *
+ * 셸은 구체 Route 타입을 몰라도 되도록 [ImmersiveRouteRegistry]로 위임한다.
+ */
+@Composable
+internal fun NavHostController.isCurrentDestinationImmersive(): Boolean {
+    val backStackEntry by currentBackStackEntryAsState()
+    val destination = backStackEntry?.destination
+    return remember(destination) {
+        ImmersiveRouteRegistry.isImmersive(destination)
     }
 }

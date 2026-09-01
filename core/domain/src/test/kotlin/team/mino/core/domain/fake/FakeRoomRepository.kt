@@ -1,7 +1,9 @@
 package team.mino.core.domain.fake
 
+import kotlinx.coroutines.flow.Flow
 import team.mino.core.domain.model.Room
 import team.mino.core.domain.model.RoomDraft
+import team.mino.core.domain.model.RoomMember
 import team.mino.core.domain.model.RoomSummary
 import team.mino.core.domain.repository.RoomRepository
 
@@ -24,6 +26,8 @@ class FakeRoomRepository : RoomRepository {
     var getRoomsCallCount: Int = 0
         private set
 
+    override fun observeMyRooms(): Flow<List<Room>> = error("방 목록 조회는 observeMyRooms를 부르지 않는다.")
+
     override suspend fun getRooms(): List<RoomSummary> {
         getRoomsCallCount++
         return rooms
@@ -37,4 +41,15 @@ class FakeRoomRepository : RoomRepository {
         roomId: String,
         draft: RoomDraft,
     ): Room = error("방 목록 조회는 updateRoom을 부르지 않는다.")
+
+    override suspend fun getMembers(roomId: String): List<RoomMember> = error("방 목록 조회는 getMembers를 부르지 않는다.")
+
+    override suspend fun createInvitation(roomId: String): String = error("방 목록 조회는 createInvitation을 부르지 않는다.")
+
+    override suspend fun leaveRoom(roomId: String): Unit = error("방 목록 조회는 leaveRoom을 부르지 않는다.")
+
+    override suspend fun transferOwner(
+        roomId: String,
+        nextOwnerId: String,
+    ): Unit = error("방 목록 조회는 transferOwner를 부르지 않는다.")
 }

@@ -11,6 +11,7 @@ import team.mino.core.designsystem.component.avatar.token.AvatarTokens
 import team.mino.core.designsystem.component.avatar.token.avatarSize
 import team.mino.core.designsystem.component.avatar.token.overlap
 import team.mino.core.designsystem.component.avatar.token.trailingSpacing
+import team.mino.core.designsystem.component.profileavatar.MinoProfileAvatar
 import team.mino.core.designsystem.util.modifier.surface.surface
 
 /**
@@ -61,6 +62,45 @@ fun MinoAvatarGroup(
                     variant = variant,
                     size = size.avatarSize,
                     imageUrl = url,
+                )
+            }
+        }
+
+        if (trailingContent != null) {
+            trailingContent()
+        }
+    }
+}
+
+/**
+ * [MinoAvatarGroup]의 번들 아바타 버전. 서버가 이미지를 URL이 아니라 그림 식별자로 내려주는 사람
+ * (방 멤버 등)을 그릴 때 쓴다 — [MinoAvatar]의 `profileAvatar` 파라미터를 그대로 통과시킨다.
+ *
+ * @param profileAvatars 표시할 번들 아바타 목록.
+ */
+@Composable
+fun MinoAvatarGroup(
+    profileAvatars: ImmutableList<MinoProfileAvatar>,
+    modifier: Modifier = Modifier,
+    size: MinoAvatarGroupSize = MinoAvatarGroupSize.XSmall,
+    trailingContent: (@Composable () -> Unit)? = null,
+) {
+    val shape = MinoAvatarDefaults.shape(MinoAvatarVariant.Person)
+    val ringColor = MinoAvatarDefaults.groupRingColor
+
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(size.trailingSpacing),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(-size.overlap)) {
+            profileAvatars.forEach { avatar ->
+                MinoAvatar(
+                    modifier = Modifier
+                        .surface(shape = shape, containerColor = ringColor)
+                        .padding(AvatarTokens.GroupRingWidth),
+                    size = size.avatarSize,
+                    profileAvatar = avatar,
                 )
             }
         }

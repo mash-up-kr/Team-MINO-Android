@@ -59,3 +59,11 @@ done
 ## 범위
 
 spec 브랜치 생성은 MASC 대시보드가, plan/task 등 하위 브랜치 생성 자동화는 향후 별도 hook이 담당한다. 이 문서는 "base를 기준으로 분기·타겟한다"는 규칙만 규정하며, 생성 자동화 자체는 다루지 않는다.
+
+## 머지 후 스펙 보정 (Post-merge correction)
+
+이미 `develop`에 머지된 기능에서 나중에 스펙 불일치·구현 누락이 발견됐을 때(디자인 대조, 실기기 QA 등), 그 기능의 옛 spec/base 브랜치를 재오픈하지 않는다. **새 이슈를 파고 `develop`에서 새 브랜치를 딴다** — 옛 브랜치는 이미 머지됐거나(재사용 시 충돌 없음이 보장 안 됨) 오래 방치돼 `develop`과 크게 벌어져 있을 수 있어, 재사용이 오히려 리스크다.
+
+- **판단 기준**: 옛 이슈의 spec/base 브랜치가 `develop`에 이미 머지됐다면 무조건 새 이슈. 아직 미머지 상태로 살아 있고 `develop`과 크게 벌어지지 않았다면(수 커밋 이내) 그 브랜치를 계속 써도 된다 — 이건 위 "하위 작업" 절차 그대로다.
+- **선례**: [PR #278](https://github.com/mash-up-kr/Team-MINO-Android/pull/278) — 머지된 `home-deck-exploration`의 카드 덱 뒷장 표현이 Figma와 다름을 발견 → 새 이슈 [#277](https://github.com/mash-up-kr/Team-MINO-Android/issues/277) 생성 → `feature/277-home-deck-card-opacity/base`를 `develop`에서 새로 분기 → `develop`으로 PR. 옛 `feature/235-home/spec`류 브랜치는 건드리지 않았다.
+- 스펙 문서 자체는 상황에 따라 다르다 — 요구사항 문구가 이미 맞았는데 구현만 빠졌다면 문서는 손대지 않거나 Figma 인용만 보강(PATCH)하고, 요구사항 자체가 틀렸다면 해당 조항을 정정(PATCH/MINOR, `docs/specs/*/spec.md`의 버전 규칙을 따른다).

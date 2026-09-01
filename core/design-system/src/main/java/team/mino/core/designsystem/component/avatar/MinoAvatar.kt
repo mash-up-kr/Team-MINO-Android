@@ -1,5 +1,6 @@
 package team.mino.core.designsystem.component.avatar
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -19,6 +20,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import team.mino.core.designsystem.R
 import team.mino.core.designsystem.component.avatar.token.AvatarTokens
+import team.mino.core.designsystem.component.profileavatar.MinoProfileAvatar
 import team.mino.core.designsystem.foundation.icons.MinoIcons
 import team.mino.core.designsystem.foundation.icons.icons.PersonFill
 import team.mino.core.designsystem.util.image.MinoAsyncImage
@@ -57,7 +59,10 @@ enum class MinoAvatarSize(val dp: Dp) {
  *
  * @param variant 형태(Person 원형 / Company·Academy 둥근 사각형).
  * @param size 크기([MinoAvatarSize]).
- * @param imageUrl 표시할 웹 이미지 URL. null이면 placeholder 글리프를 표시한다.
+ * @param imageUrl 표시할 웹 이미지 URL. null이면 placeholder 글리프를 표시한다. [profileAvatar]가 있으면
+ *   무시된다.
+ * @param profileAvatar 앱이 번들한 12종 프로필 아바타 중 하나. 서버가 이미지를 URL이 아니라 이 그림
+ *   식별자로 내려주는 사람(방 멤버 등)을 그릴 때 쓴다 — 있으면 [imageUrl]·placeholder보다 우선한다.
  * @param contentDescription 접근성 설명.
  * @param onClick 누를 수 있는 아바타로 만든다(Figma `interaction`). null이면 클릭을 받지 않는다.
  *   Figma의 인터랙션 레이어는 아바타 바깥으로 8dp 튀어나오지만 Compose는 리플을 바운즈 밖으로
@@ -74,6 +79,7 @@ fun MinoAvatar(
     variant: MinoAvatarVariant = MinoAvatarVariant.Person,
     size: MinoAvatarSize = MinoAvatarSize.Small,
     imageUrl: String? = null,
+    profileAvatar: MinoProfileAvatar? = null,
     contentDescription: String? = null,
     onClick: (() -> Unit)? = null,
     pushBadge: (@Composable () -> Unit)? = null,
@@ -89,15 +95,24 @@ fun MinoAvatar(
                 .border(AvatarTokens.BorderWidth, MinoAvatarDefaults.borderColor, shape)
                 .then(if (onClick != null) Modifier.rippleSingleClickable(onClick = onClick) else Modifier),
         ) {
-            MinoAsyncImage(
-                imageUrl = imageUrl,
-                fallback = variant.placeholderPainter(),
-                fallbackTint = MinoAvatarDefaults.placeholderTint,
-                modifier = Modifier.fillMaxSize(),
-                fallbackModifier = Modifier.padding(size.dp * variant.placeholderInsetRatio),
-                contentDescription = contentDescription,
-                contentScale = ContentScale.Crop,
-            )
+            if (profileAvatar != null) {
+                Image(
+                    painter = painterResource(profileAvatar.drawableRes),
+                    contentDescription = contentDescription,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                )
+            } else {
+                MinoAsyncImage(
+                    imageUrl = imageUrl,
+                    fallback = variant.placeholderPainter(),
+                    fallbackTint = MinoAvatarDefaults.placeholderTint,
+                    modifier = Modifier.fillMaxSize(),
+                    fallbackModifier = Modifier.padding(size.dp * variant.placeholderInsetRatio),
+                    contentDescription = contentDescription,
+                    contentScale = ContentScale.Crop,
+                )
+            }
         }
 
         if (pushBadge != null) {

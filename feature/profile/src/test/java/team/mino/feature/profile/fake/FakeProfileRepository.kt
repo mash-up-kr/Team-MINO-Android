@@ -87,6 +87,8 @@ internal class FakeProfileRepository : ProfileRepository {
         this.profile.value = profile
     }
 
+    override suspend fun currentUserId(): String? = null
+
     private class Refreshed(
         val profile: Profile?,
     )

@@ -36,4 +36,15 @@ interface ProfileRepository {
      * 저장에 실패하면 `MinoDomainException`으로 던지고 취소는 그대로 전파한다.
      */
     suspend fun saveProfile(profile: Profile)
+
+    /**
+     * 서버가 발급한 내 user id. [Profile]은 이 값을 담지 않는다(어느 요구사항도 쓰지 않아 도메인에 올리지
+     * 않기로 한 결정) — 방장 판정처럼 서버 리소스의 소유자 id와 직접 비교해야 하는 소비처만 이 함수를 쓴다.
+     *
+     * Firebase 익명 로그인 uid와는 다른 식별자 체계다 — 서버 리소스(`Room.ownerId` 등)는 이 값으로만
+     * 비교해야 한다.
+     *
+     * 미등록이면 `null`이다. 그 밖의 실패는 `MinoDomainException`으로 던지고 취소는 그대로 전파한다.
+     */
+    suspend fun currentUserId(): String?
 }

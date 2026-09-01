@@ -14,6 +14,8 @@ import team.mino.core.data.network.dto.request.PinDuplicateRequest
 import team.mino.core.data.network.dto.request.RoomRequest
 import team.mino.core.data.network.dto.response.CardPlaceResponse
 import team.mino.core.data.network.dto.response.CardResponse
+import team.mino.core.data.network.dto.response.RoomInvitationResponse
+import team.mino.core.data.network.dto.response.RoomMemberDetailResponse
 import team.mino.core.data.network.dto.response.RoomResponse
 import team.mino.core.data.network.dto.response.RoomSummaryResponse
 import team.mino.core.domain.model.DeckSort
@@ -161,5 +163,18 @@ class HomeDeckRepositoryImplTest {
             roomId: String,
             request: RoomRequest,
         ): RoomResponse = throw IllegalStateException("부르지 않는다")
+
+        override suspend fun getMembers(roomId: String): List<RoomMemberDetailResponse> =
+            throw IllegalStateException("부르지 않는다")
+
+        override suspend fun createInvitation(roomId: String): RoomInvitationResponse =
+            throw IllegalStateException("부르지 않는다")
+
+        override suspend fun leaveRoom(roomId: String): Unit = throw IllegalStateException("부르지 않는다")
+
+        override suspend fun transferOwner(
+            roomId: String,
+            nextOwnerId: String,
+        ): Unit = throw IllegalStateException("부르지 않는다")
     }
 }

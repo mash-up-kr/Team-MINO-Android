@@ -37,7 +37,8 @@ private val AVATAR_COLORS: Map<ProfileAvatar, String> =
         ProfileAvatar.Person12 to "violet",
     )
 
-private val AVATARS_BY_COLOR: Map<String, ProfileAvatar> =
+/** [RoomMapper]도 같은 표를 쓴다 — 방 멤버 아바타도 같은 `{ color }` 서버 표현을 공유한다. */
+internal val AVATARS_BY_COLOR: Map<String, ProfileAvatar> =
     AVATAR_COLORS.entries.associate { (avatar, color) -> color to avatar }
 
 private val AVATARS_BY_NAME: Map<String, ProfileAvatar> = ProfileAvatar.entries.associateBy { it.name }
