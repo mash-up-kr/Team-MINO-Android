@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="splash_tagline">친구랑 같이 가고싶은 곳은, 꾹!</string>
+    <string name="splash_tagline">가고 싶던 곳이 다시 떠오르게, 꾹</string>
     <string name="splash_wordmark_description">gguk</string>
     <string name="splash_error_network">네트워크 연결을 확인해주세요</string>
     <string name="splash_error_temporary">일시적인 오류가 발생했어요</string>
