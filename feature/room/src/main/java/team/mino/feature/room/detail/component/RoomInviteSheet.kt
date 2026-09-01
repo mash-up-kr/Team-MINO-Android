@@ -31,7 +31,6 @@ import team.mino.core.designsystem.component.actionarea.ActionAreaAction
 import team.mino.core.designsystem.component.actionarea.MinoActionArea
 import team.mino.core.designsystem.component.avatar.MinoAvatar
 import team.mino.core.designsystem.component.avatar.MinoAvatarSize
-import team.mino.core.designsystem.component.avatar.MinoAvatarVariant
 import team.mino.core.designsystem.component.button.MinoOutlinedIconButton
 import team.mino.core.designsystem.foundation.icons.MinoIcons
 import team.mino.core.designsystem.foundation.icons.icons.Close
@@ -42,7 +41,7 @@ import team.mino.core.designsystem.util.modifier.surface.surface
 import team.mino.core.domain.model.Room
 import team.mino.core.domain.model.RoomMember
 import team.mino.core.domain.model.RoomThumbnail
-import team.mino.feature.room.detail.model.image
+import team.mino.feature.room.main.model.image
 import team.mino.feature.room.main.model.toMinoRoomColor
 
 /**
@@ -240,9 +239,8 @@ private fun RoomInviteMemberRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         MinoAvatar(
-            variant = MinoAvatarVariant.Person,
-            size = MinoAvatarSize.Large,
             profileAvatar = member.avatar.image,
+            size = MinoAvatarSize.Large,
         )
         Text(
             text = member.nickname,
