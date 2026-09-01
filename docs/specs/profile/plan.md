@@ -4,19 +4,38 @@
 
 **명세서**: [spec.md](./spec.md)
 
-**기준 spec 버전**: 2.0.0
+**기준 spec 버전**: 4.0.0
 
 **최초 작성일**: 2026-08-18
 
-**최종 수정일**: 2026-08-28
+**최종 수정일**: 2026-08-31
 
-**버전**: 5.0.0
+**버전**: 6.0.0
 
 **참고**: 이 템플릿은 `/mino-plan` 명령으로 채워지며, 해당 명령의 정의가 실행 워크플로우를 설명한다.
 
 ## 요약 (Summary)
 
 온보딩과 마이페이지가 공유하는 프로필 설정 화면을 **진입형 feature 모듈 `:feature:profile`** 로 신설한다. 두 진입점이 서로 다른 feature가 될 예정이고 feature 간 직접 의존이 금지되어 있으므로, 전환은 `:core:navigation`의 `ProfileLauncher` 계약 한 겹으로 받고 진입점은 Intent extra로, 저장 완료는 `RESULT_OK`로 주고받는다 — 다음 목적지는 호출자가 고른다.
+
+**개정 6.0.0 — [spec 4.0.0](spec.md)이 기본 아바타를 목록 밖의 13번째 값으로 확정했다.** 닉네임 정책은 서버 정책표를 대조한 결과 spec 3.0.0과 **이미 같았고**([D55](research.md#d55-서버-문서-재조회2026-08-31-1603--바뀐-것이-없다)), 이번 개정의 실질은 전부 **아바타와 안내 문구** 쪽이다.
+
+| 무엇이 | 5.1.0까지 | 6.0.0 |
+|---|---|---|
+| 기본 아바타 | 목록 12종의 **첫 항목**(`ProfileAvatar.Default = Person1` → 서버로 `red`) | **12종 밖의 13번째 값.** 미선택 저장이 서버 `enum`의 13번째 색으로 나간다 |
+| 도메인 `ProfileAvatar` | 12항목 | **13항목** — 기본 아바타를 마지막에 선언하고 `Default`가 그것을 가리킨다 |
+| design-system `MinoProfileAvatar` | 12항목 (**손대지 않는다**) | **12항목 그대로.** 기본 그림은 열거 항목이 아니라 `MinoProfileAvatarImage(avatar: MinoProfileAvatar?)`의 `null` 갈래가 그린다 |
+| `ProfileMapper` 색 표 | 12행. `gray`를 **보내지 않는다** | **13행.** `gray`를 보낸다 — `enum`의 13개 값이 전부 쓰인다 |
+| 필드 아래 안내 문구 | 상태와 무관하게 한 문구 | **오류 여부로 갈린다** — 평상시 `최대 15자까지 입력할 수 있어요.`, 오류 시 `한글·영문 2글자 이상을 입력해주세요.` |
+| 닉네임 필수 표시 | (계약에 없었다) | **FR-001에 명시.** 구현은 이미 `required = true`이므로 작업이 생기지 않는다 |
+
+**저장소가 같은 문제를 이미 풀어 두었고 그 답을 그대로 쓴다.** 방 대표 색이 정확히 이 구조다 — 도메인 [`RoomColor`](../../../core/domain/src/main/kotlin/team/mino/core/domain/model/RoomColor.kt)는 `GRAY`를 포함한 13항목이고, 디자인 시스템 [`MinoRoomColor`](../../../core/design-system/src/main/java/team/mino/core/designsystem/component/roomcolorchip/MinoRoomColor.kt)는 **12종만** 두며(KDoc: "회색 기본값·표시 이름·서버 식별자·그리드 배치는 여기에 없다"), 미선택은 소비처의 `MinoRoomColor?`가 `null`로 들고, [`RoomThumbnailFallback`](../../../core/common/ui/src/main/java/team/mino/core/common/ui/component/RoomThumbnailFallback.kt)이 `null -> room_thumbnail_gray`로 그린다. `RoomColor`의 KDoc이 든 이유가 spec §4의 문장과 같다 — **"'값 없음'이 아니라 색을 고르지 않은 방이 갖게 되는 색이다."** 근거와 기각한 대안은 [D53](research.md#d53-기본-아바타의-자리--도메인은-13항목-디자인-시스템-팔레트는-12종-그대로)에 있다.
+
+**이 형태가 사게 되는 것 셋** — 아바타 그리드가 **한 줄도 바뀌지 않고**(`entries`가 여전히 12개), `MinoProfileAvatar`의 KDoc("'미선택'을 갖지 않는다")이 지켜지며, **프리필이 저절로 맞는다**(서버가 준 `gray`는 `image`가 `null`을 내므로 "고르지 않음"으로 복원돼 `지우기` 활성 조건이 옳게 계산된다). 13항목으로 넓혔다면 셋을 모두 잃고, 그리드 필터를 빠뜨려도 컴파일이 통과해 **13칸짜리 그리드가 조용히 그려진다.**
+
+**이번 개정이 드러낸 것 하나 — 코드가 문서보다 앞서 있었다.** `profile_nickname_helper`가 이미 `최대 15자까지 입력할 수 있어요.`였고(`feature/273-onboarding-branding` 브랜치의 미커밋 작업분), spec 3.0.0 FR-011과 [화면 계약](contracts/profile-screen-contract.md)만 옛 문구를 들고 있었다. 어긋남이 화면에 드러나지 않은 이유는 그 문구가 오류일 때만 달라야 했는데 오류 갈래가 아예 없었기 때문이다. [D45](research.md#d45-프리필과-갱신의-순서--캐시로-먼저-채우고-갱신이-성공하면-조건부로-한-번-더)의 "문서가 코드보다 앞서간" 사례와 방향이 반대인 첫 사례다([D54](research.md#d54-닉네임-안내-문구--평상시와-오류를-다른-문구로-가른다)).
+
+**MAJOR인 이유**: 확정된 계약 셋이 바뀐다 — ① design-system 공개 시그니처(`MinoProfileAvatarImage`)가 바뀌어 5.1.0의 "`:core:design-system`을 손대지 않는다"가 뒤집히고, ② 도메인 `ProfileAvatar`가 13항목이 되며 `ProfileAvatar.image`의 반환 타입이 nullable이 되고, ③ 상태 계약에서 `ProfileUiState.displayedAvatar`가 사라진다. `tasks.md`의 작업 분해를 다시 짜야 한다.
 
 **개정 5.0.0 — develop 반영 후 전수 확인에서 `user` 태그 엔드포인트의 구현이 이미 있었다.** splash-screen이 `d783e03`으로 넣은 [`UserApiService`](../../../core/data/src/main/java/team/mino/core/data/network/service/UserApiService.kt)·`UserRemoteDataSource`가 `GET /api/v1/users/me`를 먼저 쓰고 있었고, 이 plan이 만들려던 `ProfileApiService`·`ProfileRemoteDataSource`는 **같은 서버 리소스의 두 번째 소유자**였다. 저장소의 규칙은 `ApiService`를 feature가 아니라 **OpenAPI 태그 단위**로 두는 것이다 — `RoomApiService` 하나가 `room` 태그 넷을 다 갖는다. 그래서 새 서비스를 만들지 않고 기존 소유자를 넓힌다.
 
@@ -26,6 +45,17 @@
 | 원격 DataSource | `ProfileRemoteDataSource` 신설 | **`UserRemoteDataSource` 확장** — `getMe()`·`register()`·`updateMe()` 추가 |
 | `errorCode` 지역 파싱 | `ProfileApiService` | **`UserApiService`의 헬퍼 하나** — 두 함수가 공유. develop이 `UserRemoteDataSourceImpl`에 둔 수동 JSON 파싱을 이리로 옮긴다 |
 | 스플래시 진입 판정 | (남의 feature) | **본문 미역직렬화를 보존한다** — `hasProfile()`을 `getMe()`와 합치지 않는다 |
+
+**개정 5.1.0 — spec 3.0.0의 닉네임 15자 상한을 입력 차단으로 받는다.** [spec 3.0.0](spec.md)이 PRD 10.0.0을 따라 상한을 채택하면서 FR-014·UX-007이 생겼다. 설계는 그것을 **`ProfileViewModel`의 절단 한 겹**으로 받는다 — `ValidateNicknameUseCase`에도 `MinoTextField`에도 상한을 심지 않는다([D51](research.md#d51-닉네임-15자-상한의-강제-지점--viewmodel이-자른다)). 같은 저장소의 방 이름 15자가 정확히 이 형태이고, 세는 단위는 [ADR 2026-08-25](../../adr/2026-08-25-grapheme-count-for-text-input.md)가 이미 규율한다.
+
+**같은 조회에서 서버가 먼저 움직인 것도 확인됐다.** 2026-08-31 재조회에서 `nickname.pattern`의 공백이 빠져(`^[\uAC00-\uD7A3A-Za-z ]+$` → `^[\uAC00-\uD7A3A-Za-z]+$`), 4.x부터 들고 있던 닉네임 어긋남 2건이 **양쪽에서 동시에** 닫혔다([D52](research.md#d52-서버-문서-재조회2026-08-31--닉네임-pattern에서-공백이-빠졌다)). 이제 클라이언트 규칙과 서버 스키마가 `2~15자 · 한글·영문 · 공백 불가`로 완전히 같고, **클라이언트가 통과시킨 닉네임을 서버가 길이·문자로 거절하는 경로가 없다.**
+
+| 무엇이 | 5.0.0까지 | 5.1.0 |
+|---|---|---|
+| 닉네임 상한 | 클라이언트에 없음 — 16자 이상은 서버가 `400`으로 거절 | **`ProfileViewModel.changeNickname()`이 `take(15)`** — 서버에 닿지 않는다 |
+| `ValidateNicknameUseCase` | 하한·문자만 판정(상한 없음) | **그대로다** — KDoc의 "상한을 두지 않는다"만 FR-014를 가리키게 고친다 |
+| `MinoTextField` | `maxLength` 없음 | **그대로다** — design-system은 손대지 않는다 |
+| 닉네임 어긋남 | 2건(상한·공백)을 알고 받아들임 | **0건** — spec이 상한을, 서버가 공백을 각각 좁혔다 |
 
 **합치지 않은 이유가 이 개정에서 가장 중요한 판단이다.** `hasProfile()`을 `getMe(): ProfileResponse?` 하나로 통합하면 코드가 줄지만, **스플래시의 진입 게이트가 프로필 본문 스키마에 의존하게 된다.** develop의 테스트가 `{"data":{"id":1}}`로 성공을 확인하는 것은 픽스처가 느슨해서가 아니라 **판정이 본문에 기대지 않는다는 사실 자체를 지키고 있는 것**이다. 진입 게이트의 실패 허용치를 좁히는 대가가 중복 제거 이득보다 크다. 근거와 기각한 대안은 [D49](research.md#d49-develop-통합-재대조--user-태그-엔드포인트의-소유자는-userapiservice-하나다)에 있다.
 
@@ -74,9 +104,11 @@
 
 **저장소**: 원천은 **꾹 서버**다. 공유 `DataStore<Preferences>`(`core:data/storage/DataStoreModule`)는 그 응답의 캐시로 남고, `profile_nickname`·`profile_avatar` 2개 키를 한 트랜잭션에서 쓴다([D36](research.md#d36-원격-연동-착수--원천은-서버-로컬-datastore는-캐시)). 아바타 키는 `profile_avatar_id`(Int)에서 이름이 바뀌었고 마이그레이션은 두지 않는다
 
-**참조 API 문서**: `https://api.gguk.org/api-docs-json` (Team MINO API 1.0.0) · **조회 시점 2026-08-28T17:13:03+09:00** · 조회 성공. 유저 엔드포인트 3종은 4.4.0의 조회본(11:44)과 **동일**했다 — 이틀째 값 도메인이 안정됐다. 세 오퍼레이션의 태그는 모두 `user`이며, **이번 개정이 소유 서비스를 `UserApiService`로 바꾼 것은 서버 문서가 아니라 저장소 트리를 대조한 결과다**([D49](research.md#d49-develop-통합-재대조--user-태그-엔드포인트의-소유자는-userapiservice-하나다)). 소비하는 오퍼레이션은 `POST /api/v1/users` · `GET /api/v1/users/me` · `PATCH /api/v1/users/me` 세 개이고, 원문 스키마와 어긋남은 [`contracts/profile-api-contract.md`](contracts/profile-api-contract.md)가 인용해 소유한다. 이 줄이 이번 계약의 유일한 재현 근거다.
+**참조 API 문서**: `https://api.gguk.org/api-docs-json` (Team MINO API 1.0.0) · **조회 시점 2026-08-31T16:03:55+09:00** · 조회 성공. **plan 6.0.0의 이번 조회에서 바뀐 것은 없다** — 세 오퍼레이션을 원문으로 펼쳐 같은 날 12:44 조회본과 대조했고 `nickname` 제약·아바타 13종 `enum`·`required`·`errorCode` 열거까지 전부 동일했다([D55](research.md#d55-서버-문서-재조회2026-08-31-1603--바뀐-것이-없다)). **이번에 움직인 것은 서버가 아니라 이 앱이다** — 13번째 값 `gray`를 이제 실제로 보낸다. 아래는 직전(12:44) 조회의 기록이다: **유저 엔드포인트 3종 중 `nickname.pattern`이 바뀌었다** — 문자 클래스 끝의 공백이 빠졌고 `PATCH` description도 `공백 포함`에서 `공백·숫자 불가`로 바뀌었다([D52](research.md#d52-서버-문서-재조회2026-08-31--닉네임-pattern에서-공백이-빠졌다)). 나머지(아바타 13종 `enum`·`id: uuid`·`401`·`409`·`PATCH`의 `required: []`)는 2026-08-28 조회본과 동일했다. 세 오퍼레이션의 태그는 모두 `user`이며, **이번 개정이 소유 서비스를 `UserApiService`로 바꾼 것은 서버 문서가 아니라 저장소 트리를 대조한 결과다**([D49](research.md#d49-develop-통합-재대조--user-태그-엔드포인트의-소유자는-userapiservice-하나다)). 소비하는 오퍼레이션은 `POST /api/v1/users` · `GET /api/v1/users/me` · `PATCH /api/v1/users/me` 세 개이고, 원문 스키마와 어긋남은 [`contracts/profile-api-contract.md`](contracts/profile-api-contract.md)가 인용해 소유한다. 이 줄이 이번 계약의 유일한 재현 근거다.
 
-> **"다른 날 조회하면 문서가 다를 수 있다"가 실제로 일어났다.** plan 4.0.0의 조회(2026-08-27T22:15:17+09:00)와 이번 조회 사이 **약 3시간 만에** `avatar.color`가 자유 문자열(`maxLength 20`)에서 **13개 `enum`**으로 좁혀졌다. 4.0.0이 잠정으로 정한 `"person_01"`은 서버가 거절할 값이 됐고, 그 사이에 구현이 진행됐다면 저장이 통째로 실패했을 것이다. 조회 시점을 적는 규칙이 이번에 값어치를 했다.
+> **"다른 날 조회하면 문서가 다를 수 있다"가 세 번째로 일어났다.** ① plan 4.0.0의 조회(2026-08-27T22:15:17+09:00)와 4.0.0 사이 **약 3시간 만에** `avatar.color`가 자유 문자열(`maxLength 20`)에서 **13개 `enum`**으로 좁혀졌다 — 그 사이에 구현이 진행됐다면 저장이 통째로 실패했을 것이다. ② 4.3.0은 낡은 `:core:data` 트리를 근거로 대조했다. ③ **5.1.0의 이번 조회에서 `nickname.pattern`이 좁아졌다.**
+>
+> 세 번째가 앞의 둘과 다른 점은 **묻지 않은 것이 바뀌었다는 것**이다. 상한을 확인하러 갔다가 공백이 빠진 것을 발견했다. 특정 필드만 확인하는 것으로는 부족하고 오퍼레이션 전체를 펼쳐 대조해야 한다는 뜻이며, `openapi_digest.py show`가 원문을 그대로 내는 이유가 여기 있다.
 
 **외부 계약**: 위 세 엔드포인트와, 앱 밖으로 여는 `:core:navigation`의 `ProfileLauncher` 하나
 
@@ -90,6 +122,10 @@
 
 **제약 조건**: 온보딩 진입에서는 화면을 벗어날 수 없고 저장 후 되돌아올 수도 없다(FR-010, EC-001, TS-018, EC-013). 저장 실패 시 입력값을 보존한다(FR-012, SC-006) — **이제 발화 원천이 실재한다**(네트워크 단절·서버 거절·`409`). 프로필 표기는 앱 전체에서 하나다(FR-007). 오프라인 저장·나중에 동기화는 다루지 않는다(spec §4) — 네트워크가 없으면 저장은 실패한다. 모든 요청은 Bearer 토큰을 요구하며 첨부는 기존 `MinoIdentityProofPlugin`이 이미 한다([D20](research.md#d20-인증-헤더--이번-범위에서-배선하지-않는다) 보정)
 
+**규모/범위(6.0.0 개정분)**: 새 타입이 **0개**, 새 파일이 **에셋 1종(밀도 3벌)** 과 문자열 리소스 1줄뿐이다. 프로덕션 변경은 여덟 파일에 흩어진 국소 수정이고, `ProfileAvatarGrid`·`ProfileIntent`·`ProfileSideEffect`·`ProfileUiState`의 **필드**는 손대지 않는다. **셈이 늘지 않는데 등급이 MAJOR인 이유는 바뀌는 것이 공개 계약이기 때문이다** — 파일 수가 아니라 계약의 경계가 등급을 정한다.
+
+**규모/범위(5.1.0 개정분)**: 5.0.0의 범위에 **입력 차단 한 겹**만 얹는다 — 새 타입·새 파일이 **0개**다. 프로덕션은 `ProfileViewModel`의 절단 한 줄과 상수 하나, `ValidateNicknameUseCase`의 KDoc 정정이고, 테스트는 `ProfileViewModelTest`에 케이스 3건이 붙는다. 새 모듈·새 계약·새 의존·design-system 변경이 없다.
+
 **규모/범위(5.0.0 개정분)**: plan 3.0.0의 산출물은 이미 구현돼 있다. 이번 개정이 더하는 것은 **DTO 3**(`ProfileRequest`·`ProfileResponse`·`ErrorResponse` — 봉투 `MinoResponse<T>`는 이미 있어 세지 않는다)·**`Mapper` 1**·**도메인 enum 1개**(`ProfileAvatar`)다. 신규 모듈·신규 화면·신규 design-system 컴포넌트는 없다.
 
 **5.0.0이 셈에서 뺀 것 둘** — `ApiService` 1과 `RemoteDataSource` 1쌍이다. 4.x가 신설로 세던 것이 **기존 타입의 확장**으로 바뀌었다([D49](research.md#d49-develop-통합-재대조--user-태그-엔드포인트의-소유자는-userapiservice-하나다)). 신규 파일이 줄고 대신 **이미 머지된 파일을 고치는 작업**이 생긴다.
@@ -99,15 +135,23 @@
 | 파일 | 무엇이 바뀌나 |
 |---|---|
 | `core/domain/.../model/Profile.kt` | `avatarId: Int` → `avatar: ProfileAvatar` |
+| `core/domain/.../model/ProfileAvatar.kt` | **6.0.0에서 새로 목록에 든다.** 13번째 항목(기본 아바타)을 **마지막에** 더하고 `Default`가 그것을 가리키게 한다. KDoc의 "고정 12종"을 고친다 ([D53](research.md#d53-기본-아바타의-자리--도메인은-13항목-디자인-시스템-팔레트는-12종-그대로)) |
+| `core/data/.../repository/mapper/ProfileMapper.kt` | **6.0.0: 색 표가 13행이 되고** KDoc의 "`gray`를 내보내는 경로는 없다"가 뒤집힌다 |
+| `core/design-system/.../profileavatar/MinoProfileAvatarImage.kt` | **6.0.0에서 새로 목록에 든다.** `avatar: MinoProfileAvatar?`로 바꾸고 `null`이면 기본 그림을 그린다. **`MinoProfileAvatar` 열거와 `MinoProfileAvatarSize`·`Defaults`·토큰은 손대지 않는다** |
+| `core/design-system/src/main/res/drawable-{m,x,xx}hdpi/` | **신규 에셋 1종 × 밀도 3벌** — 기본 아바타. 원본은 [`2314-95665`](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2314-95665&m=dev)이고 목록 첫 항목과 다른 그림임을 내려받을 때 확인한다 |
 | `core/domain/.../repository/ProfileRepository.kt` | `refreshProfile()` 추가, KDoc의 "발화 원천이 없다" 단서 제거 |
 | `core/domain/.../usecase/SaveProfileUseCase.kt` | 파라미터 타입 `Int` → `ProfileAvatar` |
 | `core/data/.../datasource/ProfileLocalDataSource.kt`(+`Impl`) | 반환 타입 `Profile` → `ProfileEntry`, `clearProfile()` 추가, 아바타 키 변경 |
 | `core/data/.../repository/ProfileRepositoryImpl.kt` | 원격을 앞에 두고 로컬을 캐시로. 등록/수정 분기와 캐시 갱신 순서 |
 | `core/data/.../datasource/di/ProfileDataSourceModule.kt` | 원격 DataSource 바인딩 추가 |
-| `feature/profile/.../main/model/ProfileAvatarId.kt` | 삭제 → `ProfileAvatarMapping.kt`(`ProfileAvatar` ↔ `MinoProfileAvatar` 매핑)로 대체 |
+| `feature/profile/.../main/model/ProfileAvatarId.kt` | 삭제 → `ProfileAvatarMapping.kt`(`ProfileAvatar` ↔ `MinoProfileAvatar` 매핑)로 대체. **6.0.0: `image`의 반환 타입이 `MinoProfileAvatar?`가 되고 기본 아바타만 `null`로 간다. `DefaultProfileAvatar` 상수는 삭제한다** — 기본값의 단일 출처가 도메인 하나로 모인다 |
+| `feature/profile/.../main/vm/ProfileUiState.kt` | **6.0.0에서 새로 목록에 든다.** 파생 프로퍼티 `displayedAvatar`를 지운다. **필드는 하나도 바뀌지 않는다** |
+| `feature/profile/.../main/screen/ProfileScreen.kt` | **6.0.0에서 새로 목록에 든다.** 썸네일에 `state.selectedAvatar`를 그대로 넘기고, `helperText`를 `isNicknameErrorVisible`로 갈라 끼운다 ([D54](research.md#d54-닉네임-안내-문구--평상시와-오류를-다른-문구로-가른다)) |
+| `feature/profile/src/main/res/values/strings.xml` | **6.0.0에서 새로 목록에 든다.** 오류 문구 `한글·영문 2글자 이상을 입력해주세요.` 한 줄 추가. 기존 `profile_nickname_helper`는 그대로다 |
 | `core/data/.../network/service/UserApiService.kt` | **(splash 소유)** `hasProfile()`·`getMe()`·`register()`·`updateMe()` 넷으로 확장. 기존 `getMe()`(Unit)는 `hasProfile()`로 이름이 바뀌며 **본문 미역직렬화는 그대로 둔다.** `401` 판정 헬퍼가 여기로 온다 |
 | `core/data/.../datasource/UserRemoteDataSource.kt`(+`Impl`) | **(splash 소유)** `getMe()`·`register()`·`updateMe()` 추가. `Impl`의 수동 `Json.parseToJsonElement` 파싱을 걷어내고 위임만 남긴다 |
-| `feature/profile/.../main/vm/ProfileViewModel.kt` | 진입 시 `refreshProfile()` 호출, **갱신 성공 시 조건부 재프리필**([D45](research.md#d45-프리필과-갱신의-순서--캐시로-먼저-채우고-갱신이-성공하면-조건부로-한-번-더)), 저장 시 넘기는 아바타 타입 |
+| `feature/profile/.../main/vm/ProfileViewModel.kt` | 진입 시 `refreshProfile()` 호출, **갱신 성공 시 조건부 재프리필**([D45](research.md#d45-프리필과-갱신의-순서--캐시로-먼저-채우고-갱신이-성공하면-조건부로-한-번-더)), 저장 시 넘기는 아바타 타입. **5.1.0: `changeNickname()`이 `value.take(NICKNAME_MAX_LENGTH)`로 자르고 자른 값으로 판정한다**([D51](research.md#d51-닉네임-15자-상한의-강제-지점--viewmodel이-자른다)). **6.0.0: `save()`가 `current.selectedAvatar?.profileAvatar ?: ProfileAvatar.Default`를 넘긴다**(`displayedAvatar`가 사라진 자리) |
+| `core/domain/.../usecase/ValidateNicknameUseCase.kt` | **5.1.0에서 새로 목록에 든다.** 판정 로직은 그대로이고 **KDoc만 고친다** — "길이 상한은 두지 않는다"가 이제 오해를 낳는다. 상한이 없는 것이 아니라 **여기의 몫이 아니다**(FR-014는 `ProfileViewModel`이 지킨다). 시그니처·동작·테스트 통과 여부는 하나도 바뀌지 않는다 |
 
 **테스트도 일곱 곳이 함께 바뀐다.** plan 4.1.0의 표가 프로덕션 파일만 담아 이것들을 빠뜨렸고, `ValidateNicknameUseCaseTest`는 4.4.0이, `UserRemoteDataSourceImplTest`는 5.0.0이 더했다.
 
@@ -115,13 +159,14 @@
 |---|---|
 | `core/domain/src/test/kotlin/.../usecase/ValidateNicknameUseCaseTest.kt` | **중간 공백 케이스 1건 추가**([repository 계약 §테스트 계약](contracts/profile-repository-contract.md)). 구현은 이미 옳다 — 테스트만 비어 있었다([D48](research.md#d48-분석이-드러낸-문서의-빈틈--계약이-요구한-검증이-작업이-되지-못했다)) |
 | `core/domain/src/test/kotlin/.../usecase/SaveProfileUseCaseTest.kt` | 아바타 타입. **이 파일 안의 `private class FakeProfileRepository`에 `refreshProfile()`을 더한다** — 별도 파일이 아니다([D46](research.md#d46-develop-대조로-드러난-사실--도메인-테스트-fake는-별도-파일이-아니다)) |
+| `core/data/src/test/java/.../repository/mapper/ProfileMapperTest.kt` | **6.0.0: 왕복 케이스가 12종 → 13종.** 기본 아바타 ↔ `gray`가 양방향으로 도는지, 모르는 문자열·`null`이 기본 아바타로 읽히는지 |
 | `core/data/src/test/java/.../datasource/ProfileLocalDataSourceImplTest.kt` | `ProfileEntry` 반환·`clearProfile()` |
 | `core/data/src/test/java/.../repository/ProfileRepositoryImplTest.kt` | 등록/수정 분기·캐시 불변·미등록 처리 |
 | `core/data/src/test/java/.../datasource/UserRemoteDataSourceImplTest.kt` | **(splash 소유)** `401` 판정이 `UserApiService`로 옮겨간 만큼 그쪽 테스트로 이동한다. 여기 남는 것은 위임 확인이다. **`{"data":{"id":1}}` 픽스처가 지키던 "판정이 성공 본문에 기대지 않는다"는 성질을 잃지 않는다** |
 | `feature/profile/src/test/java/.../fake/FakeProfileRepository.kt` | `refreshProfile()` 구현·갱신 호출 관측 |
-| `feature/profile/src/test/java/.../main/vm/ProfileViewModelTest.kt` | 아바타 타입·갱신 호출·**조건부 재프리필 가드** |
+| `feature/profile/src/test/java/.../main/vm/ProfileViewModelTest.kt` | 아바타 타입·갱신 호출·**조건부 재프리필 가드**. **6.0.0: 기본 아바타 케이스 2건 추가** — 미선택 저장이 `ProfileAvatar.Default`를 넘기는지(TS-023), 기본 아바타로 저장된 프로필을 프리필하면 `selectedAvatar`가 `null`이 되어 `지우기`가 비활성인지([D53](research.md#d53-기본-아바타의-자리--도메인은-13항목-디자인-시스템-팔레트는-12종-그대로)). **5.1.0: 상한 케이스 3건 추가** — 16자 입력 시 15자에서 멈추고 유효 유지(TS-017) · 30자를 한 번에 넣으면 앞 15자만 반영(TS-020) · 자른 값으로 판정한다(원본으로 판정하면 화면에 없는 글자가 오류를 만든다) |
 
-**손대지 않는 것**: `NetworkModule`·`HttpClientConfig`·`MinoIdentityProofPlugin`·`DataStoreModule`·`settings.gradle.kts`·`app/build.gradle.kts`·`:core:design-system` 전체·화면 컴포저블·`ProfileUiState`·`ProfileIntent`·`ProfileSideEffect`·방(`RoomMock*`)의 목. 버전 카탈로그에도 손대지 않는다.
+**손대지 않는 것(6.0.0 기준)**: `NetworkModule`·`HttpClientConfig`·`MinoIdentityProofPlugin`·`DataStoreModule`·`settings.gradle.kts`·`app/build.gradle.kts`·`ProfileAvatarGrid`·`ProfileIntent`·`ProfileSideEffect`·`ProfileUiState`의 **필드**·`MinoProfileAvatar` 열거·`MinoProfileAvatarSize`·`MinoProfileAvatarDefaults`·`ProfileAvatarTokens`·`MinoTextField`·방(`RoomMock*`)의 목. 버전 카탈로그에도 손대지 않는다. **5.1.0까지 여기 있던 "`:core:design-system` 전체"는 빠졌다** — 이번 개정이 그 모듈의 공개 시그니처 하나와 에셋을 건드린다.
 
 ## 헌법 준수 확인 게이트 (Constitution Check)
 
@@ -178,21 +223,33 @@ docs/specs/profile/
 feature/profile/src/main/java/team/mino/feature/profile/
 └── main/
     ├── model/ProfileAvatarMapping.kt                # 신설(ProfileAvatarId.kt 대체) — ProfileAvatar ↔ MinoProfileAvatar 매핑
+    │                                                #        6.0.0: image 반환이 MinoProfileAvatar? — 기본 아바타만
+    │                                                #        null. DefaultProfileAvatar 상수 삭제 (D53)
+    ├── vm/ProfileUiState.kt                         # 변경(6.0.0) — 파생 displayedAvatar 삭제. 필드는 그대로
+    ├── screen/ProfileScreen.kt                      # 변경(6.0.0) — 썸네일에 selectedAvatar를 그대로 전달,
+    │                                                #        helperText를 오류 여부로 갈아 끼움 (D54)
     └── vm/ProfileViewModel.kt                       # 변경 — 진입 시 refreshProfile() · 저장 인자 타입
+                                                     #        5.1.0: changeNickname()이 15자로 자른다 (D51)
+                                                     #        6.0.0: save()가 ProfileAvatar.Default를 기본값으로
+feature/profile/src/main/res/values/strings.xml      # 변경(6.0.0) — 오류 문구 1줄 추가 (D54)
 feature/profile/src/test/java/team/mino/feature/profile/
 ├── fake/FakeProfileRepository.kt                    # 변경 — refreshProfile() 구현·갱신 호출 관측
 └── main/vm/ProfileViewModelTest.kt                  # 변경 — 타입·갱신 호출·재프리필 가드
-                                                     # Activity·Shell·NavHost·di/·screen/·component/·
-                                                     # UiState·Intent·SideEffect·strings.xml은 그대로
+                                                     #        5.1.0: 상한 케이스 3건 추가 (TS-017·TS-020)
+                                                     #        6.0.0: 기본 아바타 케이스 2건 (TS-023·프리필 null)
+                                                     # Activity·Shell·NavHost·di/·component/(그리드)·
+                                                     # Intent·SideEffect는 그대로
 
 core/navigation/                                     # 손대지 않는다 — ProfileLauncher·ExtraTag 모두 그대로
 
 core/domain/src/main/kotlin/team/mino/core/domain/
 ├── model/Profile.kt                                 # 변경 — avatarId: Int → avatar: ProfileAvatar
-├── model/ProfileAvatar.kt                           # 신규 — 12항목 도메인 enum (D37)
+├── model/ProfileAvatar.kt                           # 신규 — 도메인 enum (D37)
+│                                                    #        6.0.0: 13항목 — 선택 12 + 기본 아바타(마지막).
+│                                                    #        Default가 기본 아바타를 가리킨다 (D53)
 ├── repository/ProfileRepository.kt                  # 변경 — refreshProfile() 추가
-└── usecase/SaveProfileUseCase.kt                    # 변경 — 파라미터 타입
-                                                     # ValidateNicknameUseCase는 그대로
+├── usecase/SaveProfileUseCase.kt                    # 변경 — 파라미터 타입
+└── usecase/ValidateNicknameUseCase.kt               # 변경(5.1.0) — KDoc만. 판정 로직·시그니처는 그대로 (D51)
 core/domain/src/test/kotlin/team/mino/core/domain/
 ├── usecase/ValidateNicknameUseCaseTest.kt           # 변경 — 중간 공백 케이스 1건 추가 (D48)
 └── usecase/SaveProfileUseCaseTest.kt                # 변경 — 타입 + 파일 안 private FakeProfileRepository에
@@ -212,10 +269,11 @@ core/data/src/main/java/team/mino/core/data/
 │                                                    # 이미 갖는다 — 이 모듈에 원격을 더하지 않는다 (D49)
 ├── repository/ProfileRepositoryImpl.kt              # 변경 — 원격이 앞, 로컬이 캐시. UserRemoteDataSource 주입
 └── repository/mapper/ProfileMapper.kt               # 신규 — DTO ↔ 도메인 · 아바타 문자열 표 소유
+                                                     #        6.0.0: 표 13행 — 기본 아바타 ↔ gray (D53)
 core/data/src/test/java/team/mino/core/data/
 ├── network/UserApiServiceTest.kt                    # 신규 — MockEngine · 봉투 해제 · 401 분기 ·
 │                                                    # hasProfile()이 본문 스키마에 안 기대는지 (D43·D49)
-├── repository/mapper/ProfileMapperTest.kt           # 신규 — 아바타 색 왕복 12종 (D43)
+├── repository/mapper/ProfileMapperTest.kt           # 신규 — 아바타 색 왕복. 6.0.0: 13종 (D43·D53)
 ├── datasource/UserRemoteDataSourceImplTest.kt       # 변경(splash 소유) — 401 판정 케이스는 위로 이동,
 │                                                    # 여기 남는 것은 위임 확인 (D49)
 ├── datasource/ProfileLocalDataSourceImplTest.kt     # 변경 — ProfileEntry · clearProfile()
@@ -223,7 +281,12 @@ core/data/src/test/java/team/mino/core/data/
                                                      # network/di/NetworkModule · plugin/ · storage/ 는 손대지 않는다
                                                      # ProfileApiService·ProfileRemoteDataSource는 만들지 않는다 (D49)
 
-core/design-system/                                  # 손대지 않는다 — 아바타 12종·상단 바·아이콘 모두 그대로
+core/design-system/src/main/java/.../component/profileavatar/
+└── MinoProfileAvatarImage.kt                        # 변경(6.0.0) — avatar: MinoProfileAvatar? · null이면 기본
+                                                     #        그림. 열거·Size·Defaults·토큰은 그대로 (D53)
+core/design-system/src/main/res/drawable-{m,x,xx}hdpi/
+└── (기본 아바타 WebP 1종 × 3벌)                      # 신규(6.0.0) — 원본 2314-95665
+                                                     # 상단 바·아이콘·아바타 12종 에셋은 그대로
 app/build.gradle.kts · settings.gradle.kts           # 손대지 않는다 — 모듈은 이미 등록돼 있다
 ```
 
@@ -320,6 +383,45 @@ app/build.gradle.kts · settings.gradle.kts           # 손대지 않는다 — 
 **이번 개정이 남기는 교훈**: [D24](research.md#d24-원격-연동이-붙을-때-바뀌는-지점을-지금-고정한다)·[D45](research.md#d45-프리필과-갱신의-순서--캐시로-먼저-채우고-갱신이-성공하면-조건부로-한-번-더)·[D47](research.md#d47-develop-재대조--420의-대조가-옛-트리를-근거로-했다)은 모두 **plan이 코드나 서버를 잘못 읽어서** 생긴 일이었다. 이번은 다르다 — 읽은 것은 옳았고 **문서 안에서 근거와 표가 따로 놀았다.** 근거를 적는 곳(계약·기술 컨텍스트)과 작업을 낳는 곳(파일 표·구조 트리)이 나뉘어 있는 한 이 종류의 누락은 또 생기며, 그것을 잡는 것이 [`/mino-analyze`](tasks.md)의 몫이라는 것이 이번에 확인됐다.
 
 `Complexity Tracking`에 올릴 항목은 없다.
+
+**Phase 1 설계 후 재평가(5.1.0)**: 판정이 뒤집힌 게이트는 없고, **원칙 IV의 부기가 이 feature 들어 가장 좋아진다.**
+
+| 원칙/기준 | 5.0.0 판정 | 5.1.0 판정 | 무엇이 바뀌었나 |
+|---|---|---|---|
+| IV. 명세가 구현에 선행한다 | PASS, 미충족 0건·어긋남 3건 | **PASS, 미충족 0건·어긋남 1건** | **닉네임 어긋남 2건이 서로 다른 쪽에서 닫혔다.** **상한**은 [spec 3.0.0](spec.md)이 PRD 10.0.0을 따라 15자를 채택해서(FR-014·UX-007 신설), **공백**은 **서버가 `pattern`에서 공백을 빼서**다([D52](research.md#d52-서버-문서-재조회2026-08-31--닉네임-pattern에서-공백이-빠졌다)). 남는 어긋남 1건은 응답 `avatar`가 nullable인 이유가 문서에 없는 것 하나다(미등록 `401`은 협의 항목으로 남지만 어긋남이 아니라 문서의 빈틈이다). **plan에만 있고 spec에 근거가 없는 요구사항은 없다** — FR-014·UX-007이 [D51](research.md#d51-닉네임-15자-상한의-강제-지점--viewmodel이-자른다)의 유일한 근거다 |
+
+**판정이 바뀌지 않은 것**: 원칙 I·II·III·V와 기술 표준 전부다.
+
+- **원칙 I(단일 출처)** — 상한 15라는 **값**의 소유자를 하나로 두었다. `ProfileViewModel`의 상수 하나이며, 계약·데이터 모델·quickstart는 그것을 **지목만** 한다. 세는 단위의 근거는 이 문서가 다시 쓰지 않고 [ADR 2026-08-25](../../adr/2026-08-25-grapheme-count-for-text-input.md)를 링크한다.
+- **원칙 II(레이어 경계)** — 상한이 **화면 레이어 안에 머문다.** 도메인·데이터·디자인 시스템 어디에도 15가 새지 않고, `:core:design-system`을 넓히지 않는다. `ValidateNicknameUseCase`에 심었다면 도메인이 표현 계층의 제약을 알게 됐을 자리다.
+- **원칙 III(기록)** — [D51](research.md#d51-닉네임-15자-상한의-강제-지점--viewmodel이-자른다)·[D52](research.md#d52-서버-문서-재조회2026-08-31--닉네임-pattern에서-공백이-빠졌다)를 덧붙이고 [D19](research.md#d19-닉네임-규칙-불일치--클라이언트는-spec을-따르고-서버-거절은-저장-실패로-받는다)에 보정을 달았다. **D19에 취소선을 긋지 않는다** — 결정이 틀린 것이 아니라 적용 대상이 없어졌다. **승격 후보 1건**: `MinoTextField`를 쓰는 필드의 상한은 ViewModel이 자른다는 규칙이 이제 **두 번째 사례**다(방 이름 15자, 닉네임 15자). 어느 문서도 적어 두지 않아 두 feature가 각자 발견했다.
+- **원칙 V(컨벤션)** — 새 에러 경로도 새 예외 리프도 없다. 상한 초과는 실패가 아니므로 `runCatchingDomain` 배선에 닿지 않는다.
+- **기술 표준(디자인)** — 새 컴포넌트가 없어 대조할 Figma 값이 없다. **카운터를 그리지 않는 것 자체가 디자인 근거를 갖는다** — 원본에 카운터 노드가 없다(UX-007).
+
+**이번 개정이 남기는 교훈**: [D24](research.md#d24-원격-연동이-붙을-때-바뀌는-지점을-지금-고정한다)·[D45](research.md#d45-프리필과-갱신의-순서--캐시로-먼저-채우고-갱신이-성공하면-조건부로-한-번-더)·[D47](research.md#d47-develop-재대조--420의-대조가-옛-트리를-근거로-했다)·[D48](research.md#d48-분석이-드러낸-문서의-빈틈--계약이-요구한-검증이-작업이-되지-못했다)에 이어 다섯 번째이고, **원인이 또 다르다.** 앞의 넷은 이 저장소 안(코드·문서)의 문제였다. 이번은 **밖이 움직였다** — 서버가 스키마를 좁혔고 PRD가 규칙을 바꿨는데 둘 다 이 저장소에 통지가 오지 않는다. 알아채는 수단은 재조회와 기준 버전 대조뿐이며, 그것이 **spec 헤더의 기준 PRD 버전**과 **API 계약의 조회 시점**이 존재하는 이유다. 둘 다 이번에 값어치를 했다.
+
+`Complexity Tracking`에 올릴 항목은 없다 — 타입도 파일도 늘지 않는다.
+
+**Phase 1 설계 후 재평가(6.0.0)**: 판정이 뒤집힌 게이트는 없다. 이번 개정의 성격은 **저장소에 이미 있는 답을 찾아 쓴 것**이라, 원칙 I과 III가 그 사실로 강해진다.
+
+| 원칙/기준 | 5.1.0 판정 | 6.0.0 판정 | 무엇이 바뀌었나 |
+|---|---|---|---|
+| I. 단일 출처 문서화 | PASS | **PASS (위반 1건 회수)** | 기본 아바타의 **값**을 두 곳에 두려던 자리를 하나로 모았다. plan 5.x의 설계에는 도메인의 `ProfileAvatar.Default`와 feature의 `DefaultProfileAvatar` 상수가 **둘 다** 있었고, 후자가 전자에서 파생하고는 있었지만 화면이 참조하는 이름이 따로 존재했다. 6.0.0은 `DefaultProfileAvatar`를 지우고 화면이 `ProfileAvatar.Default`를 직접 지목하게 한다 |
+| IV. 명세가 구현에 선행한다 | PASS, 미충족 0건·어긋남 1건 | **PASS, 미충족 0건·어긋남 1건(성격 약화)** | 남은 어긋남은 응답 `avatar`의 nullable 하나인데, 앱이 "고르지 않음"을 `gray`로 표현하게 되면서 **`null`과 `gray`가 같은 상태를 뜻하는 두 표현**이 됐고 처리가 하나로 모인다([API 계약 §2](contracts/profile-api-contract.md) 6번). 여전히 서버 문서가 `null`의 발생 조건을 말하지 않으므로 협의 항목에는 남는다. **plan에만 있고 spec에 근거가 없는 요구사항은 없다** — FR-015가 [D53](research.md#d53-기본-아바타의-자리--도메인은-13항목-디자인-시스템-팔레트는-12종-그대로)의, FR-011이 [D54](research.md#d54-닉네임-안내-문구--평상시와-오류를-다른-문구로-가른다)의 유일한 근거다 |
+
+**판정이 바뀌지 않은 것**: 원칙 II·III·V와 기술 표준이다.
+
+- **원칙 II(레이어 경계)** — **경계가 시험대에 올랐고 통과했다.** 기본 아바타는 도메인 개념(FR-015)이지만 그림도 필요해, 두 모듈이 그것을 어떻게 나눠 갖느냐가 이번 설계의 전부였다. 답은 **도메인이 값을, 디자인 시스템이 그림을 갖되 열거는 넓히지 않는 것**이다 — `:core:design-system`은 여전히 `:core:domain`을 모르고, 서버 문자열은 `ProfileMapper` 한 파일에 갇힌 채다. 반대로 `MinoProfileAvatar`를 13항목으로 넓혔다면 디자인 시스템이 "기본값"이라는 도메인 개념을 들게 됐을 자리다.
+- **원칙 III(기록)** — [D53](research.md#d53-기본-아바타의-자리--도메인은-13항목-디자인-시스템-팔레트는-12종-그대로)·[D54](research.md#d54-닉네임-안내-문구--평상시와-오류를-다른-문구로-가른다)·[D55](research.md#d55-서버-문서-재조회2026-08-31-1603--바뀐-것이-없다)를 덧붙였다. **뒤집힌 결정이 하나 있는데 취소선을 긋지 않는다** — [D37](research.md#d37-아바타-식별자--도메인-profileavatar-enum-서버-표현은-avatarcolor-문자열)의 "`gray`는 보내지 않는다"는 결정이 아니라 **그 시점의 사실 서술**이었고(프로필에 미선택 상태가 없다는 전제), spec 4.0.0이 그 전제를 바꿨다. 값 표의 소유자인 [API 계약 §2](contracts/profile-api-contract.md)가 경위를 든다. **승격 후보 2건은 그대로 유지된다**(에러 코드 취급, `MinoTextField` 상한을 ViewModel이 자르는 규칙) — 이번 개정이 새 후보를 만들지는 않았다. 다만 **"도메인 13 / 팔레트 12 / 미선택은 `null`"이 방 색에 이어 두 번째 사례가 됐다**는 사실은 세 번째가 나올 때 승격을 판단할 근거로 남긴다.
+- **원칙 V(컨벤션)** — 새 에러 경로도 새 예외 리프도 없다. 새 에셋은 밀도별 WebP([ADR 2026-08-01](../../adr/2026-08-01-webp-for-raster-images.md))로 기존 12종과 같은 형식이고, 배치는 [ADR 2026-08-25](../../adr/2026-08-25-profile-avatar-assets-in-design-system.md)가 정한 모듈 그대로다. `MinoProfileAvatarImage`의 파라미터를 nullable로 바꾸는 것은 M3 패턴(`Defaults`·`token/`)의 구조를 건드리지 않는다.
+- **기술 표준(디자인)** — **대조 대상이 둘 늘었다**: 기본 아바타 에셋(목록 첫 항목과 다른 그림인지 + 배경 hex로 `gray` 대응 근거를 굳힌다)과 안내 문구 자리(위치·크기·색). [quickstart §6](quickstart.md)이 절차로 담는다. **오류 문구의 글자가 원본과 다른 것은 위반이 아니라 spec 4.0.0이 확정한 의도다.**
+- **기술 표준(빌드 검증)** — 최소선은 그대로 `./gradlew :app:assembleQaDebug`이고, 이번 개정에서는 **컴파일이 실질적인 안전망 노릇을 한다.** 도메인 enum에 항목이 하나 늘면 `ProfileAvatarMapping`의 전수 `when`이 깨져 매핑을 빠뜨릴 수 없다. **다만 `ProfileMapper`의 색 표는 `Map`이라 컴파일이 잡아 주지 못한다** — 13번째 줄을 빠뜨리면 `getValue`가 저장 시점에 던진다. [quickstart §4-6](quickstart.md)의 28번이 그것을 받는 확인이다.
+
+**이번 개정이 남기는 교훈**: [D24](research.md#d24-원격-연동이-붙을-때-바뀌는-지점을-지금-고정한다)·[D45](research.md#d45-프리필과-갱신의-순서--캐시로-먼저-채우고-갱신이-성공하면-조건부로-한-번-더)·[D47](research.md#d47-develop-재대조--420의-대조가-옛-트리를-근거로-했다)·[D48](research.md#d48-분석이-드러낸-문서의-빈틈--계약이-요구한-검증이-작업이-되지-못했다)·[D52](research.md#d52-서버-문서-재조회2026-08-31--닉네임-pattern에서-공백이-빠졌다)에 이어 여섯 번째이고, **이번에도 원인이 다르다.** 앞의 다섯은 무언가가 어긋나 있었다. 이번에 드러난 것은 **저장소가 같은 문제를 이미 풀어 두었는데 이 plan이 그것을 찾지 않았다면 다르게 풀었으리라는 것**이다 — `MinoRoomColor`를 읽지 않았다면 `MinoProfileAvatar`를 13항목으로 넓히는 쪽이 자연스러워 보였고, 그리드 필터 누락이라는 조용한 버그를 예정했을 것이다. **설계에 착수하기 전에 같은 형태의 선례를 찾는 것이 새 결정을 내리는 것보다 먼저다.**
+
+또 하나, [D54](research.md#d54-닉네임-안내-문구--평상시와-오류를-다른-문구로-가른다)가 드러낸 **"코드가 문서보다 앞서간"** 첫 사례가 나왔다. [D45](research.md#d45-프리필과-갱신의-순서--캐시로-먼저-채우고-갱신이-성공하면-조건부로-한-번-더)의 반대 방향이며, 둘을 함께 잡는 수단은 같다 — 착수 전 대조다.
+
+`Complexity Tracking`에 올릴 항목은 없다 — 새 타입이 0개이고, 늘어난 것은 열거 항목 하나와 에셋 한 장이다.
 
 ## 복잡도 추적 (Complexity Tracking)
 
