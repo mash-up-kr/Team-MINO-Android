@@ -63,6 +63,52 @@ fastlane/             Appfile · Fastfile (internal·promote 레인)
 |---|---|
 | `PLAY_INTERNAL_OPT_IN_URL` | 내부테스트 설치 링크 (②알림에 첨부, 없으면 링크 생략) |
 
+## 서명 키와 SHA-1 등록
+
+서명 키는 3종이다. Google Cloud Console의 Maps API 키 제한과 Firebase는 **(패키지명, SHA-1) 쌍**으로 앱을 식별하므로, 등록이 빠진 조합에서는 지도가 렌더링되지 않는다.
+
+| 키 | 파일 | 서명하는 빌드 |
+|---|---|---|
+| 팀 공용 debug | `keystore/debug.jks` (레포에 추적) | 모든 debug 빌드 (`qaDebug`·`prodDebug`) |
+| QA release | `keystore/qa.jks` | `qaRelease` |
+| production 업로드 | `keystore/prod.jks` | `prodRelease` (업로드 키 — Play가 앱 서명 키로 재서명) |
+
+release 키 두 개를 CI에 주입하는 경로는 위 [GitHub Secrets](#github-secrets)에 있다.
+
+debug 키는 관례값(alias `androiddebugkey`, 비밀번호 `android`)을 쓰는 비밀이 아닌 키라 레포에 커밋한다. 팀원마다 다른 `~/.android/debug.keystore`로 서명되던 것을 하나로 고정해, 팀원이 늘거나 로컬 키스토어가 재생성돼도 지문을 다시 등록할 필요가 없다.
+
+debug 서명이 flavor가 아니라 buildType에 붙는 이유는 [`Signing.kt`](../../build-logic/convention/src/main/kotlin/team/mino/buildlogic/Signing.kt)의 주석을 참고한다.
+
+### 등록해야 하는 4쌍
+
+| 패키지명 | 서명 키 | SHA-1 |
+|---|---|---|
+| `com.mino.gguk` | 공용 debug | `3F:9A:EB:9E:76:B6:A7:B6:64:BB:B9:7D:B4:77:92:E5:EE:52:78:37` |
+| `com.mino.gguk.qa` | 공용 debug | 위와 동일 |
+| `com.mino.gguk.qa` | qa.jks | `F3:A9:D1:B7:8D:B3:A7:94:7D:AE:B2:48:AA:58:2F:0C:88:36:BB:BF` |
+| `com.mino.gguk` | Play 앱 서명 인증서 | Play Console → 테스트 및 출시 → 앱 무결성 |
+
+`com.mino.gguk`의 release 빌드는 Play가 앱 서명 키로 재서명하므로, 업로드 키(`prod.jks`)가 아니라 **Play 앱 서명 인증서**의 SHA-1을 등록한다.
+
+업로드 키(`prod.jks`, SHA-1 `29:14:1C:D8:20:1D:FE:30:87:CE:F1:77:5A:2A:E1:4A:B4:B0:AE:87`)는 4쌍에 넣지 않는다. 로컬에서 빌드한 `prodRelease` APK를 기기에 직접 설치해 확인할 때만 임시로 추가한다.
+
+키를 교체했다면 아래로 다시 뽑는다. Firebase가 요구하는 SHA-256도 같은 출력에 있다.
+
+```sh
+keytool -list -v -keystore keystore/debug.jks -storepass android | grep -E 'SHA1:|SHA256:'
+keytool -list -v -keystore keystore/qa.jks | grep -E 'SHA1:|SHA256:'   # 비밀번호는 keystore.properties 참고
+```
+
+### Firebase
+
+Firebase는 앱이 이미 패키지명으로 나뉘어 있어 쌍을 입력하지 않는다. 프로젝트 설정 → 내 앱에서 **각 앱 아래에 위 표의 그 패키지명 행에 있는 지문만** 넣는다 (SHA-1·SHA-256 모두).
+
+현재 쓰는 기능(익명 인증·Analytics·Crashlytics)은 지문 없이도 동작한다. Google 로그인·전화 인증·Dynamic Links·App Check를 붙일 때 필수가 되므로 미리 등록해 둔다 — App Check(Play Integrity)가 SHA-256을 쓴다.
+
+SHA-1을 등록하면 Firebase가 Android OAuth 클라이언트를 자동 생성해 `google-services.json`에 `oauth_client` 항목이 생긴다. 등록 후 파일을 다시 받아 `app/google-services.json`과 `GOOGLE_SERVICES_JSON_B64`를 갱신한다.
+
+> Maps API 키는 Firebase가 발급한 키가 아니라 `local.properties`의 `MAPS_API_KEY`(별개 키)다. Firebase에 지문을 넣어도 지도 제한은 바뀌지 않으므로, 위 4쌍 등록은 Google Cloud Console에서 따로 해야 한다.
+
 ## Play Console 사전 준비 (②③ 전제, 1회)
 
 1. `com.mino.gguk` 앱 생성 + 최초 설정(데이터 보안·콘텐츠 등급 등) 완료
