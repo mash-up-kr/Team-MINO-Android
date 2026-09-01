@@ -2,7 +2,6 @@ package team.mino.feature.onboarding.invite.screen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,7 +22,6 @@ import team.mino.core.designsystem.foundation.icons.icons.Close
 import team.mino.core.designsystem.foundation.icons.icons.Link
 import team.mino.core.designsystem.theme.MinoAndroidTheme
 import team.mino.feature.onboarding.R
-import team.mino.feature.onboarding.invite.component.InviteCloudBackground
 import team.mino.feature.onboarding.invite.component.InviteIllustration
 import team.mino.feature.onboarding.invite.vm.InviteIntent
 
@@ -41,9 +39,6 @@ import team.mino.feature.onboarding.invite.vm.InviteIntent
  * 그래서 디자인이 액션 영역 아래에 두는 홈 인디케이터 여백도 여기서 다시 두지 않는다 — 셸이 이미
  * 실제 인셋만큼 비워 놓은 자리다.
  *
- * 구름 워터마크는 맨 뒤에 깔리고 그 위를 나머지가 지나간다. 액션 영역이 자기 배경을 깔지 않는
- * 기본형이라 버튼 뒤로도 워터마크가 이어진다.
- *
  * @param onClose 우상단 [X]. 스텝을 넘기는 조작이라 이 화면의 Intent가 아니라 콜백으로 올라간다
  *  (같은 문서 §3.3). 무엇으로 넘어갈지는 플로우 ViewModel이 정한다.
  */
@@ -53,23 +48,19 @@ internal fun InviteScreen(
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(
+    Column(
         modifier = modifier
             .fillMaxSize()
             .background(MinoAndroidTheme.colors.backgroundNormalNormal),
     ) {
-        InviteCloudBackground(modifier = Modifier.align(Alignment.BottomCenter))
-
-        Column(modifier = Modifier.fillMaxSize()) {
-            MinoTopNavigation(
-                title = "",
-                actionIcon = MinoIcons.Close,
-                actionIconContentDescription = CLOSE_ACTION_DESCRIPTION,
-                onActionClick = onClose,
-            )
-            InviteGuide(modifier = Modifier.weight(1f))
-            InviteActions(onIntent = onIntent)
-        }
+        MinoTopNavigation(
+            title = "",
+            actionIcon = MinoIcons.Close,
+            actionIconContentDescription = CLOSE_ACTION_DESCRIPTION,
+            onActionClick = onClose,
+        )
+        InviteGuide(modifier = Modifier.weight(1f))
+        InviteActions(onIntent = onIntent)
     }
 }
 

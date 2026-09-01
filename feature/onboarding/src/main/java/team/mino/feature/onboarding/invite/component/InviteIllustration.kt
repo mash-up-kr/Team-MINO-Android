@@ -25,5 +25,5 @@ internal fun InviteIllustration(modifier: Modifier = Modifier) {
     )
 }
 
-private val IllustrationWidth = 267.dp
-private val IllustrationHeight = 289.dp
+private val IllustrationWidth = 234.dp
+private val IllustrationHeight = 288.dp
