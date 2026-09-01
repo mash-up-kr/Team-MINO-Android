@@ -74,13 +74,14 @@ fun MinoAvatarGroup(
 
 /**
  * [MinoAvatarGroup]의 번들 아바타 버전. 서버가 이미지를 URL이 아니라 그림 식별자로 내려주는 사람
- * (방 멤버 등)을 그릴 때 쓴다 — [MinoAvatar]의 `profileAvatar` 파라미터를 그대로 통과시킨다.
+ * (방 멤버 등)을 그릴 때 쓴다 — [MinoAvatar]의 번들 아바타 오버로드에 그대로 통과시킨다.
  *
- * @param profileAvatars 표시할 번들 아바타 목록.
+ * @param profileAvatars 표시할 번들 아바타 목록. 항목의 `null`은 기본 아바타로 그려진다 —
+ *   URL 버전의 `imageUrls` 항목이 `null`일 때(placeholder 글리프)와 뜻이 다르다.
  */
 @Composable
 fun MinoAvatarGroup(
-    profileAvatars: ImmutableList<MinoProfileAvatar>,
+    profileAvatars: ImmutableList<MinoProfileAvatar?>,
     modifier: Modifier = Modifier,
     size: MinoAvatarGroupSize = MinoAvatarGroupSize.XSmall,
     trailingContent: (@Composable () -> Unit)? = null,
