@@ -13,6 +13,7 @@
 ```kotlin
 data class Place(
     val id: String,                          // 서버 Pin.id(핀 식별자) — Place.id(장소 식별자)가 아니다. 공유·삭제 호출은 이 값을 쓴다([research.md D14](./research.md))
+    val placeId: String,                     // 서버 Pin.place.id(장소 식별자) — 방마다 다른 [id]와 달리 같은 장소면 어느 방에서든 같다
     val name: String,                        // 서버 Pin.place.name
     val address: String,                     // 서버 Pin.place.address
     val category: PlaceCategoryFilter,       // room-list가 정의(재사용) — 서버 Pin.place.category(자유 문자열)를 매핑. CAFE/RESTAURANT만 실값, ALL은 필터 전용
@@ -24,6 +25,7 @@ data class Place(
 )
 ```
 
+- **`id`와 `placeId`가 둘 다 있는 이유**: 두 식별자가 서로 다른 질문에 답한다. `id`(핀)는 「이 방에 담긴 이 한 장」을 가리켜 공유·삭제가 쓰고, `placeId`(장소)는 「같은 장소」를 가리켜 **어느 방에 이미 담겨 있는지**를 묻는 데 쓴다(`RoomRepository.getRooms(placeId)` → `hasPlace`). 핀 id로는 그 질문을 할 수 없다 — 방마다 값이 다르기 때문이다. [SYS-003] 방 선택 시트의 「체크된 채 비활성」([spec.md](./spec.md) EC-004)이 이 값을 요구한다.
 - **범위**: 장소 카드/리스트 렌더링에 필요한 필드로 한정한다. 코멘트 본문·이미지 갤러리 등 [SCR-006] 장소 상세 자체의 구성은 이 spec의 비목표([spec.md §3.2](./spec.md))라 담지 않는다.
 - **서버 응답과의 관계**: 서버는 `Place`를 단독으로 내려주지 않고 `Pin { id, roomId, place: { id, provider, providerPlaceId, name, address, city, district, lat, lng, category, phone, mapUrl, createdAt, updatedAt }, images, createdBy, createdAt }`이 감싼다(`GET /api/v1/pins`·`GET /api/v1/pins/{pinId}`, [research.md D14](./research.md)). 이 domain `Place`는 **Pin과 그 안의 place를 합쳐 만든 표현 모델**이다 — `id`는 `Pin.id`를 쓴다(`Pin.place.id`가 아니다), 나머지 필드는 위 주석대로 매핑한다. Mapper(`PlaceMapper.toDomain()`)가 이 변환을 전담한다.
 - **검증 규칙**: `distanceMeters`는 사용자 위치 권한이 없거나 미확보 상태면 `null`이고, 이 경우 "거리순" 정렬에서 해당 장소는 목록 하단으로 밀린다(구현 세부, 정렬 알고리즘 자체는 `/mino-task`가 정한다).
