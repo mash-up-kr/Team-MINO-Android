@@ -10,7 +10,14 @@ import team.mino.core.common.android.architecture.SideEffect
 internal sealed interface RoomDetailSideEffect : SideEffect {
     data object NavigateBack : RoomDetailSideEffect
 
-    data class NavigateToPlaceDetail(val placeId: String) : RoomDetailSideEffect
+    /**
+     * [SCR-006] 장소 상세 열기 — 인자는 `Pin.id`(= `Place.id`)다. 핀 = (장소, 방) 쌍이라 「지금 보고 있는 방」이
+     * 이 값 안에 이미 정해져 있다(docs/specs/place-detail/contracts/place-detail-entry.md §2).
+     *
+     * 이 화면은 목적지를 직접 열지 않는다 — `RoomDetailRoute`가 `onOpenPlaceDetail`로 올리면
+     * `RoomListRoute`가 `RoomListIntent.OnPlaceSelected(pinId)`로 넘겨 `selectedPinId`를 세운다.
+     */
+    data class NavigateToPlaceDetail(val pinId: String) : RoomDetailSideEffect
 
     data object NavigateToRoomForm : RoomDetailSideEffect
 

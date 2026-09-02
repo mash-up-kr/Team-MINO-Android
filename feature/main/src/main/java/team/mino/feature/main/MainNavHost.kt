@@ -14,7 +14,9 @@ import team.mino.feature.room.roomGraph
 @Composable
 internal fun MainNavHost(
     navController: NavHostController,
-    onNavigateToPlaceDetail: (pinId: String) -> Unit,
+    onRequestPlaceDetail: (pinId: String) -> Unit,
+    onOpenExternalMap: (mapUrl: String?, query: String) -> Unit,
+    onOpenSourceLink: (url: String) -> Unit,
     onNavigateToRoomForm: () -> Unit,
     roomFormEntryPoint: RoomFormEntryPoint,
     modifier: Modifier = Modifier,
@@ -25,14 +27,25 @@ internal fun MainNavHost(
         modifier = modifier,
     ) {
         homeGraph(
-            onNavigateToPlaceDetail = onNavigateToPlaceDetail,
+            // 장소 상세는 저장 탭 안의 화면이다. 홈이 지목한 핀을 홀더에 남기고 탭만 옮기면, 저장 탭이
+            // 그 요청을 받아 상세를 연다(→ docs/specs/place-detail/contracts/place-detail-entry.md §3.2).
+            // 탭 전환이 백스택을 저장·복원하는 탓에 Route 인자로는 새 핀이 전달되지 않아 홀더를 쓴다(같은 계약 §3.3).
+            onNavigateToPlaceDetail = { pinId ->
+                onRequestPlaceDetail(pinId)
+                navController.navigateToTab(MainTab.SAVED)
+            },
             onNavigateToRoomForm = onNavigateToRoomForm,
             // 빈 상태 CTA도 지금은 같은 폼으로 보낸다. [SYS-009] 공동방 생성 유도 화면이 생기면 여기서만
             // 갈라 주면 된다 — 홈은 두 갈래를 따로 내보낸다
             // (→ docs/specs/home-deck-exploration/contracts/home-ui.md §1).
             onCreateRoomFromEmpty = onNavigateToRoomForm,
         )
-        roomGraph()
+        // 앱 밖으로 나가는 둘(외부 지도·원문 링크)만 셸이 받아 Activity에 넘긴다 — 저장 탭 안에서 끝나는
+        // 전환은 그 모듈이 스스로 한다(→ docs/architecture/feature-navigation.md 3장).
+        roomGraph(
+            onOpenExternalMap = onOpenExternalMap,
+            onOpenSourceLink = onOpenSourceLink,
+        )
         // 아직 탭 feature 모듈이 없는 탭은 전환 검증용 placeholder다. 모듈이 생기면 홈처럼 그 모듈의
         // 등록 함수 호출로 교체하고 Route 소유도 그쪽으로 옮긴다(→ docs/architecture/feature-navigation.md 3장).
         screen<Notification> { MainTabPlaceholderScreen(label = stringResource(MainTab.NOTIFICATION.labelRes)) }

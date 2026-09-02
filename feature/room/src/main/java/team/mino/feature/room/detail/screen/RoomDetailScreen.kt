@@ -124,7 +124,7 @@ internal fun BoxScope.RoomDetailScreen(
             if (state.places.isEmpty()) {
                 RoomDetailEmptyPlaces()
             } else {
-                val onPlaceClick: (Place) -> Unit = { onIntent(RoomDetailIntent.OnPlaceClick) }
+                val onPlaceClick: (Place) -> Unit = { onIntent(RoomDetailIntent.OnPlaceClick(it)) }
                 val onPlaceMoreClick: (Place) -> Unit =
                     { onIntent(RoomDetailIntent.OnPlaceMoreClick(it)) }
                 val actionMenu: @Composable (Place) -> Unit = { place ->

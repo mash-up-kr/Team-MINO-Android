@@ -10,6 +10,9 @@ import team.mino.core.domain.model.RoomColor
  *
  * 지도 핀(`RoomListMap`)이 공동방 핀 색을 정하는 데 쓴다 — 개인 방([RoomColor.GRAY])은 칩이 없어
  * `null`이고, [RoomMapPin]이 `null`을 기본(검정) 핀으로 그린다.
+ *
+ * `placedetail`로 옮겨 온 화면도 같은 표를 쓴다 — `:feature:placedetail`이 갖고 있던 `RoomColor.palette`가
+ * 이름만 다른 같은 대응이라 이식하지 않고 여기로 합쳤다.
  */
 internal val RoomColor.chip: MinoRoomColor?
     get() = when (this) {

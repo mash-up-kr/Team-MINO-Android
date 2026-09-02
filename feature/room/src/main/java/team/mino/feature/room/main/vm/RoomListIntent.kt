@@ -39,6 +39,28 @@ sealed interface RoomListIntent : Intent {
 
     data class OnRoomFormResult(val createdRoomId: String?) : RoomListIntent
 
+    /**
+     * [FR-002] 장소 상세 진입 — `selectedPinId`를 세우고 지도 카메라를 그 장소로 옮긴다.
+     *
+     * 진입점 셋이 이 하나로 모인다: 지도 마커, 방 상세가 올린
+     * `RoomDetailSideEffect.NavigateToPlaceDetail`, 그리고 다른 탭이 남긴 요청
+     * (`docs/specs/place-detail/contracts/place-detail-entry.md` §1).
+     */
+    data class OnPlaceSelected(val pinId: String) : RoomListIntent
+
+    /**
+     * [FR-009] 장소 상세 [나가기] — 시트 아래로 끌기(EC-003)·시스템 뒤로가기도 여기로 모인다.
+     * `selectedPinId`만 비우면 `selectedRoomId`가 남아 있어 그 방의 방 상세가 그대로 드러난다.
+     */
+    data object OnClosePlaceDetailClick : RoomListIntent
+
+    /**
+     * [FR-025] 장소 상세의 [저장된 방] 시트에서 다른 방을 골랐다 — 같은 장소를 그 방에 저장한
+     * 핀([pinId])으로 갈아탄다. 지금 보고 있는 방이 [roomId]로 바뀌므로 마커 양식(TS-045)과
+     * [나가기] 목적지(TS-046)가 함께 따라간다.
+     */
+    data class OnPlaceDetailRoomSwitched(val pinId: String, val roomId: String) : RoomListIntent
+
     data object OnCurrentLocationClick : RoomListIntent
 
     data class OnLocationPermissionResult(val granted: Boolean) : RoomListIntent

@@ -15,7 +15,9 @@ import team.mino.feature.main.placeholder.RoomFormEntryPoint
 
 @Composable
 internal fun MainShell(
-    onNavigateToPlaceDetail: (pinId: String) -> Unit,
+    onRequestPlaceDetail: (pinId: String) -> Unit,
+    onOpenExternalMap: (mapUrl: String?, query: String) -> Unit,
+    onOpenSourceLink: (url: String) -> Unit,
     onNavigateToRoomForm: () -> Unit,
     roomFormEntryPoint: RoomFormEntryPoint,
     modifier: Modifier = Modifier,
@@ -39,7 +41,9 @@ internal fun MainShell(
         ) { innerPadding ->
             MainNavHost(
                 navController = navController,
-                onNavigateToPlaceDetail = onNavigateToPlaceDetail,
+                onRequestPlaceDetail = onRequestPlaceDetail,
+                onOpenExternalMap = onOpenExternalMap,
+                onOpenSourceLink = onOpenSourceLink,
                 onNavigateToRoomForm = onNavigateToRoomForm,
                 roomFormEntryPoint = roomFormEntryPoint,
                 modifier = Modifier.padding(innerPadding),
