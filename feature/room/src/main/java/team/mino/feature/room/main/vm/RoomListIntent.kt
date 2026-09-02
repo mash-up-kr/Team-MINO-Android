@@ -42,9 +42,12 @@ sealed interface RoomListIntent : Intent {
     /**
      * [FR-002] 장소 상세 진입 — `selectedPinId`를 세우고 지도 카메라를 그 장소로 옮긴다.
      *
-     * 진입점 셋이 이 하나로 모인다: 지도 마커, 방 상세가 올린
-     * `RoomDetailSideEffect.NavigateToPlaceDetail`, 그리고 다른 탭이 남긴 요청
-     * (`docs/specs/place-detail/contracts/place-detail-entry.md` §1).
+     * **저장 탭 안의 진입 둘**이 이 하나로 모인다: 지도 마커와 방 상세가 올린
+     * `RoomDetailSideEffect.NavigateToPlaceDetail`이다
+     * (`docs/specs/place-detail/contracts/place-detail-entry.md` §1·§2).
+     *
+     * 다른 탭이 남긴 요청은 이 인텐트로 오지 않는다 — 방을 함께 세워야 해서 ViewModel이 요청 홀더를
+     * 직접 구독한다(같은 계약 §3). 카메라를 옮기는 것은 양쪽 다 같다.
      */
     data class OnPlaceSelected(val pinId: String) : RoomListIntent
 

@@ -110,6 +110,7 @@ internal fun RoomListScreen(
             placeDetailSheetLevel
                 ?.let(::placeDetailSheetHeightOrNull)
                 ?.minus(navigationBarInset)
+                ?.coerceAtLeast(0.dp)
 
         detailContent != null -> detailSheetLevel?.let(::roomDetailBottomSheetHeightOrNull)
         else -> bottomSheetHeightOrNull(state.sheetLevel, state.groupRooms.size)
@@ -152,7 +153,7 @@ internal fun RoomListScreen(
             // [mapBleed]만큼 상태바 뒤로 들어가 있고, 아래쪽은 지금 선 시트가 가린다.
             contentPadding = PaddingValues(
                 top = mapBleed,
-                bottom = obscuredMapHeight?.coerceAtLeast(0.dp) ?: 0.dp,
+                bottom = obscuredMapHeight ?: 0.dp,
             ),
             modifier = Modifier
                 .fillMaxWidth()
@@ -190,7 +191,7 @@ internal fun RoomListScreen(
                         .padding(start = 20.dp, top = 20.dp, end = 20.dp, bottom = 12.dp),
                 )
 
-                val sheetHeight = bottomSheetHeightOrNull(state.sheetLevel, state.groupRooms.size) ?: 0.dp
+                val sheetHeight = obscuredMapHeight ?: 0.dp
                 RoomListCurrentLocationButton(
                     onClick = { onIntent(RoomListIntent.OnCurrentLocationClick) },
                     modifier = Modifier
