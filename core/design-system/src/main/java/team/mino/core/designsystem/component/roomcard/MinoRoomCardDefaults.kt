@@ -9,7 +9,7 @@ import team.mino.core.designsystem.foundation.color.token.value
 import team.mino.core.designsystem.foundation.typography.token.value
 
 /**
- * [MinoRoomCard]·[MinoRoomCheckBoxCard]의 기본값 모음. 크기·간격은 [RoomCardTokens] 참고.
+ * [MinoRoomCard]·[MinoRoomCheckBoxCard]·[MinoRoomChevronCard]의 기본값 모음. 크기·간격은 [RoomCardTokens] 참고.
  *
  * 카드 본문은 상태를 갖지 않아 `Colors` 클래스 없이 단일 값 프로퍼티만 노출한다. 체크박스의
  * 상태별 색은 `MinoCheckboxDefaults`가 소유한다.
@@ -32,4 +32,7 @@ object MinoRoomCardDefaults {
 
     val placeCountColor: Color
         @Composable @ReadOnlyComposable get() = RoomCardTokens.PlaceCountColor.value
+
+    val chevronColor: Color
+        @Composable @ReadOnlyComposable get() = RoomCardTokens.ChevronColor.value
 }

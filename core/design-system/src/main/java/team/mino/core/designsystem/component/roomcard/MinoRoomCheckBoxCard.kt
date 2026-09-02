@@ -1,17 +1,10 @@
 package team.mino.core.designsystem.component.roomcard
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import team.mino.core.designsystem.component.checkbox.MinoCheckbox
 import team.mino.core.designsystem.component.checkbox.MinoCheckboxColors
 import team.mino.core.designsystem.component.checkbox.MinoCheckboxDefaults
-import team.mino.core.designsystem.component.roomcard.token.RoomCardTokens
-import team.mino.core.designsystem.util.modifier.clickable.rippleSingleClickable
 
 /**
  * 선택 모드의 방 카드(Figma `Card_Room`, `Show list cell=on`).
@@ -35,22 +28,14 @@ fun MinoRoomCheckBoxCard(
     memo: String? = null,
     colors: MinoCheckboxColors = MinoCheckboxDefaults.colors(),
 ) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .rippleSingleClickable(onClick = onClick)
-            .padding(vertical = RoomCardTokens.VerticalPadding),
-        horizontalArrangement = Arrangement.spacedBy(RoomCardTokens.ItemSpacing),
-        verticalAlignment = Alignment.CenterVertically,
+    RoomCardRow(
+        title = title,
+        placeCountLabel = placeCountLabel,
+        memo = memo,
+        onClick = onClick,
+        thumbnail = thumbnail,
+        modifier = modifier,
     ) {
-        RoomCardContent(
-            title = title,
-            placeCountLabel = placeCountLabel,
-            memo = memo,
-            modifier = Modifier.weight(1f),
-            thumbnail = thumbnail,
-        )
-
         MinoCheckbox(
             checked = checked,
             onCheckedChange = onCheckedChange,
