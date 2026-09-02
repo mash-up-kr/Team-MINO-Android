@@ -1,188 +1,285 @@
-# 계약: 장소 상세 화면 (PlaceDetailMain)
+# 계약: 장소 상세 화면 상태 (PlaceDetail Main Contract)
 
 **대상 스펙 경로**: `docs/specs/place-detail`
 
-**계획서**: [../plan.md](../plan.md)
+**계획서**: [plan.md](../plan.md)
 
-`:feature:placedetail`의 유일한 화면. MVI 타입은 `:core:common:android`의 `architecture` 패키지를 따르고, Route↔Screen 연결은 [feature-module.md 4장](../../../architecture/feature-module.md)을 따른다.
-
-시그니처는 이 문서가 소유한다. 함수 본문은 구현 단계의 몫이다.
+편입 구조([research.md D17](../research.md)) 기준. 상태가 두 ViewModel에 나뉘므로 **§1이 그 경계를 먼저 정한다.**
 
 ---
 
-## 1. Route
+## 1. 소유권 경계
+
+| 값 | 소유자 | 왜 |
+|---|---|---|
+| `selectedPinId` | `RoomListViewModel` | 시트 세 갈래를 가르는 값. `selectedRoomId`와 한자리에 있어야 판정이 한 곳이다 |
+| `selectedRoomId` | `RoomListViewModel` | 기존 |
+| `mapPins`(선택 표시 포함) | `RoomListViewModel` | 지도를 그리는 주체 |
+| `mapCenter`·`mapCenterRequestId` | `RoomListViewModel` | 카메라를 실제로 움직이는 주체([research.md D25](../research.md)) |
+| 핀 상세·코멘트·시트 단계·헤더 밀도·공유 시트·[저장된 방] 시트 | `PlaceDetailViewModel` | `pinId` 하나의 화면 상태 |
+
+**`PlaceDetailUiState.roomColor`를 없앤다.** 선택 핀의 색은 `RoomListViewModel`이 이미 `MapPinUiModel.color`로 들고 있다 — `Place.id`가 곧 `pinId`이므로(`Place` KDoc) 선택 여부는 `pin.place.id == selectedPinId` 한 비교다. 색이 늦게 도착해 마커를 못 그리던 구간([research.md D15](../research.md))이 구조적으로 사라진다.
+
+---
+
+## 2. `RoomListViewModel` 델타
+
+### 2.1 상태
 
 ```kotlin
-// PlaceDetailDestinations.kt
-@Serializable
-internal data class PlaceDetailMain(val pinId: String) : Route
+data class RoomListUiState(
+    // ... 기존 그대로
+    val selectedRoomId: String? = null,
+    val selectedPinId: String? = null,   // 신규
+)
 ```
 
-`PlaceDetailActivity`가 `intent.getStringExtra(EXTRA_PLACE_DETAIL_PIN_ID)`로 읽어 시작 Route에 넘긴다([place-detail-launcher.md](./place-detail-launcher.md)). ViewModel은 `savedStateHandle.toRoute<PlaceDetailMain>()`으로 복원한다.
+**세 갈래는 `selectedPinId`가 우선이다.** `selectedPinId != null` → 장소 상세, 아니면 `selectedRoomId != null` → 방 상세, 아니면 리스트. 장소 상세가 열려 있을 때 방 상세 시트는 그려지지 않는다(FR-009가 [나가기] 후에야 그것을 드러내라고 규정한다).
 
-## 2. UiState
+`selectedPinId != null`이면 `selectedRoomId`도 반드시 `null`이 아니다 — §2.3이 둘을 함께 세운다.
+
+### 2.2 인텐트
+
+| 인텐트 | 처리 |
+|---|---|
+| `OnPlaceSelected(pinId)` | `selectedPinId = pinId`, `mapCenter`를 그 장소로 + `mapCenterRequestId++` |
+| `OnClosePlaceDetailClick` | `selectedPinId = null` |
+| `OnPlaceDetailRoomSwitched(pinId, roomId)` | `selectedPinId = pinId`, `selectedRoomId = roomId` — [저장된 방] 전환(FR-024) |
+
+`OnPlaceSelected`는 세 곳에서 온다 — 지도 마커, 방 상세의 `NavigateToPlaceDetail(pinId)`, 그리고 §2.3의 탭 간 요청.
+
+### 2.3 탭 간 요청 소비
+
+`PlaceDetailRequestHolder.pending`을 구독한다([place-detail-entry.md §3](./place-detail-entry.md)).
+
+```
+pending = pinId
+  → getPlaceDetail(pinId)로 roomId를 해석
+  → selectedRoomId = roomId; selectedPinId = pinId
+  → holder.consume()
+```
+
+**방을 먼저 세운다.** 홈·알림에서 들어오면 방 상세가 아직 안 열려 있어, [나가기]가 드러낼 자리가 비어 있다. `roomId`는 핀 상세 응답이 준다.
+
+이 조회가 실패하면 요청을 소비만 하고 아무것도 열지 않는다 — 열 화면이 없는 채로 빈 상세를 띄우지 않는다.
+
+### 2.4 지도 마커 선택 표시
 
 ```kotlin
-internal data class PlaceDetailUiState(
-    val pinId: String,
-    val place: PlaceDetail?,          // null = 로딩 중
-    val roomColor: RoomColor?,        // 핀 상세엔 없어 방 목록에서 채운다 (§5)
-    val sheetLevel: PlaceSheetLevel,  // HALF | FULL
-    val headerMode: PlaceHeaderMode,  // EXPANDED | COLLAPSED
-    val carouselPage: Int,
-    val comments: List<PlaceCommentUiModel>,
-    val commentPage: Int,
-    val hasOlderComments: Boolean,
-    val isLoadingOlderComments: Boolean,
-    val commentDraft: String,
-    val isSubmittingComment: Boolean,
-    val shareSheet: ShareSheetUiState?,   // null = 닫힘
-) {
-    val isSubmitEnabled: Boolean get() = commentDraft.isNotBlank() && !isSubmittingComment
-    val isSourceEnabled: Boolean get() = place?.sourceUrl != null
-    val isSavedRoomsEnabled: Boolean get() = false   // FR-023 — 이번 범위 보류 (§6)
+MapPinUiModel(place, color, selected = place.id == selectedPinId)
+```
+
+`RoomListMap.PlacePin`이 `selected = false`로 박아 둔 값을 이 값으로 바꾼다. `:core:common:ui`의 `RoomMapPin(color, selected)`이 이미 두 외형을 갖고 있어 새 컴포넌트가 없다(FR-002, TS-002).
+
+### 2.5 바텀 네비게이션
+
+`RoomListRoute`의 기존 `DisposableEffect` 판정식에 조건을 더한다 — 새 `DisposableEffect`를 만들지 않는다([research.md D19](../research.md)).
+
+```kotlin
+bottomNavVisibility.value =
+    selectedPinId == null && !isDetailMode && !state.isNudgeSheetVisible
+```
+
+### 2.6 시스템 뒤로가기
+
+```kotlin
+BackHandler(enabled = selectedPinId != null || selectedRoomId != null) {
+    if (selectedPinId != null) OnClosePlaceDetailClick else OnCloseRoomDetailClick
 }
 ```
 
-| 필드 | 근거 |
-|---|---|
-| `place == null` | 진입 직후 로딩. 헤더·캐러셀·액션 행이 아직 그려지지 않는 구간 |
-| `sheetLevel` | FR-001. `Peek`이 없다 |
-| `headerMode` | FR-008. `sheetLevel`에서 파생시키지 않는다 — 스크롤 위치가 결정한다([research.md D5](../research.md)) |
-| `carouselPage` | FR-007. 외부 앱 복귀 시 유지되어야 한다(UX-009) |
-| `commentDraft` | FR-012. 카운터 `N/200`은 이 값의 길이로 그린다 |
-| `isSubmitEnabled` | FR-013·EC-012 — 공백만 있으면 비활성 |
-| `isSourceEnabled` | FR-017·EC-017 — 원문 링크가 없으면 [원문보기] 비활성 |
-| `isSavedRoomsEnabled` | FR-023. **`false` 고정**이며 그 이유는 §6 |
+### 2.7 지도 컨트롤 노출
 
-**200자 상한을 UiState가 강제하지 않는다.** 입력 컴포저블이 `onValueChange`에서 201자째를 받지 않는 것으로 막는다(EC-011 — 카운터를 `200/200`으로 고정).
+지도 위 컨트롤을 그릴지는 **지금 활성인 시트**의 단계로 판정한다. `RoomListScreen`이 이미 `detailSheetLevel`로 같은 판정을 하고 있고(그 KDoc이 실기기 결함을 기록해 둔 자리), 장소 상세가 세 번째 갈래로 는다 — 장소 상세 `Full`이면 컨트롤을 숨긴다.
 
-### 2.1 `PlaceCommentUiModel`
+---
+
+## 3. `PlaceDetailUiState`
+
+기존 정의에서 **`roomColor` 삭제**, **`savedRooms`·`commentsObservedAt` 추가**, `isSavedRoomsEnabled`의 근거 교체.
 
 ```kotlin
+@Immutable
+internal data class PlaceDetailUiState(
+    val pinId: String,
+    val place: PlaceDetail? = null,
+    val loadError: MinoDomainException? = null,
+    val sheetLevel: PlaceSheetLevel = PlaceSheetLevel.HALF,
+    val headerMode: PlaceHeaderMode = PlaceHeaderMode.EXPANDED,
+    val carouselPage: Int = 0,
+    val comments: ImmutableList<PlaceCommentUiModel> = persistentListOf(),
+    val commentsObservedAt: Instant = Instant.DISTANT_PAST,   // 신규 — §6.1
+    val commentPage: Int = 0,
+    val hasOlderComments: Boolean = false,
+    val isLoadingOlderComments: Boolean = false,
+    val commentDraft: String = "",
+    val isSubmittingComment: Boolean = false,
+    val savedRooms: ImmutableList<RoomPickerItem> = persistentListOf(),
+    val shareSheet: ShareSheetUiState? = null,
+    val savedRoomsSheet: SavedRoomsSheetUiState? = null,
+) : UiState
+```
+
+**`commentsObservedAt`의 기본값은 판정에 쓰이지 않는다.** 초기 상태의 `comments`가 비어 있어 이 값과 견줄 코멘트가 없고, 목록이 처음 채워지는 순간 `clock.now()`로 덮인다(§6.1). `Instant.DISTANT_PAST`는 `RoomListViewModel`이 정렬 폴백으로 쓰는 것과 같은 관용이다.
+
+### 3.1 `savedRooms` — 한 번 조회로 세 곳을 먹인다
+
+`getRooms(placeId = place.placeId)` 한 번이 방마다 `hasPlace`·`matchedPinId`·`color`를 함께 준다. 그 결과가 세 군데에 쓰인다.
+
+| 쓰임 | 근거 |
+|---|---|
+| [다른방에 공유] 시트의 이미 저장된 방 표시 | FR-018·FR-022 |
+| [저장된 방] 버튼의 활성 판정 | FR-023 |
+| [저장된 방] 시트의 목록과 전환 대상 `matchedPinId` | FR-024 |
+
+**`place`가 도착한 뒤에 부른다** — 질의 키가 `placeId`인데 그 값이 핀 상세 응답에서 오기 때문이다.
+
+### 3.2 파생 프로퍼티
+
+```kotlin
+val isSubmitEnabled: Boolean get() = commentDraft.isNotBlank() && !isSubmittingComment
+val isSourceEnabled: Boolean get() = place?.sourceUrl != null
+
+/** FR-023 — 이 장소가 두 방 이상에 저장돼 있을 때만 열린다(TS-040·TS-041). */
+val isSavedRoomsEnabled: Boolean
+    get() = savedRooms.count { it.hasPlace == true } >= 2
+```
+
+**`isSavedRoomsEnabled`가 `false` 고정을 벗는다.** 서버가 `matchedPinId`를 내려주면서 전환 대상을 특정할 수 있게 됐다([research.md D20](../research.md)).
+
+### 3.3 `SavedRoomsSheetUiState`
+
+```kotlin
+@Immutable
+internal data class SavedRoomsSheetUiState(
+    val rooms: ImmutableList<RoomPickerItem>,   // hasPlace == true 이고 지금 보고 있는 방을 뺀 나머지
+    val currentPinId: String,                    // 지금 보고 있는 핀 — rooms에서 그 방을 빼는 기준
+)
+```
+
+`null`이 닫힘이다. 공유 시트와 같은 규칙으로, 열림 플래그를 따로 두지 않아 목록 없이 열린 시트가 생기지 않는다.
+
+**지금 보고 있는 방은 목록에 없다.** 선택 상태로 표시하는 것이 아니라 **빼는** 것이다 — FR-024가 "지금 보고 있는 방을 제외한 나머지"로 규정하고, TS-042(A방 기준으로 보면 시트에 B·C만 보이고 A방 카드는 없다)·EC-026·UX-012가 같은 것을 요구한다. 그래야 시트에 눌러도 아무 일이 없는 카드가 생기지 않는다.
+
+**치수는 이 스펙이 소유한다** — [SYS-003] 방 선택 시트와 값이 다르므로 `RoomShareSheet`를 따라가지 않는다.
+
+| 항목 | 값 | 근거 |
+|---|---|---|
+| 시트 높이 | **442dp 고정** (하단 safe area 60dp 포함) | FR-024·TS-048 |
+| 내부 스크롤 영역 | **312dp 고정** — 방이 늘어도 시트 높이는 그대로고 목록만 스크롤된다 | FR-024·TS-048 |
+| 체크박스·확정 CTA | **없다.** 카드를 누르는 것이 곧 확정이다 | FR-024 |
+| 카드 구성 | 썸네일 · 방 이름 · 장소 N개 · 우측 이동 표시(>) | FR-024 |
+
+---
+
+## 4. `PlaceDetailIntent` 델타
+
+기존 인텐트는 그대로 두고 셋을 더한다.
+
+| 인텐트 | 근거 |
+|---|---|
+| `OnSavedRoomsClick` | FR-023 — [저장된 방] 시트를 연다. 비활성일 땐 도달하지 않는다 |
+| `OnSavedRoomSelected(pinId, roomId)` | FR-024 — 전환 대상 핀. `matchedPinId`가 실린다 |
+| `OnSavedRoomsSheetDismiss` | 딤 바깥 탭·아래로 끌기·뒤로가기 |
+
+**기존 KDoc의 "[저장된 방] 버튼의 Intent가 없다"를 지운다.** 그 문장의 근거였던 구현 보류가 해제됐다.
+
+---
+
+## 5. `PlaceDetailSideEffect` 델타
+
+| 이펙트 | 상태 | 비고 |
+|---|---|---|
+| `Exit` | 유지 | 받는 쪽이 Activity `finish()`가 아니라 `RoomListIntent.OnClosePlaceDetailClick`이 된다 |
+| `OpenExternalMap`·`OpenSourceLink` | 유지 | 실행 주체가 `PlaceDetailActivity`에서 `MainActivity`로 바뀐다 |
+| `ShowShareCompleted` | 유지 | |
+| `SwitchRoom(pinId, roomId)` | **신규** | FR-024 — `RoomListViewModel`로 올려 `selectedPinId`·`selectedRoomId`를 함께 갱신한다 |
+
+`SwitchRoom`이 SideEffect인 이유: 바꿔야 할 상태가 **다른 ViewModel의 것**이라 `PlaceDetailViewModel`이 직접 쓸 수 없다. `RoomDetailSideEffect.NavigateBack`이 같은 이유로 SideEffect인 것과 같다.
+
+---
+
+## 6. 코멘트 작성 시각 (FR-028)
+
+`PlaceCommentUiModel`이 표기 문자열이 아니라 **시각 원본**을 들고, 표기는 컴포지션 시점에 만든다.
+
+```kotlin
+@Immutable
 internal data class PlaceCommentUiModel(
     val id: String,
     val content: String,
-    val nickname: String,
-    val avatarColor: RoomColor?,
+    val author: ...,
     val canDelete: Boolean,
+    val createdAt: Instant,   // 신규 — kotlin.time.Instant. 표기 계산의 원천
 )
 ```
 
-도메인 `PlaceComment`를 그대로 쓰지 않는 이유는 없다 — 필드가 1:1이다. 그럼에도 UiModel을 두는 것은 **아바타 표현이 서버 협의 중**이라([place-api.md §5](./place-api.md)) 정본이 정해지면 이 경계에서만 바뀌게 하기 위해서다.
+표기 문자열은 상태에 담지 않는다. 컴포지션 시점에 순수 함수로 환산한다.
 
-### 2.2 `ShareSheetUiState`
-
-```kotlin
-internal data class ShareSheetUiState(
-    val rooms: List<RoomPickerItem>,   // hasPlace == true 는 체크·비활성
-    val selectedRoomIds: Set<String>,
-    val isSubmitting: Boolean,
-) {
-    val isShareEnabled: Boolean get() = selectedRoomIds.isNotEmpty() && !isSubmitting
-}
-```
-
-시트의 시각 표현·높이(676dp)·카드 구성은 [spec.md §3.2](../spec.md)가 [SYS-003] 소관으로 위임했으므로 **`[TBD]`다**([research.md D13](../research.md)). 이 계약이 확정하는 것은 선택 상태와 CTA 활성 조건까지다.
-
-## 3. Intent
-
-```kotlin
-internal sealed interface PlaceDetailIntent {
-    data class OnSheetLevelChange(val level: PlaceSheetLevel) : PlaceDetailIntent
-    data class OnScrollOffsetChange(val isAtTop: Boolean) : PlaceDetailIntent   // FR-008
-    data object OnExitClick : PlaceDetailIntent                                  // FR-009
-    data class OnCarouselPageChange(val page: Int) : PlaceDetailIntent           // FR-007
-
-    data object OnOpenMapClick : PlaceDetailIntent                               // FR-016
-    data object OnOpenSourceClick : PlaceDetailIntent                            // FR-017
-
-    data class OnCommentDraftChange(val value: String) : PlaceDetailIntent       // FR-012
-    data object OnSubmitCommentClick : PlaceDetailIntent                         // FR-014
-    data class OnDeleteCommentClick(val commentId: String) : PlaceDetailIntent   // FR-015
-    data object OnLoadOlderComments : PlaceDetailIntent                          // D11 역방향 페이징
-
-    data object OnShareClick : PlaceDetailIntent                                 // FR-018
-    data class OnShareRoomToggle(val roomId: String) : PlaceDetailIntent
-    data object OnShareConfirmClick : PlaceDetailIntent
-    data object OnShareSheetDismiss : PlaceDetailIntent
-}
-```
-
-**`OnSavedRoomsClick`을 두지 않는다.** [저장된 방] 버튼이 항상 비활성이라 눌리는 일이 없다(§6).
-
-**시트를 아래로 드래그해 닫는 것(EC-003)은 `OnExitClick`과 같은 Intent로 흘린다.** [나가기]와 동일 처리라는 것이 spec의 규정이므로 분기를 만들지 않는다.
-
-## 4. SideEffect
-
-```kotlin
-internal sealed interface PlaceDetailSideEffect {
-    data object Exit : PlaceDetailSideEffect                                   // FR-009 — Activity finish()
-    data class OpenExternalMap(val mapUrl: String?, val query: String) : PlaceDetailSideEffect
-    data class OpenSourceLink(val url: String) : PlaceDetailSideEffect
-    data object ShowShareCompleted : PlaceDetailSideEffect                     // FR-018 토스트
-}
-```
-
-| SideEffect | 소비처 | 비고 |
-|---|---|---|
-| `Exit` | `PlaceDetailActivity` | `finish()`만 한다. 방 상세 목적지 배선은 `[TBD]`([research.md D2](../research.md)) |
-| `OpenExternalMap` | `PlaceDetailActivity` | 외부 지도 앱 → 없으면 브라우저(FR-016·TS-029). 앱 선택 정책은 [spec.md §3.2](../spec.md)가 비목표로 뒀으므로 `[TBD]`이며 `/mino-task`가 정한다 |
-| `OpenSourceLink` | `PlaceDetailActivity` | FR-017 |
-| `ShowShareCompleted` | 화면 | `공유가 완료되었습니다.` — `LocalSnackbarHostState` 사용 |
-
-**에러 SideEffect를 두지 않는다.** `MinoDomainException`은 `CollectDomainError`가 공통 스낵바로 처리한다([error_handling.md](../../../conventions/error_handling.md), [research.md D14](../research.md)).
-
-## 5. 진입 시 로딩 순서
-
-```text
-1. recordAccess(pinId)        — 결과를 기다리지 않고 던진다. 실패해도 화면에 영향 없음 (FR-026)
-2. getPlaceDetail(pinId)      — place 채움
-3. getComments(pinId, 0)      — 코멘트 첫 페이지
-4. GetRoomPickerRoomsUseCase()  — roomColor 확보 + 공유 시트 목록 (§5.1)
-```
-
-2·3·4는 병렬로 띄운다. 1은 다른 셋의 성패와 무관하다.
-
-### 5.1 `roomColor`를 방 목록에서 찾는 이유
-
-핀 상세 응답에 방의 대표 색상이 없다([place-api.md §1](./place-api.md)). 마커 색상(FR-002)을 그리려면 방 목록에서 `id == place.roomId`인 방의 `color`를 찾아야 한다. 이 조회는 [다른방에 공유] 시트를 위해 어차피 필요하므로 요청이 늘지 않는다.
-
-**UI 라운드에서는 인자 없는 `getRooms()`를 쓴다** — `GetRoomPickerRoomsUseCase`가 그것을 호출한다. 이미 구현돼 동작하는 경로라 `:core:data` 변경이 없고, `RoomSummary.color`가 `roomColor`를, 목록 자체가 공유 시트를 채운다. Phase 10에서 `getRooms(placeId)`로 넓혀 `hasPlace`를 받기 시작하면 이 한 자리만 바뀐다([research.md D15](../research.md)).
-
-**마커는 핀 상세와 방 목록이 모두 도착한 뒤에 그린다.** `roomColor`가 아직 `null`인 동안에는 마커를 띄우지 않는다 — spec에 근거가 없는 기본색을 만들어 쓰지 않기 위해서다. 두 조회가 병렬이고 그동안 시트도 로딩 상태이므로 체감 지연이 생기지 않는다. 방 목록 조회가 실패하면 마커 없이 시트만 그리고, 오류는 공통 경로로 흘린다.
-
-## 6. 이번 범위에서 빠지는 것
-
-[research.md D10](../research.md)에 따라 **유저 플로우 7(저장된 방 전환)을 구현하지 않는다.**
-
-| spec 항목 | 이번 처리 |
+| 경과 | 표기 |
 |---|---|
-| FR-023 [저장된 방] 버튼 | 화면에 두되 `isSavedRoomsEnabled = false`로 **항상 비활성**. 단일 방 장소에서 비활성이라는 규칙(FR-023)은 지키고, 중복 저장 장소에서도 비활성인 것이 spec과 어긋난다 |
-| FR-024 「저장된 방 시트」 | 만들지 않는다 |
-| FR-025 방 전환 갱신 | 없다 |
-| FR-026 방 전환 시 재기록 | 진입 시 1회만 기록한다 |
-| TS-042~TS-049 · EC-024~EC-027 | 이번 구현의 검증 대상이 아니다 |
+| 1시간 미만 (음수 포함) | `방금` |
+| 1시간 ~ 24시간 | `N시간 전` |
+| 24시간 ~ 7일 | `N일 전` |
+| 7일 이상 | `NNNN년 NN월 NN일` |
 
-서버가 `pinId`를 내려주면([place-api.md §5](./place-api.md) 협의 1번) `Intent`에 `OnSavedRoomsClick`·`OnSavedRoomSelect(pinId)`를 더하고, 선택 시 **같은 Route를 새 `pinId`로 다시 여는 것**으로 FR-025의 전면 초기화가 자연히 성립한다([research.md D4](../research.md)).
+- **음수를 `방금`으로 흡수한다**(EC-029) — 기기 시각이 서버보다 앞설 때 `-1시간 전`이 새어 나가지 않게 하는 하한이다.
+- **실시간 갱신하지 않는다**(EC-028) — 목록을 다시 그릴 때 갱신된다. 그래서 상태가 아니라 순수 함수다.
+- 문자열 리소스는 feature가 소유한다([research.md D22](../research.md)).
 
-## 7. Route ↔ Screen
+### 6.1 기준 시각은 주입한 `Clock`에서 와서 상태에 실린다
+
+경과를 재려면 `createdAt` 말고 **「지금」**이 필요하다. 그 값을 컴포저블이 직접 읽지 않고 ViewModel이 상태로 올린다([research.md D26](../research.md)).
+
+```kotlin
+@HiltViewModel
+internal class PlaceDetailViewModel @AssistedInject constructor(
+    @Assisted private val pinId: String,
+    private val clock: Clock,          // 신규 — kotlin.time.Clock
+    …
+)
+```
+
+```kotlin
+internal data class PlaceDetailUiState(
+    …
+    val comments: ImmutableList<PlaceCommentUiModel>,
+    val commentsObservedAt: Instant,   // 신규 — 이 목록을 판정한 기준 시각
+)
+```
+
+- **판정 함수의 입력은 둘이다** — `(createdAt, commentsObservedAt)`. 컴포저블 안에서 `Clock.System.now()`를 부르지 않는다. 부르면 값이 컴포지션마다 달라져 EC-028이 지켜지는지 확인할 수단이 없다.
+- **`commentsObservedAt`은 코멘트 목록 상태를 다시 만들 때마다 갱신한다** — 최초 조회, 이전 페이지 추가 로드, 등록·삭제 후 반영. 등록 직후 `방금`이 뜨는 것(TS-054)이 이 갱신으로 성립하고, 목록을 둔 채 시간만 흐르는 동안에는 갱신되지 않아 EC-028이 성립한다.
+- **바인딩은 `:feature:room`의 `di/`가 `ViewModelComponent`에 설치한다.** 요구하는 곳이 이 모듈의 ViewModel 하나뿐이라 앱 전역 그래프에 올리지 않는다 — `ShareReceiverResourcesModule`이 같은 판단을 KDoc에 적어 둔 선례다.
+- **`@OptIn(ExperimentalTime::class)`이 필요하다.** Kotlin 2.2.10에서 `kotlin.time.Instant`·`kotlin.time.Clock`이 모두 실험적이고 전역 opt-in 설정이 없다 — 이 타입에 닿는 파일마다 붙인다.
+
+---
+
+## 7. 화면 구성
+
+`PlaceDetailScreen`이 `BoxScope` 확장이 된다 — `RoomDetailScreen`과 같은 형태다.
 
 ```kotlin
 @Composable
-internal fun PlaceDetailRoute(
-    onExit: () -> Unit,
-    onOpenExternalMap: (mapUrl: String?, query: String) -> Unit,
-    onOpenSourceLink: (url: String) -> Unit,
-    viewModel: PlaceDetailViewModel = hiltViewModel(),
-)
-
-@Composable
-internal fun PlaceDetailScreen(
+internal fun BoxScope.PlaceDetailScreen(
     state: PlaceDetailUiState,
+    commentState: TextFieldState,
     onIntent: (PlaceDetailIntent) -> Unit,
     modifier: Modifier = Modifier,
 )
 ```
 
-`PlaceDetailScreen`은 stateless다 — 외부 전환은 Route가 콜백으로 올려보내고 Activity가 실행한다([feature-navigation.md 1장](../../../architecture/feature-navigation.md)). 콜백을 수동으로 `remember`하지 않는다([ADR](../../../adr/2026-08-01-compose-lambda-memoization.md)).
+**지도를 그리지 않는다.** 호출부(`RoomListScreen`)가 이미 그린 `RoomListMap` 위에 컨트롤·시트·오버레이만 얹는다. `PlaceDetailMap`은 삭제된다([research.md D25](../research.md)).
+
+**`Full`의 윗변 계산은 그대로다.** 시트가 자기가 놓인 자리의 높이를 `Full` 높이로 쓰고 상태바만큼 빼는 규칙은 편입과 무관하게 유지된다. 다만 그 값을 넘겨주던 `PlaceDetailShell`이 사라지므로, 인셋 처리는 `RoomListScreen`이 이미 하는 `mapBleed` 계산과 한 자리에서 만난다.
+
+---
+
+## 8. 삭제되는 것
+
+| 대상 | 사유 |
+|---|---|
+| `PlaceDetailUiState.roomColor` | §1 — `MapPinUiModel.color`가 이미 든다 |
+| `isSavedRoomsEnabled`의 `false` 고정 | §3.2 — 보류 해제 |
+| `PlaceDetail.label` 관련 헤더 표현 | FR-005 재정의([research.md D21](../research.md)) |
+| `PlaceDetailMap`·`CurrentLocationButton` | 지도·컨트롤 단일화 |
