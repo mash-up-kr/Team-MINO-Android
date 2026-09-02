@@ -64,7 +64,7 @@ roomFormLauncher.launch(activity, resultLauncher = editRoomResultLauncher) {
 
 방 선택 시트([SYS-003], [FR-009])·초대 시트([SYS-006], [FR-011])·나가기/위임 모달([SYS-007], [FR-013])은 모두 `:feature:room/detail/component/`의 내부 바텀시트·다이얼로그로 구현하며, 이 문서가 정의하는 크로스 feature 계약이 아니다([research.md D10·D11·D12](../research.md)). 세 시스템 전용 spec은 여전히 이 저장소에 없지만, 실제 데이터 계약은 배포된 서버 API 대조로 대부분 확정됐다([research.md D14·D15·D16](../research.md)):
 
-- [SYS-003] 방 선택 후 복제 — `PlaceRepository.sharePlaces(pinId, targetRoomIds)`, 서버 `POST /pins/{pinId}/duplicate` ([contracts/place-repository.md](./place-repository.md))
+- [SYS-003] 방 선택 후 복제 — `PlaceRepository.duplicatePin(pinId, roomIds)`, 서버 `POST /pins/{pinId}/duplicate`. 시트를 [SCR-006] 장소 상세와 합치면서 중복이던 `RoomPlacesRepository.sharePlaces`를 걷어내고 이쪽으로 모았다 ([place-detail-main-contract.md §3.4.6](../../place-detail/contracts/place-detail-main-contract.md))
 - [SYS-006] 초대 링크 생성 — `RoomRepository.createInvitation(roomId)`, 서버 `POST /rooms/{roomId}/invitations` ([contracts/place-repository.md](./place-repository.md) "`RoomRepository` 확장")
 - [SYS-007] 나가기·위임 — `RoomRepository.leaveRoom`·`transferOwner`, 서버 `DELETE /rooms/{roomId}/members/me`·`PUT /rooms/{roomId}/owner` (같은 절)
 

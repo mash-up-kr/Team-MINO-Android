@@ -6,11 +6,11 @@
 
 **최초 작성일**: 2026-08-16
 
-**최종 수정일**: 2026-08-25
+**최종 수정일**: 2026-09-02
 
 **상태**: CREATED
 
-**버전**: 2.1.3
+**버전**: 2.1.4
 
 **입력**: 사용자 설명: "room-detail — [SCR-005] 방 상세. 이슈 #161, 브랜치 feature/161-room-detail/base. 방 리스트 탭에서 방 카드를 선택하면 진입하는 화면. 몰입 화면으로 바텀 네비게이션 비노출. PRD business-context.md 3.1.0 [SCR-005] 절 + Figma MU_디자인 node-id 2400-270425/3225-91770/2862-175295 등 기준."
 
@@ -211,5 +211,9 @@
      PRD의 그 문구는 사실 **다른 기능**(외부 앱에서 새로 공유받은 링크를 저장할 때) 얘기다. 그 기능은 "일단 방부터 고르게 하고, 저장 버튼을 누른 뒤에야 뒤에서 게시물 내용을 분석"하는 방식으로 최근 바뀌면서, 방을 고르는 화면에서는 아직 분석 전이라 "이 장소가 이미 어느 방에 있는지" 알 방법이 없어졌다 — 그래서 그 화면만 "정하지 못함"으로 남긴 것.
      반면 "다른 방에 공유"는 **이미 저장·분석까지 끝난 장소를 다른 방에도 복사**하는 기능이라, 방을 고르는 시점에 이미 "이 장소가 어느 방에 있는지" 전부 알고 있다. 그래서 저 미확정 문구가 애초에 이 화면에는 해당하지 않는다.
      Figma 목업([node 2862-175295](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2862-175295&m=dev), "004-2-2 다른 방에 공유 클릭")을 봐도 이미 저장된 방("민호야 잘하자") 카드만 체크박스가 회색+반투명으로 그려져 있어 — 디자인도 처음부터 이 화면은 비활성 처리로 만들어져 있었다. (확인 2026-08-18, Figma 실물 대조)
+- Q: 「이미 저장된 방은 체크된 채 비활성」(EC-004)을 무엇으로 판정하는가? — 확정만 돼 있고 판정에 쓸 값이 없어 구현이 「언제나 빈 집합」으로 비워 둔 채였다.
+  -> A: `RoomRepository.getRooms(placeId)`가 방마다 내려주는 `RoomSummary.hasPlace`다. 시트를 열 때 `observeMyRooms()`(→ `Room`) 대신 이것을 부른다 — `Room`에는 그 판정에 쓸 필드가 없어서 구현 주석이 「도메인에 판정할 필드가 없다」고 적어 두고 있었는데, `hasPlace`가 생기면서 그 근거가 사라졌다.
+     **묻는 키가 핀이 아니라 장소다.** 도메인 `Place.id`는 서버 `Pin.id`(방마다 다른 값)라 「같은 장소가 어느 방에 있는지」를 물을 수 없다. 그래서 `Place`에 `placeId`(서버 `Pin.place.id`)를 함께 싣도록 [data-model.md §1](./data-model.md)을 개정했다.
+     시트 자체도 [SCR-006] 장소 상세와 한 벌로 합쳤다 — 같은 [SYS-003]인데 두 벌이 서로 다른 절반씩만 Figma를 따르고 있었다([place-detail-main-contract.md §3.4](../place-detail/contracts/place-detail-main-contract.md)). 함께 `RoomPlacesRepository.sharePlaces`를 걷어내고 `PlaceRepository.duplicatePin`으로 모았다 — 같은 엔드포인트를 가리키는 중복이었고, 그 인터페이스 KDoc이 예고해 둔 정리다. (확인 2026-09-02)
 - Q: 카테고리 칩은 저장된 장소 기반 동적 생성인가, 고정 3종인가? (Figma 주석 [node 2400-270425](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2400-270425&m=dev) 항목 9는 "인스타에서 가져온 저장 값에서 추가되는 형식"이라 적어 동적 생성을 시사하나, PRD는 목표·비목표 양쪽에서 `전체`/`카페`/`음식점` 3종 고정을 확정하고 동적 생성을 MVP 비목표로 명시)
   -> A: 고정 3종이다. PRD가 이미 Q&A로 확정한 사항이며("카테고리 필터 칩은 고정 3종인가, 저장 게시물에서 동적으로 늘어나는가? → 전체/카페/음식점 3종 고정"), 최신 목업([node 3510-125317](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=3510-125317&m=dev)·[node 3222-87768](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=3222-87768&m=dev))도 실제로 칩 3개만 그려져 있어 PRD와 일치한다. [node 2400-270425](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2400-270425&m=dev)의 동적 생성 주석은 확정 이전의 구버전 메모로 본다. FR-006·§4 가정을 3종 고정으로 정정했다. (확인 2026-08-18, Figma 실물 대조)

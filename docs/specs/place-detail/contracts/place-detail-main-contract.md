@@ -14,6 +14,7 @@
 |---|---|---|
 | `selectedPinId` | `RoomListViewModel` | 시트 세 갈래를 가르는 값. `selectedRoomId`와 한자리에 있어야 판정이 한 곳이다 |
 | `selectedRoomId` | `RoomListViewModel` | 기존 |
+| `returnsToHomeOnClose` | `RoomListViewModel` | [나가기] 목적지를 가르는 값(FR-009). 갈래를 실제로 실행하는 곳과 같은 자리에 둔다 |
 | `mapPins`(선택 표시 포함) | `RoomListViewModel` | 지도를 그리는 주체 |
 | `mapCenter`·`mapCenterRequestId` | `RoomListViewModel` | 카메라를 실제로 움직이는 주체([research.md D25](../research.md)) |
 | 핀 상세·코멘트·시트 단계·헤더 밀도·공유 시트·[저장된 방] 시트 | `PlaceDetailViewModel` | `pinId` 하나의 화면 상태 |
@@ -30,9 +31,12 @@
 data class RoomListUiState(
     // ... 기존 그대로
     val selectedRoomId: String? = null,
-    val selectedPinId: String? = null,   // 신규
+    val selectedPinId: String? = null,        // 신규
+    val returnsToHomeOnClose: Boolean = false, // 신규 — FR-009의 홈 예외
 )
 ```
+
+**`returnsToHomeOnClose`는 [나가기]가 갈릴지를 미리 굳혀 둔 값이다.** 진입 출처는 탭 전환이 끝나면 어디에도 남지 않으므로([place-detail-entry.md §3.1](./place-detail-entry.md)), 여는 순간 판정해 `Boolean` 하나로 들고 있는다. `PlaceDetailEntryOrigin`을 그대로 상태에 두지 않는 이유는 이 화면이 출처로 하는 일이 이 분기 하나뿐이라, 출처를 남겨 두면 읽는 쪽마다 조건을 다시 세우게 되기 때문이다.
 
 **세 갈래는 `selectedPinId`가 우선이다.** `selectedPinId != null` → 장소 상세, 아니면 `selectedRoomId != null` → 방 상세, 아니면 리스트. 장소 상세가 열려 있을 때 방 상세 시트는 그려지지 않는다(FR-009가 [나가기] 후에야 그것을 드러내라고 규정한다).
 
@@ -43,8 +47,10 @@ data class RoomListUiState(
 | 인텐트 | 처리 |
 |---|---|
 | `OnPlaceSelected(pinId)` | `selectedPinId = pinId`, `mapCenter`를 그 장소로 + `mapCenterRequestId++` |
-| `OnClosePlaceDetailClick` | `selectedPinId = null` |
-| `OnPlaceDetailRoomSwitched(pinId, roomId)` | `selectedPinId = pinId`, `selectedRoomId = roomId` — [저장된 방] 전환(FR-024) |
+| `OnClosePlaceDetailClick` | `returnsToHomeOnClose`면 `selectedPinId`·`selectedRoomId`를 함께 `null`로 두고 `NavigateToHome` 발행, 아니면 `selectedPinId = null`. 어느 쪽이든 `returnsToHomeOnClose = false`로 되돌린다 |
+| `OnPlaceDetailRoomSwitched(pinId, roomId)` | `selectedPinId = pinId`, `selectedRoomId = roomId`, **`returnsToHomeOnClose = false`** — [저장된 방] 전환(FR-024·FR-025) |
+
+`OnPlaceSelected`는 `returnsToHomeOnClose`를 **`false`로 세운다** — 탭 안 진입은 홈 예외의 대상이 아니고(FR-009), 홈에서 열어 둔 상세가 남아 있는 채로 마커를 눌러 다른 장소로 옮겨간 경우에 플래그가 따라붙는 것을 막는다.
 
 `OnPlaceSelected`는 **두 곳**에서 온다 — 지도 마커와 방 상세의 `NavigateToPlaceDetail(pinId)`다. **§2.3의 탭 간 요청은 이 인텐트로 오지 않는다** — 방을 함께 세워야 해서 그쪽이 따로 받는다. 다만 **카메라 이동은 §2.3도 똑같이 한다**(spec FR-002는 진입점 넷 전부에 걸린다).
 
@@ -57,10 +63,13 @@ pending = pinId
   → holder.consume()                                  ← 결과와 무관하게 먼저 비운다
   → getPlaceDetail(pinId)로 roomId·location을 해석
   → selectedRoomId = roomId; selectedPinId = pinId
-       mapCenter = location; mapCenterRequestId++      ← 한 번에 세운다
+       mapCenter = location; mapCenterRequestId++
+       returnsToHomeOnClose = (origin == HOME)         ← 한 번에 세운다
 ```
 
-**방을 함께 세운다.** 홈·알림에서 들어오면 방 상세가 아직 안 열려 있어, [나가기]가 드러낼 자리가 비어 있다. `roomId`는 핀 상세 응답이 준다.
+**방을 함께 세운다.** 알림에서 들어오면 방 상세가 아직 안 열려 있어, [나가기]가 드러낼 자리가 비어 있다. `roomId`는 핀 상세 응답이 준다. 홈 진입은 §4의 갈래를 타 방 상세를 드러내지 않지만, **방은 똑같이 세운다** — 마커 양식(§2.4)과 코멘트 목록이 「지금 보고 있는 방」을 따르고(FR-027), 사용자가 [저장된 방]으로 방을 바꾸면 그 자리에서 기본 갈래로 넘어가기 때문이다.
+
+**출처는 여는 순간에만 쓴다.** `origin == HOME`을 `returnsToHomeOnClose`로 굳혀 두고 요청 자체는 비운다 — 조회에 실패해 아무것도 열지 않았다면 이 플래그도 서지 않는다.
 
 **카메라도 여기서 옮긴다.** spec FR-002의 카메라 이동은 진입점 넷 전부에 걸리므로 탭 간 진입도 예외가 아니다. 좌표는 **핀 상세 응답의 `location`**이 준다 — `OnPlaceSelected`처럼 `placesByRoomId`에서 찾지 않는다. 홈에서 콜드 진입하면 그 목록이 아직 비어 있어 좌표를 못 찾고, 못 찾으면 카메라가 그 자리에 머물러 선택 핀이 화면 밖에 남는다(확인된 현상). 셋을 한 번에 세우는 이유는 [§2.2의 `OnPlaceSelected`](#22-인텐트)와 같다 — 나눠 내보내면 장소는 골라졌는데 카메라는 옛 자리인 중간 상태가 한 프레임 드러난다.
 
@@ -90,6 +99,21 @@ BackHandler(enabled = selectedPinId != null || selectedRoomId != null) {
     if (selectedPinId != null) OnClosePlaceDetailClick else OnCloseRoomDetailClick
 }
 ```
+
+**여기는 그대로 둔다.** 홈 복귀 갈래(FR-009)는 `OnClosePlaceDetailClick`을 처리하는 ViewModel 안에서 갈리므로, [나가기] 버튼과 뒤로가기가 같은 인텐트로 모이는 이상 두 조작이 다른 자리로 갈 수 없다([place-detail-entry.md §4.3](./place-detail-entry.md)).
+
+### 2.6.1 `RoomListSideEffect` 델타
+
+```kotlin
+sealed interface RoomListSideEffect : SideEffect {
+    // ... 기존 그대로
+    data object NavigateToHome : RoomListSideEffect   // 신규
+}
+```
+
+`OnClosePlaceDetailClick`이 홈 복귀 갈래를 탈 때만 발행한다. `RoomListRoute`가 받아 `roomGraph`의 콜백으로 셸에 올리고, 탭을 옮기는 것은 셸이 한다 — `:feature:room`은 `MainTab`을 모른다([place-detail-entry.md §4.2](./place-detail-entry.md)).
+
+**상태가 아니라 SideEffect인 이유**: 탭 전환은 한 번 일어나고 끝나는 사건이라, 상태로 두면 구성 변경 때 다시 소비돼 사용자가 저장 탭으로 돌아올 때마다 홈으로 튕긴다. 기존 `NavigateToRoomForm`과 같은 성격이다.
 
 ### 2.7 지도 컨트롤 노출
 
@@ -183,6 +207,102 @@ internal data class SavedRoomsSheetUiState(
 
 ---
 
+### 3.4 `ShareSheetUiState`와 [SYS-003] 방 선택 시트
+
+```kotlin
+@Immutable
+internal data class ShareSheetUiState(
+    val rooms: ImmutableList<RoomPickerItem>,   // savedRooms 그대로 — 거르지 않는다
+    val selectedRoomIds: ImmutableSet<String>,  // 이미 저장된 방은 들어오지 않는다
+    val isSubmitting: Boolean = false,
+) {
+    val isShareEnabled: Boolean get() = selectedRoomIds.isNotEmpty() && !isSubmitting
+}
+```
+
+`null`이 닫힘이다. 목록은 [§3.1](#31-savedrooms--한-번-조회로-세-곳을-먹인다)의 `savedRooms`를 그대로 쓰므로 시트를 여는 순간 조회가 다시 돌지 않는다.
+
+#### 3.4.1 이미 저장된 방은 두 곳에서 막는다
+
+`hasPlace == true`인 방은 **체크된 채 비활성**이다(spec FR-018·FR-022·EC-019·TS-034·TS-058). 그 규칙을 카드와 ViewModel **양쪽이** 지킨다.
+
+| 자리 | 하는 일 |
+|---|---|
+| `RoomShareSheet` | 그 카드의 탭과 체크박스를 함께 잠근다(`enabled = !hasPlace`) |
+| `PlaceDetailViewModel.toggleShareRoom` | 그 방의 토글 요청을 무시한다 |
+
+**둘 중 하나로 줄이지 않는다.** 표시만 흐리고 입력을 열어 두면 이미 저장된 방이 `selectedRoomIds`에 들어가 `duplicatePin`에 실리고, 서버가 중복을 `409`로 거절해([place-api.md §3](./place-api.md)) 사용자에게는 이유를 알 수 없는 실패만 남는다. ViewModel 쪽 방어는 그 실패를 서버까지 보내지 않고 여기서 끊는다 — UI가 막는다는 전제를 서버 응답으로 확인하지 않는다.
+
+#### 3.4.2 시각 표현
+
+| 상태 | 표현 | 근거 |
+|---|---|---|
+| 미체크 | 테두리만 있는 빈 상자 | `MinoCheckbox` 기본 |
+| 체크됨 | `Primary/Normal` 채움 + `Static/White` 체크 | 〃 |
+| 체크됨 + 비활성 | **같은 모습에 체크박스만 43% 불투명도** | Figma `2862-175313`의 `Checkbox` 노드 `opacity 43%` |
+
+**흐려지는 것은 체크박스뿐이다.** 같은 카드의 썸네일·방 이름·`장소 N개`는 온전한 밝기다(Figma 같은 노드 — 불투명도가 체크박스에만 걸려 있다).
+
+비활성용 **색**을 새로 두지 않는다. Figma가 체크 상태와 같은 토큰을 쓰고 불투명도만 낮추므로, `MinoCheckboxColors`에 `enabled` 축의 슬롯이 늘지 않고 `MinoCheckbox`가 `enabled = false`에서 자신을 흐리게 그린다.
+
+#### 3.4.3 치수
+
+Figma가 시트를 세 프레임으로 그려 두었다(spec 유저 플로우 6 「Figma」).
+
+| 단계 | 전체 높이 | 목록 영역 | Figma |
+|---|---|---|---|
+| `Peek` (진입 기본값) | 500dp | 240dp | `2392-128669` |
+| `Full` — 방 4개 이하 | 676dp | 416dp | `2542-10516` |
+| `Full` — 방 5개 이상 | 708dp | 448dp | `2392-128693` |
+
+**세 값의 차이는 목록 영역 하나다.** 위아래 고정 영역은 어느 단계에서나 같다 — 헤더 146dp(손잡이 30 + 장소 행 60 + [새 방 만들기] 행 56) · 구분선 띠 12dp · 액션 영역 102dp, 합해서 **260dp**. 그래서 시트 높이는 `목록 영역 + 260dp` 하나로 나오고, 단계가 바뀌어도 [공유하기]가 화면 밖으로 밀리지 않는다.
+
+**`Full` 높이가 방 개수로 갈리는 것은 스크롤 여지를 알리기 위해서다** — 방이 다섯 이상이면 32dp를 더 얹어 5번째 카드가 일부만 보이게 하고, 넷 이하면 카드가 딱 맞아 잘릴 것이 없다.
+
+#### 3.4.4 단계 전환과 닫기
+
+| 조작 | 결과 |
+|---|---|
+| 손잡이를 위로 끌기 | `Peek` → `Full` |
+| 손잡이를 아래로 끌기 | `Full` → `Peek`, `Peek`에서는 **닫힘** |
+| 딤 영역 탭 · 시스템 뒤로가기 | 닫힘 |
+
+**끄는 것을 받는 자리는 손잡이 하나다.** 시트 본문 전체가 받으면 목록을 세로로 훑는 손짓과 단계를 바꾸는 손짓이 같은 자리에서 갈린다.
+
+**닫는 판단은 시트가 하지 않는다.** `Peek`에서 아래로 끌렸다는 사실만 `onDismissRequest`로 올리고, 치우는 것은 상태를 든 쪽이다(spec EC-021).
+
+#### 3.4.5 소유 위치
+
+`:feature:room` 모듈 루트의 `component/`다. **방 상세와 장소 상세 두 화면이 같은 시트를 부르므로** 어느 한 화면의 `component/`에 둘 수 없고, 사용처가 한 feature 안에 머무르므로 `:core:common:ui`로도 올리지 않는다([feature-module.md 「모듈 루트 `component/`」](../../../architecture/feature-module.md), [component-asset-placement.md §1.2](../../../conventions/component-asset-placement.md)).
+
+**시트는 두 화면의 도메인을 모른다.** 카드 한 장이 그리는 값을 `RoomShareItem`으로 받고, 무엇을 공유하는지(핀이냐 장소냐)도 어떤 API로 보내는지도 알지 않는다 — 두 진입점이 서로 다른 것을 보내기 때문이다(§3.4.6).
+
+#### 3.4.6 두 진입점
+
+| | 방 상세 | 장소 상세 |
+|---|---|---|
+| 여는 곳 | 장소 카드 [⋮] → [다른 방에 공유] | 액션 행 [다른방에 공유] |
+| 목록 출처 | `GetRoomPickerRoomsUseCase(place.placeId)` | 〃 (`place.placeId`) |
+| 보내는 것 | `PlaceRepository.duplicatePin(place.id, roomIds)` | `duplicatePin(pinId, roomIds)` |
+
+**목록 출처가 같아졌다.** 방 상세는 `RoomRepository.observeMyRooms()`로 `Room` 목록을 받아 「이미 저장된 방」을 언제나 빈 집합으로 두고 있었다 — 그 자리의 KDoc이 근거로 든 「도메인에 판정할 필드가 없다」는 `getRooms(placeId)`가 `hasPlace`를 내려주면서 사실이 아니게 됐다(room-detail spec EC-004가 요구하던 것이다).
+
+**보내는 곳도 하나가 됐다.** `RoomPlacesRepository.sharePlaces`는 `PlaceRepository.duplicatePin`과 같은 엔드포인트(`POST /pins/{pinId}/duplicate`)를 가리키는 중복이었고, 그 인터페이스의 KDoc이 「room-detail이 `PlaceRepository` 쪽으로 갈아타면 지워질 수 있다」고 예고해 둔 것을 이 개정이 실행했다.
+
+#### 3.4.7 완료 토스트
+
+| 항목 | 값 | 근거 |
+|---|---|---|
+| 문구 | `공유가 완료됐습니다.` | Figma `2542-125820` 실측 |
+| 노출 시간 | **3초** | Figma 주석 3번(섹션 `3225-88512`) |
+| 위치·모양 | `MinoSnackbar` 기본(체크 아이콘) | 〃 |
+
+**시간을 세는 주체는 Route다.** `SnackbarDuration.Short`가 4초라 그 값을 쓰지 못하고, 3초 뒤 스스로 거두는 방식으로 표현한다 — 방 상세의 `ShowShareCompleteToast`가 이미 같은 패턴이다.
+
+**문구는 진입점에 따라 갈리지 않는다.** 방 상세와 장소 상세가 같은 시트를 부르므로 같은 문자열 리소스를 쓴다.
+
+---
+
 ## 4. `PlaceDetailIntent` 델타
 
 기존 인텐트는 그대로 두고 셋을 더한다.
@@ -192,8 +312,16 @@ internal data class SavedRoomsSheetUiState(
 | `OnSavedRoomsClick` | FR-023 — [저장된 방] 시트를 연다. 버튼이 없는 장소에서는 도달하지 않는다 |
 | `OnSavedRoomSelected(pinId, roomId)` | FR-024 — 전환 대상 핀. `matchedPinId`가 실린다 |
 | `OnSavedRoomsSheetDismiss` | 딤 바깥 탭·아래로 끌기·뒤로가기 |
+| `OnShareCreateRoomClick` | FR-022 · EC-020 — 공유 시트의 [새 방 만들기]. 전환 결정만 올리고 실제 호출은 Route가 한다 |
+| `OnShareRoomFormResult(createdRoomId)` | EC-020 — 새 방을 만들고 돌아왔다. `null`이면 만들지 않고 나온 것이라 아무 일도 하지 않는다 |
 
 **기존 KDoc의 "[저장된 방] 버튼의 Intent가 없다"를 지운다.** 그 문장의 근거였던 구현 보류가 해제됐다.
+
+**돌아온 자리에서 방 목록을 다시 조회한다.** 방 생성 화면이 돌려주는 것은 방 id 하나뿐이라(`RoomFormLauncher` 결과 계약) 이름·썸네일·장소 개수를 알 방법이 없고, 그 값 없이 카드를 세우면 빈 줄이 보인다. 시트는 닫지 않으므로 사용자가 보는 것은 목록이 한 번 갱신되는 것뿐이다.
+
+**선택은 지키고 새 방을 더한다.** 만들러 가기 전에 고른 방은 그대로 두고 새 방을 **선택된 상태로** 얹는다 — EC-020이 「이 새 방이 유일한 선택지가 되어 [공유하기]가 활성으로 바뀐다」로 규정한 결과가 그것이며, 돌아와서 한 번 더 눌러야 한다면 그 규정이 성립하지 않는다.
+
+**조회가 실패하면 목록을 갈아 끼우지 않는다.** 알림만 남기고 만들러 가기 전의 목록을 그대로 둔다 — 새 방만 안 보일 뿐 고르던 것을 잃지 않는다.
 
 ---
 
@@ -205,6 +333,7 @@ internal data class SavedRoomsSheetUiState(
 | `OpenExternalMap`·`OpenSourceLink` | 유지 | 실행 주체가 `PlaceDetailActivity`에서 `MainActivity`로 바뀐다 |
 | `ShowShareCompleted` | 유지 | |
 | `SwitchRoom(pinId, roomId)` | **신규** | FR-024 — `RoomListViewModel`로 올려 `selectedPinId`·`selectedRoomId`를 함께 갱신한다 |
+| `OpenCreateRoomForm` | **신규** | FR-022 · EC-020 — 공동방 생성 화면을 연다. 방 상세의 `NavigateToCreateRoomForm`과 같은 이유로 SideEffect다(Activity 전환은 Route가 한다) |
 
 `SwitchRoom`이 SideEffect인 이유: 바꿔야 할 상태가 **다른 ViewModel의 것**이라 `PlaceDetailViewModel`이 직접 쓸 수 없다. `RoomDetailSideEffect.NavigateBack`이 같은 이유로 SideEffect인 것과 같다.
 

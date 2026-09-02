@@ -27,7 +27,10 @@ data class RoomDetailUiState(
     val isOwner: Boolean = false,                                // FR-012 방 편집 노출 여부(EC-006), FR-013 나가기 문구 분기(EC-005/개인방)
     val isPersonalRoom: Boolean = false,                         // EC-002·EC-005 — 나가기 메뉴 비노출 판정
     val showMoreMenu: Boolean = false,                           // 더보기[⋮] 메뉴 표출 여부(FR-013)
-    val showRoomSelectSheet: Boolean = false,                    // SYS-003 방 선택 시트(FR-009)
+    val placeToShare: Place? = null,                             // SYS-003 방 선택 시트(FR-009). null이면 닫힘 — 여는 순간 대상이 정해지므로 열림 플래그를 따로 두지 않는다
+    val shareRooms: ImmutableList<RoomShareItem> = persistentListOf(),   // 공유 후보. GetRoomPickerRoomsUseCase(place.placeId) 결과이며 alreadySaved가 EC-004의 체크+비활성을 정한다
+    val shareSelectedRoomIds: ImmutableSet<String> = persistentSetOf(),  // 새로 고른 방. 이미 담긴 방은 들어오지 않는다
+    val isSharing: Boolean = false,                              // 복제 요청 중. CTA를 잠가 같은 방에 두 번 가지 않게 한다
     val showInviteSheet: Boolean = false,                        // SYS-006 초대 시트(FR-011)
     val inviteCode: String? = null,                              // RoomRepository.createInvitation() 결과(research.md D16). null이면 미발급/로딩 중
     val roomMembers: ImmutableList<RoomMember> = persistentListOf(),  // RoomRepository.getMembers() — 초대 참여자 목록 + 위임 대상 선택 공용(research.md D16)
@@ -40,6 +43,7 @@ enum class LeaveDialogState { None, ConfirmMember, ConfirmOwnerSingle, DelegateO
 
 - `places`는 `sortOption`·`categoryFilter`로 이미 정렬·필터링된 최종 목록이다(room-list의 `groupRooms` 정렬 패턴과 동일하게 화면이 가공, [room-list/contracts/room-repository.md](../../room-list/contracts/room-repository.md) "정렬·필터는 클라이언트 쪽" 참고).
 - `LeaveDialogState`는 PRD [SYS-007] Flow A(일반 멤버)/Flow B(방장 — 1인 공동방은 위임 없이 즉시 삭제, N인 공동방은 위임 모달)를 표현한다.
+- **[SYS-003] 방 선택 시트는 [SCR-006] 장소 상세와 한 벌을 쓴다.** 시트 자체(`RoomShareItem` 포함)와 그 규칙은 [place-detail-main-contract.md §3.4](../../place-detail/contracts/place-detail-main-contract.md)가 소유하고, 이 화면은 목록을 만들어 넘기고 콜백을 받는 쪽이다. 목록 출처가 `RoomRepository.observeMyRooms()`에서 `GetRoomPickerRoomsUseCase(place.placeId)`로 바뀐 것도 그 시트가 요구하는 `hasPlace` 때문이며(EC-004), 복제는 `PlaceRepository.duplicatePin(place.id, roomIds)`이 보낸다.
 - 필드 근거·타입 상세는 [data-model.md](../data-model.md) 참조 — 이 계약과 data-model.md가 어긋나면 data-model.md를 갱신한다(중복 정의 금지).
 
 ## Intent
@@ -59,11 +63,12 @@ sealed interface RoomDetailIntent : Intent {
     data object OnPlaceClick : RoomDetailIntent               // 장소 카드/마커 선택 — FR-001 유저 플로우 1-4 (파라미터는 [TBD], SCR-006 계약 미정)
 
     data class OnPlaceMoreClick(val place: Place) : RoomDetailIntent    // 장소 카드 더보기[...] — FR-008
-    data class OnShareToOtherRoomClick(val place: Place) : RoomDetailIntent  // FR-009 → showRoomSelectSheet
+    data class OnShareToOtherRoomClick(val place: Place) : RoomDetailIntent  // FR-009 → placeToShare
     data class OnPlaceDeleteClick(val place: Place) : RoomDetailIntent      // FR-010 → placeToDelete
     data object OnPlaceDeleteConfirm : RoomDetailIntent
     data object OnPlaceDeleteCancel : RoomDetailIntent
-    data class OnRoomSelectConfirm(val targetRoomIds: ImmutableList<String>) : RoomDetailIntent  // FR-009 [공유하기]
+    data class OnRoomSelectToggle(val roomId: String) : RoomDetailIntent  // FR-009 방 카드 탭
+    data object OnRoomSelectConfirm : RoomDetailIntent       // FR-009 [공유하기] — 고른 방은 상태가 든다
     data object OnRoomSelectDismiss : RoomDetailIntent
 
     data object OnMoreMenuClick : RoomDetailIntent            // 화면 더보기[⋮] — FR-013
