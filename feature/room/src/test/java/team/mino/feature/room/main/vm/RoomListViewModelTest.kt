@@ -13,10 +13,13 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import team.mino.core.common.kotlin.geo.GeoPoint
 import team.mino.core.domain.model.MapMarkerSortOption
+import team.mino.core.domain.model.Place
 import team.mino.core.domain.model.PlaceCategoryFilter
 import team.mino.core.domain.model.Room
 import team.mino.core.domain.model.RoomColor
@@ -24,8 +27,10 @@ import team.mino.core.domain.model.RoomListSortOption
 import team.mino.core.domain.model.RoomMemberSummary
 import team.mino.core.domain.model.RoomThumbnail
 import team.mino.core.domain.usecase.EnsureAnonymousSessionUseCase
+import team.mino.core.navigation.entry.PlaceDetailRequestHolder
 import team.mino.feature.room.fake.FakeAnonymousAuthRepository
 import team.mino.feature.room.fake.FakeLocationContext
+import team.mino.feature.room.fake.FakePlaceRepository
 import team.mino.feature.room.fake.FakeRoomFormLauncher
 import team.mino.feature.room.fake.FakeRoomPlacesRepository
 import team.mino.feature.room.fake.FakeRoomRepository
@@ -50,6 +55,10 @@ import kotlin.time.Instant
 class RoomListViewModelTest {
     private val roomRepository = FakeRoomRepository()
     private val roomPlacesRepository = FakeRoomPlacesRepository()
+    private val placeRepository = FakePlaceRepository()
+
+    /** 홀더는 요청을 담는 그릇일 뿐이라 테스트 더블을 두지 않고 실물을 쓴다. */
+    private val placeDetailRequestHolder = PlaceDetailRequestHolder()
 
     @Before
     fun setUp() {
@@ -305,6 +314,78 @@ class RoomListViewModelTest {
         }
 
     @Test
+    fun `장소를 선택하면 그 핀만 선택 표시되고 카메라가 그 장소로 옮겨간다`() =
+        runTest {
+            roomRepository.givenRooms(room(id = "personal", isPersonal = true))
+            roomPlacesRepository.givenPlaces(place(id = "pin-1", location = PIN_1_LOCATION), place(id = "pin-2"))
+            val viewModel = createViewModel(permissionGranted = false)
+            advanceUntilIdle()
+            val requestIdBefore = viewModel.state.value.mapCenterRequestId
+
+            viewModel.processIntent(RoomListIntent.OnPlaceSelected("pin-1"))
+            advanceUntilIdle()
+
+            val state = viewModel.state.value
+            assertEquals("pin-1", state.selectedPinId)
+            assertEquals(PIN_1_LOCATION, state.mapCenter)
+            assertEquals(requestIdBefore + 1, state.mapCenterRequestId)
+            assertEquals(listOf("pin-1"), state.mapPins.filter { it.selected }.map { it.place.id })
+        }
+
+    /** 탭 간 진입처럼 그 방의 장소 조회가 아직 안 끝난 시점에 열리면, 좌표를 모르는 채로 카메라를 옮기지 않는다. */
+    @Test
+    fun `좌표를 모르는 핀을 선택하면 카메라는 그대로 둔다`() =
+        runTest {
+            val viewModel = createViewModel(permissionGranted = false)
+
+            viewModel.processIntent(RoomListIntent.OnPlaceSelected("unknown-pin"))
+            advanceUntilIdle()
+
+            val state = viewModel.state.value
+            assertEquals("unknown-pin", state.selectedPinId)
+            assertNull(state.mapCenter)
+            assertEquals(0, state.mapCenterRequestId)
+        }
+
+    /** [TS-006] 장소 상세를 닫으면 `selectedRoomId`가 남아 그 방의 방 상세가 다시 드러난다. */
+    @Test
+    fun `장소 상세 닫기는 selectedPinId만 비우고 selectedRoomId는 남긴다`() =
+        runTest {
+            roomRepository.givenRooms(room(id = "personal", isPersonal = true))
+            roomPlacesRepository.givenPlaces(place(id = "pin-1", location = PIN_1_LOCATION))
+            val viewModel = createViewModel(permissionGranted = false)
+            advanceUntilIdle()
+            viewModel.processIntent(RoomListIntent.OnRoomCardClick("room-1"))
+            viewModel.processIntent(RoomListIntent.OnPlaceSelected("pin-1"))
+            advanceUntilIdle()
+
+            viewModel.processIntent(RoomListIntent.OnClosePlaceDetailClick)
+            advanceUntilIdle()
+
+            val state = viewModel.state.value
+            assertNull(state.selectedPinId)
+            assertEquals("room-1", state.selectedRoomId)
+            assertTrue(state.mapPins.none { it.selected })
+        }
+
+    /** [FR-025] [저장된 방] 전환은 보고 있는 방과 선택 핀을 함께 갈아 끼운다(TS-045·TS-046). */
+    @Test
+    fun `저장된 방 전환은 selectedPinId와 selectedRoomId를 함께 바꾼다`() =
+        runTest {
+            val viewModel = createViewModel(permissionGranted = false)
+            viewModel.processIntent(RoomListIntent.OnRoomCardClick("room-a"))
+            viewModel.processIntent(RoomListIntent.OnPlaceSelected("pin-a"))
+            advanceUntilIdle()
+
+            viewModel.processIntent(RoomListIntent.OnPlaceDetailRoomSwitched(pinId = "pin-b", roomId = "room-b"))
+            advanceUntilIdle()
+
+            val state = viewModel.state.value
+            assertEquals("pin-b", state.selectedPinId)
+            assertEquals("room-b", state.selectedRoomId)
+        }
+
+    @Test
     fun `공동방이 없으면 Nudge와 Ghost Card를 노출한다`() =
         runTest {
             roomRepository.givenRooms(room(id = "personal", isPersonal = true))
@@ -334,6 +415,8 @@ class RoomListViewModelTest {
             roomRepository = roomRepository,
             roomPlacesRepository = roomPlacesRepository,
             ensureAnonymousSessionUseCase = EnsureAnonymousSessionUseCase(FakeAnonymousAuthRepository()),
+            placeRepository = placeRepository,
+            placeDetailRequestHolder = placeDetailRequestHolder,
             roomFormLauncher = FakeRoomFormLauncher(),
         )
 
@@ -365,8 +448,27 @@ class RoomListViewModelTest {
         )
 
     @OptIn(ExperimentalTime::class)
+    private fun place(
+        id: String,
+        location: GeoPoint = GeoPoint(latitude = 0.0, longitude = 0.0),
+    ): Place =
+        Place(
+            id = id,
+            name = id,
+            address = "",
+            category = PlaceCategoryFilter.CAFE,
+            thumbnailUrl = null,
+            savedAt = Instant.DISTANT_PAST,
+            commentCount = 0,
+            isGgukPick = false,
+            distanceMeters = null,
+            location = location,
+        )
+
+    @OptIn(ExperimentalTime::class)
     private companion object {
         val DAY_1 = Instant.DISTANT_PAST + 1.days
         val DAY_10 = Instant.DISTANT_PAST + 10.days
+        val PIN_1_LOCATION = GeoPoint(latitude = 37.5665, longitude = 126.9780)
     }
 }
