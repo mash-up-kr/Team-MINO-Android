@@ -28,6 +28,7 @@ import team.mino.core.domain.model.RoomListSortOption
 import team.mino.core.domain.model.RoomMemberSummary
 import team.mino.core.domain.model.RoomThumbnail
 import team.mino.core.domain.usecase.EnsureAnonymousSessionUseCase
+import team.mino.core.navigation.entry.PlaceDetailEntryOrigin
 import team.mino.core.navigation.entry.PlaceDetailRequestHolder
 import team.mino.feature.room.fake.FakeAnonymousAuthRepository
 import team.mino.feature.room.fake.FakeLocationContext
@@ -362,7 +363,7 @@ class RoomListViewModelTest {
             advanceUntilIdle()
             val requestIdBefore = viewModel.state.value.mapCenterRequestId
 
-            placeDetailRequestHolder.request("pin-1")
+            placeDetailRequestHolder.request("pin-1", PlaceDetailEntryOrigin.NOTIFICATION)
             advanceUntilIdle()
 
             val state = viewModel.state.value
@@ -383,7 +384,7 @@ class RoomListViewModelTest {
         runTest {
             placeRepository.givenPlaceDetail(placeDetail(pinId = "pin-1", roomId = "room-1"))
             val viewModel = createViewModel(permissionGranted = true)
-            placeDetailRequestHolder.request("pin-1")
+            placeDetailRequestHolder.request("pin-1", PlaceDetailEntryOrigin.NOTIFICATION)
             advanceUntilIdle()
             val requestIdBefore = viewModel.state.value.mapCenterRequestId
 
@@ -401,7 +402,7 @@ class RoomListViewModelTest {
         runTest {
             placeRepository.givenPlaceDetail(placeDetail(pinId = "pin-1", roomId = "room-1"))
             val viewModel = createViewModel(permissionGranted = true)
-            placeDetailRequestHolder.request("pin-1")
+            placeDetailRequestHolder.request("pin-1", PlaceDetailEntryOrigin.NOTIFICATION)
             advanceUntilIdle()
             val requestIdBefore = viewModel.state.value.mapCenterRequestId
 
@@ -432,6 +433,115 @@ class RoomListViewModelTest {
             assertNull(state.selectedPinId)
             assertEquals("room-1", state.selectedRoomId)
             assertTrue(state.mapPins.none { it.selected })
+        }
+
+    /**
+     * [TS-037] 홈에서 들어온 [나가기]는 방 상세가 아니라 홈 탭으로 되돌린다.
+     *
+     * [EC-031] 이때 `selectedRoomId`도 함께 비운다 — 홈 진입이 방과 핀을 함께 세우므로, 핀만 비우면
+     * 사용자가 연 적 없는 방 상세가 저장 탭에 남는다. **[나가기] 직후 화면으로는 드러나지 않는
+     * 결함이라** 상태로만 잡을 수 있다.
+     */
+    @Test
+    fun `홈에서 들어온 장소 상세를 닫으면 방까지 비우고 홈 복귀를 올린다`() =
+        runTest {
+            placeRepository.givenPlaceDetail(placeDetail(pinId = "pin-1", roomId = "room-1"))
+            val viewModel = createViewModel(permissionGranted = false)
+            val sideEffects = collectSideEffects(viewModel)
+            placeDetailRequestHolder.request("pin-1", PlaceDetailEntryOrigin.HOME)
+            advanceUntilIdle()
+            assertTrue(viewModel.state.value.returnsToHomeOnClose)
+
+            viewModel.processIntent(RoomListIntent.OnClosePlaceDetailClick)
+            advanceUntilIdle()
+
+            val state = viewModel.state.value
+            assertNull(state.selectedPinId)
+            assertNull(state.selectedRoomId)
+            assertFalse(state.returnsToHomeOnClose)
+            assertEquals(listOf(RoomListSideEffect.NavigateToHome), sideEffects)
+        }
+
+    /** [TS-007] 홈이 아닌 탭 간 진입(알림)은 예외가 아니다 — 그 방의 방 상세로 나간다. */
+    @Test
+    fun `알림에서 들어온 장소 상세를 닫으면 방 상세가 드러나고 홈 복귀를 올리지 않는다`() =
+        runTest {
+            placeRepository.givenPlaceDetail(placeDetail(pinId = "pin-1", roomId = "room-1"))
+            val viewModel = createViewModel(permissionGranted = false)
+            val sideEffects = collectSideEffects(viewModel)
+            placeDetailRequestHolder.request("pin-1", PlaceDetailEntryOrigin.NOTIFICATION)
+            advanceUntilIdle()
+            assertFalse(viewModel.state.value.returnsToHomeOnClose)
+
+            viewModel.processIntent(RoomListIntent.OnClosePlaceDetailClick)
+            advanceUntilIdle()
+
+            assertNull(viewModel.state.value.selectedPinId)
+            assertEquals("room-1", viewModel.state.value.selectedRoomId)
+            assertTrue(sideEffects.isEmpty())
+        }
+
+    /** [TS-057] [저장된 방]으로 방을 바꾸면 홈 복귀 예외가 소멸하고 바뀐 방의 방 상세로 나간다. */
+    @Test
+    fun `홈에서 들어와도 방을 바꾸면 홈이 아니라 바뀐 방으로 나간다`() =
+        runTest {
+            placeRepository.givenPlaceDetail(placeDetail(pinId = "pin-1", roomId = "room-1"))
+            val viewModel = createViewModel(permissionGranted = false)
+            val sideEffects = collectSideEffects(viewModel)
+            placeDetailRequestHolder.request("pin-1", PlaceDetailEntryOrigin.HOME)
+            advanceUntilIdle()
+
+            viewModel.processIntent(RoomListIntent.OnPlaceDetailRoomSwitched(pinId = "pin-b", roomId = "room-b"))
+            viewModel.processIntent(RoomListIntent.OnClosePlaceDetailClick)
+            advanceUntilIdle()
+
+            assertEquals("room-b", viewModel.state.value.selectedRoomId)
+            assertTrue(sideEffects.isEmpty())
+        }
+
+    /**
+     * [EC-032] 예외는 되살아나지 않는다 — 판정 기준이 "지금 어느 방인가"가 아니라 "바꾼 적이 있는가"다.
+     *
+     * 원래 방으로 되돌리는 것도 「바꾼 적」에 들어, 진입 시점의 방으로 돌아와도 홈으로 나가지 않는다.
+     */
+    @Test
+    fun `방을 바꿨다가 원래 방으로 되돌려도 홈 복귀는 살아나지 않는다`() =
+        runTest {
+            placeRepository.givenPlaceDetail(placeDetail(pinId = "pin-1", roomId = "room-1"))
+            val viewModel = createViewModel(permissionGranted = false)
+            val sideEffects = collectSideEffects(viewModel)
+            placeDetailRequestHolder.request("pin-1", PlaceDetailEntryOrigin.HOME)
+            advanceUntilIdle()
+
+            viewModel.processIntent(RoomListIntent.OnPlaceDetailRoomSwitched(pinId = "pin-b", roomId = "room-b"))
+            viewModel.processIntent(RoomListIntent.OnPlaceDetailRoomSwitched(pinId = "pin-1", roomId = "room-1"))
+            viewModel.processIntent(RoomListIntent.OnClosePlaceDetailClick)
+            advanceUntilIdle()
+
+            assertEquals("room-1", viewModel.state.value.selectedRoomId)
+            assertTrue(sideEffects.isEmpty())
+        }
+
+    /**
+     * [FR-009] 홈에서 연 상세가 떠 있는 채로 지도 마커를 눌러 다른 장소로 옮겨가면 예외가 따라붙지
+     * 않는다 — 사용자가 이미 저장 탭 안에서 장소를 직접 고른 것이다.
+     */
+    @Test
+    fun `홈 진입 뒤 지도 마커로 다른 장소를 고르면 홈 복귀가 풀린다`() =
+        runTest {
+            roomPlacesRepository.givenPlaces(place(id = "pin-2", location = PIN_1_LOCATION))
+            placeRepository.givenPlaceDetail(placeDetail(pinId = "pin-1", roomId = "room-1"))
+            val viewModel = createViewModel(permissionGranted = false)
+            val sideEffects = collectSideEffects(viewModel)
+            placeDetailRequestHolder.request("pin-1", PlaceDetailEntryOrigin.HOME)
+            advanceUntilIdle()
+
+            viewModel.processIntent(RoomListIntent.OnPlaceSelected("pin-2"))
+            viewModel.processIntent(RoomListIntent.OnClosePlaceDetailClick)
+            advanceUntilIdle()
+
+            assertEquals("room-1", viewModel.state.value.selectedRoomId)
+            assertTrue(sideEffects.isEmpty())
         }
 
     /** [FR-025] [저장된 방] 전환은 보고 있는 방과 선택 핀을 함께 갈아 끼운다(TS-045·TS-046). */
@@ -520,6 +630,8 @@ class RoomListViewModelTest {
     ): Place =
         Place(
             id = id,
+            // 핀 id와 장소 id를 갈라 두어야 「어느 방에 이미 담겼는지」를 묻는 쪽이 잘못된 키를 써도 드러난다.
+            placeId = "place-of-$id",
             name = id,
             address = "",
             category = PlaceCategoryFilter.CAFE,

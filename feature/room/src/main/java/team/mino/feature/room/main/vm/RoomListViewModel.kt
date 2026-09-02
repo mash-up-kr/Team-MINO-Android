@@ -34,6 +34,7 @@ import team.mino.core.domain.usecase.EnsureAnonymousSessionUseCase
 import team.mino.core.errorhandling.onDomainFailure
 import team.mino.core.errorhandling.runCatchingDomain
 import team.mino.core.navigation.activity.launcher.RoomFormLauncher
+import team.mino.core.navigation.entry.PlaceDetailEntryOrigin
 import team.mino.core.navigation.entry.PlaceDetailRequestHolder
 import team.mino.feature.room.component.chip
 import team.mino.feature.room.main.component.DefaultMapCenter
@@ -78,8 +79,9 @@ class RoomListViewModel @Inject constructor(
      * (`docs/specs/place-detail/contracts/place-detail-entry.md` §3,
      * `contracts/place-detail-main-contract.md` §2.3).
      *
-     * 요청이 싣고 오는 값은 `pinId` 하나다 — 방은 핀 상세 응답의 `roomId`로 해석한다(같은 계약 §3.4).
-     * 알림처럼 방을 특정하지 않는 진입도 이 해석으로 목적지가 정해진다(EC-001).
+     * 요청이 싣고 오는 값은 `pinId`와 진입 출처 둘이다 — 방은 핀 상세 응답의 `roomId`로 해석한다(같은
+     * 계약 §3.4). 알림처럼 방을 특정하지 않는 진입도 이 해석으로 목적지가 정해진다(EC-001). 출처는
+     * [나가기]가 홈으로 나갈지를 가르는 데만 쓴다(FR-009, 같은 계약 §4.2).
      *
      * **구독은 `init`에서 한 번만 연다.** [observeMyRooms]와 달리 화면 재진입마다 다시 열면 같은 요청을
      * 두 번 받는 구독이 겹친다. 탭을 오가도 이 ViewModel은 살아 있어(저장 탭 백스택이 복원된다) 이 구독
@@ -89,15 +91,22 @@ class RoomListViewModel @Inject constructor(
         launchSafely {
             placeDetailRequestHolder.pending
                 .filterNotNull()
-                .collect { pinId -> openRequestedPlaceDetail(pinId) }
+                .collect { request -> openRequestedPlaceDetail(request.pinId, request.origin) }
         }
     }
 
     /**
      * 요청받은 핀의 장소 상세를 연다 — 「지금 보고 있는 방」·그 방의 핀·카메라를 **함께** 세운다.
      *
-     * 방과 핀을 함께 세워야 [나가기](FR-009)가 드러낼 방 상세가 이미 그 아래에 있다. 홈·알림에서 들어오면
-     * 방 상세가 아직 안 열려 있어, 핀만 세우면 [나가기]가 빈자리로 떨어진다(TS-007·TS-037).
+     * 방과 핀을 함께 세워야 [나가기](FR-009)가 드러낼 방 상세가 이미 그 아래에 있다. 알림에서 들어오면
+     * 방 상세가 아직 안 열려 있어, 핀만 세우면 [나가기]가 빈자리로 떨어진다(TS-007).
+     *
+     * **홈 진입은 [나가기]가 방 상세를 드러내지 않지만(홈 탭으로 되돌린다) 방은 똑같이 세운다.** 마커
+     * 양식(§2.4)과 코멘트 목록이 「지금 보고 있는 방」을 따르고(FR-027), 사용자가 [저장된 방]으로 방을
+     * 바꾸면 그 자리에서 기본 갈래로 넘어가기 때문이다(TS-057).
+     *
+     * **출처는 여기서 `returnsToHomeOnClose` 한 값으로 굳힌다.** 조회에 실패해 아무것도 열지 않았다면
+     * 이 플래그도 서지 않는다 — 열리지 않은 화면의 나가기 규칙이 남지 않는다.
      *
      * **카메라도 여기서 옮긴다**(FR-002·TS-056). 카메라 이동은 진입점 넷 전부에 걸리므로 탭 간 진입도
      * 예외가 아니다. 좌표는 [onPlaceSelected]처럼 [placesByRoomId]에서 찾지 않고 **핀 상세 응답의
@@ -111,13 +120,19 @@ class RoomListViewModel @Inject constructor(
      * 이 화면의 주 데이터가 아니라 요청 하나의 해석이 실패한 것이라 오류 상태로 올리지 않고, 사용자는
      * 이미 그려져 있는 방 목록에 그대로 남는다.
      */
-    private suspend fun openRequestedPlaceDetail(pinId: String) {
+    private suspend fun openRequestedPlaceDetail(
+        pinId: String,
+        origin: PlaceDetailEntryOrigin,
+    ) {
         placeDetailRequestHolder.consume()
         runCatchingDomain { placeRepository.getPlaceDetail(pinId) }
             .onSuccess { detail ->
                 updateState {
-                    copy(selectedRoomId = detail.roomId, selectedPinId = pinId)
-                        .movingCameraTo(detail.location)
+                    copy(
+                        selectedRoomId = detail.roomId,
+                        selectedPinId = pinId,
+                        returnsToHomeOnClose = origin == PlaceDetailEntryOrigin.HOME,
+                    ).movingCameraTo(detail.location)
                 }
                 refreshMapPins()
             }.onDomainFailure {
@@ -420,41 +435,65 @@ class RoomListViewModel @Inject constructor(
      *
      * 핀과 카메라를 한 번에 갱신하는 것은, 나눠 내보내면 장소는 골라졌는데 카메라는 아직 옛 자리인
      * 중간 상태가 화면에 한 프레임 드러나기 때문이다.
+     *
+     * **[RoomListUiState.returnsToHomeOnClose]를 내린다.** 저장 탭 안 진입은 홈 예외의 대상이 아니며
+     * (FR-009), 홈에서 연 상세가 떠 있는 채로 지도 마커를 눌러 다른 장소로 옮겨간 경우에 그 플래그가
+     * 따라붙는 것도 막는다 — 사용자는 이미 저장 탭 안에서 장소를 직접 고른 것이다.
      */
     private fun onPlaceSelected(pinId: String) {
         val location = placeLocationOf(pinId)
         updateState {
-            if (location == null) {
-                copy(selectedPinId = pinId)
-            } else {
-                copy(selectedPinId = pinId).movingCameraTo(location)
-            }
+            val selected = copy(selectedPinId = pinId, returnsToHomeOnClose = false)
+            if (location == null) selected else selected.movingCameraTo(location)
         }
         refreshMapPins()
     }
 
     /**
-     * [FR-009] 장소 상세 [나가기] — `selectedPinId`를 비우는 것이 전부다.
+     * [FR-009] 장소 상세 [나가기] — 시스템 뒤로가기도 여기로 모인다. 나가는 자리가 둘로 갈린다.
      *
-     * `selectedRoomId`는 그대로 두어 그 방의 방 상세가 다시 드러난다(TS-006). [onCloseRoomDetailClick]과
-     * 달리 목록을 다시 불러오지 않는다 — 방을 나가는 동작이 아니라 같은 방 안에서 한 겹 위로 올라오는
-     * 것이라 목록이 바뀔 일이 없다.
+     * **기본은 `selectedPinId`만 비우는 것이다.** `selectedRoomId`를 그대로 두어 그 방의 방 상세가 다시
+     * 드러난다(TS-006). [onCloseRoomDetailClick]과 달리 목록을 다시 불러오지 않는다 — 방을 나가는
+     * 동작이 아니라 같은 방 안에서 한 겹 위로 올라오는 것이라 목록이 바뀔 일이 없다.
+     *
+     * **[RoomListUiState.returnsToHomeOnClose]면 홈 탭으로 되돌린다**(TS-037). [SCR-003] 홈 카드로
+     * 들어왔고 [저장된 방]으로 방을 바꾼 적이 없는 경우다. 이때 **`selectedRoomId`도 함께 비운다**
+     * (EC-031) — 홈 진입이 방과 핀을 함께 세우므로, 핀만 비우고 나가면 사용자가 연 적 없는 방 상세가
+     * 저장 탭에 남아 다음 방문 때 튀어나온다. 이 결함은 [나가기] 직후 화면으로는 드러나지 않는다.
+     *
+     * 탭을 실제로 옮기는 것은 셸이다 — 이 모듈은 탭 목록을 모르므로 결정만 SideEffect로 올린다
+     * (`docs/specs/place-detail/contracts/place-detail-entry.md` §4.2).
      */
     private fun onClosePlaceDetailClick() {
-        updateState { copy(selectedPinId = null) }
+        val returnsToHome = state.value.returnsToHomeOnClose
+        updateState {
+            copy(
+                selectedPinId = null,
+                selectedRoomId = if (returnsToHome) null else selectedRoomId,
+                returnsToHomeOnClose = false,
+            )
+        }
         refreshMapPins()
+        if (returnsToHome) {
+            launchSafely { postSideEffect(RoomListSideEffect.NavigateToHome) }
+        }
     }
 
     /**
      * [FR-025] [저장된 방] 시트에서 다른 방을 골랐다 — 「지금 보고 있는 방」과 그 방의 핀을 함께 바꾼다.
      *
      * 둘을 한 번에 갱신해야 마커 양식(TS-045)과 [나가기] 목적지(TS-046)가 어긋나는 중간 상태가 없다.
+     *
+     * **여기서 홈 복귀 예외가 소멸한다**(TS-057). 방을 고른 것은 사용자가 방 맥락을 직접 선택한
+     * 행위이므로, 마커 색·코멘트와 마찬가지로 나가는 자리도 바뀐 방을 따른다. 한 번 내린 플래그는
+     * 원래 방으로 되돌려도 다시 올리지 않는다(EC-032) — 판정 기준이 "지금 어느 방인가"가 아니라
+     * "방을 바꾼 적이 있는가"라, 되돌리는 것도 「바꾼 적」에 든다.
      */
     private fun onPlaceDetailRoomSwitched(
         pinId: String,
         roomId: String,
     ) {
-        updateState { copy(selectedPinId = pinId, selectedRoomId = roomId) }
+        updateState { copy(selectedPinId = pinId, selectedRoomId = roomId, returnsToHomeOnClose = false) }
         refreshMapPins()
     }
 
