@@ -179,8 +179,8 @@ internal fun PlaceDetailSheet(
                 //
                 // **상태바에 가리는 만큼을 이 띠가 함께 낸다.** 시트가 화면 최상단부터 서 있으면 그 자리를 비워
                 // 두지 않는 한 헤더 첫 줄이 상태바 아이콘과 겹치고, 이미 상태바 아래에서 시작한다면 더 비울 것이
-                // 없다 — 어느 쪽인지는 재 본 [statusBarOverlap]이 답한다. 디자인이 정한 것은 상태바 **아래**
-                // 여백 16dp다(Figma `005-2-1 full` — 상태바 54, 헤더 프레임 54, 아바타 70).
+                // 없다 — 어느 쪽인지는 재 본 [statusBarOverlap]이 답한다. 그 위에 얹는 디자인 여백은
+                // [FullHeaderTopSpacing]이 소유한다.
                 PlaceSheetLevel.FULL -> Spacer(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -311,8 +311,14 @@ internal fun placeDetailSheetHeightOrNull(level: PlaceSheetLevel): Dp? =
         PlaceSheetLevel.FULL -> null
     }
 
-/** `FULL` 헤더 위 여백. 상태바 아래로 이만큼 띄운다(Figma `005-2-1 full`). */
-private val FullHeaderTopSpacing = 16.dp
+/**
+ * `FULL` 헤더 위 여백. 상태바 아래로 이만큼 띄운다.
+ *
+ * **기준은 헤더 행의 윗변이지 아바타가 아니다.** 아바타는 [나가기] 버튼 높이의 행 안에서 가운데로 정렬되므로
+ * 아바타까지의 거리를 그대로 띄우면 행이 통째로 그 차이만큼 내려간다 — spec §4 가정이 5.0.1에서 이 값을
+ * 정정한 이유다.
+ */
+private val FullHeaderTopSpacing = 12.dp
 
 private val PreviewSheetContainerHeight = 640.dp
 

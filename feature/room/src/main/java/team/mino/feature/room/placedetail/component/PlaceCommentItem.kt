@@ -18,7 +18,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
@@ -106,7 +105,7 @@ internal fun PlaceCommentItem(
             Text(
                 modifier = Modifier.fillMaxWidth(),
                 text = comment.content,
-                color = ContentColor,
+                color = MinoAndroidTheme.colors.labelNormal,
                 style = MinoAndroidTheme.typography.label1NormalRegular,
             )
             Text(
@@ -182,8 +181,6 @@ private val AvatarNicknameSpacing = 6.dp
 private val ContentTimeSpacing = 4.dp
 
 private val MenuIconSize = 18.dp
-
-private val ContentColor = Color.Black
 
 /** 남의 코멘트 — 하루가 채 지나지 않아 `N시간 전` 갈래가 뜬다. */
 @OptIn(ExperimentalTime::class)
