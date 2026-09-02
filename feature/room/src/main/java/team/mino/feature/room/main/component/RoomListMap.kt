@@ -63,14 +63,22 @@ internal fun RoomListMap(
     }
 }
 
-/** 저장된 장소 하나의 마커 — 실좌표에 그 방의 색으로 핀을 얹는다. */
+/**
+ * 저장된 장소 하나의 마커 — 실좌표에 그 방의 색으로 핀을 얹고, 장소 상세가 열린 핀만 강조 외형으로 그린다.
+ *
+ * [MarkerComposable]은 content를 비트맵으로 한 번 구워 두고 keys가 달라질 때만 다시 굽는다 — 핀 그림을
+ * 고르는 두 값을 키로 넘기지 않으면 [MapPinUiModel.selected]가 뒤집혀도 마커가 이전 그림 그대로 남는다.
+ */
 @Composable
 @GoogleMapComposable
 private fun PlacePin(pin: MapPinUiModel) {
-    MarkerComposable(state = rememberUpdatedMarkerState(position = pin.place.location.toLatLng())) {
+    MarkerComposable(
+        pin.color to pin.selected,
+        state = rememberUpdatedMarkerState(position = pin.place.location.toLatLng()),
+    ) {
         RoomMapPin(
             color = pin.color,
-            selected = false,
+            selected = pin.selected,
             modifier = Modifier.size(width = PinIconWidth, height = PinIconHeight),
         )
     }

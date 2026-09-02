@@ -52,6 +52,18 @@ data class RoomListUiState(
      * 표현해야 지도(`RoomListMap`)가 계속 같은 컴포지션에 남아 카메라가 리셋되지 않는다.
      */
     val selectedRoomId: String? = null,
+    /**
+     * 장소 상세가 열려 있는 핀 id(`Place.id`가 곧 핀 id다) — `null`이면 안 열려 있다.
+     *
+     * **시트 세 갈래에서 이 값이 [selectedRoomId]보다 우선한다**: 값이 있으면 장소 상세, 없고
+     * `selectedRoomId`가 있으면 방 상세, 둘 다 없으면 리스트다(FR-009가 [나가기] 후에야 방 상세를
+     * 드러내라고 규정하므로 장소 상세가 열린 동안 방 상세 시트는 그려지지 않는다).
+     *
+     * 이 값이 `null`이 아니면 [selectedRoomId]도 `null`이 아니다 — 장소 상세를 여는 쪽이 둘을 함께
+     * 세운다. 그래야 [나가기]가 `selectedPinId = null` 한 줄로 끝나고, 드러날 방 상세가 이미 그
+     * 자리에 있다(`docs/specs/place-detail/contracts/place-detail-entry.md` §4).
+     */
+    val selectedPinId: String? = null,
 ) : UiState {
     /**
      * [FR-008] 자동 팝업 [RoomNudgeAutoSheet]를 실제로 그려야 하는지 — [RoomListScreen]과

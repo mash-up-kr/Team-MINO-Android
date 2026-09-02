@@ -37,7 +37,12 @@ internal sealed interface RoomDetailIntent : Intent {
 
     data object OnCloseClick : RoomDetailIntent
 
-    data object OnPlaceClick : RoomDetailIntent
+    /**
+     * 장소 카드·리스트 본문 탭 — [SCR-006] 장소 상세로 간다. 여는 값은 `Pin.id`인 [Place.id] 하나다
+     * (docs/specs/place-detail/contracts/place-detail-entry.md §2). 지도 마커로 들어오는 갈래는 지도를
+     * 그리는 `RoomListViewModel`에 직접 오르므로 이 인텐트를 거치지 않는다.
+     */
+    data class OnPlaceClick(val place: Place) : RoomDetailIntent
 
     data class OnPlaceMoreClick(val place: Place) : RoomDetailIntent
 

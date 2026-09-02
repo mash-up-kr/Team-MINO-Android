@@ -22,5 +22,3 @@ const val EXTRA_ROOM_FORM_RESULT_ROOM_ID = "room_form_result_room_id"
 const val ROOM_FORM_OUTCOME_CREATED = "created"
 const val ROOM_FORM_OUTCOME_UPDATED = "updated"
 const val ROOM_FORM_OUTCOME_SKIPPED = "skipped"
-
-const val EXTRA_PLACE_DETAIL_PIN_ID = "place_detail_pin_id"

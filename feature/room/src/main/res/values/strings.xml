@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="placedetail_saved_rooms">저장된 방</string>
+    <string name="placedetail_room_place_count">장소 %1$d개</string>
+    <string name="placedetail_current_location">현재 위치</string>
+    <string name="placedetail_action_view_place">장소보기</string>
+    <string name="placedetail_action_view_source">원문보기</string>
+    <string name="placedetail_action_share">다른방에 공유</string>
+    <string name="placedetail_header_close">나가기</string>
+    <string name="placedetail_header_registrant_avatar">%1$s님의 프로필 이미지</string>
+    <string name="placedetail_comment_menu">코멘트 메뉴</string>
+    <string name="placedetail_comment_delete">댓글 삭제</string>
+    <string name="placedetail_comment_time_just_now">방금</string>
+    <string name="placedetail_comment_time_hours_ago">%1$d시간 전</string>
+    <string name="placedetail_comment_time_days_ago">%1$d일 전</string>
+    <string name="placedetail_comment_time_date">%1$04d년 %2$02d월 %3$02d일</string>
+    <string name="placedetail_comment_section_title">친구들의 코멘트</string>
+    <string name="placedetail_comment_empty">아직 코멘트가 없어요!</string>
+    <string name="placedetail_comment_input_placeholder">코멘트를 입력해 보세요.</string>
+    <string name="placedetail_comment_submit">등록</string>
+    <string name="placedetail_share_confirm">공유하기</string>
+    <string name="placedetail_share_completed">공유가 완료되었습니다.</string>
+    <string name="placedetail_error_generic">문제가 생겼어요. 잠시 후 다시 시도해주세요.</string>
+    <string name="placedetail_error_retry">다시 시도</string>
+</resources>

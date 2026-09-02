@@ -40,12 +40,17 @@ import team.mino.feature.room.detail.vm.RoomDetailViewModel
  *
  * @param onCurrentLocationClick 현재 위치 버튼 클릭 — 지도를 실제로 그리는 `RoomListViewModel`에게
  *   전달해야 하므로 호출부(`RoomListRoute`)가 넘겨준다([RoomDetailScreen] KDoc 참고).
+ * @param onOpenPlaceDetail 장소 카드·리스트 탭 → [SCR-006] 장소 상세. 인자는 `Pin.id`다. 장소 상세도
+ *   방 상세와 같은 목적지 안의 로컬 상태(`selectedPinId`)라 이 Route가 직접 열 수 없다 — 그 상태를 가진
+ *   `RoomListViewModel`에게 넘겨야 하므로 `onCurrentLocationClick`과 같은 이유로 호출부가 넘겨준다
+ *   (docs/specs/place-detail/contracts/place-detail-entry.md §2).
  */
 @Composable
 internal fun BoxScope.RoomDetailRoute(
     roomId: String,
     onBack: () -> Unit,
     onCurrentLocationClick: () -> Unit,
+    onOpenPlaceDetail: (pinId: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val viewModel: RoomDetailViewModel = hiltViewModel<RoomDetailViewModel, RoomDetailViewModel.Factory>(
@@ -124,8 +129,7 @@ internal fun BoxScope.RoomDetailRoute(
                     snackbarHostState.showSnackbar("클립 보드에 초대링크가 복사되었어요")
                 }
 
-            // 장소 상세 진입은 아직 이 스펙 범위 밖이라 이 화면에서 소비하지 않는다.
-            is RoomDetailSideEffect.NavigateToPlaceDetail -> Unit
+            is RoomDetailSideEffect.NavigateToPlaceDetail -> onOpenPlaceDetail(effect.pinId)
         }
     }
 

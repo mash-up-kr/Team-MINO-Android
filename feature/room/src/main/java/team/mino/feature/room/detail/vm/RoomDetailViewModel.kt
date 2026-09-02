@@ -81,7 +81,7 @@ internal class RoomDetailViewModel @AssistedInject constructor(
             is RoomDetailIntent.OnCategoryFilterSelected -> onCategoryFilterSelected(intent.category)
             is RoomDetailIntent.OnViewTypeSelected -> onViewTypeSelected(intent.viewType)
             RoomDetailIntent.OnCloseClick -> onCloseClick()
-            RoomDetailIntent.OnPlaceClick -> Unit
+            is RoomDetailIntent.OnPlaceClick -> onPlaceClick(intent.place)
             is RoomDetailIntent.OnPlaceMoreClick -> onPlaceMoreClick(intent.place)
             RoomDetailIntent.OnPlaceMoreDismiss -> onPlaceMoreDismiss()
             is RoomDetailIntent.OnShareToOtherRoomClick -> onShareToOtherRoomClick(intent.place)
@@ -246,6 +246,15 @@ internal class RoomDetailViewModel @AssistedInject constructor(
     /** [X] 닫기 — 전환 결정만 발행한다(실제 팝백은 Route가 수행, T032). */
     private fun onCloseClick() {
         launchSafely { postSideEffect(RoomDetailSideEffect.NavigateBack) }
+    }
+
+    /**
+     * [SCR-006] 장소 카드·리스트 본문 탭 — 전환 결정만 발행한다(실제 전환은 `RoomListRoute`가
+     * `RoomListIntent.OnPlaceSelected`로 수행, T081). [Place.id]가 곧 `Pin.id`라
+     * (`PlaceMapper.toDomain` KDoc) 여는 값을 여기서 따로 구할 필요가 없다.
+     */
+    private fun onPlaceClick(place: Place) {
+        launchSafely { postSideEffect(RoomDetailSideEffect.NavigateToPlaceDetail(place.id)) }
     }
 
     /** [FR-008] 장소 카드 더보기[⋮] — 대상 장소를 기록해 PlaceActionMenu가 소비하게 한다. */

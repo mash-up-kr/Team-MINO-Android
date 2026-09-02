@@ -13,6 +13,7 @@ import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
 import team.mino.core.common.android.architecture.MviContainer
@@ -26,10 +27,14 @@ import team.mino.core.domain.model.PlaceCategoryFilter
 import team.mino.core.domain.model.Room
 import team.mino.core.domain.model.RoomListSortOption
 import team.mino.core.domain.model.RoomMemberSummary
+import team.mino.core.domain.repository.PlaceRepository
 import team.mino.core.domain.repository.RoomPlacesRepository
 import team.mino.core.domain.repository.RoomRepository
 import team.mino.core.domain.usecase.EnsureAnonymousSessionUseCase
+import team.mino.core.errorhandling.onDomainFailure
+import team.mino.core.errorhandling.runCatchingDomain
 import team.mino.core.navigation.activity.launcher.RoomFormLauncher
+import team.mino.core.navigation.entry.PlaceDetailRequestHolder
 import team.mino.feature.room.main.component.DefaultMapCenter
 import team.mino.feature.room.main.model.BottomSheetLevel
 import team.mino.feature.room.main.model.MapPinUiModel
@@ -55,6 +60,8 @@ class RoomListViewModel @Inject constructor(
     private val roomRepository: RoomRepository,
     private val roomPlacesRepository: RoomPlacesRepository,
     private val ensureAnonymousSessionUseCase: EnsureAnonymousSessionUseCase,
+    private val placeRepository: PlaceRepository,
+    private val placeDetailRequestHolder: PlaceDetailRequestHolder,
     val roomFormLauncher: RoomFormLauncher,
 ) : ViewModel(),
     MviContainer<RoomListUiState, RoomListSideEffect> by mviContainer(RoomListUiState()) {
@@ -63,6 +70,52 @@ class RoomListViewModel @Inject constructor(
 
     init {
         observeMyRooms()
+        observePlaceDetailRequests()
+    }
+
+    /**
+     * 다른 탭(홈·알림)이 남긴 장소 상세 요청을 받아 연다
+     * (`docs/specs/place-detail/contracts/place-detail-entry.md` §3,
+     * `contracts/place-detail-main-contract.md` §2.3).
+     *
+     * 요청이 싣고 오는 값은 `pinId` 하나다 — 방은 핀 상세 응답의 `roomId`로 해석한다(같은 계약 §3.4).
+     * 알림처럼 방을 특정하지 않는 진입도 이 해석으로 목적지가 정해진다(EC-001).
+     *
+     * **구독은 `init`에서 한 번만 연다.** [observeMyRooms]와 달리 화면 재진입마다 다시 열면 같은 요청을
+     * 두 번 받는 구독이 겹친다. 탭을 오가도 이 ViewModel은 살아 있어(저장 탭 백스택이 복원된다) 이 구독
+     * 하나로 충분하다.
+     */
+    private fun observePlaceDetailRequests() {
+        launchSafely {
+            placeDetailRequestHolder.pending
+                .filterNotNull()
+                .collect { pinId -> openRequestedPlaceDetail(pinId) }
+        }
+    }
+
+    /**
+     * 요청받은 핀의 장소 상세를 연다 — 「지금 보고 있는 방」과 그 방의 핀을 **함께** 세운다.
+     *
+     * 둘을 함께 세워야 [나가기](FR-009)가 드러낼 방 상세가 이미 그 아래에 있다. 홈·알림에서 들어오면 방
+     * 상세가 아직 안 열려 있어, 핀만 세우면 [나가기]가 빈자리로 떨어진다(TS-007·TS-037).
+     *
+     * **요청은 결과와 무관하게 먼저 비운다.** 남겨 두면 사용자가 [나가기]로 닫은 장소가 탭을 오갈 때마다
+     * 다시 열린다(`PlaceDetailRequestHolder.pending` KDoc).
+     *
+     * 조회에 실패하면 아무것도 열지 않는다 — 열 화면이 없는 채로 빈 상세를 띄우지 않는다(계약 §2.3).
+     * 이 화면의 주 데이터가 아니라 요청 하나의 해석이 실패한 것이라 오류 상태로 올리지 않고, 사용자는
+     * 이미 그려져 있는 방 목록에 그대로 남는다.
+     */
+    private suspend fun openRequestedPlaceDetail(pinId: String) {
+        placeDetailRequestHolder.consume()
+        runCatchingDomain { placeRepository.getPlaceDetail(pinId) }
+            .onSuccess { detail ->
+                updateState { copy(selectedRoomId = detail.roomId, selectedPinId = pinId) }
+                refreshMapPins()
+            }.onDomainFailure {
+                // 삼킨다는 것이 이 경로의 계약이므로, 결과를 버리는 대신 빈 소비로 드러낸다
+                // (`docs/conventions/error_handling.md` §7-4).
+            }
     }
 
     /**
@@ -151,6 +204,11 @@ class RoomListViewModel @Inject constructor(
      * [placesByRoomId]·현재 방 목록으로 지도 핀 목록을 다시 만든다. 조회가 끝날 때마다뿐 아니라
      * 정렬·필터·`mapCenter`가 바뀔 때도 다시 불러 [RoomListUiState.mapPins]를 최신으로 맞춘다.
      *
+     * **선택 핀 판정은 `place.id == selectedPinId` 한 비교로 여기서만 한다**(FR-002, TS-002) —
+     * `Place.id`가 곧 핀 id라(`Place` KDoc) 별도 조회가 없다. [RoomListMap]은 그 결과를 강조 외형으로
+     * 흘리기만 하고 판정을 다시 하지 않는다
+     * (`docs/specs/place-detail/contracts/place-detail-main-contract.md` §2.4).
+     *
      * 개인 방은 `RoomColor.GRAY`(색 미선택)라 `color`를 `null`로 둔다 — [RoomMapPin]이 `null`을
      * 기본(검정) 핀으로 그린다(`RoomColorMapping.chip`의 `RoomColor.GRAY -> null`과 같은 규칙). 예전엔
      * 이 자리에 내 프로필 색을 대신 얹었으나, 개인 방 핀은 항상 기본 검정이어야 한다는 확인에 따라
@@ -163,9 +221,12 @@ class RoomListViewModel @Inject constructor(
      */
     private fun refreshMapPins() {
         val rooms = listOfNotNull(state.value.personalRoom) + state.value.groupRooms
+        val selectedPinId = state.value.selectedPinId
         val allPins = rooms.flatMap { room ->
             val color = if (room.isPersonal) null else room.color.chip
-            placesByRoomId[room.id].orEmpty().map { place -> MapPinUiModel(place = place, color = color) }
+            placesByRoomId[room.id].orEmpty().map { place ->
+                MapPinUiModel(place = place, color = color, selected = place.id == selectedPinId)
+            }
         }
         val center = state.value.mapCenter ?: DefaultMapCenter
         val pins = allPins
@@ -186,6 +247,11 @@ class RoomListViewModel @Inject constructor(
             is RoomListIntent.OnRoomListSortSelected -> onRoomListSortSelected(intent.option)
             is RoomListIntent.OnRoomCardClick -> onRoomCardClick(intent.roomId)
             RoomListIntent.OnCloseRoomDetailClick -> onCloseRoomDetailClick()
+            is RoomListIntent.OnPlaceSelected -> onPlaceSelected(intent.pinId)
+            RoomListIntent.OnClosePlaceDetailClick -> onClosePlaceDetailClick()
+            is RoomListIntent.OnPlaceDetailRoomSwitched ->
+                onPlaceDetailRoomSwitched(pinId = intent.pinId, roomId = intent.roomId)
+
             RoomListIntent.OnAddRoomClick -> onAddRoomClick()
             is RoomListIntent.OnRoomFormResult -> onRoomFormResult(intent.createdRoomId)
 
@@ -307,6 +373,64 @@ class RoomListViewModel @Inject constructor(
         updateState { copy(selectedRoomId = null) }
         observeMyRooms()
     }
+
+    /**
+     * [FR-002] 장소 상세를 연다 — `selectedPinId`를 세우고 카메라를 그 장소로 옮긴다.
+     *
+     * 좌표는 이미 받아 둔 [placesByRoomId]에서 찾는다. 못 찾으면(그 방의 장소 조회가 아직 안 끝난
+     * 탭 간 진입 등) 카메라를 건드리지 않는다 — 좌표를 모르는 채로 [DefaultMapCenter] 같은 엉뚱한
+     * 곳으로 옮기면 사용자가 보던 자리를 잃는다.
+     *
+     * [refreshMapPins]를 마지막에 부르는 이유는 두 가지다. 선택 표시(§2.4)를 핀에 반영해야 하고,
+     * `mapCenter`가 바뀌면 `NEARBY` 정렬의 기준점도 함께 바뀌기 때문이다([onCurrentLocationClick]과
+     * 같은 순서).
+     *
+     * 핀과 카메라를 한 번에 갱신하는 것은, 나눠 내보내면 장소는 골라졌는데 카메라는 아직 옛 자리인
+     * 중간 상태가 화면에 한 프레임 드러나기 때문이다.
+     */
+    private fun onPlaceSelected(pinId: String) {
+        val location = placeLocationOf(pinId)
+        updateState {
+            if (location == null) {
+                copy(selectedPinId = pinId)
+            } else {
+                copy(selectedPinId = pinId, mapCenter = location, mapCenterRequestId = mapCenterRequestId + 1)
+            }
+        }
+        refreshMapPins()
+    }
+
+    /**
+     * [FR-009] 장소 상세 [나가기] — `selectedPinId`를 비우는 것이 전부다.
+     *
+     * `selectedRoomId`는 그대로 두어 그 방의 방 상세가 다시 드러난다(TS-006). [onCloseRoomDetailClick]과
+     * 달리 목록을 다시 불러오지 않는다 — 방을 나가는 동작이 아니라 같은 방 안에서 한 겹 위로 올라오는
+     * 것이라 목록이 바뀔 일이 없다.
+     */
+    private fun onClosePlaceDetailClick() {
+        updateState { copy(selectedPinId = null) }
+        refreshMapPins()
+    }
+
+    /**
+     * [FR-025] [저장된 방] 시트에서 다른 방을 골랐다 — 「지금 보고 있는 방」과 그 방의 핀을 함께 바꾼다.
+     *
+     * 둘을 한 번에 갱신해야 마커 양식(TS-045)과 [나가기] 목적지(TS-046)가 어긋나는 중간 상태가 없다.
+     */
+    private fun onPlaceDetailRoomSwitched(
+        pinId: String,
+        roomId: String,
+    ) {
+        updateState { copy(selectedPinId = pinId, selectedRoomId = roomId) }
+        refreshMapPins()
+    }
+
+    private fun placeLocationOf(pinId: String): GeoPoint? =
+        placesByRoomId.values
+            .asSequence()
+            .flatten()
+            .firstOrNull { it.id == pinId }
+            ?.location
 
     /** [FR-007] 시트 우상단 [+] → [RoomListSideEffect.NavigateToRoomForm] 발행(전환 결정만, 실제 호출은 Route). */
     private fun onAddRoomClick() {

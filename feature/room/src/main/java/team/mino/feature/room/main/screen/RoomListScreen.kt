@@ -63,6 +63,7 @@ import team.mino.feature.room.main.component.bottomSheetHeightOrNull
 import team.mino.feature.room.main.model.BottomSheetLevel
 import team.mino.feature.room.main.vm.RoomListIntent
 import team.mino.feature.room.main.vm.RoomListUiState
+import team.mino.feature.room.placedetail.model.PlaceSheetLevel
 import kotlin.math.roundToInt
 
 /**
@@ -72,10 +73,16 @@ import kotlin.math.roundToInt
  * 이 컴포저블이 방 상세의 컨트롤·바텀시트·오버레이를 그린다. 지도([RoomListMap])는 이 분기와 무관하게
  * 항상 이 함수가 한 번만 그려서, 리스트↔상세 전환에도 같은 컴포지션에 남아 카메라가 리셋되지 않는다
  * (`RoomListRoute` KDoc 참고).
+ * @param placeDetailContent `null`이 아니면 장소 상세를 보는 중이다([RoomListUiState.selectedPinId] 참고).
+ * **[detailContent]보다 우선한다** — 장소 상세가 열려 있으면 [RoomListUiState.selectedRoomId]도 함께 세워져
+ * 있어([나가기] 뒤에 드러날 자리다) 두 슬롯이 동시에 채워진 채로 들어오지만, 그동안 방 상세 시트는 그리지
+ * 않는다. 지도를 공유하는 것은 방 상세와 같다.
  * @param detailSheetLevel `detailContent`가 그리는 방 상세 바텀시트의 현재 단계. 지도가 상태바 밑으로
  * 새어 나와야 하는지(`mapBleed`)는 "현재 활성화된 시트"가 `Full`인지로 판정해야 한다 — 상세 모드인데도
  * 리스트의 `state.sheetLevel`만 보면 상세가 `Full`이라 지도가 안 보여야 할 때도 지도가 계속 새어 나와
  * 상태바 영역에 지도 색이 비치고 그 아래서 흰 시트가 시작되는 이음매가 생긴다(실기기 확인된 결함).
+ * @param placeDetailSheetLevel `placeDetailContent`가 그리는 장소 상세 바텀시트의 현재 단계. 활성 시트가
+ * 셋으로 늘어도 판정 기준은 하나다 — 지금 활성인 시트의 단계다.
  */
 @Composable
 internal fun RoomListScreen(
@@ -83,14 +90,16 @@ internal fun RoomListScreen(
     onIntent: (RoomListIntent) -> Unit,
     modifier: Modifier = Modifier,
     detailSheetLevel: BottomSheetLevel? = null,
+    placeDetailSheetLevel: PlaceSheetLevel? = null,
     detailContent: (@Composable BoxScope.() -> Unit)? = null,
+    placeDetailContent: (@Composable BoxScope.() -> Unit)? = null,
 ) {
-    val isDetailMode = detailContent != null
-    val listIsMapControlVisible = state.sheetLevel != BottomSheetLevel.FULL
-    val isMapControlVisible = if (isDetailMode) {
-        detailSheetLevel != BottomSheetLevel.FULL
-    } else {
-        listIsMapControlVisible
+    // 지도 위 컨트롤(과 그에 딸린 mapBleed)은 "지금 활성인 시트"의 단계로 가른다 — 세 갈래의 우선순위는
+    // 아래 본문의 분기와 같다(장소 상세 → 방 상세 → 리스트).
+    val isMapControlVisible = when {
+        placeDetailContent != null -> placeDetailSheetLevel != PlaceSheetLevel.FULL
+        detailContent != null -> detailSheetLevel != BottomSheetLevel.FULL
+        else -> state.sheetLevel != BottomSheetLevel.FULL
     }
     var sortMenuExpanded by remember { mutableStateOf(false) }
     // 트리거 위치를 이 Box 기준 좌표(root 기준 아님)로 계산하려고 두 LayoutCoordinates를 그대로
@@ -140,7 +149,9 @@ internal fun RoomListScreen(
                 },
         )
 
-        if (isDetailMode) {
+        if (placeDetailContent != null) {
+            placeDetailContent()
+        } else if (detailContent != null) {
             detailContent()
         } else {
             if (isMapControlVisible) {
