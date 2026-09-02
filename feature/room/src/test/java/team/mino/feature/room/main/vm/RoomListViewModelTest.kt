@@ -35,9 +35,11 @@ import team.mino.feature.room.fake.FakeLocationContext
 import team.mino.feature.room.fake.FakePlaceRepository
 import team.mino.feature.room.fake.FakeRoomFormLauncher
 import team.mino.feature.room.fake.FakeRoomPlacesRepository
+import team.mino.feature.room.fake.FakeRoomPreferencesRepository
 import team.mino.feature.room.fake.FakeRoomRepository
 import team.mino.feature.room.main.component.DefaultMapCenter
 import team.mino.feature.room.main.model.BottomSheetLevel
+import kotlin.time.Clock
 import kotlin.time.Duration.Companion.days
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
@@ -61,6 +63,7 @@ class RoomListViewModelTest {
 
     /** 홀더는 요청을 담는 그릇일 뿐이라 테스트 더블을 두지 않고 실물을 쓴다. */
     private val placeDetailRequestHolder = PlaceDetailRequestHolder()
+    private val roomPreferencesRepository = FakeRoomPreferencesRepository()
 
     @Before
     fun setUp() {
@@ -585,11 +588,55 @@ class RoomListViewModelTest {
             assertFalse(state.showGhostCard)
         }
 
+    @Test
+    fun `Nudge 팝업을 나중에 만들래요로 닫으면 지금 시각을 저장한다`() =
+        runTest {
+            roomRepository.givenRooms(room(id = "personal", isPersonal = true))
+            val viewModel = createViewModel()
+            advanceUntilIdle()
+
+            viewModel.processIntent(RoomListIntent.OnNudgeDismissClick)
+            advanceUntilIdle()
+
+            assertEquals(1, roomPreferencesRepository.recordedDismissedAts.size)
+        }
+
+    @Test
+    fun `2주 이내에 닫았으면 재진입해도 Nudge 팝업이 억제된다`() =
+        runTest {
+            roomPreferencesRepository.dismissedAt = Clock.System.now() - 1.days
+            roomRepository.givenRooms(room(id = "personal", isPersonal = true))
+            val viewModel = createViewModel()
+            advanceUntilIdle()
+
+            viewModel.processIntent(RoomListIntent.OnScreenEntered)
+            advanceUntilIdle()
+
+            assertTrue(viewModel.state.value.nudgeSheetDismissed)
+            assertFalse(viewModel.state.value.isNudgeSheetVisible)
+        }
+
+    @Test
+    fun `2주가 지나면 재진입 시 Nudge 팝업이 다시 표출된다`() =
+        runTest {
+            roomPreferencesRepository.dismissedAt = Clock.System.now() - 15.days
+            roomRepository.givenRooms(room(id = "personal", isPersonal = true))
+            val viewModel = createViewModel()
+            advanceUntilIdle()
+
+            viewModel.processIntent(RoomListIntent.OnScreenEntered)
+            advanceUntilIdle()
+
+            assertFalse(viewModel.state.value.nudgeSheetDismissed)
+            assertTrue(viewModel.state.value.isNudgeSheetVisible)
+        }
+
     private fun createViewModel(permissionGranted: Boolean = true): RoomListViewModel =
         RoomListViewModel(
             context = FakeLocationContext(permissionGranted = permissionGranted),
             roomRepository = roomRepository,
             roomPlacesRepository = roomPlacesRepository,
+            roomPreferencesRepository = roomPreferencesRepository,
             ensureAnonymousSessionUseCase = EnsureAnonymousSessionUseCase(FakeAnonymousAuthRepository()),
             placeRepository = placeRepository,
             placeDetailRequestHolder = placeDetailRequestHolder,
