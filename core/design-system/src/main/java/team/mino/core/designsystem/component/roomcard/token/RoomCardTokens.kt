@@ -25,6 +25,9 @@ internal object RoomCardTokens {
 
     val AvatarSize = MinoAvatarGroupSize.XSmall
 
+    /** 카드 오른쪽 끝 꺽쇠의 크기. 체크박스가 차지하는 자리와 같은 크기다. */
+    val ChevronSize = 26.dp
+
     /** 그룹방에서 겹쳐 보여줄 참여자 아바타 최대 개수. 초과분은 렌더하지 않는다. */
     const val MAX_AVATAR_COUNT = 5
 
@@ -36,4 +39,6 @@ internal object RoomCardTokens {
 
     val PlaceCountFont = TypographyAccessKeyToken.Label2Bold
     val PlaceCountColor = ColorAccessKeyToken.LabelAlternative
+
+    val ChevronColor = ColorAccessKeyToken.LabelAlternative
 }
