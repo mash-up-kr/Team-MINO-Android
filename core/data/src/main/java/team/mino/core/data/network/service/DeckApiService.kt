@@ -4,6 +4,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
+import team.mino.core.data.network.dto.response.CardFeedResponse
 import team.mino.core.data.network.dto.response.CardResponse
 import team.mino.core.data.network.dto.response.MinoResponse
 import javax.inject.Inject
@@ -41,6 +42,7 @@ internal class DeckApiService @Inject constructor(
                 parameter("sort", sort)
                 parameter("lat", lat)
                 parameter("lng", lng)
-            }.body<MinoResponse<List<CardResponse>>>()
+            }.body<MinoResponse<CardFeedResponse>>()
             .data
+            .cards
 }

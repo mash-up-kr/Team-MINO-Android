@@ -15,7 +15,7 @@ import org.junit.Test
 import team.mino.core.data.network.service.DeckApiService
 
 /**
- * `MinoResponse<List<CardResponse>>`는 제네릭 DTO라 봉투 벗기기가 런타임에 성립하는지 컴파일이 보증하지 않는다.
+ * `MinoResponse<CardFeedResponse>`는 제네릭 DTO라 봉투 벗기기가 런타임에 성립하는지 컴파일이 보증하지 않는다.
  * 그것과, 질의 파라미터가 계약대로 실리는지, 그리고 계약을 벗어난 응답을 흡수하는지를 본다 —
  * `docs/specs/home-deck-exploration/contracts/deck-api.md` §2.
  *
@@ -34,8 +34,10 @@ class DeckApiServiceTest {
         )
 
     @Test
-    fun `data 봉투를 벗기고 라벨 4종이 섞인 덱을 순서 그대로 반환한다`() =
+    fun `봉투를 벗기고 cards를 라벨 4종 순서 그대로 반환한다`() =
         runTest {
+            // 이 본문만 `room`을 함께 싣는다(계약 §2.2). 담지 않는 것과 읽다 죽는 것은 다르므로,
+            // 흡수에 실패하면 카드를 세기 전에 이 단언들이 먼저 깨진다.
             val engine = jsonEngine(MIXED_LABEL_DECK_BODY)
 
             val cards = service(engine).getCards(ROOM_ID, SORT_GGUK_PICK)

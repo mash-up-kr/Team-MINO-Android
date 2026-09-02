@@ -3,7 +3,22 @@ package team.mino.core.data.network.dto.response
 import kotlinx.serialization.Serializable
 
 /**
- * 홈 카드 덱 조회(`GET /api/v1/rooms/{roomId}/cards`) 응답의 카드 한 장.
+ * 홈 카드 덱 조회(`GET /api/v1/rooms/{roomId}/cards`)에서 봉투 `data`가 담는 객체.
+ *
+ * 서버가 `room`(홈 헤더용 방 메타)을 함께 실으면서 카드가 `cards` 아래로 들어갔다. 홈은 방 메타를
+ * `GET /api/v1/rooms`로 이미 받고 있어 여기서는 쓰지 않으므로 [cards]만 담고 `room`은
+ * `ignoreUnknownKeys = true`가 흡수한다.
+ *
+ * 봉투는 여전히 `MinoResponse` 하나다 — 이 타입은 봉투가 아니라 그 안의 페이로드다.
+ * 계약은 `docs/specs/home-deck-exploration/contracts/deck-api.md` §2.2가 소유한다.
+ */
+@Serializable
+internal data class CardFeedResponse(
+    val cards: List<CardResponse> = emptyList(),
+)
+
+/**
+ * 홈 카드 덱 조회 응답의 카드 한 장.
  *
  * 홈 카드가 쓰는 필드만 둔다. 서버가 `roomId`·`createdAt`과 장소의 좌표·분류·전화번호 등을 함께 내려주지만
  * 카드 표시에 쓰지 않으므로 담지 않고 `ignoreUnknownKeys = true`가 흡수한다.
@@ -40,9 +55,8 @@ internal data class CardPlaceResponse(
  * 계약상 [CardResponse.createdBy] 자체가 `null`일 수 있고(탈퇴 등), 아바타를 고르지 않은 사용자면
  * [avatar]도 `null`이다. 두 부재를 어떻게 메울지는 `DeckMapper`가 정한다.
  *
- * **아바타는 프로필과 같은 [AvatarResponse]다.** `/cards`의 OpenAPI 문서만 `Avatar { id: integer }`로 적혀
- * 있으나 실제 응답에는 `id`가 없고, 같은 서버의 다른 엔드포인트(`/users/me`·`/pins`·`/pins/{pinId}`)는 모두
- * 색 하나로 아바타를 표현한다. 문서가 아니라 **실제 응답**을 따른다.
+ * **아바타는 프로필과 같은 [AvatarResponse]다.** 색 하나로 표현하며, 아바타를 고르지 않은 사용자면 객체가
+ * 비어 온다.
  */
 @Serializable
 internal data class CardCreatedByResponse(
