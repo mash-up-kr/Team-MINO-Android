@@ -49,4 +49,4 @@ internal fun PlaceImage(
 private val ImageSize = 240.dp
 
 // Figma md 변수 대응 — 토큰 미존재
-private val ImageShape: Shape = RoundedCornerShape(16.dp)
+private val ImageShape: Shape = RoundedCornerShape(21.49.dp)

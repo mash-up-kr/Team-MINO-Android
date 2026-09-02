@@ -16,8 +16,8 @@ import team.mino.core.designsystem.component.button.ButtonSize
 import team.mino.core.designsystem.component.button.ButtonStyle
 import team.mino.core.designsystem.component.button.MinoButton
 import team.mino.core.designsystem.foundation.icons.MinoIcons
-import team.mino.core.designsystem.foundation.icons.icons.DocumentText
 import team.mino.core.designsystem.foundation.icons.icons.Location
+import team.mino.core.designsystem.foundation.icons.icons.LogoInstagram
 import team.mino.core.designsystem.foundation.icons.icons.Persons
 import team.mino.core.designsystem.theme.MinoAndroidAppTheme
 import team.mino.core.designsystem.util.preview.UiModePreviews
@@ -31,6 +31,10 @@ import team.mino.feature.room.R
  * 버튼을 좁히면 그 신호가 사라진다(spec UX-004).
  *
  * **[장소보기]만 강조 스타일이다.** 나머지 둘은 같은 무게의 보조 행동이라 서로 우열을 두지 않는다.
+ *
+ * **[원문보기]는 인스타그램 로고를 단다.** 원문이 인스타그램 게시글이라는 것을 시안(`Icon/Normal/Logo
+ * Instagram`)과 Figma 주석 7번이 함께 못 박았다 — 문서 아이콘 같은 일반 글리프로는 무엇이 열릴지가 눌러 봐야
+ * 드러난다.
  *
  * @param isSourceEnabled 원문 링크가 없는 장소에서는 [원문보기]가 열 곳이 없어 비활성이다(spec FR-017 · EC-017).
  */
@@ -68,7 +72,7 @@ internal fun PlaceActionRow(
             size = ButtonSize.Medium,
             style = ButtonStyle.OutlinedAssistive,
             leadingIcon = {
-                Icon(imageVector = MinoIcons.DocumentText, contentDescription = null)
+                Icon(imageVector = MinoIcons.LogoInstagram, contentDescription = null)
             },
         )
         MinoButton(
