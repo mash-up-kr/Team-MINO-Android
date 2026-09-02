@@ -6,12 +6,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -55,6 +57,7 @@ import team.mino.core.designsystem.util.modifier.shadow.dropShadow
 import team.mino.core.domain.model.MapMarkerSortOption
 import team.mino.core.domain.model.PlaceCategoryFilter
 import team.mino.core.domain.model.RoomListSortOption
+import team.mino.feature.room.detail.component.roomDetailBottomSheetHeightOrNull
 import team.mino.feature.room.main.component.RoomListBottomSheet
 import team.mino.feature.room.main.component.RoomListMap
 import team.mino.feature.room.main.component.RoomListRoomCardList
@@ -63,6 +66,7 @@ import team.mino.feature.room.main.component.bottomSheetHeightOrNull
 import team.mino.feature.room.main.model.BottomSheetLevel
 import team.mino.feature.room.main.vm.RoomListIntent
 import team.mino.feature.room.main.vm.RoomListUiState
+import team.mino.feature.room.placedetail.component.placeDetailSheetHeightOrNull
 import team.mino.feature.room.placedetail.model.PlaceSheetLevel
 import kotlin.math.roundToInt
 
@@ -94,13 +98,26 @@ internal fun RoomListScreen(
     detailContent: (@Composable BoxScope.() -> Unit)? = null,
     placeDetailContent: (@Composable BoxScope.() -> Unit)? = null,
 ) {
-    // 지도 위 컨트롤(과 그에 딸린 mapBleed)은 "지금 활성인 시트"의 단계로 가른다 — 세 갈래의 우선순위는
-    // 아래 본문의 분기와 같다(장소 상세 → 방 상세 → 리스트).
-    val isMapControlVisible = when {
-        placeDetailContent != null -> placeDetailSheetLevel != PlaceSheetLevel.FULL
-        detailContent != null -> detailSheetLevel != BottomSheetLevel.FULL
-        else -> state.sheetLevel != BottomSheetLevel.FULL
+    // 지금 활성인 시트가 지도를 **얼마나 가리는가**. 세 갈래의 우선순위는 아래 본문의 분기와 같다
+    // (장소 상세 → 방 상세 → 리스트). `null`이 `Full` — 지도가 통째로 덮여 보이지 않는 상태다.
+    //
+    // **장소 상세만 내비게이션 바 자리까지 덮는다.** 이 지도는 아랫변이 내비게이션 바 위에서 끝나므로
+    // (아래 `mapBleed`는 위쪽만 되찾는다) 그 시트가 실제로 지도를 가리는 높이는 인셋만큼 짧다. 다른 두
+    // 시트는 지도와 같은 자리에서 끝나 시트 높이가 곧 가려지는 높이다.
+    val navigationBarInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val obscuredMapHeight = when {
+        placeDetailContent != null ->
+            placeDetailSheetLevel
+                ?.let(::placeDetailSheetHeightOrNull)
+                ?.minus(navigationBarInset)
+
+        detailContent != null -> detailSheetLevel?.let(::roomDetailBottomSheetHeightOrNull)
+        else -> bottomSheetHeightOrNull(state.sheetLevel, state.groupRooms.size)
     }
+
+    // 지도 위 컨트롤(과 그에 딸린 mapBleed)은 지도가 보이는 동안에만 뜬다 — 가려진 높이를 알 수 있다는 것이
+    // 곧 지도가 보인다는 뜻이라, 판정을 둘로 두지 않고 위 값 하나에서 가른다.
+    val isMapControlVisible = obscuredMapHeight != null
     var sortMenuExpanded by remember { mutableStateOf(false) }
     // 트리거 위치를 이 Box 기준 좌표(root 기준 아님)로 계산하려고 두 LayoutCoordinates를 그대로
     // 들고 있는다 — RoomListSortMenu의 KDoc 「루트 좌표계 이중 오프셋」 참조.
@@ -131,6 +148,12 @@ internal fun RoomListScreen(
             mapCenter = state.mapCenter,
             mapCenterRequestId = state.mapCenterRequestId,
             mapPins = state.mapPins,
+            // 마커를 「화면」이 아니라 「시트에 가리지 않은 지도」의 중앙에 놓는다(spec FR-002). 위쪽은
+            // [mapBleed]만큼 상태바 뒤로 들어가 있고, 아래쪽은 지금 선 시트가 가린다.
+            contentPadding = PaddingValues(
+                top = mapBleed,
+                bottom = obscuredMapHeight?.coerceAtLeast(0.dp) ?: 0.dp,
+            ),
             modifier = Modifier
                 .fillMaxWidth()
                 .layout { measurable, constraints ->

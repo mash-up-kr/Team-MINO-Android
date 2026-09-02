@@ -91,7 +91,7 @@ internal class PlaceDetailViewModel @AssistedInject constructor(
     fun processIntent(intent: PlaceDetailIntent) {
         when (intent) {
             is PlaceDetailIntent.OnSheetLevelChange -> updateState { copy(sheetLevel = intent.level) }
-            is PlaceDetailIntent.OnScrollOffsetChange -> changeHeaderMode(intent.isAtTop)
+            is PlaceDetailIntent.OnHeaderExpansionChange -> changeHeaderMode(intent.isExpanded)
             PlaceDetailIntent.OnExitClick -> exit()
             is PlaceDetailIntent.OnCarouselPageChange -> updateState { copy(carouselPage = intent.page) }
             PlaceDetailIntent.OnOpenMapClick -> openExternalMap()
@@ -203,14 +203,15 @@ internal class PlaceDetailViewModel @AssistedInject constructor(
     }
 
     /**
-     * 최상단에서 벗어나면 헤더를 접는다.
+     * 화면이 판정한 헤더 밀도를 그대로 싣는다.
      *
-     * 시트 단계를 함께 보지 않는다 — `Full`이어도 최상단이면 확장형이고, 콘텐츠가 짧아 스크롤이 없으면
-     * 계속 확장형이다(spec FR-008 · EC-007, `docs/specs/place-detail/research.md` D5).
+     * **판정을 여기서 하지 않는다.** 언제 접히는지는 스크롤 위치와 두 헤더의 높이를 함께 재야 나오는 값이라
+     * 그것을 가진 화면이 판정한다(spec FR-008 · EC-007, `docs/specs/place-detail/research.md` D5).
+     * 시트 단계는 어느 쪽에서도 보지 않는다 — `Full`이어도 최상단이면 확장형이다.
      */
-    private fun changeHeaderMode(isAtTop: Boolean) {
+    private fun changeHeaderMode(isExpanded: Boolean) {
         updateState {
-            copy(headerMode = if (isAtTop) PlaceHeaderMode.EXPANDED else PlaceHeaderMode.COLLAPSED)
+            copy(headerMode = if (isExpanded) PlaceHeaderMode.EXPANDED else PlaceHeaderMode.COLLAPSED)
         }
     }
 
@@ -394,7 +395,7 @@ internal class PlaceDetailViewModel @AssistedInject constructor(
      */
     private fun openSavedRoomsSheet() {
         val current = state.value
-        if (!current.isSavedRoomsEnabled) return
+        if (!current.isSavedRoomsVisible) return
         val rooms = current.savedRooms.filter { it.matchedPinId != null && it.matchedPinId != pinId }
         updateState {
             copy(savedRoomsSheet = SavedRoomsSheetUiState(rooms = rooms.toImmutableList()))

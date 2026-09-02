@@ -11,18 +11,20 @@ internal sealed interface PlaceDetailIntent : Intent {
     ) : PlaceDetailIntent
 
     /**
-     * 시트 콘텐츠의 스크롤이 최상단인지 바뀌었다.
+     * 헤더를 확장형으로 둘지가 바뀌었다.
      *
-     * 헤더 밀도를 가르는 유일한 근거다. 스크롤 양을 올리지 않는 것은 화면이 이미 판정한 결과만 받으면 되기 때문이다.
+     * 스크롤 위치가 그 근거이나(spec FR-008), 접을 수 있는지는 두 헤더의 높이까지 재야 갈린다 — 접힌 헤더가
+     * 스크롤 범위를 줄여 스스로를 되돌리는 자리가 있기 때문이다. 그 판정을 화면이 하고 결과만 올린다.
      */
-    data class OnScrollOffsetChange(
-        val isAtTop: Boolean,
+    data class OnHeaderExpansionChange(
+        val isExpanded: Boolean,
     ) : PlaceDetailIntent
 
     /**
-     * [나가기] 버튼과 시트를 아래로 끌어 닫는 동작.
+     * [나가기] 버튼.
      *
-     * 둘은 같은 처리라는 것이 spec EC-003의 규정이므로 Intent를 가르지 않는다.
+     * 시트를 아래로 끌어 닫는 경로는 없다 — `HALF`가 하한이라 드래그는 화면을 끝내지 못한다(spec FR-001 ·
+     * EC-003). 시스템 뒤로가기는 `RoomListRoute`의 `BackHandler`가 자기 인텐트로 처리한다.
      */
     data object OnExitClick : PlaceDetailIntent
 
