@@ -116,7 +116,7 @@
 ## 2. 요구사항 (Requirements) *(필수)*
 ### 2.1 기능적 요구사항 (Functional Requirements)
 
-- **FR-001**: 시스템은 반드시 앱 실행 직후 `gguk` 워드마크·태그라인·마스코트가 담긴 스플래시 화면을 최소 3초간 노출해야 한다. (근거: business-context.md [SCR-001] Flow A, Figma [2314-134659](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2314-134659))
+- **FR-001**: 시스템은 반드시 앱 실행 직후 `gguk` 워드마크·태그라인·마스코트가 담긴 스플래시 화면을 최소 3초간 노출해야 한다. (근거: business-context.md [SCR-001] Flow A, Figma [2792-146704](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2792-146704))
 - **FR-002**: 시스템은 반드시 스플래시 노출 중 「비회원 익명 세션」을 첫 서버 요청보다 먼저·구분되는 단계로 확보하고 **앱 진입 판정**(프로필 등록 여부와 온보딩 완료 표시)을 수행해, 최소 노출 시간과 판정이 모두 끝나면 그 결과에 따라 다음 화면으로 자동 전환해야 한다. (근거: business-context.md [SCR-001] Flow A "첫 서버 요청보다 먼저, 서버 요청과 구분되는 단계로 세션을 확보한다" / 판정 근거가 둘인 이유는 `docs/specs/onboarding-flow` FR-022 — §4 참고)
 - **FR-003**: 시스템은 반드시 **온보딩을 끝내지 않은 설치**이면 온보딩([SCR-002])으로 이동해야 한다. 끝내지 않은 설치란 프로필이 등록되지 않았거나 온보딩 완료 표시가 없는 설치를 말하며, 둘 중 하나라도 없으면 여기에 해당한다. **어느 스텝부터 여는지는 온보딩이 정하고 이 화면은 관여하지 않는다.** (근거: business-context.md [SCR-001] Flow A / `docs/specs/onboarding-flow` FR-003·FR-021·FR-022·FR-023 · [ADR 2026-08-29](../../adr/2026-08-29-onboarding-entry-decision-owned-by-onboarding.md))
 - **FR-004**: 시스템은 반드시 **온보딩을 끝낸 설치**이면(프로필이 등록되어 있고 온보딩 완료 표시도 있으면) 직전 세션의 메인 탭으로 이동해야 한다. (근거: business-context.md [SCR-001] Flow A / `docs/specs/onboarding-flow` FR-021)
