@@ -32,7 +32,8 @@ internal class FakeRoomRepository : RoomRepository {
 
     override fun observeMyRooms(): Flow<List<Room>> = rooms
 
-    override suspend fun getRooms(): List<RoomSummary> = error("FakeRoomRepository는 getRooms를 지원하지 않는다.")
+    override suspend fun getRooms(placeId: String?): List<RoomSummary> =
+        error("FakeRoomRepository는 getRooms를 지원하지 않는다.")
 
     override suspend fun getRoom(roomId: String): Room = rooms.value.first { it.id == roomId }
 
