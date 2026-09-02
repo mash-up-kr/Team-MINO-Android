@@ -1,6 +1,7 @@
 package team.mino.feature.room.detail.component
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpSize
@@ -61,6 +63,7 @@ private object RoomInviteSheetTokens {
     val HandleShape = RoundedCornerShape(4.dp)
     val HandleTopPadding = 8.dp
     val HandleBottomPadding = 8.dp
+    val DragDismissThreshold = 24.dp
 
     val HeaderHorizontalPadding = 20.dp
     val HeaderHeight = 60.dp
@@ -107,7 +110,7 @@ internal fun RoomInviteSheet(
                 containerColor = MinoAndroidTheme.colors.backgroundElevatedNormal,
             ),
     ) {
-        RoomInviteDragHandle()
+        RoomInviteDragHandle(onDraggedDown = onDismiss)
 
         RoomInviteHeader(room = room, onCloseClick = onDismiss)
 
@@ -138,19 +141,40 @@ internal fun RoomInviteSheet(
             sticky = true,
         )
     }
-    // onDismiss는 `RoomShareSheet`와 같은 이유로 이 컴포저블이 스스로 소비하지 않는다 — 호스팅하는
-    // 바텀시트 컨테이너가 바깥 영역 클릭·백 제스처에 연결한다. 헤더의 닫기 버튼만 예외로 직접 문다.
+    // onDismiss는 바깥 스크림 클릭·백 제스처(호스팅하는 오버레이)·헤더 닫기 버튼에 더해, 핸들
+    // 드래그(RoomInviteDragHandle)로도 호출된다(#290).
 }
 
+/**
+ * 드래그 핸들. `RoomListBottomSheet`·`RoomSelectSheet`와 같은 패턴(`detectVerticalDragGestures` +
+ * 임계값)으로 아래로 끌면 [onDraggedDown](시트 dismiss)을 호출한다 — 이 시트는 단일 단계라 위로
+ * 끄는 동작은 없다.
+ */
 @Composable
-private fun RoomInviteDragHandle(modifier: Modifier = Modifier) {
+private fun RoomInviteDragHandle(
+    onDraggedDown: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Box(
         modifier = modifier
             .fillMaxWidth()
             .padding(
                 top = RoomInviteSheetTokens.HandleTopPadding,
                 bottom = RoomInviteSheetTokens.HandleBottomPadding,
-            ),
+            ).pointerInput(onDraggedDown) {
+                var accumulatedDrag = 0f
+                val thresholdPx = RoomInviteSheetTokens.DragDismissThreshold.toPx()
+                detectVerticalDragGestures(
+                    onDragStart = { accumulatedDrag = 0f },
+                    onVerticalDrag = { change, dragAmount ->
+                        accumulatedDrag += dragAmount
+                        change.consume()
+                    },
+                    onDragEnd = {
+                        if (accumulatedDrag >= thresholdPx) onDraggedDown()
+                    },
+                )
+            },
         contentAlignment = Alignment.Center,
     ) {
         Box(

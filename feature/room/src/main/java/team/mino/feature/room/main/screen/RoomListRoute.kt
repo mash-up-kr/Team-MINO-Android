@@ -113,16 +113,13 @@ internal fun RoomListRoute(
 
     // ImmersiveRoute는 목적지 단위 마커라 이 화면(같은 목적지 안에서 로컬 상태로 전환)엔 못 쓴다 —
     // LocalBottomNavVisibility로 대체(core/common/ui/scaffold/LocalBottomNavVisibility.kt KDoc 참고).
+    // 숨김 조건 자체(방 상세 모드·Nudge 딤 팝업·이 화면 자신의 시트가 Full인 상태)는
+    // [RoomListUiState.shouldHideBottomNav] 하나가 판정한다 — 이 자리에서 조건을 다시 나열하지 않아야
+    // 몰입 상태가 하나 늘어도 그 값 하나만 고치면 된다(#290 QA로 발견 — 예전엔 이 나열에서 "이 화면
+    // 자신의 시트가 Full인 상태"가 빠져 있었다).
     val bottomNavVisibility = LocalBottomNavVisibility.current
-    val isDetailMode = selectedRoomId != null
-    // [state.isNudgeSheetVisible]이 화면 전체(바텀 네비게이션 자리까지)를 덮는 딤 팝업([RoomNudgeAutoSheet])의
-    // 표출 여부다 — 팝업이 떠 있는 동안엔 셸의 바텀 네비게이션도 함께 숨겨야 실기기에서 팝업 액션 영역
-    // 아래로 네비게이션 바가 비쳐 보이지 않는다(실기기 확인된 결함).
-    //
-    // 장소 상세(FR-020)도 같은 판정식에 항을 하나 더하는 것으로 끝난다 — 이 값을 다투는 곳이 둘이 되지
-    // 않도록 새 `DisposableEffect`를 만들지 않는다(`docs/specs/place-detail/research.md` D19).
-    DisposableEffect(selectedPinId, isDetailMode, state.isNudgeSheetVisible) {
-        bottomNavVisibility.value = selectedPinId == null && !isDetailMode && !state.isNudgeSheetVisible
+    DisposableEffect(state.shouldHideBottomNav) {
+        bottomNavVisibility.value = !state.shouldHideBottomNav
         onDispose { bottomNavVisibility.value = true }
     }
 

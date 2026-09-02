@@ -9,6 +9,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -139,6 +140,7 @@ private object RoomNudgeAutoSheetTokens {
     val HandleSize = DpSize(38.dp, 4.dp)
     val HandleShape = RoundedCornerShape(4.dp)
     val HandleVerticalPadding = 12.dp
+    val DragDismissThreshold = 24.dp
     val ContentPadding = 20.dp
     val ContentSpacing = 24.dp
     val TitleSubtitleSpacing = 8.dp
@@ -154,8 +156,9 @@ private object RoomNudgeAutoSheetTokens {
  * 보이는 정적 인라인 카드라 이것과 별개다 — 이 컴포저블은 딤 위에 떠서 [onDismissRequest]로 닫을 수 있는
  * 독립 오버레이다(Figma `2314-95482` 대조 — 드래그 핸들 + 일러스트 + 메인/서브 2버튼).
  *
- * 재노출 여부(FR-008, EC-005)는 이 컴포저블이 아니라 호출부가 관리한다 — 탭에 진입할 때마다 dismiss
- * 상태를 초기화해 다시 그리게 하는 판단은 `RoomListViewModel`의 책임이다.
+ * 재노출 여부(FR-008, [SYS-009])는 이 컴포저블이 아니라 호출부가 관리한다 — 탭에 진입할 때마다
+ * 마지막으로 닫은 시각(`RoomPreferencesRepository`)을 조회해 2주가 지났는지로 다시 판단하는 것은
+ * `RoomListViewModel.isNudgeSuppressionActive`의 책임이다.
  *
  * [visible]로 표출·소멸 애니메이션을 직접 몬다 — 호출부가 `if`로 이 컴포저블 자체를 넣고 뺐다면 등장 시
  * 애니메이션 없이 즉시 나타나고(레이아웃이 그 순간 바텀 네비게이션 소멸과 겹쳐 순간 점프로 보인다),
@@ -273,7 +276,7 @@ internal fun RoomNudgeAutoSheet(
                         // 시트가 히트 테스트에 잡혀야 그 위의 탭이 뒤의 딤으로 내려가 닫히지 않는다.
                         .pointerInput(Unit) {},
                 ) {
-                    RoomNudgeAutoSheetDragHandle()
+                    RoomNudgeAutoSheetDragHandle(onDraggedDown = onDismissRequest)
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -327,12 +330,34 @@ internal fun RoomNudgeAutoSheet(
     }
 }
 
+/**
+ * 드래그 핸들. `RoomInviteSheet`·`RoomSelectSheet`와 같은 패턴(`detectVerticalDragGestures` + 임계값)
+ * 으로 아래로 끌면 [onDraggedDown](=[onDismissRequest])을 호출한다(#290 QA로 발견 — 예전엔 핸들
+ * 모양만 그리고 실제 드래그 제스처가 연결돼 있지 않아 손가락으로 끌어도 반응이 없었다).
+ */
 @Composable
-private fun RoomNudgeAutoSheetDragHandle(modifier: Modifier = Modifier) {
+private fun RoomNudgeAutoSheetDragHandle(
+    onDraggedDown: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = RoomNudgeAutoSheetTokens.HandleVerticalPadding),
+            .padding(vertical = RoomNudgeAutoSheetTokens.HandleVerticalPadding)
+            .pointerInput(onDraggedDown) {
+                var accumulatedDrag = 0f
+                val thresholdPx = RoomNudgeAutoSheetTokens.DragDismissThreshold.toPx()
+                detectVerticalDragGestures(
+                    onDragStart = { accumulatedDrag = 0f },
+                    onVerticalDrag = { change, dragAmount ->
+                        accumulatedDrag += dragAmount
+                        change.consume()
+                    },
+                    onDragEnd = {
+                        if (accumulatedDrag >= thresholdPx) onDraggedDown()
+                    },
+                )
+            },
         contentAlignment = Alignment.Center,
     ) {
         Box(

@@ -31,10 +31,12 @@ data class RoomListUiState(
     val showNudge: Boolean = false,
     val showGhostCard: Boolean = false,
     /**
-     * [FR-008] 자동 팝업 Nudge 바텀시트([RoomNudgeAutoSheet])의 닫힘 여부 — [showNudge]와 별개다.
-     * `showNudge`는 "공동방 0개"만 뜻하고([RoomNudgeSheet]의 `Full` 인라인 카드가 계속 참조한다),
-     * 이 값은 그중에서도 팝업을 이미 닫았는지를 이 화면 방문 동안만 기억한다. 탭에 재진입할 때마다
-     * `false`로 초기화돼 다시 표출된다(EC-005, 세션당 1회 제한 없음).
+     * [FR-008][SYS-009] 자동 팝업 Nudge 바텀시트([RoomNudgeAutoSheet])의 닫힘 여부 — [showNudge]와
+     * 별개다. `showNudge`는 "공동방 0개"만 뜻하고([RoomNudgeSheet]의 `Full` 인라인 카드가 계속
+     * 참조한다), 이 값은 그중에서도 팝업이 지금 억제 중인지를 뜻한다. 탭에 재진입할 때마다
+     * `RoomListViewModel.isNudgeSuppressionActive`가 `RoomPreferencesRepository`에 저장된 마지막
+     * 닫힘 시각을 조회해 다시 계산한다 — [나중에 만들래요] 클릭 후 2주 동안은 `true`, 그 전엔 `false`다
+     * (PRD 11.1.0). 세션 로컬 상태가 아니라 기기에 영속 저장된다.
      */
     val nudgeSheetDismissed: Boolean = false,
     val mapCenter: GeoPoint? = null,
@@ -95,4 +97,14 @@ data class RoomListUiState(
      */
     val isNudgeSheetVisible: Boolean
         get() = selectedRoomId == null && showNudge && !nudgeSheetDismissed && sheetLevel != BottomSheetLevel.FULL
+
+    /**
+     * 셸의 바텀 네비게이션을 숨겨야 하는지 — [RoomListRoute]가 이 값 하나만 보고 판정한다(FR-003,
+     * TS-005 — #290 QA로 "이 화면 자신의 시트가 Full일 때"가 빠져 있던 걸 발견). 방 상세 진입
+     * (`selectedRoomId != null`)·자동 팝업 딤(`isNudgeSheetVisible`)·이 화면 자신의 3단 시트가 `Full`로
+     * 확장된 상태, 셋 다 화면 전체를 덮어 바텀 네비게이션이 보이면 안 되는 "몰입 모드"라는 같은 이유를
+     * 공유한다 — 호출부가 매번 세 조건을 나열하지 않도록 한 곳에서만 계산한다.
+     */
+    val shouldHideBottomNav: Boolean
+        get() = selectedRoomId != null || isNudgeSheetVisible || sheetLevel == BottomSheetLevel.FULL
 }
