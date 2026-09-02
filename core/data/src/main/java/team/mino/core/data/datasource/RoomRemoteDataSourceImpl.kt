@@ -18,7 +18,8 @@ import javax.inject.Inject
 internal class RoomRemoteDataSourceImpl @Inject constructor(
     private val service: RoomApiService,
 ) : RoomRemoteDataSource {
-    override suspend fun listRooms(): List<RoomSummaryResponse> = service.listRooms()
+    override suspend fun listRooms(showHasPlaceId: String?): List<RoomSummaryResponse> =
+        service.listRooms(showHasPlaceId)
 
     override suspend fun getRoom(roomId: String): RoomResponse = service.getRoom(roomId)
 

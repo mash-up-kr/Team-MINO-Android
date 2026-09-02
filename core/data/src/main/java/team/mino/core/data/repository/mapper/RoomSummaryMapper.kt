@@ -35,6 +35,15 @@ private val IMAGE_URL_SCHEMES = listOf("http://", "https://")
  * (`docs/specs/shared-link-receiver/data-model.md` §1.2).
  *
  * 순서는 건드리지 않는다. 개인방 최상단 고정은 `GetRoomPickerRoomsUseCase`의 몫이다.
+ *
+ * `hasPlace`는 **`null`을 `false`로 메우지 않는다.** `?showHasPlaceId=`를 지정하지 않은 조회에서 서버가 이
+ * 필드를 아예 싣지 않으므로, 메우면 "물어보지 않았다"가 "저장돼 있지 않다"로 둔갑한다
+ * (`docs/specs/place-detail/data-model.md` §3).
+ *
+ * `matchedPinId`는 반대로 **`hasPlace`가 `true`가 아니면 지운다.** 서버 스키마가 이 필드를 nullable로 표시하지
+ * 않아 저장돼 있지 않은 방에도 값이 실려 올 수 있는데, 그대로 올리면 화면이 그것을 전환 대상으로 삼는다
+ * (`docs/specs/place-detail/contracts/place-api.md` §4.2). 규칙을 여기서 집행하므로 도메인에서는
+ * `matchedPinId != null`이 곧 `hasPlace == true`를 뜻한다.
  */
 internal fun RoomSummaryResponse.toDomain(): RoomSummary =
     RoomSummary(
@@ -45,6 +54,8 @@ internal fun RoomSummaryResponse.toDomain(): RoomSummary =
         color = color.toRoomColor(),
         placeCount = pinCount,
         thumbnailImageUrls = thumbnailList.filter(String::isImageUrl).take(MAX_THUMBNAIL_COUNT),
+        hasPlace = hasPlace,
+        matchedPinId = matchedPinId?.takeIf { hasPlace == true },
     )
 
 /**

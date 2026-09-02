@@ -7,9 +7,14 @@ import kotlinx.serialization.Serializable
  *
  * 방 선택 시트(`RoomSummaryMapper`)와 room-list(`RoomMapper`)가 같은 응답을 서로 다른 도메인 모델로
  * 읽는다 — 시트는 [id]·[name]·[description]·[type]·[color]·[pinCount]·[thumbnailList]만, room-list는
- * 여기에 [ownerId]·[memberCount]까지 함께 쓴다. 서버가 `hasPlace`·`users`도 함께 내려줄 수 있지만
- * (`?showHasPlaceId=`·`?showUsers=true` 지정 시) 어느 쪽 소비자도 쓰지 않아 담지 않고
- * `ignoreUnknownKeys = true`가 흡수한다.
+ * 여기에 [ownerId]·[memberCount]까지 함께 쓴다. `?showUsers=true`가 더해 주는 `users`는 어느 쪽 소비자도
+ * 쓰지 않아 담지 않고 `ignoreUnknownKeys = true`가 흡수한다.
+ *
+ * [hasPlace]·[matchedPinId]는 **`?showHasPlaceId=`를 지정했을 때만 서버가 싣는다.** 지정하지 않은 응답에서
+ * 파싱이 깨지지 않도록 둘 다 기본값 `null`을 두며, 그 `null`은 "저장돼 있지 않다"가 아니라 "물어보지 않았다"다.
+ * [matchedPinId]는 스키마상 nullable로 표시돼 있지 않지만 [hasPlace]가 `true`가 아닌 방에서는 의미가 없으므로
+ * 여기서도 nullable로 받고, 버리는 판정은 `RoomSummaryMapper`가 한다
+ * (`docs/specs/place-detail/contracts/place-api.md` §4·§4.2).
  *
  * [type]·[color]는 서버가 준 식별자 문자열이다. 도메인 값과의 대응은 각 소비자의 매퍼만 안다.
  *
@@ -31,6 +36,8 @@ internal data class RoomSummaryResponse(
     val pinCount: Int,
     val memberCount: Int,
     val thumbnailList: List<String> = emptyList(),
+    val hasPlace: Boolean? = null,
+    val matchedPinId: String? = null,
 )
 
 /**

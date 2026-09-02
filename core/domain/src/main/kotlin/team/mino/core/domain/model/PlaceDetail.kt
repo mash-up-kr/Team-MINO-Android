@@ -20,9 +20,6 @@ import team.mino.core.common.kotlin.geo.GeoPoint
  *
  * [imageUrls]가 비면 캐러셀 영역 자체가 사라진다(EC-009). [registrant]가 `null`이면 기본 아바타를 그리고(EC-004),
  * [sourceUrl]이 `null`이면 [원문보기]를 비활성으로 둔다(EC-017).
- *
- * [label]은 서버가 주지 않아 사실상 항상 기본값이다 — [PlaceLabel] KDoc 참조. 기본 인자를 둔 것은 서버가 필드를
- * 추가할 때까지 Mapper가 이 값을 지어내지 않게 하기 위해서다.
  */
 data class PlaceDetail(
     val pinId: String,
@@ -35,7 +32,6 @@ data class PlaceDetail(
     val registrant: PlaceRegistrant?,
     val sourceUrl: String?,
     val mapUrl: String?,
-    val label: PlaceLabel = PlaceLabel.DEFAULT,
 )
 
 /**

@@ -4,6 +4,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
+import io.ktor.client.request.parameter
 import io.ktor.client.request.patch
 import io.ktor.client.request.post
 import io.ktor.client.request.put
@@ -31,13 +32,18 @@ internal class RoomApiService @Inject constructor(
     /**
      * 참여 중인 방 목록을 조회한다. 나간 방은 서버가 제외한다.
      *
-     * `?showHasPlaceId=` · `?showUsers=true` 쿼리는 붙이지 않는다 —
-     * 근거는 `docs/specs/shared-link-receiver/contracts/room-list-api.md` §3.
+     * `?showUsers=true`는 붙이지 않는다 — 근거는
+     * `docs/specs/shared-link-receiver/contracts/room-list-api.md` §3.
+     *
+     * @param showHasPlaceId 장소 UUID. 주면 각 방에 `hasPlace`·`matchedPinId`가 함께 온다
+     *  (`docs/specs/place-detail/contracts/place-api.md` §4). `null`이면 `parameter`가 쿼리를 붙이지 않아
+     *  기존 요청과 바이트 단위로 같다.
      */
-    suspend fun listRooms(): List<RoomSummaryResponse> =
+    suspend fun listRooms(showHasPlaceId: String? = null): List<RoomSummaryResponse> =
         client
-            .get("api/v1/rooms")
-            .body<MinoResponse<List<RoomSummaryResponse>>>()
+            .get("api/v1/rooms") {
+                parameter("showHasPlaceId", showHasPlaceId)
+            }.body<MinoResponse<List<RoomSummaryResponse>>>()
             .data
 
     /**

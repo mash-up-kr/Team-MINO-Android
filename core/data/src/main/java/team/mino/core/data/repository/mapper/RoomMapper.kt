@@ -3,6 +3,7 @@
 package team.mino.core.data.repository.mapper
 
 import team.mino.core.data.network.dto.request.RoomRequest
+import team.mino.core.data.network.dto.response.AvatarResponse
 import team.mino.core.data.network.dto.response.RoomMemberDetailResponse
 import team.mino.core.data.network.dto.response.RoomResponse
 import team.mino.core.data.network.dto.response.RoomSummaryResponse
@@ -83,6 +84,19 @@ internal fun RoomColor?.toIdentifier(): String = COLOR_IDENTIFIERS.getValue(this
  * 색을 갖지 않은 방이 이미 [RoomColor.GRAY]로 보이므로 표현이 어긋나지 않는다.
  */
 internal fun String.toRoomColor(): RoomColor = COLORS_BY_IDENTIFIER[this] ?: RoomColor.GRAY
+
+/**
+ * 사용자 아바타의 색을 읽는다. **아바타가 없거나 표에 없는 색이면 `null`** — 받는 쪽이 기본 아바타로 그린다.
+ *
+ * 방의 색([toRoomColor])과 달리 [RoomColor.GRAY]로 메우지 않는다. 방은 색을 고르지 않아도 회색 방으로 보이지만,
+ * 아바타는 「색을 모른다」와 「회색을 골랐다」가 다른 그림이기 때문이다. `gray`는 표에 있으므로 여기서도
+ * `null`이 아니라 [RoomColor.GRAY]로 읽힌다 — `null`은 아바타가 없거나 팔레트 밖 값일 때만이다.
+ *
+ * 장소 상세와 코멘트가 같은 13색 팔레트를 공유하는데 **서버 두 자리의 `enum` 제약이 서로 어긋나 있어**
+ * (한쪽만 enum) 모르는 값이 실려 올 수 있다. 그 방어를 매퍼마다 되풀이하지 않도록 색 표가 있는 이 자리에
+ * 함께 둔다 — `docs/specs/place-detail/contracts/place-api.md` §1.3.
+ */
+internal fun AvatarResponse?.toRoomColorOrNull(): RoomColor? = this?.let { COLORS_BY_IDENTIFIER[it.color] }
 
 /**
  * room-list 전용 — [RoomSummaryResponse]를 (`RoomSummaryMapper`가 방 선택 시트를 위해 읽는 얕은

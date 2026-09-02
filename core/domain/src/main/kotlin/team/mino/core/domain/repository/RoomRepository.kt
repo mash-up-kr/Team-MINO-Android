@@ -25,8 +25,14 @@ interface RoomRepository {
      *
      * 실패는 던진다. 빈 목록으로 수렴시키는 것은 화면의 몫이다
      * (`docs/specs/shared-link-receiver/contracts/room-list-api.md` §5).
+     *
+     * @param placeId 저장 여부를 함께 묻고 싶은 장소의 식별자. 주면 각 [RoomSummary]의
+     *  [RoomSummary.hasPlace]·[RoomSummary.matchedPinId]가 채워지고, 주지 않으면 **둘 다 `null`로 남는다** —
+     *  `null`은 "저장돼 있지 않다"가 아니라 "물어보지 않았다"다
+     *  (`docs/specs/place-detail/contracts/place-repository.md` §3). 기본 인자라 기존 호출자는 `getRooms()`
+     *  그대로다.
      */
-    suspend fun getRooms(): List<RoomSummary>
+    suspend fun getRooms(placeId: String? = null): List<RoomSummary>
 
     /**
      * 방 하나를 가져온다. 편집 폼의 초기값을 채우는 원천이다.

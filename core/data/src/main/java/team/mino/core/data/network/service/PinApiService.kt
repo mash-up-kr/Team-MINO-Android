@@ -1,12 +1,16 @@
 package team.mino.core.data.network.service
 
 import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import team.mino.core.data.network.dto.request.PinCreateRequest
 import team.mino.core.data.network.dto.request.PinDuplicateRequest
+import team.mino.core.data.network.dto.response.MinoResponse
+import team.mino.core.data.network.dto.response.PinDetailResponse
 import javax.inject.Inject
 
 /**
@@ -18,6 +22,21 @@ import javax.inject.Inject
 internal class PinApiService @Inject constructor(
     private val client: HttpClient,
 ) {
+    /**
+     * [pinId] 핀 하나의 상세를 조회한다 —
+     * `docs/specs/place-detail/contracts/place-api.md` §1.
+     *
+     * 목록(`GET /api/v1/pins`)이 쓰는 `PinResponse`가 아니라 [PinDetailResponse]로 받는다. 같은 엔드포인트가
+     * 아니고, 이 응답에만 `sourceUrl`과 닉네임·아바타까지 실린 `createdBy`가 온다.
+     *
+     * 화면이 읽지 않는 필드까지 그대로 흘린다 — 무엇을 도메인에 올릴지는 Mapper가 정한다(같은 계약 §1.2).
+     */
+    suspend fun getPinDetail(pinId: String): PinDetailResponse =
+        client
+            .get("api/v1/pins/$pinId")
+            .body<MinoResponse<PinDetailResponse>>()
+            .data
+
     /**
      * 공유받은 링크에서 장소를 추출해 [request]의 방들에 핀을 추가하도록 요청한다.
      *

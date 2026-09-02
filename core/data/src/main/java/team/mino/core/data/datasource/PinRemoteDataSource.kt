@@ -2,12 +2,13 @@ package team.mino.core.data.datasource
 
 import team.mino.core.data.network.dto.request.PinCreateRequest
 import team.mino.core.data.network.dto.request.PinDuplicateRequest
+import team.mino.core.data.network.dto.response.PinDetailResponse
 
 /**
  * 핀의 원격 출처. 함수마다 시그니처의 소유 계약이 다르다 — [createPin]은
  * `docs/specs/shared-link-receiver/contracts/shared-place-save-api.md` §4가,
  * [recordAccess]·[duplicatePin]은 `docs/specs/home-deck-exploration/contracts/deck-api.md`
- * §3.2·§3.3이 갖는다.
+ * §3.2·§3.3이, [getPinDetail]은 `docs/specs/place-detail/contracts/place-api.md` §1이 갖는다.
  *
  * mock 구현을 두지 않는다 — 세 계약 모두 서버에 배포돼 있어 실구현 하나뿐이다
  * (`docs/specs/shared-link-receiver/research.md` R-013).
@@ -16,6 +17,16 @@ import team.mino.core.data.network.dto.request.PinDuplicateRequest
  * 워커와 RepositoryImpl뿐이다.
  */
 internal interface PinRemoteDataSource {
+    /**
+     * [pinId] 핀 하나의 상세를 가져온다.
+     *
+     * 목록 조회가 쓰는 `PinResponse`가 아니라 [PinDetailResponse]다 — 엔드포인트가 다르고 이 응답에만
+     * `sourceUrl`과 닉네임·아바타까지 실린 `createdBy`가 온다.
+     *
+     * 서버가 준 필드를 그대로 흘린다. 무엇을 도메인에 올릴지 정하는 것은 Mapper의 몫이다.
+     */
+    suspend fun getPinDetail(pinId: String): PinDetailResponse
+
     /**
      * 공유받은 링크를 [request]의 방들에 핀으로 추가하도록 요청한다.
      *
