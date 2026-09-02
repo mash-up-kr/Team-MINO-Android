@@ -21,6 +21,8 @@ import team.mino.core.designsystem.util.modifier.clickable.rippleSingleClickable
  * 카드 전체가 하나의 클릭 영역이고 [trailing]은 그 안에 얹힌다. 트레일링이 자기 클릭 영역을 갖는지는
  * 그 슬롯을 채우는 쪽이 정한다.
  *
+ * @param enabled false면 카드 본문의 탭을 막는다. **본문의 색은 바뀌지 않는다** — 어느 부분이
+ *   비활성으로 보이는지는 [trailing]을 채우는 쪽이 정한다.
  * @param trailing 본문 오른쪽 끝에 붙는 요소(체크박스·꺽쇠). 이 자리가 카드 종류를 가른다.
  */
 @Composable
@@ -31,12 +33,13 @@ internal fun RoomCardRow(
     onClick: () -> Unit,
     thumbnail: @Composable () -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     trailing: @Composable () -> Unit,
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .rippleSingleClickable(onClick = onClick)
+            .rippleSingleClickable(enabled = enabled, onClick = onClick)
             .padding(vertical = RoomCardTokens.VerticalPadding),
         horizontalArrangement = Arrangement.spacedBy(RoomCardTokens.ItemSpacing),
         verticalAlignment = Alignment.CenterVertically,
