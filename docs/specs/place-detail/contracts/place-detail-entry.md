@@ -79,8 +79,11 @@ HomeRoute ──onNavigateToPlaceDetail(pinId)──> MainNavHost ──> MainAc
                                           │ 1. holder.request(pinId)
                                           │ 2. navController.navigateToTab(MainTab.SAVED)
                                           ↓
-RoomListViewModel  ──collect(holder.pending)──> selectedPinId = pinId; holder.consume()
+RoomListViewModel  ──collect(holder.pending)──> holder.consume() 후
+                                                selectedRoomId·selectedPinId·mapCenter를 함께 세운다
 ```
+
+**여는 값은 셋이 한 벌이다** — 방(§4)·핀·카메라. 요청이 싣고 오는 것은 `pinId` 하나지만 나머지 둘은 핀 상세 응답(`roomId`·`location`)이 준다. 셋 중 하나가 빠지면 화면이 반쪽으로 열린다 — 카메라가 빠지면 선택 핀이 화면 밖에 남는다(spec FR-002·TS-056). 상세는 [place-detail-main-contract.md §2.3](./place-detail-main-contract.md).
 
 **`:feature:home`은 바뀌지 않는다.** 홈은 이미 `pinId`를 콜백으로 올려보내는 데까지만 알고 있다. 목적지가 Activity에서 홀더로 바뀌는 것은 그 콜백을 받는 `:feature:main` 쪽이다.
 

@@ -46,7 +46,7 @@ data class RoomListUiState(
 | `OnClosePlaceDetailClick` | `selectedPinId = null` |
 | `OnPlaceDetailRoomSwitched(pinId, roomId)` | `selectedPinId = pinId`, `selectedRoomId = roomId` — [저장된 방] 전환(FR-024) |
 
-`OnPlaceSelected`는 세 곳에서 온다 — 지도 마커, 방 상세의 `NavigateToPlaceDetail(pinId)`, 그리고 §2.3의 탭 간 요청.
+`OnPlaceSelected`는 **두 곳**에서 온다 — 지도 마커와 방 상세의 `NavigateToPlaceDetail(pinId)`다. **§2.3의 탭 간 요청은 이 인텐트로 오지 않는다** — 방을 함께 세워야 해서 그쪽이 따로 받는다. 다만 **카메라 이동은 §2.3도 똑같이 한다**(spec FR-002는 진입점 넷 전부에 걸린다).
 
 ### 2.3 탭 간 요청 소비
 
@@ -54,12 +54,15 @@ data class RoomListUiState(
 
 ```
 pending = pinId
-  → getPlaceDetail(pinId)로 roomId를 해석
+  → holder.consume()                                  ← 결과와 무관하게 먼저 비운다
+  → getPlaceDetail(pinId)로 roomId·location을 해석
   → selectedRoomId = roomId; selectedPinId = pinId
-  → holder.consume()
+       mapCenter = location; mapCenterRequestId++      ← 한 번에 세운다
 ```
 
-**방을 먼저 세운다.** 홈·알림에서 들어오면 방 상세가 아직 안 열려 있어, [나가기]가 드러낼 자리가 비어 있다. `roomId`는 핀 상세 응답이 준다.
+**방을 함께 세운다.** 홈·알림에서 들어오면 방 상세가 아직 안 열려 있어, [나가기]가 드러낼 자리가 비어 있다. `roomId`는 핀 상세 응답이 준다.
+
+**카메라도 여기서 옮긴다.** spec FR-002의 카메라 이동은 진입점 넷 전부에 걸리므로 탭 간 진입도 예외가 아니다. 좌표는 **핀 상세 응답의 `location`**이 준다 — `OnPlaceSelected`처럼 `placesByRoomId`에서 찾지 않는다. 홈에서 콜드 진입하면 그 목록이 아직 비어 있어 좌표를 못 찾고, 못 찾으면 카메라가 그 자리에 머물러 선택 핀이 화면 밖에 남는다(확인된 현상). 셋을 한 번에 세우는 이유는 [§2.2의 `OnPlaceSelected`](#22-인텐트)와 같다 — 나눠 내보내면 장소는 골라졌는데 카메라는 옛 자리인 중간 상태가 한 프레임 드러난다.
 
 이 조회가 실패하면 요청을 소비만 하고 아무것도 열지 않는다 — 열 화면이 없는 채로 빈 상세를 띄우지 않는다.
 
@@ -91,6 +94,14 @@ BackHandler(enabled = selectedPinId != null || selectedRoomId != null) {
 ### 2.7 지도 컨트롤 노출
 
 지도 위 컨트롤을 그릴지는 **지금 활성인 시트**의 단계로 판정한다. `RoomListScreen`이 이미 `detailSheetLevel`로 같은 판정을 하고 있고(그 KDoc이 실기기 결함을 기록해 둔 자리), 장소 상세가 세 번째 갈래로 는다 — 장소 상세 `Full`이면 컨트롤을 숨긴다.
+
+### 2.8 자동 카메라 이동은 장소 상세가 열려 있는 동안 멈춘다
+
+`OnScreenEntered`·`OnLocationPermissionResult`가 하는 `mapCenter`·`mapCenterRequestId` 갱신은 **`selectedPinId != null`이면 건너뛴다**(spec EC-030).
+
+방 리스트 계약은 탭 진입 시점에 위치를 해석해 카메라를 현재 위치로 옮기라고 규정한다([room-list-main-contract.md 「분기 규칙 — 위치 권한 요청」](../../room-list/contracts/room-list-main-contract.md)). 탭 간 진입(§2.3)은 탭 전환과 장소 상세 열기가 같은 순간이라 그 이동과 §2.3의 이동이 겹치고, **나중에 끝난 쪽이 이긴다** — 위치 해석이 캐시로 즉시 끝나면 §2.3이 이기지만, 활성 측위로 넘어가면 그쪽이 늦게 도착해 선택 핀에 맞춘 카메라를 덮는다. 그래서 순서에 기대지 않고 한쪽을 끈다.
+
+**사용자가 직접 누른 [현재 위치](`OnCurrentLocationClick`)는 막지 않는다.** 장소 상세 위의 그 버튼도 같은 인텐트로 오므로(§7·[research.md D25](../research.md)) 함께 막으면 버튼이 죽는다.
 
 ---
 
