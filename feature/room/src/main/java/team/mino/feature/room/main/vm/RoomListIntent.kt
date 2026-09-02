@@ -49,7 +49,8 @@ sealed interface RoomListIntent : Intent {
     data class OnPlaceSelected(val pinId: String) : RoomListIntent
 
     /**
-     * [FR-009] 장소 상세 [나가기] — 시트 아래로 끌기(EC-003)·시스템 뒤로가기도 여기로 모인다.
+     * [FR-009] 장소 상세 [나가기] — 시스템 뒤로가기도 여기로 모인다. 시트를 아래로 끌어 닫는 경로는
+     * 없다(EC-003).
      * `selectedPinId`만 비우면 `selectedRoomId`가 남아 있어 그 방의 방 상세가 그대로 드러난다.
      */
     data object OnClosePlaceDetailClick : RoomListIntent

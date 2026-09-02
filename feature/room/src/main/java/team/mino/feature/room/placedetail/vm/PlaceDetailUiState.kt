@@ -78,15 +78,16 @@ internal data class PlaceDetailUiState(
         get() = place?.sourceUrl != null
 
     /**
-     * 이 장소가 두 방 이상에 저장돼 있을 때만 [저장된 방]이 열린다(spec FR-023 · TS-040 · TS-041).
+     * 이 장소가 두 방 이상에 저장돼 있을 때만 [저장된 방] 버튼을 그린다(spec FR-023 · TS-040 · TS-041).
      *
      * **둘째 방부터가 조건인 것은 지금 보고 있는 방도 이 수에 들어 있기 때문이다.** 하나뿐이면 그 하나가 곧
-     * 지금 보고 있는 방이라 옮겨 갈 곳이 없고, 그 사실을 비활성 상태가 그대로 알린다(spec EC-024 · UX-011).
+     * 지금 보고 있는 방이라 옮겨 갈 곳이 없고, 그 사실을 버튼이 없다는 것이 그대로 알린다(spec EC-024 · UX-011).
+     * 비활성으로 자리만 남기지 않는 것은, 왜 못 누르는지 설명할 문구도 토스트도 두지 않는 자리이기 때문이다.
      *
-     * [savedRooms]가 아직 비어 있는 구간에서도 이 판정이 성립한다 — 조회 전에는 `false`라 버튼이 비활성으로
-     * 서 있다가 결과가 도착하면서 열린다.
+     * [savedRooms]가 아직 비어 있는 구간에서도 이 판정이 성립한다 — 조회 전에는 `false`라 버튼이 없다가
+     * 결과가 도착하면서 나타난다.
      */
-    val isSavedRoomsEnabled: Boolean
+    val isSavedRoomsVisible: Boolean
         get() = savedRooms.count { it.hasPlace } >= 2
 }
 

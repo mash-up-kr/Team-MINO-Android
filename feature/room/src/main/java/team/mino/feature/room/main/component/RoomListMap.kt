@@ -1,5 +1,6 @@
 package team.mino.feature.room.main.component
 
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
@@ -31,6 +32,9 @@ private val PinIconHeight = 37.dp
  * 내가 속한 모든 방(개인 방 + 공동방)에 저장된 장소를 실좌표(`Place.location`, `GET /api/v1/pins`)에
  * 얹는다(PRD 「자신이 저장한 모든 장소를 지도뷰로 볼 수 있다」) — 각 핀의 색은 [RoomListViewModel]이
  * 이미 정해 [MapPinUiModel.color]에 실어 보낸다(개인 방은 내 프로필 색, 공동방은 방 대표 색).
+ *
+ * @param contentPadding 바텀시트·상태바에 가려 보이지 않는 가장자리. 카메라를 옮길 때 타깃이 이 패딩을 뺀
+ *  영역의 중앙에 놓인다 — 값을 정하는 것은 시트를 아는 [RoomListScreen]이다.
  */
 @Composable
 internal fun RoomListMap(
@@ -38,6 +42,7 @@ internal fun RoomListMap(
     mapCenterRequestId: Int,
     mapPins: ImmutableList<MapPinUiModel>,
     modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(),
 ) {
     val cameraPositionState = rememberMinoCameraState(
         center = mapCenter ?: DefaultMapCenter,
@@ -58,6 +63,7 @@ internal fun RoomListMap(
     MinoMap(
         cameraPositionState = cameraPositionState,
         modifier = modifier.fillMaxSize(),
+        contentPadding = contentPadding,
     ) {
         mapPins.forEach { pin -> PlacePin(pin) }
     }

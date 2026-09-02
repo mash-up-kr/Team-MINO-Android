@@ -39,8 +39,8 @@ import team.mino.feature.room.placedetail.model.PlaceSheetLevel
  * [modifier]로 정한다.
  *
  * @param sheetLevel 지금 시트가 멈춰 선 단계. 이 행이 보일지 말지를 가르는 유일한 입력이다.
- * @param isSavedRoomsEnabled [저장된 방]이 눌리는지 여부. 이 행이 판정하지 않고 화면 상태에서 그대로 받아 넘긴다.
- * @param onSavedRoomsClick [저장된 방] 클릭. 비활성일 때는 버튼이 클릭을 받지 않아 도달하지 않는다(spec FR-023).
+ * @param isSavedRoomsVisible [저장된 방]을 그리는지 여부. 이 행이 판정하지 않고 화면 상태에서 그대로 받아 넘긴다.
+ * @param onSavedRoomsClick [저장된 방] 클릭. 버튼이 없는 장소에서는 도달하지 않는다(spec FR-023).
  * @param onCurrentLocationClick [현재 위치] 클릭. 이 화면은 지도를 소유하지 않으므로 장소 상세의 인텐트가
  *   아니라 지도를 실제로 그리는 쪽(`RoomListViewModel`)의 인텐트로 이어져야 카메라가 움직인다
  *   (`RoomDetailScreen`이 같은 이유로 같은 배선을 한다, `docs/specs/place-detail/research.md` D25).
@@ -48,7 +48,7 @@ import team.mino.feature.room.placedetail.model.PlaceSheetLevel
 @Composable
 internal fun PlaceMapControls(
     sheetLevel: PlaceSheetLevel,
-    isSavedRoomsEnabled: Boolean,
+    isSavedRoomsVisible: Boolean,
     onSavedRoomsClick: () -> Unit,
     onCurrentLocationClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -67,7 +67,10 @@ internal fun PlaceMapControls(
             horizontalArrangement = Arrangement.spacedBy(MapControlsSpacing, Alignment.End),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            SavedRoomsButton(enabled = isSavedRoomsEnabled, onClick = onSavedRoomsClick)
+            // 한 방에만 있는 장소에서는 이 자리가 통째로 빈다 — 비활성 버튼을 남기지 않는다(spec FR-023 · EC-024).
+            if (isSavedRoomsVisible) {
+                SavedRoomsButton(onClick = onSavedRoomsClick)
+            }
             CurrentLocationButton(onClick = onCurrentLocationClick)
         }
     }
@@ -76,20 +79,20 @@ internal fun PlaceMapControls(
 /**
  * 지도 위에 놓이는 [저장된 방] 버튼.
  *
- * **활성 여부를 여기서 판정하지 않는다.** 그 근거는 `PlaceDetailUiState.isSavedRoomsEnabled` 하나뿐이므로
- * (`docs/specs/place-detail/contracts/place-detail-main-contract.md` §3.2) 이 컴포저블은 결과만 받는다 —
- * 같은 규칙을 화면과 버튼 두 곳에 두면 어느 쪽이 진짜인지 갈린다.
+ * **그릴지 말지를 여기서 판정하지 않는다.** 그 근거는 `PlaceDetailUiState.isSavedRoomsVisible` 하나뿐이므로
+ * (`docs/specs/place-detail/contracts/place-detail-main-contract.md` §3.2) 이 컴포저블은 불려 나올 때 이미
+ * 그려도 되는 자리다 — 같은 규칙을 화면과 버튼 두 곳에 두면 어느 쪽이 진짜인지 갈린다.
  *
- * **활성인지 아닌지가 곧 「이 장소가 여러 방에 있다」는 안내다**(spec UX-011). 그래서 중복 저장을 따로 알리는
- * 뱃지·문구를 옆에 두지 않는다.
+ * **이 버튼이 있고 없고가 곧 「이 장소가 여러 방에 있다」는 안내다**(spec UX-011). 그래서 중복 저장을 따로
+ * 알리는 뱃지·문구를 옆에 두지 않는다.
  *
- * 비활성 외형은 [MinoButton]이 `enabled`로 이미 갖고 있어 여기서 색을 다시 정하지 않는다.
+ * **비활성 상태를 갖지 않는다.** 옮겨 갈 방이 없으면 흐린 버튼이 아니라 버튼 자체가 없다(spec FR-023 ·
+ * EC-024).
  *
  * 배치는 이 컴포저블이 정하지 않는다 — 지도 어디에 놓일지는 [PlaceMapControls]의 몫이다.
  */
 @Composable
 private fun SavedRoomsButton(
-    enabled: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -102,7 +105,6 @@ private fun SavedRoomsButton(
         modifier = modifier
             .dropShadow(shape = buttonShape, shadow = MinoAndroidTheme.shadows.normalMedium)
             .background(color = MinoAndroidTheme.colors.backgroundNormalNormal, shape = buttonShape),
-        enabled = enabled,
         size = ButtonSize.Medium,
         style = ButtonStyle.OutlinedAssistive,
         leadingIcon = {
@@ -158,7 +160,7 @@ private fun PlaceMapControlsPreview(modifier: Modifier = Modifier) {
     MinoAndroidAppTheme {
         PlaceMapControls(
             sheetLevel = PlaceSheetLevel.HALF,
-            isSavedRoomsEnabled = true,
+            isSavedRoomsVisible = true,
             onSavedRoomsClick = {},
             onCurrentLocationClick = {},
             modifier = modifier.padding(vertical = MapControlsPreviewPadding),
@@ -166,14 +168,14 @@ private fun PlaceMapControlsPreview(modifier: Modifier = Modifier) {
     }
 }
 
-/** 비활성 [저장된 방]. 이 장소가 한 방에만 있을 때의 외형이다(spec TS-041). */
+/** [저장된 방]이 빠진 행. 이 장소가 한 방에만 있을 때의 외형이다(spec TS-040). */
 @UiModePreviews
 @Composable
-private fun PlaceMapControlsSavedRoomsDisabledPreview(modifier: Modifier = Modifier) {
+private fun PlaceMapControlsSavedRoomsHiddenPreview(modifier: Modifier = Modifier) {
     MinoAndroidAppTheme {
         PlaceMapControls(
             sheetLevel = PlaceSheetLevel.HALF,
-            isSavedRoomsEnabled = false,
+            isSavedRoomsVisible = false,
             onSavedRoomsClick = {},
             onCurrentLocationClick = {},
             modifier = modifier.padding(vertical = MapControlsPreviewPadding),

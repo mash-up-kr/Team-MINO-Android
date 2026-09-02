@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.input.TextFieldState
@@ -21,6 +22,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -106,9 +108,18 @@ internal fun BoxScope.PlaceDetailScreen(
 ) {
     val scrollState = rememberScrollState()
     val density = LocalDensity.current
+    // 상태바 높이는 여기서 한 번 읽어 시트에 넘긴다. 시트가 이 값과 자기가 실제로 놓인 자리를 견줘 상태바에
+    // 가리는 만큼만 여백을 낸다(`PlaceDetailSheet`의 `statusBarInset`).
+    val statusBarInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     var sheetHeight by remember { mutableStateOf(0.dp) }
+    var expandedHeaderHeight by remember { mutableIntStateOf(0) }
 
-    ReportScrollPosition(scrollState = scrollState, onIntent = onIntent)
+    ReportHeaderExpansion(
+        scrollState = scrollState,
+        headerMode = state.headerMode,
+        expandedHeaderHeight = expandedHeaderHeight,
+        onIntent = onIntent,
+    )
     KeepPositionOnPrepend(scrollState = scrollState, topCommentId = state.comments.firstOrNull()?.id)
 
     val place = state.place
@@ -124,14 +135,18 @@ internal fun BoxScope.PlaceDetailScreen(
         Box(
             modifier = modifier
                 .fillMaxSize()
+                // 아래쪽만 되찾는다. **위를 함께 되찾지 않는 이유**는 이 화면이 놓이는 자리가 셸에서 이미 상태바만큼
+                // 물러나 있는지를 여기서 알 수 없기 때문이다 — 물러나 있지 않은데 위로 끌어올리면 시트가 화면
+                // 밖으로 밀려 헤더가 상태바 뒤로 들어간다(실기기에서 두 번 확인된 결함). 상태바와 겹치는 만큼을
+                // 재서 그만큼만 비우는 일은 시트가 자기 자리를 알고 하는 편이 확실하다.
                 .systemBarBleed(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),
             contentAlignment = Alignment.BottomCenter,
         ) {
             PlaceDetailSheet(
                 onLevelChange = { onIntent(PlaceDetailIntent.OnSheetLevelChange(it)) },
-                onExitRequest = { onIntent(PlaceDetailIntent.OnExitClick) },
                 modifier = Modifier.onSizeChanged { size -> sheetHeight = with(density) { size.height.toDp() } },
                 level = state.sheetLevel,
+                statusBarInset = statusBarInset,
                 scrollState = scrollState,
                 pinnedHeader = {
                     if (place != null) {
@@ -139,6 +154,13 @@ internal fun BoxScope.PlaceDetailScreen(
                             place = place,
                             headerMode = state.headerMode,
                             onCloseClick = { onIntent(PlaceDetailIntent.OnExitClick) },
+                            // 확장형일 때만 담는다. 접기 판정이 쓰는 값이라(ReportHeaderExpansion) 접힌 뒤의
+                            // 높이로 덮이면 판정 근거가 결과를 따라 흔들린다.
+                            modifier = Modifier.onSizeChanged { size ->
+                                if (state.headerMode == PlaceHeaderMode.EXPANDED) {
+                                    expandedHeaderHeight = size.height
+                                }
+                            },
                         )
                     }
                 },
@@ -155,7 +177,7 @@ internal fun BoxScope.PlaceDetailScreen(
 
             PlaceMapControls(
                 sheetLevel = state.sheetLevel,
-                isSavedRoomsEnabled = state.isSavedRoomsEnabled,
+                isSavedRoomsVisible = state.isSavedRoomsVisible,
                 onSavedRoomsClick = { onIntent(PlaceDetailIntent.OnSavedRoomsClick) },
                 onCurrentLocationClick = onCurrentLocationClick,
                 modifier = Modifier.padding(bottom = sheetHeight + ControlsSheetSpacing),
@@ -374,18 +396,46 @@ private fun PlaceDetailSheetContent(
 }
 
 /**
- * 스크롤이 최상단인지를 올린다. 헤더 밀도를 가르는 유일한 근거이며(spec FR-008), 콘텐츠가 시트보다 짧아
- * 스크롤이 일어나지 않으면 계속 최상단이라 확장형에 머문다(spec EC-007).
+ * 헤더를 확장형으로 둘지 판정해 올린다. 최상단이면 확장형이라는 것이 그 골자다(spec FR-008).
+ *
+ * **접는 데에는 조건이 하나 더 붙는다 — 접고도 남을 스크롤 여유가 있어야 한다.** 헤더는 스크롤 축 밖에 서므로
+ * 접히는 순간 그 높이 차만큼 스크롤 영역이 넓어지고, 그만큼 스크롤 범위(`maxValue`)가 줄어든다. 콘텐츠가
+ * 뷰포트보다 아주 조금만 길 때(대표 이미지는 있고 코멘트가 0건인 `Full`이 그렇다) 이 감소가 스크롤 위치를 0으로
+ * 되돌리고, 0은 다시 확장형을 부르며, 확장형은 범위를 되돌려 놓아 같은 왕복이 손을 대는 내내 반복된다. 실기기에서
+ * 덜컹거림으로 나타난 것이 이 되먹임이다.
+ *
+ * 그래서 **남은 스크롤 여유가 확장형 헤더 높이보다 작으면 접지 않는다.** 두 헤더의 높이 차는 확장형 높이보다 늘
+ * 작으므로 이 기준이면 접은 뒤에도 스크롤 위치가 그대로 유지된다 — 축소형 높이를 재서 정확한 차이를 쓰지 않는
+ * 것은, 그 값이 한 번 접혀 봐야 나오는 값이라 첫 판정에 쓸 수 없기 때문이다. 스크롤이 아예 없는 짧은 콘텐츠가
+ * 확장형에 머무는 것도(spec EC-007) 같은 식이 함께 덮는다.
+ *
+ * **펴는 조건은 최상단 하나뿐이다.** 접기와 펴기를 같은 식으로 판정하면 접힌 뒤 좁아진 범위가 곧바로 그 식을
+ * 뒤집어 되먹임이 되살아난다.
+ *
+ * @param expandedHeaderHeight 확장형 헤더의 실측 높이(px). 아직 재지 못했으면 0이며, 그때는 조건이 없는 것과
+ *  같아 예전과 똑같이 동작한다 — 배치가 끝나기 전에는 스크롤도 일어나지 않는다.
  */
 @Composable
-private fun ReportScrollPosition(
+private fun ReportHeaderExpansion(
     scrollState: ScrollState,
+    headerMode: PlaceHeaderMode,
+    expandedHeaderHeight: Int,
     onIntent: (PlaceDetailIntent) -> Unit,
 ) {
     val currentOnIntent by rememberUpdatedState(onIntent)
+    val currentHeaderMode by rememberUpdatedState(headerMode)
+    val currentExpandedHeaderHeight by rememberUpdatedState(expandedHeaderHeight)
     LaunchedEffect(scrollState) {
-        snapshotFlow { scrollState.value == 0 }
-            .collect { isAtTop -> currentOnIntent(PlaceDetailIntent.OnScrollOffsetChange(isAtTop)) }
+        val isExpandedFlow = snapshotFlow {
+            when {
+                scrollState.value == 0 -> true
+                currentHeaderMode == PlaceHeaderMode.COLLAPSED -> false
+                else -> scrollState.maxValue - scrollState.value < currentExpandedHeaderHeight
+            }
+        }
+        isExpandedFlow.collect { isExpanded ->
+            currentOnIntent(PlaceDetailIntent.OnHeaderExpansionChange(isExpanded))
+        }
     }
 }
 

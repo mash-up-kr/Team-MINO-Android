@@ -22,8 +22,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,7 +36,10 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.constrainHeight
 import androidx.compose.ui.unit.dp
@@ -50,9 +55,12 @@ import kotlin.math.roundToInt
 /**
  * 지도 위에 겹쳐 서는 장소 상세 시트의 껍데기. 헤더·액션 행·캐러셀·코멘트는 [content]로 받는다.
  *
- * **멈춰 서는 자리는 둘뿐이다.** 끌어 옮긴 시트는 `HALF` 아니면 `FULL`에 서고, 그보다 더 내려가면 닫힌다 — 중간에
- * 머무는 자리를 만들지 않아 조금만 끌었다 놓으면 원래 단계로 되돌아온다(spec FR-001 · TS-015). 아래로 끌어 닫는
- * 것은 [나가기]와 같은 처리라 별도의 통로를 두지 않고 [onExitRequest]로 올린다(spec EC-003).
+ * **멈춰 서는 자리는 둘뿐이다.** 끌어 옮긴 시트는 `HALF` 아니면 `FULL`에 선다 — 중간에 머무는 자리를 만들지 않아
+ * 조금만 끌었다 놓으면 원래 단계로 되돌아온다(spec FR-001 · TS-015).
+ *
+ * **`HALF`가 하한이다.** 아래로 아무리 끌어도 369dp 밑으로 내려가지 않고 닫히지도 않는다(spec FR-001 · EC-003 ·
+ * TS-015). 그래서 이 시트는 자기가 사라지는 경로를 갖지 않는다 — 장소 상세를 벗어나는 길은 [나가기]와 시스템
+ * 뒤로가기뿐이고, 둘 다 시트 밖에서 처리된다.
  *
  * **단계를 소유하지 않는다.** 멈춰 선 결과는 [onLevelChange]로 올리고, 어느 단계로 서 있을지는 [level]로 받는다.
  *
@@ -73,22 +81,27 @@ import kotlin.math.roundToInt
  * 자기 위쪽 여백까지 들면 `HALF`에서 손잡이와 겹쳐 두 번 벌어진다.
  *
  * **`FULL`에는 손잡이도 모서리 굴림도 없다.** 화면을 통째로 덮는 단계라 지도와 맞닿는 시트의 경계 자체가 없다.
+ * 상태바 영역도 그 「통째로」에 든다 — 시트가 그 자리를 소유하고 상태바는 시트 배경 위에 얹힌다. 대신 헤더 위
+ * 띠가 상태바 높이를 함께 내어 헤더가 아이콘에 가리지 않게 한다.
  *
  * **화면 하단에 붙이는 것은 이 컴포저블이 아니라 화면이 한다.** 시트는 자기 높이만 알고 어디에 놓일지는
  * 모른다 — 지도와 겹치는 배치를 시트가 들면 지도 없이는 그릴 수 없어진다.
  *
  * @param onLevelChange 끌어 옮긴 시트가 멈춰 선 단계가 올라온다.
- * @param onExitRequest 시트를 끝까지 끌어내린 결과가 올라온다. [나가기]와 같은 경로다.
  * @param level 시트가 서 있어야 할 단계.
+ * @param statusBarInset 상태바 높이. **여기서 직접 읽지 않고 받는다** — 인셋을 읽는 자리가 둘이면 한쪽만 0이
+ *  되는 순간 값이 갈린다(실기기에서 확인된 결함). 이 값을 시트가 실제로 놓인 자리와 견줘 **상태바에 가리는
+ *  만큼만** `FULL` 위쪽 띠에 얹는다 — 시트가 상태바 아래에서 시작하면 0, 화면 최상단부터 서면 상태바 높이가
+ *  되므로, 이 화면이 놓이는 자리가 이미 인셋된 자리인지 아닌지를 아무도 가정하지 않아도 된다.
  * @param scrollState [content]가 공유하는 스크롤 축.
  * @param pinnedHeader 스크롤과 무관하게 시트 위쪽에 남는 자리.
  */
 @Composable
 internal fun PlaceDetailSheet(
     onLevelChange: (PlaceSheetLevel) -> Unit,
-    onExitRequest: () -> Unit,
     modifier: Modifier = Modifier,
     level: PlaceSheetLevel = PlaceSheetLevel.HALF,
+    statusBarInset: Dp = 0.dp,
     scrollState: ScrollState = rememberScrollState(),
     pinnedHeader: @Composable () -> Unit = {},
     content: @Composable ColumnScope.() -> Unit,
@@ -100,7 +113,6 @@ internal fun PlaceDetailSheet(
             DraggableAnchors {
                 SheetAnchor.FULL at 0f
                 SheetAnchor.HALF at (fullHeightPx - halfHeightPx).coerceAtLeast(0f)
-                SheetAnchor.GONE at fullHeightPx
             }
         }
         val dragState = remember {
@@ -114,7 +126,6 @@ internal fun PlaceDetailSheet(
             sheetNestedScrollConnection(state = dragState, flingBehavior = flingBehavior)
         }
 
-        val currentOnExitRequest by rememberUpdatedState(onExitRequest)
         val currentOnLevelChange by rememberUpdatedState(onLevelChange)
         LaunchedEffect(dragState) {
             snapshotFlow { dragState.settledValue }
@@ -122,7 +133,6 @@ internal fun PlaceDetailSheet(
                 .drop(1)
                 .collect { anchor ->
                     when (anchor) {
-                        SheetAnchor.GONE -> currentOnExitRequest()
                         SheetAnchor.HALF -> currentOnLevelChange(PlaceSheetLevel.HALF)
                         SheetAnchor.FULL -> currentOnLevelChange(PlaceSheetLevel.FULL)
                     }
@@ -136,10 +146,17 @@ internal fun PlaceDetailSheet(
         }
 
         val containerShape = level.containerShape()
+        // 시트 윗변이 창의 어디에 있는지. 이것과 [statusBarInset]의 차이가 곧 상태바에 가리는 높이다.
+        // 배치가 끝나기 전에는 알 수 없으므로 그때는 겹침 없음으로 두고, 첫 배치 뒤 값이 채워지면 따라 넓어진다.
+        var sheetTopInWindow by remember { mutableFloatStateOf(Float.MAX_VALUE) }
+        val statusBarOverlap = with(LocalDensity.current) {
+            (statusBarInset.toPx() - sheetTopInWindow).coerceAtLeast(0f).toDp()
+        }
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .anchoredSheetHeight(state = dragState, fullHeightPx = fullHeightPx)
+                .onGloballyPositioned { coordinates -> sheetTopInWindow = coordinates.positionInWindow().y }
                 .dropShadow(shape = containerShape, shadow = MinoAndroidTheme.shadows.spreadSmall)
                 .surface(
                     shape = containerShape,
@@ -157,10 +174,15 @@ internal fun PlaceDetailSheet(
             when (level) {
                 PlaceSheetLevel.HALF -> SheetDragHandle()
                 // 이 띠는 헤더 행에 속한 자리라 시트 배경이 아니라 헤더와 같은 배경을 깐다.
+                //
+                // **상태바에 가리는 만큼을 이 띠가 함께 낸다.** 시트가 화면 최상단부터 서 있으면 그 자리를 비워
+                // 두지 않는 한 헤더 첫 줄이 상태바 아이콘과 겹치고, 이미 상태바 아래에서 시작한다면 더 비울 것이
+                // 없다 — 어느 쪽인지는 재 본 [statusBarOverlap]이 답한다. 디자인이 정한 것은 상태바 **아래**
+                // 여백 16dp다(Figma `005-2-1 full` — 상태바 54, 헤더 프레임 54, 아바타 70).
                 PlaceSheetLevel.FULL -> Spacer(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(HeaderTopSpacing)
+                        .height(statusBarOverlap + FullHeaderTopSpacing)
                         .surface(
                             shape = RectangleShape,
                             containerColor = MinoAndroidTheme.colors.backgroundNormalNormal,
@@ -198,7 +220,8 @@ private fun Modifier.anchoredSheetHeight(
  *
  * 위로 끄는 동안에는 시트를 먼저 세우고, 다 선 뒤에야 콘텐츠가 스크롤된다 — 그래서 최상단에서 한 번 끌면 코멘트
  * 영역까지 닿는다(spec SC-001). 반대로 콘텐츠가 최상단이라 더 내려갈 곳이 없으면 남은 만큼을 시트가 받아 단계가
- * 내려가고, 그 아래로는 닫힘으로 이어진다(spec EC-003).
+ * 내려간다. **`HALF`에서 멈춘다** — 그 아래에는 설 자리가 없어 [AnchoredDraggableState]가 남은 델타를 흘려
+ * 보낸다(spec FR-001 · EC-003).
  */
 private fun sheetNestedScrollConnection(
     state: AnchoredDraggableState<SheetAnchor>,
@@ -248,11 +271,13 @@ private fun sheetNestedScrollConnection(
     }
 
 /**
- * 시트가 멈춰 서는 자리. [PlaceSheetLevel]과 달리 화면 밖([GONE])까지 포함한다 — 아래로 끝까지 끌면 닫히는 경로가
- * 앵커 하나로 표현되어야 하기 때문이다.
+ * 시트가 멈춰 서는 자리. [PlaceSheetLevel]과 일대일로 대응한다 — 화면 밖 자리를 두지 않는 것이 `HALF` 하한
+ * (spec FR-001 · EC-003)의 구현이며, 앵커가 없으면 그 아래로는 끌리지 않는다.
+ *
+ * 그럼에도 별도 타입인 것은 드래그가 이 파일 안의 일이기 때문이다 — 화면이 쓰는 단계 타입을 시트 내부 구현이
+ * 함께 쓰면 앵커를 늘리고 줄일 때마다 화면 상태 타입이 흔들린다.
  */
 private enum class SheetAnchor {
-    GONE,
     HALF,
     FULL,
 }
@@ -271,7 +296,21 @@ private fun PlaceSheetLevel.containerShape(): Shape =
 
 private val HalfHeight = 369.dp
 
-private val HeaderTopSpacing = 12.dp
+/**
+ * `HALF`에서 시트가 차지하는 높이(`FULL`은 화면을 채워 지도가 보이지 않으므로 `null`).
+ *
+ * `RoomListBottomSheet`의 `bottomSheetHeightOrNull`·`roomDetailBottomSheetHeightOrNull`과 같은 자리다 —
+ * 지도를 그리는 화면이 세 시트 중 지금 서 있는 것의 높이를 알아야 지도 컨트롤을 그 위에 얹고(FR-023),
+ * 마커를 시트에 가리지 않은 영역의 중앙에 놓을 수 있다(FR-002).
+ */
+internal fun placeDetailSheetHeightOrNull(level: PlaceSheetLevel): Dp? =
+    when (level) {
+        PlaceSheetLevel.HALF -> HalfHeight
+        PlaceSheetLevel.FULL -> null
+    }
+
+/** `FULL` 헤더 위 여백. 상태바 아래로 이만큼 띄운다(Figma `005-2-1 full`). */
+private val FullHeaderTopSpacing = 16.dp
 
 private val PreviewSheetContainerHeight = 640.dp
 
@@ -280,7 +319,7 @@ private val PreviewSheetContainerHeight = 640.dp
 private fun PlaceDetailSheetHalfPreview(modifier: Modifier = Modifier) {
     MinoAndroidAppTheme {
         Box(modifier = modifier.height(PreviewSheetContainerHeight)) {
-            PlaceDetailSheet(onLevelChange = {}, onExitRequest = {}) {}
+            PlaceDetailSheet(onLevelChange = {}) {}
         }
     }
 }
@@ -292,7 +331,6 @@ private fun PlaceDetailSheetFullPreview(modifier: Modifier = Modifier) {
         Box(modifier = modifier.height(PreviewSheetContainerHeight)) {
             PlaceDetailSheet(
                 onLevelChange = {},
-                onExitRequest = {},
                 level = PlaceSheetLevel.FULL,
             ) {}
         }

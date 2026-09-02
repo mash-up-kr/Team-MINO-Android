@@ -95,8 +95,8 @@ internal fun RoomListRoute(
 
     // 방 상세·장소 상세를 보는 중엔 시스템 뒤로가기/제스처가 곧장 탭·앱을 벗어나지 않고 먼저 한 겹 위로
     // 올라온다 — 우선순위는 장소 상세 → 방 상세 → 리스트 → 탭·앱 이탈이다
-    // (`docs/specs/place-detail/contracts/place-detail-entry.md` §4). 장소 상세를 닫는 경로는 시트를
-    // 아래로 끌어 닫는 것과 같은 인텐트 하나로 모인다(EC-003).
+    // (`docs/specs/place-detail/contracts/place-detail-entry.md` §4). 장소 상세를 닫는 경로는 [나가기]와
+    // 이 뒤로가기 둘뿐이며 같은 인텐트로 모인다 — 시트 드래그는 닫지 못한다(EC-003).
     BackHandler(enabled = selectedPinId != null || selectedRoomId != null) {
         val intent = if (selectedPinId != null) {
             RoomListIntent.OnClosePlaceDetailClick
@@ -151,8 +151,8 @@ internal fun RoomListRoute(
                 PlaceDetailRoute(
                     pinId = selectedPinId,
                     // [나가기]는 화면을 끝내는 것이 아니라 selectedPinId를 비우는 것이다 — 그러면 그 아래
-                    // 「지금 보고 있는 방」의 방 상세가 그대로 드러난다(FR-009). 시트를 아래로 끌어 닫는
-                    // 경우도 같은 인텐트로 온다(EC-003).
+                    // 「지금 보고 있는 방」의 방 상세가 그대로 드러난다(FR-009). 시스템 뒤로가기도 같은
+                    // 인텐트로 온다.
                     onExit = { viewModel.processIntent(RoomListIntent.OnClosePlaceDetailClick) },
                     // 앱 밖으로 나가는 둘은 Activity가 실행한다 — 이 Route는 셸에서 내려온 콜백을 그대로
                     // 잇기만 한다(FR-016·FR-017, `docs/architecture/feature-navigation.md` 3장).
