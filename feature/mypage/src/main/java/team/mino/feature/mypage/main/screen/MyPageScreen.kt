@@ -1,7 +1,6 @@
 package team.mino.feature.mypage.main.screen
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,28 +11,28 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import team.mino.core.designsystem.component.dialog.MinoDialog
+import team.mino.core.designsystem.component.profileavatar.MinoProfileAvatarImage
+import team.mino.core.designsystem.component.profileavatar.MinoProfileAvatarSize
 import team.mino.core.designsystem.component.switch.MinoSwitch
 import team.mino.core.designsystem.foundation.icons.MinoIcons
 import team.mino.core.designsystem.foundation.icons.icons.PencilFill
-import team.mino.core.designsystem.foundation.icons.icons.PersonFill
 import team.mino.core.designsystem.theme.MinoAndroidTheme
 import team.mino.core.designsystem.util.modifier.clickable.rippleSingleClickable
 import team.mino.core.domain.model.PermissionType
+import team.mino.core.domain.model.ProfileAvatar
 import team.mino.feature.mypage.R
+import team.mino.feature.mypage.main.model.image
 import team.mino.feature.mypage.main.vm.MyPageIntent
 import team.mino.feature.mypage.main.vm.MyPageUiState
-import team.mino.feature.mypage.profile.component.AvatarGlyph
 
 @Composable
 internal fun MyPageScreen(
@@ -49,7 +48,7 @@ internal fun MyPageScreen(
                 .padding(top = MyPageScreenTokens.SectionSpacing),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            ProfileAvatar(avatarId = state.avatarId)
+            MyPageProfileAvatar(avatar = state.avatar)
 
             Spacer(modifier = Modifier.height(MyPageScreenTokens.AvatarNicknameSpacing))
 
@@ -158,39 +157,15 @@ internal fun MyPageScreen(
 }
 
 @Composable
-private fun ProfileAvatar(
-    avatarId: Int?,
+private fun MyPageProfileAvatar(
+    avatar: ProfileAvatar?,
     modifier: Modifier = Modifier,
 ) {
-    Box(
-        modifier = modifier
-            .size(MyPageScreenTokens.AvatarSize)
-            .clip(CircleShape)
-            .border(
-                width = MyPageScreenTokens.AvatarBorderWidth,
-                color = MinoAndroidTheme.colors.lineNormalAlternative,
-                shape = CircleShape,
-            ),
-        contentAlignment = Alignment.Center,
-    ) {
-        if (avatarId != null) {
-            AvatarGlyph(avatarId = avatarId, size = MyPageScreenTokens.AvatarSize)
-        } else {
-            Box(
-                modifier = Modifier
-                    .size(MyPageScreenTokens.AvatarSize)
-                    .background(MinoAndroidTheme.colors.backgroundNormalAlternative),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = MinoIcons.PersonFill,
-                    contentDescription = null,
-                    tint = MinoAndroidTheme.colors.labelAlternative,
-                    modifier = Modifier.size(MyPageScreenTokens.AvatarSize / 2),
-                )
-            }
-        }
-    }
+    MinoProfileAvatarImage(
+        avatar = avatar?.image,
+        modifier = modifier,
+        size = MinoProfileAvatarSize.Thumbnail,
+    )
 }
 
 @Composable
@@ -274,8 +249,6 @@ private object MyPageScreenTokens {
     val NicknameEditIconSpacing = 2.dp
 
     // 실측값(변수 미바인딩).
-    val AvatarSize = 100.dp
-    val AvatarBorderWidth = 5.dp
     val EditIconSize = 20.dp
     val DividerStripHeight = 12.dp
     val DividerLineHeight = 2.dp

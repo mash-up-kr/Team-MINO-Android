@@ -20,6 +20,7 @@ internal fun MainNavHost(
     onOpenExternalMap: (mapUrl: String?, query: String) -> Unit,
     onOpenSourceLink: (url: String) -> Unit,
     onNavigateToRoomForm: () -> Unit,
+    onNavigateToProfileEdit: () -> Unit,
     roomFormEntryPoint: RoomFormEntryPoint,
     modifier: Modifier = Modifier,
 ) {
@@ -56,6 +57,6 @@ internal fun MainNavHost(
         // 아직 탭 feature 모듈이 없는 탭은 전환 검증용 placeholder다. 모듈이 생기면 홈처럼 그 모듈의
         // 등록 함수 호출로 교체하고 Route 소유도 그쪽으로 옮긴다(→ docs/architecture/feature-navigation.md 3장).
         screen<Notification> { MainTabPlaceholderScreen(label = stringResource(MainTab.NOTIFICATION.labelRes)) }
-        mypageGraph(navController = navController)
+        mypageGraph(onNavigateToProfileEdit = onNavigateToProfileEdit)
     }
 }

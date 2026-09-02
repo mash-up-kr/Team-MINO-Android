@@ -20,6 +20,7 @@ internal fun MainShell(
     onOpenExternalMap: (mapUrl: String?, query: String) -> Unit,
     onOpenSourceLink: (url: String) -> Unit,
     onNavigateToRoomForm: () -> Unit,
+    onNavigateToProfileEdit: () -> Unit,
     roomFormEntryPoint: RoomFormEntryPoint,
     modifier: Modifier = Modifier,
 ) {
@@ -46,6 +47,7 @@ internal fun MainShell(
                 onOpenExternalMap = onOpenExternalMap,
                 onOpenSourceLink = onOpenSourceLink,
                 onNavigateToRoomForm = onNavigateToRoomForm,
+                onNavigateToProfileEdit = onNavigateToProfileEdit,
                 roomFormEntryPoint = roomFormEntryPoint,
                 modifier = Modifier.padding(innerPadding),
             )
