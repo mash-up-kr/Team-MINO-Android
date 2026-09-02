@@ -4,10 +4,15 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -41,12 +46,12 @@ import team.mino.feature.splash.R
  *
  * **마스코트는 디자인에서 화면 좌우·아래로 넘치는 크기다.** 넘치는 부분까지 에셋에 담지 않고
  * 프레임에 잘린 모습 그대로 내보내, 화면 폭을 채우는 것으로 같은 그림을 얻는다. 잘라 둔 덕에
- * 폭이 다른 기기에서도 좌우 여백 없이 바닥까지 닿는다.
+ * 폭이 다른 기기에서도 좌우 여백 없이 내비바 바로 위까지 닿는다.
  *
- * **인셋을 소비하지 않는다.** 디자인은 상태바를 화면 안에 겹쳐 그린 채로 위 여백을 재므로, 그
- * 여백의 기준은 상태바 아래가 아니라 화면 최상단이다. 인셋을 빼고 나누면 브랜드 문구가 그만큼
- * 아래로 밀린다. 아래도 같아서, 인셋을 남긴 덕에 마스코트가 시스템 바 아래까지 닿는다. 위
- * 여백은 어떤 기기에서도 상태바보다 훨씬 두꺼워 문구가 가릴 일이 없다.
+ * **위아래 인셋을 다르게 다룬다.** 디자인에서 상태바는 화면 위에 겹쳐 그려져 있고 위 여백은
+ * 상태바 아래가 아니라 화면 최상단부터 잰다. 그래서 상단 인셋은 소비하지 않는다 — 그 여백은
+ * 어떤 기기에서도 상태바보다 훨씬 두꺼워 문구가 가릴 일이 없다. 반면 마스코트는 내비게이션 바
+ * 위에서 잘려 있어 하단 인셋은 소비한다. 내비바 자리는 배경색으로 남는다.
  */
 @Composable
 internal fun SplashScreen(
@@ -57,7 +62,9 @@ internal fun SplashScreen(
     Box(modifier = modifier.fillMaxSize()) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom)),
         ) {
             Spacer(modifier = Modifier.weight(BrandTopGapWeight))
 
@@ -110,7 +117,7 @@ internal fun SplashScreen(
 }
 
 private val BrandTopGapWeight = 176f
-private val BrandMascotGapWeight = 154.67f
+private val BrandMascotGapWeight = 138.34f
 
 private val WordmarkWidth = 189.91.dp
 private val WordmarkHeight = 81.33.dp
