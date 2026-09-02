@@ -54,7 +54,11 @@ sealed interface RoomListIntent : Intent {
     /**
      * [FR-009] 장소 상세 [나가기] — 시스템 뒤로가기도 여기로 모인다. 시트를 아래로 끌어 닫는 경로는
      * 없다(EC-003).
-     * `selectedPinId`만 비우면 `selectedRoomId`가 남아 있어 그 방의 방 상세가 그대로 드러난다.
+     *
+     * **나가는 자리가 둘로 갈린다.** 기본은 `selectedPinId`만 비우는 것이고, 그러면 `selectedRoomId`가
+     * 남아 있어 그 방의 방 상세가 그대로 드러난다. [SCR-003] 홈에서 들어왔고 방을 바꾸지 않았다면
+     * 대신 홈 탭으로 되돌린다(`RoomListUiState.returnsToHomeOnClose`). 두 조작이 같은 인텐트로 모이므로
+     * [나가기] 버튼과 뒤로가기가 서로 다른 자리로 갈 수 없다.
      */
     data object OnClosePlaceDetailClick : RoomListIntent
 

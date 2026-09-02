@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavHostController
+import team.mino.core.navigation.entry.PlaceDetailEntryOrigin
 import team.mino.core.navigation.screen.MinoNavHost
 import team.mino.core.navigation.screen.screen
 import team.mino.feature.home.homeGraph
@@ -14,7 +15,7 @@ import team.mino.feature.room.roomGraph
 @Composable
 internal fun MainNavHost(
     navController: NavHostController,
-    onRequestPlaceDetail: (pinId: String) -> Unit,
+    onRequestPlaceDetail: (pinId: String, origin: PlaceDetailEntryOrigin) -> Unit,
     onOpenExternalMap: (mapUrl: String?, query: String) -> Unit,
     onOpenSourceLink: (url: String) -> Unit,
     onNavigateToRoomForm: () -> Unit,
@@ -31,7 +32,7 @@ internal fun MainNavHost(
             // 그 요청을 받아 상세를 연다(→ docs/specs/place-detail/contracts/place-detail-entry.md §3.2).
             // 탭 전환이 백스택을 저장·복원하는 탓에 Route 인자로는 새 핀이 전달되지 않아 홀더를 쓴다(같은 계약 §3.3).
             onNavigateToPlaceDetail = { pinId ->
-                onRequestPlaceDetail(pinId)
+                onRequestPlaceDetail(pinId, PlaceDetailEntryOrigin.HOME)
                 navController.navigateToTab(MainTab.SAVED)
             },
             onNavigateToRoomForm = onNavigateToRoomForm,
@@ -45,6 +46,11 @@ internal fun MainNavHost(
         roomGraph(
             onOpenExternalMap = onOpenExternalMap,
             onOpenSourceLink = onOpenSourceLink,
+            // 장소 상세 [나가기]의 홈 복귀 — 홈에서 들어와 방을 바꾸지 않았을 때만 저장 탭이 올린다
+            // (→ docs/specs/place-detail/contracts/place-detail-entry.md §4.2). 저장 탭은 자기가
+            // 어느 탭인지도, 홈이 몇 번째 탭인지도 모르므로 판정만 하고 이동은 셸이 한다.
+            // 홈의 덱 위치는 탭 전환의 saveState/restoreState가 되살린다.
+            onNavigateToHome = { navController.navigateToTab(MainTab.HOME) },
         )
         // 아직 탭 feature 모듈이 없는 탭은 전환 검증용 placeholder다. 모듈이 생기면 홈처럼 그 모듈의
         // 등록 함수 호출로 교체하고 Route 소유도 그쪽으로 옮긴다(→ docs/architecture/feature-navigation.md 3장).

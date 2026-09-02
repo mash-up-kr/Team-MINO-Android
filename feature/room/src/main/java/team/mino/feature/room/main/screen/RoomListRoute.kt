@@ -46,11 +46,14 @@ import team.mino.feature.room.placedetail.vm.PlaceDetailViewModel
  * @param onOpenExternalMap 장소 상세의 [지도보기] — 외부 지도 앱으로 연다(FR-016). 실행 주체가 `MainActivity`라
  *   `roomGraph`가 내려준 콜백을 그대로 흘린다.
  * @param onOpenSourceLink 장소 상세의 [원문보기] — 장소의 원문 링크를 연다(FR-017). 같은 이유로 흘리기만 한다.
+ * @param onNavigateToHome 장소 상세 [나가기]가 홈 탭으로 되돌아가야 할 때(FR-009). 탭을 옮기는 것은 셸의
+ *   일이라 이 모듈이 직접 하지 않는다 — 위 둘과 같은 이유로 `roomGraph`가 내려준 콜백을 흘린다.
  */
 @Composable
 internal fun RoomListRoute(
     onOpenExternalMap: (mapUrl: String?, query: String) -> Unit,
     onOpenSourceLink: (url: String) -> Unit,
+    onNavigateToHome: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: RoomListViewModel = hiltViewModel(),
 ) {
@@ -83,6 +86,8 @@ internal fun RoomListRoute(
 
             RoomListSideEffect.NavigateToRoomForm ->
                 viewModel.roomFormLauncher.launch(activity, resultLauncher = roomFormResultLauncher)
+
+            RoomListSideEffect.NavigateToHome -> onNavigateToHome()
         }
     }
 

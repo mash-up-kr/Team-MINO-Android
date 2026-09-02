@@ -10,12 +10,13 @@ import androidx.navigation.compose.rememberNavController
 import team.mino.core.analytics.screen.TrackScreenViews
 import team.mino.core.common.ui.scaffold.LocalBottomNavVisibility
 import team.mino.core.common.ui.scaffold.MinoScaffold
+import team.mino.core.navigation.entry.PlaceDetailEntryOrigin
 import team.mino.feature.main.component.MainBottomBar
 import team.mino.feature.main.placeholder.RoomFormEntryPoint
 
 @Composable
 internal fun MainShell(
-    onRequestPlaceDetail: (pinId: String) -> Unit,
+    onRequestPlaceDetail: (pinId: String, origin: PlaceDetailEntryOrigin) -> Unit,
     onOpenExternalMap: (mapUrl: String?, query: String) -> Unit,
     onOpenSourceLink: (url: String) -> Unit,
     onNavigateToRoomForm: () -> Unit,

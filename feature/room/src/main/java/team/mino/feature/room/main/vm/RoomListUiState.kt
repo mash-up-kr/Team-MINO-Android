@@ -64,6 +64,19 @@ data class RoomListUiState(
      * 자리에 있다(`docs/specs/place-detail/contracts/place-detail-entry.md` §4).
      */
     val selectedPinId: String? = null,
+    /**
+     * [FR-009] 장소 상세 [나가기]가 방 상세가 아니라 **홈 탭으로** 되돌려야 하는지.
+     *
+     * [SCR-003] 홈 카드로 열었고 그 뒤 [저장된 방](FR-025)으로 방을 바꾼 적이 **없을** 때만 `true`다.
+     * 방을 바꾸면 그 자리에서 내려가고(TS-057), 원래 방으로 되돌려도 다시 올라오지 않는다(EC-032) —
+     * 판정하는 것은 "지금 어느 방을 보고 있는가"가 아니라 **"방을 바꾼 적이 있는가"**다.
+     *
+     * **진입 출처를 그대로 들고 있지 않고 여는 순간 `Boolean`으로 굳힌다.** 이 화면이 출처로 하는 일이
+     * 이 분기 하나뿐이라, 출처를 남겨 두면 읽는 쪽마다 같은 조건을 다시 세우게 된다. 출처 자체는 탭
+     * 전환이 끝나면 어디에도 남지 않으므로 요청이 실어 온다
+     * (`docs/specs/place-detail/contracts/place-detail-entry.md` §3.1).
+     */
+    val returnsToHomeOnClose: Boolean = false,
 ) : UiState {
     /**
      * [FR-008] 자동 팝업 [RoomNudgeAutoSheet]를 실제로 그려야 하는지 — [RoomListScreen]과
