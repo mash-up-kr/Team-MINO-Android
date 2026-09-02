@@ -25,6 +25,7 @@ plan 2.0.0이 **구조를 뒤집었다.** 지난 라운드(plan 1.1.0)가 만든
 | 층 | 내용 |
 |---|---|
 | **Phase 11~15** | 이번 라운드에 할 일. 구조 전환 → spec 4.0.0 → API 연결 → 저장된 방 전환 → 검증 |
+| **Phase 16** | 실기기 검수에서 나온 현상을 spec에 되먹인 뒤 고치는 작업 |
 | **완료된 UI 라운드 (Phase 1~9)** | plan 1.1.0에서 이미 끝낸 작업의 기록. **체크 상태를 그대로 보존한다** |
 | **폐기된 작업** | 완료됐으나 구조 전환으로 산출물이 사라지는 작업 20건. 정리 범위를 함께 적는다 |
 
@@ -155,6 +156,29 @@ feature/placedetail/src/main/java/team/mino/feature/placedetail/main/
 - [X] T098 잔여 참조 정리 확인 — `placedetail`·`PlaceDetailLauncher`·`EXTRA_PLACE_DETAIL_PIN_ID`·`PlaceLabel`을 참조하는 코드가 저장소에 없다 ([quickstart.md §2·§11](./quickstart.md)). T087·T088에 의존
 
 **체크포인트**: [quickstart.md §11](./quickstart.md)의 완료 판정 4항이 모두 참이다.
+
+---
+
+## Phase 16: 실기기 검수 반영
+
+**목표**: 실기기에서 확인된 현상을 spec과 코드 어느 쪽의 문제인지 가른 뒤, 문서를 먼저 고치고 코드를 뒤따르게 한다.
+
+- [X] T101 **`Half`가 시트의 하한이다** — spec 5.0.0에서 `EC-003`(아래로 드래그 = 나가기)과 `TS-015`(`Half` 유지 **또는 닫힘**)를 정정하고, `FR-001`에 369dp가 하한임을 명시했다. 끌어 닫기는 PRD §1 「3단 바텀시트」(`[SCR-006]: Half 높이 369dp를 유지한다`)와 Figma 주석 12번 어디에도 근거가 없이 스펙이 덧붙인 단계였다. 코드에서는 `PlaceDetailSheet`의 `SheetAnchor.GONE` 앵커와 `onExitRequest` 파라미터를 걷어내 앵커를 `HALF`/`FULL` 둘로 맞췄다 — 앵커가 없으면 `AnchoredDraggableState`가 그 아래 델타를 흘려보내므로 별도의 하한 판정을 두지 않는다. 나가는 길은 [나가기]와 시스템 뒤로가기 둘이며, `RoomListIntent.OnClosePlaceDetailClick` 하나로 모이는 것은 그대로다. **T081 설명의 "아래로 드래그해 닫는 경우도 같은 경로다(EC-003)"는 이 작업으로 폐기된다** — 그 경로 자체가 없어졌다. 함께 고친 문서: [spec.md](./spec.md) `FR-001`·`EC-003`·`TS-015`·§5, [quickstart.md §4](./quickstart.md) 8행, [contracts/place-detail-entry.md §4](./contracts/place-detail-entry.md), [research.md D5](./research.md)
+- [ ] T102 실기기 확인 — `Half`에서 시트를 아래로 끌어 놓았을 때 369dp에서 멈추고 닫히지 않는지, `Full`→`Half` 복귀와 [나가기]·뒤로가기가 그대로인지 (`FR-001`·`EC-003`·`TS-014`·`TS-015`, [quickstart.md §4](./quickstart.md) 7~9행). T101에 의존
+- [X] T103 **헤더는 접고도 스크롤 여유가 남을 때만 접는다** — spec 5.0.0에서 `FR-008`에 조건을 더하고 `EC-007`을 경계 길이까지 넓혔으며 `TS-055`를 신설했다. 「대표 이미지 있음 + 코멘트 0건」의 `Full`처럼 콘텐츠가 뷰포트보다 조금만 길면, 헤더가 접히며 넓어진 스크롤 영역이 스크롤 범위를 지워 위치가 최상단으로 되돌아가고, 최상단이 다시 확장형을 불러 왕복이 된다 — 실기기의 덜컹거림이 이 되먹임이었다. 코드에서는 판정을 `PlaceDetailScreen`으로 모아 **남은 스크롤 여유가 확장형 헤더 실측 높이보다 작으면 접지 않고**, 펴는 조건은 최상단 하나로 남겼다(양쪽에 같은 식을 걸면 좁아진 여유가 곧바로 식을 뒤집는다). 축소형 높이 대신 확장형 높이를 기준으로 쓰는 것은 그 값이 한 번 접혀 봐야 나오는 값이라 첫 판정에 못 쓰기 때문이며, 두 헤더의 높이 차는 확장형 높이보다 늘 작아 안전한 상한이다. 인텐트는 `OnScrollOffsetChange(isAtTop)` → `OnHeaderExpansionChange(isExpanded)`로 바뀌었고 ViewModel은 결과만 싣는다. 함께 고친 문서: [spec.md](./spec.md) `FR-008`·`EC-007`·`TS-055`·§5, [quickstart.md §6](./quickstart.md) 14행, [research.md D5](./research.md)
+- [ ] T104 실기기 확인 — 대표 이미지가 있고 코멘트가 0건인 장소를 `Full`로 열어 스크롤 영역을 위아래로 움직였을 때 헤더가 확장형에 머물고 화면이 떨리지 않는지, 코멘트가 많은 장소에서는 축소·복원이 예전대로인지 (`FR-008`·`EC-007`·`TS-012`·`TS-013`·`TS-055`, [quickstart.md §6](./quickstart.md) 14행). T103에 의존
+
+- [X] T105 **[저장된 방] 버튼은 노출/미노출로 가른다** — **PRD를 11.2.0으로**, spec을 5.0.0으로 함께 개정했다. `FR-023`(비활성으로 노출 → 노출하지 않는다)·`UX-011`·`EC-024`·`TS-040`·`TS-041`과 PRD [SCR-006] Flow A·§1 「저장된 방 시트」·주석 #15 전사·§5를 맞췄다. 비활성 버튼은 왜 못 누르는지 설명할 통로가 없는 자리(`EC-024`가 문구·토스트를 두지 않기로 한 자리)이고, 버튼의 유무 자체가 중복 저장을 알린다는 `UX-011`의 취지는 그대로 산다. 코드에서는 `PlaceDetailUiState.isSavedRoomsEnabled` → **`isSavedRoomsVisible`**, `PlaceMapControls`가 그 값으로 버튼을 **그릴지 말지**를 가르고 `SavedRoomsButton`은 `enabled` 파라미터를 잃었다. [현재 위치] 버튼이 `Alignment.End`로 서 있어 [저장된 방]이 빠져도 행이 흔들리지 않는다. 비활성 프리뷰는 미노출 프리뷰로 대체했다. **T094 설명의 "활성/비활성 배선"은 이 작업으로 폐기된다.** 함께 고친 문서: [spec.md](./spec.md), [quickstart.md §7](./quickstart.md), [contracts/place-detail-main-contract.md §3.1·3.2·§4·§8](./contracts/place-detail-main-contract.md), [contracts/place-api.md](./contracts/place-api.md), [contracts/place-repository.md](./contracts/place-repository.md), [research.md D24](./research.md)
+- [ ] T106 실기기 확인 — 한 방에만 저장된 장소에서 지도 우측 하단에 [현재 위치]만 서 있는지, 두 방 이상이면 [저장된 방]이 함께 나타나고 눌리는지 (`FR-023`·`EC-024`·`TS-040`·`TS-041`, [quickstart.md §7](./quickstart.md) 1~2행). T105에 의존
+
+- [X] T107 **`Full`은 상태바 영역까지 덮는다** — spec 5.0.0에서 `TS-011`을 보강하고 §4 가정·§5 확정 항목을 더했다. 실기기에서 헤더 첫 줄이 상태바에 붙어 보였고, 원인은 셸(`MinoScaffold`)이 상단 인셋을 소비한 자리에서 시트가 시작하는데 헤더 위 여백이 12dp뿐이었던 것이다. 코드에서는 `PlaceDetailScreen`의 컨테이너 `systemBarBleed`에 **`top`(상태바)을 더해** 시트가 그 자리를 소유하게 하고, `PlaceDetailSheet`의 `Full` 상단 띠를 **상태바 높이 + 16dp**로 바꿨다(Figma `005-2-1 full`: 상태바 54 · 헤더 프레임 54 · 아바타 70). **단계별로 켜고 끄지 않는다** — 단계는 앵커가 정착한 뒤에야 갱신되므로 손을 떼는 순간 시트가 상태바 높이만큼 튄다. `Half`는 시트 높이가 369dp 고정이라 컨테이너가 위로 늘어나도 서는 자리가 그대로다. 시트를 조금 낮춰 세우는 대안은 상태바 아래에 지도 띠를 상시로 남겨 기각했다.
+  - **상태바에 가리는 만큼을 시트가 재서 그만큼만 비운다.** 앞선 두 시도가 실기기에서 모두 빗나갔다 — ① 컨테이너를 상태바만큼 위로 끌어올리고(`systemBarBleed(top)`) 시트가 그 높이를 **따로 읽어** 위쪽 띠에 얹었더니 시트 쪽 값만 0으로 나와 헤더가 상태바 뒤로 들어갔고, ② 값을 화면에서 한 번만 읽어 양쪽에 같이 넘겼는데도 그대로였다. 두 번 다 **「이 화면이 놓이는 자리가 이미 상태바만큼 물러나 있다」는 전제**를 코드가 고정값으로 깔고 있었고, 그 전제가 기기에서 성립하지 않으면 끌어올린 만큼 시트가 화면 밖으로 밀려 같은 증상이 남는다. 그래서 **전제를 없앴다** — `systemBarBleed`의 `top`을 걷어내고, 시트가 `onGloballyPositioned`로 자기 윗변의 창 안 위치를 재서 상태바 높이와의 차이(`statusBarOverlap`)만큼만 위쪽 띠에 얹는다. 시트가 상태바 아래에서 시작하면 0, 화면 최상단부터 서면 상태바 높이가 되므로 어느 쪽이든 헤더는 상태바 아래 16dp에 선다. 상태바 높이 자체는 여전히 화면이 한 번 읽어 넘긴다(`statusBarInset`) — 인셋을 읽는 자리가 둘이면 ①의 갈림이 되살아난다
+- [ ] T108 실기기 확인 — `Full`에서 시트가 상태바까지 덮고 헤더가 가리지 않는지, 올리는 도중 상단에 지도 띠가 비치지 않는지, `Half`의 시트 높이·지도 노출과 지도 컨트롤 위치가 그대로인지 (`FR-001`·`TS-011`, [quickstart.md §4](./quickstart.md) 10행). T107에 의존
+
+- [X] T109 **선택 핀은 시트에 가리지 않은 지도의 중앙에 놓인다** — spec 5.0.0에서 `FR-002`에 중심의 기준을 명시하고 §5 확정 항목을 더했다. `:core:map`의 `MinoMap`에 `contentPadding`을 열고(maps-compose 7.0.0 → `GoogleMap.setPadding`), `RoomListScreen`이 위쪽은 `mapBleed`(상태바 뒤로 들어간 만큼)·아래쪽은 **지금 선 시트가 가리는 높이**를 실어 넘긴다. 그 높이는 세 갈래(장소 상세 → 방 상세 → 리스트)에서 오고, 장소 상세만 내비게이션 바 자리까지 덮으므로 그 인셋을 뺀다. `placeDetailSheetHeightOrNull`을 신설해 다른 두 시트의 같은 헬퍼와 짝을 맞췄고, 지도 컨트롤 노출 판정(`isMapControlVisible`)도 같은 값에서 갈리게 해 우선순위 분기를 하나로 합쳤다. **지도가 한 벌이라 방 상세·방 리스트에도 함께 적용된다**([research.md D25](./research.md)) — 그 두 화면의 spec은 이번 개정에서 손대지 않았다
+- [ ] T110 실기기 확인 — 장소 상세 진입 시 선택 핀이 시트 위 영역의 중앙에 오는지, 시트 단계를 바꿀 때 지도가 한 번만(정착 시점) 따라 움직이는지, 방 상세·방 리스트에서도 시트 위 영역 기준으로 자리 잡는지 (`FR-002`, [quickstart.md §4](./quickstart.md) 3-1행). T109에 의존
+
+**체크포인트**: [quickstart.md §4](./quickstart.md) 3-1·7~10행과 [§6](./quickstart.md) 14행, [§7](./quickstart.md) 1~2행이 통과한다 — 드래그로는 닫히지 않고, [나가기]와 뒤로가기는 그대로 방 상세로 나가며, 코멘트 0건 화면이 스크롤에 떨리지 않으며, 단일 방 장소에는 [저장된 방] 버튼이 아예 없으며, `Full`이 상태바까지 덮는다.
 
 ---
 

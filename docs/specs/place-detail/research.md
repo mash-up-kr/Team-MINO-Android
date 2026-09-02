@@ -59,7 +59,8 @@
 - **Decision**: `Half`(369dp 고정)/`Full` 2단은 `PlaceDetailUiState.sheetLevel: PlaceSheetLevel`로, 확장형·축소형 헤더 전환은 `headerMode: PlaceHeaderMode`로 둔다. 둘 다 Route가 아니다.
 - **Rationale**: [spec.md FR-001·FR-008](./spec.md)이 두 단계와 두 헤더를 같은 화면의 밀도 변화로 규정한다. 뒤로가기 스택에 남길 목적지가 아니다. room-list·room-detail이 `BottomSheetLevel`을 화면 상태로 둔 것과 같은 논리이나, **그 타입을 재사용하지 않는다** — `:feature:room`은 다른 모듈이고 이 워크트리에 존재하지도 않으며, 단계 집합도 다르다(그쪽은 `Peek`/`Half`/`Full` 3단, 여기는 2단이고 `Peek`이 없다는 것이 [spec.md §4](./spec.md)의 명시적 가정이다).
 - **headerMode를 sheetLevel에서 파생시키지 않는 이유**: 축소형 헤더는 `Full`이라는 사실이 아니라 **콘텐츠 스크롤 위치**가 결정한다(FR-008). `Full`이어도 최상단이면 확장형이고, 콘텐츠가 화면보다 짧으면 스크롤이 없어 항상 확장형이다(EC-007).
-- **Alternatives considered**: `Half`/`Full`을 각각 Route로 — 기각. 드래그 한 번마다 백스택이 쌓이고 EC-003(드래그다운 = 나가기)이 성립하지 않는다.
+- **접기 판정은 화면이 한다(5.0.0 추가)**: 헤더가 스크롤 축 밖에 서므로 접히는 순간 그 높이 차만큼 스크롤 범위가 줄어든다. 콘텐츠가 뷰포트보다 조금만 길면 그 감소가 스크롤 위치를 최상단으로 되돌리고, 최상단이 다시 확장형을 불러 왕복이 된다(실기기에서 「대표 이미지 있음 + 코멘트 0건」의 덜컹거림). 그래서 **남은 스크롤 여유가 확장형 헤더 높이보다 작으면 접지 않고**, 펴는 조건은 최상단 하나로 둔다(FR-008 · EC-007 · TS-055). 두 헤더의 높이와 스크롤 범위를 함께 아는 것은 화면이므로 판정도 화면이 하고 ViewModel은 결과만 싣는다.
+- **Alternatives considered**: `Half`/`Full`을 각각 Route로 — 기각. 드래그 한 번마다 백스택이 쌓여 시트 높이 변화가 화면 전환으로 둔갑한다.
 - **(plan 1.0.0에서 결정)**
 
 ## D6. 코멘트 삭제 권한은 서버의 `canDelete`를 그대로 따른다
@@ -206,7 +207,7 @@
 - **Decision**: 보류를 해제하고 이번 범위에서 구현한다. `GET /api/v1/rooms?showHasPlaceId={placeId}`가 방마다 돌려주는 `matchedPinId`가 전환 대상 핀이며, [저장된 방] 시트에서 B방을 고르면 `selectedPinId = matchedPinId(B)`로 갱신한다.
 - **Rationale**: [D10](#d10-저장된-방-전환fr-023fr-024fr-025은-이번-범위에서-보류한다--재검토됨plan-200)의 보류 사유는 "서버가 `roomId`·`hasPlace`만 주고 **대상 방의 `pinId`를 주지 않아** 전환할 핀을 특정할 수 없다"였다. **2026-09-01 조회한 OpenAPI에 `matchedPinId`가 있다** — 파라미터 설명이 "지정하면 각 방에 hasPlace와 matchedPinId를 함께 반환한다"로 바뀌었다. 차단 사유가 서버 쪽에서 해소됐다.
 - **전환이 상태 갱신으로 끝난다**: 편입 구조([D17](#d17-장소-상세를-featureroom에-편입하고-지도를-한-벌만-둔다))에서 「지금 보고 있는 방」은 `selectedPinId` 안에 내포되므로([D4](#d4-화면의-식별자는-pinid이며-지금-보고-있는-방은-별도-상태가-아니다)), 방 전환은 핀 교체 하나다. 선택 핀 색(FR-002)과 [나가기] 목적지(FR-009)가 그 한 값에서 함께 따라온다.
-- **[저장된 방] 버튼 활성 조건**: 같은 응답의 `hasPlace == true`인 방이 2개 이상일 때만 활성이다(FR-023, TS-040·TS-041).
+- **[저장된 방] 버튼 노출 조건**: 같은 응답의 `hasPlace == true`인 방이 2개 이상일 때만 그린다(FR-023, TS-040·TS-041).
 - **코멘트 초안은 버린다**: FR-025가 정한 그대로다. 편입 구조에서도 핀이 바뀌면 `PlaceDetailViewModel`이 `pinId` key로 새로 만들어지므로 초안이 자연히 사라진다.
 - **(plan 2.0.0에서 결정)**
 
@@ -248,6 +249,7 @@
 - **Decision**: `PlaceDetailMap`을 삭제하고 `RoomListMap`이 선택 핀을 함께 그린다. [현재 위치] 버튼은 `RoomListViewModel`의 `OnCurrentLocationClick`으로 직접 연결하고, [저장된 방] 버튼은 장소 상세가 열려 있을 때만 그 옆에 선다.
 - **Rationale**: [D16](#d16-지도-위-버튼-행은-이번-라운드에-렌더링까지-한다)은 지도가 두 벌이던 구조에서 "렌더링만 하고 동작은 [SYS-004] 소관"으로 끊은 결정이었다. 지도가 한 벌이 되면 카메라를 실제로 움직이는 주체가 `RoomListViewModel` 하나로 정해지므로 동작까지 닫힌다. 방 상세가 이미 같은 배선을 하고 있다 — `RoomDetailScreen`의 `onCurrentLocationClick`이 `RoomListViewModel`로 올라가는 이유가 그 KDoc에 실기기 결함과 함께 적혀 있다("예전엔 이 버튼이 `RoomDetailViewModel`의 `mapCenter`를 갱신했는데, 그 상태를 읽는 화면이 없어 버튼이 눌려도 지도가 안 움직였다"). 장소 상세가 자기 ViewModel에 카메라 상태를 두면 **그 결함을 그대로 재현한다.**
 - **선택 핀의 카메라 이동**: 장소 상세가 열릴 때 그 좌표로 카메라를 옮기는 것도 `RoomListViewModel`의 `mapCenter`·`mapCenterRequestId`를 통한다. `mapCenterRequestId`가 값이 같아도 다시 움직이게 하는 장치라(`RoomListMap` KDoc의 실기기 버그 기록), 같은 장소를 닫았다 다시 열어도 카메라가 맞춰진다.
+- **카메라의 중심은 시트를 뺀 영역이다(5.0.0 추가)**: 지도에 `contentPadding`(maps-compose → `GoogleMap.setPadding`)을 실어 **가려진 가장자리를 선언**하면 카메라 타깃이 그 나머지의 중앙에 놓인다 — 좌표를 손으로 밀어 보정하지 않는다(spec FR-002). 값을 정하는 것은 세 시트 중 무엇이 서 있는지 아는 `RoomListScreen`이고, 위쪽은 지도가 상태바 뒤로 들어간 만큼(`mapBleed`), 아래쪽은 지금 선 시트가 가리는 높이다. **장소 상세 시트만 내비게이션 바 자리까지 덮으므로** 그 인셋만큼 빼서 넘긴다 — 지도의 아랫변은 내비게이션 바 위에서 끝난다. 지도 컨트롤의 노출 판정도 같은 값 하나에서 갈린다(가려진 높이를 알 수 없다 = `Full` = 지도가 안 보인다).
 - **핀 외형**: `:core:common:ui`의 `RoomMapPin(color, selected)`이 이미 `selected` 인자를 갖고 있어 선택 핀 표현이 그 컴포넌트 안에 있다. `PlaceDetailMap`이 따로 쓰던 `MinoIcons.PinFill` 직접 조립은 사라진다.
 - **(plan 2.0.0에서 결정)**
 
