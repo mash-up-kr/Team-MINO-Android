@@ -21,6 +21,7 @@ import team.mino.core.common.kotlin.geo.GeoPoint
 import team.mino.core.domain.model.MapMarkerSortOption
 import team.mino.core.domain.model.Place
 import team.mino.core.domain.model.PlaceCategoryFilter
+import team.mino.core.domain.model.PlaceDetail
 import team.mino.core.domain.model.Room
 import team.mino.core.domain.model.RoomColor
 import team.mino.core.domain.model.RoomListSortOption
@@ -332,7 +333,7 @@ class RoomListViewModelTest {
             assertEquals(listOf("pin-1"), state.mapPins.filter { it.selected }.map { it.place.id })
         }
 
-    /** 탭 간 진입처럼 그 방의 장소 조회가 아직 안 끝난 시점에 열리면, 좌표를 모르는 채로 카메라를 옮기지 않는다. */
+    /** 아직 목록에 없는 핀을 지목하면 좌표를 모르는 채로 카메라를 엉뚱한 곳으로 옮기지 않는다. */
     @Test
     fun `좌표를 모르는 핀을 선택하면 카메라는 그대로 둔다`() =
         runTest {
@@ -345,6 +346,71 @@ class RoomListViewModelTest {
             assertEquals("unknown-pin", state.selectedPinId)
             assertNull(state.mapCenter)
             assertEquals(0, state.mapCenterRequestId)
+        }
+
+    /**
+     * [TS-056] 탭 간 진입은 방·핀·카메라를 **함께** 세운다.
+     *
+     * 좌표는 핀 상세 응답이 준다 — 홈에서 콜드 진입하면 `placesByRoomId`가 아직 비어 있어
+     * `OnPlaceSelected`처럼 목록에서 찾을 수 없고, 못 찾아 카메라가 안 움직이면 선택 핀이 화면 밖에 남는다.
+     */
+    @Test
+    fun `탭 간 요청으로 장소 상세를 열면 방과 핀과 카메라를 함께 세운다`() =
+        runTest {
+            placeRepository.givenPlaceDetail(placeDetail(pinId = "pin-1", roomId = "room-1"))
+            val viewModel = createViewModel(permissionGranted = false)
+            advanceUntilIdle()
+            val requestIdBefore = viewModel.state.value.mapCenterRequestId
+
+            placeDetailRequestHolder.request("pin-1")
+            advanceUntilIdle()
+
+            val state = viewModel.state.value
+            assertEquals("pin-1", state.selectedPinId)
+            assertEquals("room-1", state.selectedRoomId)
+            assertEquals(PIN_1_LOCATION, state.mapCenter)
+            assertEquals(requestIdBefore + 1, state.mapCenterRequestId)
+            assertNull(placeDetailRequestHolder.pending.value)
+        }
+
+    /**
+     * [EC-030] 진입에 딸린 자동 위치 이동은 장소 상세가 열려 있는 동안 카메라를 가져가지 않는다.
+     *
+     * 홈·알림 진입은 탭 전환(→ `OnScreenEntered`)과 장소 상세 열기가 같은 순간이라 둘이 겹친다.
+     */
+    @Test
+    fun `장소 상세가 열려 있으면 진입 시 자동 위치 이동이 카메라를 덮지 않는다`() =
+        runTest {
+            placeRepository.givenPlaceDetail(placeDetail(pinId = "pin-1", roomId = "room-1"))
+            val viewModel = createViewModel(permissionGranted = true)
+            placeDetailRequestHolder.request("pin-1")
+            advanceUntilIdle()
+            val requestIdBefore = viewModel.state.value.mapCenterRequestId
+
+            viewModel.processIntent(RoomListIntent.OnScreenEntered)
+            advanceUntilIdle()
+
+            val state = viewModel.state.value
+            assertEquals(PIN_1_LOCATION, state.mapCenter)
+            assertEquals(requestIdBefore, state.mapCenterRequestId)
+        }
+
+    /** [EC-030] 막는 것은 진입에 딸린 자동 이동뿐이다 — 사용자가 직접 누른 [현재 위치]는 그대로 움직인다. */
+    @Test
+    fun `장소 상세가 열려 있어도 현재 위치 버튼은 카메라를 옮긴다`() =
+        runTest {
+            placeRepository.givenPlaceDetail(placeDetail(pinId = "pin-1", roomId = "room-1"))
+            val viewModel = createViewModel(permissionGranted = true)
+            placeDetailRequestHolder.request("pin-1")
+            advanceUntilIdle()
+            val requestIdBefore = viewModel.state.value.mapCenterRequestId
+
+            viewModel.processIntent(RoomListIntent.OnCurrentLocationClick)
+            advanceUntilIdle()
+
+            val state = viewModel.state.value
+            assertEquals(DefaultMapCenter, state.mapCenter)
+            assertEquals(requestIdBefore + 1, state.mapCenterRequestId)
         }
 
     /** [TS-006] 장소 상세를 닫으면 `selectedRoomId`가 남아 그 방의 방 상세가 다시 드러난다. */
@@ -463,6 +529,24 @@ class RoomListViewModelTest {
             isGgukPick = false,
             distanceMeters = null,
             location = location,
+        )
+
+    private fun placeDetail(
+        pinId: String,
+        roomId: String,
+        location: GeoPoint = PIN_1_LOCATION,
+    ): PlaceDetail =
+        PlaceDetail(
+            pinId = pinId,
+            roomId = roomId,
+            placeId = "place-$pinId",
+            name = pinId,
+            address = "",
+            location = location,
+            imageUrls = emptyList(),
+            registrant = null,
+            sourceUrl = null,
+            mapUrl = null,
         )
 
     @OptIn(ExperimentalTime::class)
