@@ -2,47 +2,174 @@
 
 **대상 스펙 경로**: `docs/specs/place-detail`
 
-**기준 plan 버전**: 1.1.0
+**기준 plan 버전**: 2.1.1
 
 **최초 작성일**: 2026-08-29
 
-**최종 수정일**: 2026-08-29
+**최종 수정일**: 2026-09-02
 
 **사전 조건**: [plan.md](./plan.md) (필수), [spec.md](./spec.md) (사용자 스토리), [research.md](./research.md), [data-model.md](./data-model.md), [contracts/](./contracts/)
 
-**테스트**: 테스트 작업을 포함하지 않는다. [spec.md](./spec.md)가 자동 테스트를 요청하지 않았고, 이번 라운드가 UI 구현이라 검증은 [quickstart.md](./quickstart.md)의 육안 시나리오와 Compose Preview로 한다.
+**테스트**: 자동 테스트 작업을 새로 만들지 않는다. [spec.md](./spec.md)가 요구하지 않았고 검증은 [quickstart.md](./quickstart.md)의 육안 시나리오로 한다. **다만 `:feature:room`의 기존 `RoomListViewModelTest`가 이번 구조 전환의 회귀 방어선이므로 깨지지 않게 유지한다**(T097).
 
 **구성 방식**: 각 스토리를 독립적으로 구현하고 확인할 수 있도록 작업을 사용자 스토리별로 묶는다.
 
-## 이번 라운드의 범위 — UI 전용
+## 이번 라운드의 범위 — 구조 전환 + API 연결 (이슈 #270)
 
-사용자 지시로 **API 연결 없이 UI만 구현한다.** 그 결정이 작업 목록에 만든 갈래는 셋이다.
+plan 2.0.0이 **구조를 뒤집었다.** 지난 라운드(plan 1.1.0)가 만든 진입형 모듈 `:feature:placedetail`을 해체하고 화면을 저장 탭(`:feature:room`)으로 편입하며, 동시에 Fake를 실 API로 교체하고 spec 4.0.0의 신규 요구를 반영한다.
 
-1. **도메인 모델과 Repository 인터페이스는 만든다**(`:core:domain`). 구현은 `:core:data`가 아니라 `:feature:placedetail` 안의 **Fake**가 채운다. [contracts/place-repository.md](./contracts/place-repository.md)가 확정한 시그니처를 그대로 쓰므로, 나중에 진짜 구현을 붙일 때 ViewModel과 화면을 고치지 않아도 된다.
-2. **`:core:data`를 건드리지 않는다.** Service·DTO·DataSource·RepositoryImpl·Mapper는 Phase 10에 모아 두고 이번 라운드에 착수하지 않는다.
-3. **`RoomSummary.hasPlace`와 `RoomRepository.getRooms(placeId)` 확장을 미룬다**([research.md D9](./research.md)). 이 확장은 `:core:data`의 기존 구현까지 함께 고쳐야 하므로 Phase 10으로 넘긴다. **다만 방 목록 조회 자체는 미루지 않는다** — 인자 없는 `getRooms()`는 이미 구현돼 동작하고 `RoomSummary.color`·`placeCount`·`thumbnailImageUrls`를 담고 있어, 마커 색상(FR-002)과 공유 시트 목록(FR-018)을 `GetRoomPickerRoomsUseCase` 재사용만으로 채운다([research.md D15](./research.md)). 미뤄지는 것은 **이미 저장된 방 표시**(`hasPlace`) 하나뿐이다 → [미결 사항](#미결-사항) 3번.
+**plan 2.1.0이 여기에 작업 둘을 더했다**(T099·T100). 2.0.0이 코멘트 작성 시각을 "도메인이 `Instant`를, 화면이 표기를" 갖는 데까지 정하고 **경과를 재는 기준 시각(「지금」)의 공급을 비워 둔 것**을 `Clock` 주입으로 채운다([research.md D26](./research.md)). 기존 작업의 의미는 그대로이고 T090·T091·T059의 설명만 그 결정에 맞춰 다듬었다.
+
+**그래서 이 문서는 두 층으로 나뉜다.**
+
+| 층 | 내용 |
+|---|---|
+| **Phase 11~15** | 이번 라운드에 할 일. 구조 전환 → spec 4.0.0 → API 연결 → 저장된 방 전환 → 검증 |
+| **완료된 UI 라운드 (Phase 1~9)** | plan 1.1.0에서 이미 끝낸 작업의 기록. **체크 상태를 그대로 보존한다** |
+| **폐기된 작업** | 완료됐으나 구조 전환으로 산출물이 사라지는 작업 20건. 정리 범위를 함께 적는다 |
+
+**지난 라운드의 산출물 대부분은 살아남는다.** 시트·헤더·캐러셀·코멘트·입력 컴포넌트는 파일 위치만 옮겨간다. 사라지는 것은 그것을 감싸던 껍데기(Activity·Shell·NavHost·Launcher·중복 지도·Fake)다.
+
+**plan 1.1.0이 남긴 미결 셋 중 둘이 해소되고 하나가 소멸했다** — 서버가 `matchedPinId`를 신설했고(FR-023~025 구현 가능), spec 4.0.0이 장소분류 라벨 요구를 없앴으며, 편입으로 FR-009가 닫힌다. 상세는 [plan.md 「요약」](./plan.md).
 
 ## 형식: `[ID] [P?] [Story] 설명`
 
-- **[ID]**: `T` + 세 자리 번호. **한 번 부여한 ID는 바꾸지 않고, 지운 번호는 재사용하지 않는다.**
+- **[ID]**: `T` + 세 자리 번호. **한 번 부여한 ID는 바꾸지 않고, 지운 번호는 재사용하지 않는다.** 개정을 거쳐 문서 순서와 ID 순서가 어긋나 있다 — 실행 순서는 Phase 순서와 「의존성」 섹션이 말한다.
 - **[P]**: 병렬 실행 가능 (서로 다른 파일, 의존성 없음)
-- **[Story]**: 이 작업이 속한 사용자 스토리 (US1~US6 — [spec.md §1](./spec.md)의 유저 플로우 1~6에 대응)
+- **[Story]**: 이 작업이 속한 사용자 스토리 (US1~US7 — [spec.md §1](./spec.md)의 유저 플로우 1~7에 대응)
 
 ## 경로 규칙
 
 모바일(Android, 다중 Gradle 모듈). 모든 경로는 저장소 루트 기준이며 [plan.md 「프로젝트 구조」](./plan.md)가 소유한다.
 
+**이식 대상 경로 대응** — Phase 11이 옮기는 파일의 출발지와 도착지다.
+
+```text
+feature/placedetail/src/main/java/team/mino/feature/placedetail/main/
+  → feature/room/src/main/java/team/mino/feature/room/placedetail/
+```
+
 ---
+
+## Phase 11: 구조 전환 — 저장 탭 편입
+
+**목적**: 진입형 껍데기를 걷어내고 화면을 저장 탭의 세 번째 시트 분기로 만든다. 지도를 한 벌로 합친다.
+
+**독립 테스트**: [quickstart.md §4·§5](./quickstart.md) — 방 상세 ↔ 장소 상세 전환에서 지도가 재생성되지 않고, 홈 진입 후 [나가기]가 방 상세로 간다.
+
+### 진입 계약 교체
+
+- [X] T071 [P] `core/navigation/src/main/java/team/mino/core/navigation/entry/PlaceDetailRequestHolder.kt` 신설 — `@ActivityRetainedScoped`, `pending: StateFlow<String?>`·`request(pinId)`·`consume()` ([contracts/place-detail-entry.md §3.1](./contracts/place-detail-entry.md)). T082·T084가 쓴다
+- [X] T072 [P] `core/navigation/.../activity/launcher/PlaceDetailLauncher.kt` 삭제와 `ExtraTag.kt`에서 `EXTRA_PLACE_DETAIL_PIN_ID` 제거 ([contracts/place-detail-entry.md §5](./contracts/place-detail-entry.md)). T084·T087이 먼저 참조를 끊어야 컴파일이 통과한다
+
+### 화면 이식 (`:feature:placedetail` → `:feature:room/placedetail`)
+
+- [X] T073 [P] `main/model/` 4종(`PlaceSheetLevel`·`PlaceHeaderMode`·`PlaceCommentUiModel`·`RoomPickerItem`)을 `feature/room/.../placedetail/model/`로 이식 — 패키지 선언만 바꾼다. `RoomColorPalette.kt`는 `:feature:room`에 이미 `RoomColorMapping`이 있으므로 **중복을 합친다**
+- [X] T074 `main/component/` 이식 — `PlaceDetailSheet`·`PlaceDetailHeader`·`PlaceActionRow`·`PlaceImageCarousel`·`SheetParts`·`PlaceCommentList`·`PlaceCommentItem`·`PlaceCommentEmpty`·`PlaceCommentInput`·`PlaceCommentMenu`·`PlaceMapControls`·`RoomShareSheet`를 `placedetail/component/`로. **`PlaceDetailMap.kt`·`CurrentLocationButton.kt`·`SavedRoomsButton.kt`는 이식하지 않는다** — 지도·컨트롤 단일화([research.md D25](./research.md))와 FR-023 구현(T093)이 대체한다. T073에 의존
+- [X] T075 `main/vm/` 4종을 `placedetail/vm/`으로 이식 — `PlaceDetailViewModel`은 `savedStateHandle.toRoute()` 대신 **`@AssistedInject`로 `pinId`를 받는다**(`RoomDetailViewModel`과 같은 형태). `PlaceDetailUiState`에서 **`roomColor` 필드를 제거**한다 ([contracts/place-detail-main-contract.md §1·§3](./contracts/place-detail-main-contract.md)). T073에 의존
+- [X] T076 `main/screen/` 3종을 `placedetail/screen/`으로 이식 — **`PlaceDetailScreen`·`PlaceDetailRoute`를 `BoxScope` 확장으로 바꾸고 지도를 그리지 않는다**(`RoomDetailScreen`과 같은 형태, [contracts/place-detail-main-contract.md §7](./contracts/place-detail-main-contract.md)). `Full` 윗변 계산은 유지한다. T074·T075에 의존
+- [X] T077 [P] `feature/placedetail/src/main/res/values/strings.xml`의 문자열을 `feature/room/src/main/res/values/`로 이식 — 이름 충돌 여부를 확인한다
+
+### 저장 탭 편입
+
+- [X] T078 [P] `feature/room/.../main/model/MapPinUiModel.kt`에 `selected: Boolean` 추가와 `main/component/RoomListMap.kt`의 `PlacePin`에서 `RoomMapPin(selected = pin.selected)` 반영 — 선택 핀 전환 (FR-002·TS-002, [contracts/place-detail-main-contract.md §2.4](./contracts/place-detail-main-contract.md)). `:core:common:ui`의 `RoomMapPin`이 이미 두 외형을 가지므로 새 컴포넌트가 없다
+- [X] T079 `feature/room/.../main/vm/`에 `selectedPinId` 상태와 인텐트 3종(`OnPlaceSelected`·`OnClosePlaceDetailClick`·`OnPlaceDetailRoomSwitched`) 추가 — **`OnClosePlaceDetailClick`이 `selectedPinId = null` 한 줄로 FR-009를 닫는다**(TS-006). `mapPins` 계산에 `selected` 반영, 진입 시 `mapCenter`·`mapCenterRequestId` 갱신 ([contracts/place-detail-main-contract.md §2.1·2.2](./contracts/place-detail-main-contract.md)). T078에 의존
+- [X] T080 `feature/room/.../main/screen/RoomListScreen.kt`에 **시트 세 갈래 분기** 추가 — `selectedPinId` 우선, 그다음 `selectedRoomId`, 아니면 리스트. 지도 컨트롤 노출 판정(`isMapControlVisible`)에 장소 상세 시트 단계를 더한다 ([contracts/place-detail-main-contract.md §2.7](./contracts/place-detail-main-contract.md)). T076·T079에 의존
+- [X] T081 `feature/room/.../main/screen/RoomListRoute.kt`에 장소 상세 슬롯 호출과 `BackHandler` 확장(`selectedPinId != null || selectedRoomId != null`), `LocalBottomNavVisibility` 판정식에 `selectedPinId == null` 추가 — **기존 `DisposableEffect`를 고치고 새로 만들지 않는다**(FR-020, [research.md D19](./research.md)). 슬롯이 닫히면 그 아래 방 상세 시트가 그대로 드러나는 것이 **FR-009**의 구현이며, 아래로 드래그해 닫는 경우도 같은 경로다(EC-003). T080에 의존
+- [X] T082 `RoomListRoute`·`RoomListViewModel`에 `PlaceDetailRequestHolder.pending` 구독·소비 배선 — `pinId`로 핀 상세를 조회해 `roomId`를 해석한 뒤 `selectedRoomId`·`selectedPinId`를 **함께** 세우고 `consume()` ([contracts/place-detail-main-contract.md §2.3](./contracts/place-detail-main-contract.md)). **둘을 함께 세우는 것이 FR-009의 전제다** — 알림은 방을 특정하지 않으므로 최초 저장 방이 [나가기] 목적지가 된다(FR-009·EC-001·TS-007). 조회 실패 시 소비만 하고 아무것도 열지 않는다. T071·T079에 의존
+- [X] T083 `feature/room/.../detail/vm/RoomDetailSideEffect.kt`의 `NavigateToPlaceDetail(placeId)`를 `pinId`로 바꾸고, `detail/screen/RoomDetailRoute.kt`에서 **`-> Unit`으로 흘리던 자리를 실제 배선으로 교체** — `onOpenPlaceDetail(pinId)` 콜백을 `RoomListRoute`가 넘긴다 ([contracts/place-detail-entry.md §2](./contracts/place-detail-entry.md)). T079에 의존
+
+### 셸·모듈 정리
+
+- [X] T084 `feature/main/.../MainActivity.kt`·`MainNavHost.kt`에서 `placeDetailLauncher` 주입과 `launchPlaceDetail`을 **`holder.request(pinId)` + `navigateToTab(MainTab.SAVED)`로 교체** ([contracts/place-detail-entry.md §3.2](./contracts/place-detail-entry.md)). 탭을 저장으로 옮기는 것이 **FR-009**가 요구하는 귀착지를 만든다 — 홈에서 들어와도 [나가기]는 홈이 아니라 방 상세로 간다(TS-037). T071에 의존
+- [X] T085 외부 지도·원문 열기 실행부(`openExternalMap`·`openSourceLink`·`startViewIntent`)를 `PlaceDetailActivity`에서 `feature/main/.../MainActivity.kt`로 이식하고, `OpenExternalMap`·`OpenSourceLink` SideEffect를 `RoomListRoute` 경유로 잇는다 (FR-016·FR-017). `geo:` 우선 순서와 그 근거 주석을 그대로 옮긴다. T076·T084에 의존
+- [X] T086 `placedetail/component/PlaceMapControls.kt`의 [현재 위치]를 **`RoomListViewModel`의 `OnCurrentLocationClick`으로 연결** — 장소 상세가 자기 카메라 상태를 들지 않는다([research.md D25](./research.md)). `RoomDetailScreen`이 이미 같은 배선을 하고 있어 그 형태를 따른다. **plan 1.1.0에서 `[TBD]`였던 [현재 위치] 동작이 여기서 닫힌다.** T080에 의존
+- [X] T087 `:feature:placedetail` 모듈 삭제 — `settings.gradle.kts`의 `include`, `app/build.gradle.kts`의 `implementation`, `feature/placedetail/` 디렉터리 전체. T072~T086이 모두 끝난 뒤 마지막에 한다
+
+**체크포인트**: [quickstart.md §4](./quickstart.md)의 9행이 통과하고, 특히 **2번(지도가 다시 그려지지 않는다)** 이 확인된다.
+
+---
+
+## Phase 12: spec 4.0.0 반영
+
+**목적**: 헤더에서 장소분류 라벨을 걷어내고 등록자 닉네임을 세우며, 코멘트에 작성 시각을 붙인다. **plan 2.1.0이 시각 표기의 기준 시각(「지금」) 공급을 이 단계에 더했다**(T099·T100, [research.md D26](./research.md)).
+
+**독립 테스트**: [quickstart.md §4-4·4-5·§6](./quickstart.md) — TS-003·TS-008·TS-009·TS-018·TS-050~TS-054, 그리고 §6 13번(EC-028 — 띄워 둔 채로는 표기가 바뀌지 않는다).
+
+- [X] T088 [P] [US1] `core/domain/.../model/PlaceLabel.kt` **삭제**와 `PlaceDetail.kt`의 `label` 필드 제거, `PlaceRepository.kt` KDoc에서 사실이 아니게 된 두 문단 정리 ([research.md D21](./research.md), [contracts/place-repository.md §1](./contracts/place-repository.md)). `PlaceCard`는 자기 라벨 표현을 따로 가지므로 영향받지 않는지 확인한다
+- [X] T089 [US1] `placedetail/component/PlaceDetailHeader.kt` 확장형 헤더에서 **라벨 자리를 등록자 닉네임으로 교체** — 아바타 + 닉네임 + [나가기]가 한 줄. 닉네임은 한 줄 유지 + `...` 생략이며 [나가기] 자리를 침범하지 않는다 (FR-005·TS-008·TS-009). **헤더 첫 줄이 「누가 이 장소를 담았는가」만 말하게 한다**(UX-014) — 장소의 성격을 판정한 라벨이 그 옆에 끼어들지 않는다. 축소형 헤더는 장소명 + [나가기]만 남는 것이 그대로다 (UX-005). T074·T088에 의존
+- [X] T090 [P] [US4] `core/domain/.../model/PlaceComment.kt`에 `createdAt: kotlin.time.Instant` 추가와 "작성 시각을 담지 않는다"는 KDoc 문단 제거 ([data-model.md §2](./data-model.md)). **`@OptIn(ExperimentalTime::class)`을 함께 붙인다** — Kotlin 2.2.10에서 `kotlin.time.Instant`가 아직 실험적이고 전역 opt-in 설정이 없다. `Place.kt`가 클래스에 붙인 형태를 따른다
+- [X] T091 [US4] `placedetail/model/PlaceCommentUiModel.kt`에 `createdAt` 추가와 **경과 시간 → 표기 환산 함수** 신설, `PlaceCommentItem.kt`에서 본문 우측 아래에 배치 — 1시간 미만 `방금`(음수 포함) / 24시간 미만 `N시간 전` / 7일 미만 `N일 전` / 그 이상 `NNNN년 NN월 NN일` (FR-028·EC-028·EC-029, [contracts/place-detail-main-contract.md §6](./contracts/place-detail-main-contract.md)). **환산 함수의 입력은 `(createdAt, commentsObservedAt)` 둘이다** — 함수 안에서 `Clock.System.now()`를 부르지 않는다([§6.1](./contracts/place-detail-main-contract.md)). **상태가 아니라 컴포지션 시점의 순수 함수다** — 실시간 갱신하지 않는다. 문자열은 `:feature:room`의 리소스가 소유한다. **당일 코멘트의 선후가 목록만 보고 읽히는 것**(UX-015)과 **시각을 알아보려 다른 화면으로 나가지 않는 것**(SC-011)이 이 작업의 판정 기준이다. T074·T090·T100에 의존
+- [X] T099 [P] [US4] `feature/room/src/main/java/team/mino/feature/room/di/PlaceDetailClockModule.kt` 신설 — `kotlin.time.Clock`을 `@Provides`로 제공하고 `ViewModelComponent`에 설치한다 ([research.md D26](./research.md), [contracts/place-detail-main-contract.md §6.1](./contracts/place-detail-main-contract.md)). 요구하는 곳이 이 모듈의 ViewModel 하나뿐이라 앱 전역 그래프에 올리지 않는다 — `:feature:sharereceiver`의 `ShareReceiverResourcesModule`이 같은 판단을 KDoc으로 남긴 선례이며, 그 KDoc 형태를 따라 이유를 적는다. 모듈과 `@Provides`는 `internal`로 닫는다 ([ADR 2026-08-02](../../adr/2026-08-02-di-binding-ownership.md))
+- [X] T100 [US4] `placedetail/vm/`에 **기준 시각 배선** — `PlaceDetailViewModel` 생성자에 `clock: Clock`을 받고, `PlaceDetailUiState`에 `commentsObservedAt: Instant = Instant.DISTANT_PAST`를 추가한다. **코멘트 목록 상태를 다시 만들 때마다 `clock.now()`로 갱신한다** — 최초 조회·이전 페이지 추가 로드·등록 후 반영·삭제 후 반영 네 자리 모두 ([contracts/place-detail-main-contract.md §3·§6.1](./contracts/place-detail-main-contract.md)). 등록 직후 `방금`이 뜨는 것(TS-054)이 이 갱신으로 성립하고, 목록을 둔 채 시간만 흐르는 동안 갱신되지 않는 것이 EC-028이다. `@OptIn(ExperimentalTime::class)` 필요. T075·T090·T099에 의존
+
+**체크포인트**: 헤더 어디에도 라벨이 없고, 코멘트마다 시각이 네 구간으로 갈려 보인다. 화면을 띄워 둔 채로는 표기가 저절로 넘어가지 않는다.
+
+---
+
+## Phase 13: API 연결 — Fake를 실 서버로 교체
+
+**목적**: `:core:data`에 실구현을 두고 Fake를 걷어낸다.
+
+> **착수 전 확인**: [contracts/place-api.md §5](./contracts/place-api.md)의 서버 협의 항목은 **1건으로 줄었다**(아바타 색 enum 불일치). 계약 근거는 2026-09-01T21:46:23+09:00 시점의 문서다.
+
+**독립 테스트**: [quickstart.md §6~§9](./quickstart.md) — 실 데이터로 코멘트·공유·접근 기록이 동작한다.
+
+- [X] T054 [P] `core/data/.../network/dto/response/` 에 `PinDetailResponse`·`PlaceResponse`·`CommentResponse`·`CommentPageResponse` 생성
+- [X] T055 `core/data/.../network/service/PinApiService.kt`에 `getPinDetail`·`recordAccess`·`duplicatePin` 추가 ([contracts/place-api.md §1·2·4](./contracts/place-api.md))
+- [X] T056 [P] `core/data/.../network/service/CommentApiService.kt` 신설 — 코멘트 3종 ([contracts/comment-api.md](./contracts/comment-api.md))
+- [X] T057 `core/data/.../datasource/PinRemoteDataSource.kt`(+Impl)에 3종 추가, `CommentRemoteDataSource.kt`(+Impl) 신설
+- [X] T058 [P] `core/data/.../repository/mapper/PlaceDetailMapper.kt` 생성 — `PinDetailResponse` → `PlaceDetail`. **`label`을 채우지 않는다** — `PlaceLabel` 타입이 삭제됐다(T088, [research.md D21](./research.md)). `createdBy.avatar.color`는 13색 팔레트로 해석하고 모르는 값은 `null`로 떨어뜨린다([contracts/place-api.md §1.3](./contracts/place-api.md))
+- [X] T059 [P] `core/data/.../repository/mapper/PlaceCommentMapper.kt` 생성 — `hasNext` → `hasOlder`, **`createdAt`을 `Instant.parse`로 `kotlin.time.Instant`에 옮긴다**(FR-028, [contracts/comment-api.md §1.3](./contracts/comment-api.md)). `PlaceMapper.kt`가 `savedAt`에 쓰는 것과 같은 형태이며 `@file:OptIn(ExperimentalTime::class)`도 그대로 따른다. 표기 환산은 하지 않는다 — feature 소관이다(T091)
+- [X] T060 `core/data/.../repository/PlaceRepositoryImpl.kt`·`PlaceCommentRepositoryImpl.kt` 생성과 `repository/di/` 바인딩 추가 — 바인딩은 구현을 가진 `:core:data`가 소유한다 ([ADR 2026-08-02](../../adr/2026-08-02-di-binding-ownership.md)). T057·T058·T059에 의존
+- [X] T061 `RoomSummary`에 `hasPlace: Boolean?`·**`matchedPinId: String?`** 추가와 `RoomRepository.getRooms(placeId: String? = null)` 확장, `RoomApiService.listRooms(showHasPlaceId)`·`RoomSummaryMapper`·`RoomRepositoryImpl` 반영 ([data-model.md §3](./data-model.md), [contracts/place-repository.md §3](./contracts/place-repository.md)). **기본 인자라 기존 호출자(`GetRoomPickerRoomsUseCase`·`:feature:sharereceiver`·`RoomListViewModel`)가 깨지지 않는지 확인한다**
+- [X] T062 [US6] `placedetail/vm/PlaceDetailViewModel.kt`에서 `place` 도착 후 `getRooms(placeId = place.placeId)`를 호출해 `savedRooms`를 채우고, 공유 시트의 이미 저장된 방 판정을 `hasPlace`로 바꾼다 (FR-018·FR-022, [contracts/place-detail-main-contract.md §3.1](./contracts/place-detail-main-contract.md)). **고를 방이 하나도 없어도 사용자가 이유와 남은 선택지를 확인하고 빠져나가야 한다**(SC-007) — 체크·비활성 카드가 곧 그 안내다(UX-010). T061·T075에 의존
+
+**체크포인트**: Fake 없이 실 데이터로 화면이 뜬다. `fake/` 패키지는 T087의 모듈 삭제로 이미 사라져 있다.
+
+---
+
+## Phase 14: 사용자 스토리 7 - 저장된 방 전환
+
+**목표**: 여러 방에 저장된 장소에서 보는 방을 바꾸면 핀 색·코멘트·[나가기] 목적지가 함께 따라온다.
+
+**독립 테스트**: [quickstart.md §7](./quickstart.md) — TS-040·TS-041과 유저 플로우 7, 그리고 **SC-008**([저장된 방] 한 번 + 방 카드 한 번, 총 2회 조작으로 다른 방의 코멘트에 닿는다). **plan 1.1.0에서 구현 보류였던 기능이다**([research.md D20](./research.md)).
+
+- [X] T092 [US7] `placedetail/vm/`에 `SavedRoomsSheetUiState` 추가, `isSavedRoomsEnabled`를 **`false` 고정에서 `savedRooms.count { it.hasPlace == true } >= 2`로 교체**, 인텐트 3종(`OnSavedRoomsClick`·`OnSavedRoomSelected`·`OnSavedRoomsSheetDismiss`)과 SideEffect `SwitchRoom(pinId, roomId)` 추가 ([contracts/place-detail-main-contract.md §3.2·3.3·§4·§5](./contracts/place-detail-main-contract.md)). `PlaceDetailIntent` KDoc의 "[저장된 방] 버튼의 Intent가 없다"를 지운다. T062에 의존
+- [X] T093 [US7] `placedetail/component/SavedRoomsSheet.kt` 신설 — 그 장소가 저장된 방 목록에서 **지금 보고 있는 방을 제외한다**(FR-024·TS-042·EC-026). 선택 상태로 표시하는 것이 아니라 빼는 것이다. 고르면 `matchedPinId`를 실어 올린다. **눌러도 아무 일이 없는 항목을 두지 않는다**(UX-012) — 남은 카드가 곧 「옮겨 갈 수 있는 방」이다. **치수는 FR-024가 못박은 값을 쓴다** — 시트 442dp 고정(하단 safe area 60dp 포함)·내부 스크롤 312dp 고정·체크박스와 확정 CTA 없음·카드 탭이 곧 확정([contracts/place-detail-main-contract.md §3.3](./contracts/place-detail-main-contract.md)). **`RoomShareSheet`(676dp)를 따르지 않는다** — 그쪽은 [SYS-003] 소관의 다른 시트다. 카드 내부 표현처럼 두 시트가 겹치는 부분만 참고한다. T092에 의존
+- [X] T094 [US7] `placedetail/component/PlaceMapControls.kt`에 [저장된 방] 버튼 활성/비활성 배선 — 활성일 때만 시트가 열린다 (FR-023·TS-040·TS-041). **활성 여부 자체가 「이 장소가 여러 방에 있다」를 알린다**(UX-011) — 중복 저장을 알리는 별도 뱃지·문구를 두지 않는다. `Full`에서 컨트롤 행이 함께 숨는 기존 동작은 유지한다 (UX-013). T086·T092에 의존
+- [X] T095 [US7] `SwitchRoom` SideEffect를 `RoomListRoute`가 받아 `RoomListIntent.OnPlaceDetailRoomSwitched(pinId, roomId)`로 넘기는 배선 — `selectedPinId`·`selectedRoomId`가 함께 갱신되어 핀 색·코멘트·[나가기] 목적지가 따라온다 (FR-025). **셋이 서로 다른 방을 가리키는 상태가 0건이어야 한다**(SC-009) — 사용자가 지금 어느 방을 보고 있는지 되묻지 않게 하는 조건이다. 코멘트 초안은 ViewModel이 새로 서면서 자연히 사라진다. T079·T092에 의존
+
+**체크포인트**: [quickstart.md §7](./quickstart.md)의 7행이 모두 통과한다 — 특히 7번(전환 후 [나가기]가 B방으로 간다).
+
+---
+
+## Phase 15: 마무리 및 검증
+
+**목적**: 구조 전환이 기존 화면을 깨뜨리지 않았는지 확인하고 게이트를 통과한다.
+
+- [ ] T053 [quickstart.md §4~§9](./quickstart.md)의 기능 시나리오 수행 — 구조 전환·spec 4.0.0·API 연결·저장된 방 전환을 차례로 확인한다
+- [ ] T064 실 데이터 기준 확인 — 「경과일 초기화 확인」이 진입마다 1회 나가는지, 비행기 모드에서 실패해도 화면이 정상인지 (FR-026·EC-022·EC-023, [quickstart.md §9](./quickstart.md))
+- [ ] T096 **회귀 확인** — [quickstart.md §10](./quickstart.md)의 6건. 특히 4·5번(넛지 팝업 아래 지도가 하얗게 남던 결함, 공동방 생성 직후 지도)은 T081이 `LocalBottomNavVisibility` 판정식을 직접 건드리므로 반드시 본다. T081에 의존
+- [ ] T097 품질 게이트 — `./gradlew :app:assembleQaDebug`와 `./gradlew :core:domain:test :core:data:test :feature:room:test`, `./gradlew lintDebug -Dorg.gradle.jvmargs="-XX:-TieredCompilation"` (헌법 「품질 게이트」, [quickstart.md §3](./quickstart.md)). **기존 `RoomListViewModelTest`가 깨지면 구조 전환이 회귀를 만든 것이다**
+- [X] T098 잔여 참조 정리 확인 — `placedetail`·`PlaceDetailLauncher`·`EXTRA_PLACE_DETAIL_PIN_ID`·`PlaceLabel`을 참조하는 코드가 저장소에 없다 ([quickstart.md §2·§11](./quickstart.md)). T087·T088에 의존
+
+**체크포인트**: [quickstart.md §11](./quickstart.md)의 완료 판정 4항이 모두 참이다.
+
+---
+
+## 완료된 UI 라운드 (plan 1.1.0 기준) — 기록
+
+**아래 Phase 1~9는 지난 라운드에서 이미 끝낸 작업이다.** 체크 상태를 그대로 보존한다.
+
+**경로를 그대로 읽지 않는다.** 여기 적힌 `feature/placedetail/...` 경로는 작업 당시의 것이고, 그 파일들은 Phase 11(T073~T077)이 `feature/room/.../placedetail/`로 옮긴다. 산출물이 삭제되는 작업 20건은 이 목록에 없고 「폐기된 작업」에 있다.
 
 ## Phase 1: 셋업 (모듈 골격)
 
 **목적**: 신규 진입형 모듈을 빌드에 올리고, 다른 feature가 이 화면을 열 계약을 세운다.
 
-- [X] T001 `settings.gradle.kts`에 `include(":feature:placedetail")` 추가
-- [X] T002 `feature/placedetail/build.gradle.kts` 작성 — `mino.android.feature` 계열 컨벤션 플러그인과 `:core:map`·`:core:design-system`·`:core:common:ui`·`:core:common:android`·`:core:navigation`·`:core:domain`·`:core:error-handling` 의존 선언 ([plan.md 「주요 의존성」](./plan.md))
-- [X] T003 `feature/placedetail/src/main/AndroidManifest.xml`에 `PlaceDetailActivity` 등록 (exported=false)
-- [X] T004 [P] `app/build.gradle.kts`에 `implementation(projects.feature.placedetail)` 추가
-- [X] T005 [P] `core/navigation/src/main/java/team/mino/core/navigation/activity/launcher/PlaceDetailLauncher.kt` 신설과 `ExtraTag.kt`에 `EXTRA_PLACE_DETAIL_PIN_ID` 추가 ([contracts/place-detail-launcher.md §1](./contracts/place-detail-launcher.md))
+> **이 단계의 작업(T001~T005)은 전부 폐기되었다.** plan 2.0.0이 모듈을 해체했다 — 「폐기된 작업」 참조.
+
 
 **체크포인트**: `./gradlew :feature:placedetail:assembleQaDebug`가 빈 모듈로 통과한다.
 
@@ -54,7 +181,6 @@
 
 ### 도메인 모델과 Repository 계약
 
-- [X] T006 [P] `core/domain/src/main/kotlin/team/mino/core/domain/model/PlaceLabel.kt` 생성 — 4종 enum, 기본값 `WORTH_VISITING` ([data-model.md §3](./data-model.md)). US1의 헤더 라벨이 쓴다
 - [X] T007 [P] `core/domain/src/main/kotlin/team/mino/core/domain/model/PlaceDetail.kt` 생성 — `PlaceRegistrant` 중첩 포함 ([data-model.md §1](./data-model.md)). US1·US3·US5·US6 전부가 쓴다
 - [X] T008 [P] `core/domain/src/main/kotlin/team/mino/core/domain/model/PlaceComment.kt` 생성 — `PlaceCommentAuthor`·`PlaceCommentPage` 포함 ([data-model.md §2](./data-model.md)). US4가 쓴다
 - [X] T009 `core/domain/src/main/kotlin/team/mino/core/domain/repository/PlaceRepository.kt` 생성 — `getPlaceDetail`·`recordAccess`·`duplicatePin` 3종. **`recordAccess`가 예외를 던지지 않는다는 규약을 KDoc에 적는다** ([contracts/place-repository.md §1](./contracts/place-repository.md)). T007에 의존. US1·US6가 쓴다
@@ -62,18 +188,9 @@
 
 ### Fake 데이터 원천 (이번 라운드 한정)
 
-- [X] T011 `feature/placedetail/src/main/java/team/mino/feature/placedetail/fake/FakePlaceDetailData.kt` 생성 — 화면 검증에 필요한 샘플 집합을 한 파일에 모은다: 이미지 3장/1장/0장 장소, 코멘트 0건/3건/200자, `canDelete` 혼재, 원문 링크 있음/없음. Preview와 Fake Repository가 같은 원천을 쓴다. **방 목록은 담지 않는다** — 실제 `getRooms()`를 쓴다([research.md D15](./research.md))
-- [X] T012 [P] `feature/placedetail/src/main/java/team/mino/feature/placedetail/fake/FakePlaceRepository.kt` 생성 — `PlaceRepository` 구현. 지연을 흉내 내 로딩 구간을 볼 수 있게 한다. T009·T011에 의존
-- [X] T013 [P] `feature/placedetail/src/main/java/team/mino/feature/placedetail/fake/FakePlaceCommentRepository.kt` 생성 — `PlaceCommentRepository` 구현. 페이지 경계를 만들어 역방향 페이징(US4)을 확인할 수 있게 한다. T010·T011에 의존
-- [X] T014 `feature/placedetail/src/main/java/team/mino/feature/placedetail/di/PlaceDetailFakeDataModule.kt` 생성 — 두 Fake를 `@Binds`로 바인딩. **Phase 10에서 통째로 삭제되는 모듈이라는 사실을 파일 주석에 적는다**. T012·T013에 의존
 
 ### 진입점 골격 (진입형 feature)
 
-- [X] T015 [P] `feature/placedetail/src/main/java/team/mino/feature/placedetail/PlaceDetailDestinations.kt` 생성 — `@Serializable internal data class PlaceDetailMain(val pinId: String) : Route` ([contracts/place-detail-main-contract.md §1](./contracts/place-detail-main-contract.md))
-- [X] T016 `feature/placedetail/src/main/java/team/mino/feature/placedetail/PlaceDetailActivity.kt` 생성 — `@AndroidEntryPoint`, `intent.getStringExtra(EXTRA_PLACE_DETAIL_PIN_ID)`로 시작 Route 구성, `PlaceDetailShell` 호스팅. T005·T015에 의존
-- [X] T017 `feature/placedetail/src/main/java/team/mino/feature/placedetail/PlaceDetailShell.kt` 생성 — `MinoScaffold` + `navController` + `TrackScreenViews` ([feature-module.md 4장](../../architecture/feature-module.md)). T016에 의존
-- [X] T018 `feature/placedetail/src/main/java/team/mino/feature/placedetail/PlaceDetailNavHost.kt` 생성 — `MinoNavHost` + `screen<PlaceDetailMain>`. T015·T017에 의존
-- [X] T019 `feature/placedetail/src/main/java/team/mino/feature/placedetail/di/` 에 `PlaceDetailLauncherImpl.kt`·`PlaceDetailNavigationModule.kt` 생성 ([feature-navigation.md 1장](../../architecture/feature-navigation.md)). T005·T016에 의존
 
 ### MVI 계약과 화면 골격
 
@@ -101,14 +218,10 @@
 
 **독립 테스트**: [quickstart.md §3.1](./quickstart.md) — `adb`로 화면을 띄워 TS-001~TS-005·TS-008~TS-010을 확인한다.
 
-- [X] T025 [P] [US1] `feature/placedetail/src/main/java/team/mino/feature/placedetail/main/component/PlaceDetailMap.kt` 생성 — `MinoMap`(`:core:map`)에 선택 핀 마커 1개, 카메라를 장소 중심으로 (FR-002). 마커 색은 `state.roomColor`이며 **`null`인 동안에는 마커를 그리지 않는다**([research.md D15](./research.md)). T065의 `PlaceMapControls`를 지도 위에 합성한다
 - [X] T026 [P] [US1] `.../component/PlaceDetailSheet.kt` 생성 — `Half` 369dp 고정 앵커와 시트 골격 (FR-001·SC-002·UX-001 — 시트가 화면을 다 덮지 않아 지도와 선택 핀이 계속 보인다). `Full` 승격은 US2에서 붙인다
 - [X] T027 [US1] `.../component/PlaceDetailHeader.kt` 생성 — 확장형 헤더: 등록자 아바타(`MinoProfileAvatar`, 없으면 기본 아바타 EC-004) + 라벨 + [나가기]가 한 줄, 그 아래 장소명·주소 각 한 줄에 `...` 생략 (FR-003·FR-004). T026에 의존
 - [X] T028 [P] [US1] `.../component/PlaceActionRow.kt` 생성 — `장소보기`·`원문보기`·`다른방에 공유` 3종을 한 행에 두고 가로 스크롤, `장소보기`는 강조 스타일 (FR-006·UX-004). 클릭 배선은 US5·US6에서 붙인다
-- [X] T029 [US1] `.../component/SavedRoomsButton.kt` 생성 — **항상 비활성**으로 그린다 (FR-023, [contracts/place-detail-main-contract.md §6](./contracts/place-detail-main-contract.md)). 중복 저장 장소에서도 비활성인 것이 spec과 어긋난 상태임을 파일 주석에 남긴다. 배치는 T065가 맡는다. T065에 의존
-- [X] T030 [US1] `feature/placedetail/src/main/java/team/mino/feature/placedetail/PlaceDetailActivity.kt`에 `Exit` SideEffect 처리 배선 — `finish()`만 한다 (FR-009, [research.md D2](./research.md)). 시트 드래그다운(EC-003)도 같은 Intent로 흘린다. T024에 의존
 - [X] T031 [P] [US1] `.../screen/PlaceDetailScreenPreview.kt` 생성 — 로딩(`place == null`)·기본·긴 장소명/주소·등록자 없음 상태
-- [X] T065 [P] [US1] `.../component/CurrentLocationButton.kt`와 `.../component/PlaceMapControls.kt` 생성 — 지도 우측 하단에 [현재 위치]와 그 왼쪽 [저장된 방]을 한 행으로 배치하고 `Full`에서 함께 숨긴다 (FR-023, [spec.md §4](./spec.md) 가정). **[현재 위치]의 동작(카메라 이동·위치 권한)은 [SYS-004] 소관이라 이번 범위에서 구현하지 않고 렌더링과 배치만 한다**([spec.md §3.2](./spec.md), [research.md D16](./research.md))
 
 **체크포인트**: `Half` 요약이 완성되고 [나가기]로 화면이 닫힌다.
 
@@ -195,28 +308,63 @@
 - [X] T051 [P] `feature/placedetail/src/main/res/`로 문자열·치수 리소스 정리 — 하드코딩된 문구를 옮기고, Figma 실측값과 토큰 사용을 [figma-design-fidelity.md](../../conventions/figma-design-fidelity.md)에 따라 대조한다
 - [X] T069 `feature/placedetail/.../component/` 의 lint error 5건 해소 — 프리뷰 함수 3건(`SavedRoomsButton`·`CurrentLocationButton`·`PlaceMapControls`)의 `ComposeModifierMissing`과 `PlaceCommentList.kt:53,65`의 `ComposeModifierReused` — `lint.xml`이 `visibility-threshold=all`이라 private 프리뷰도 `Modifier` 파라미터를 요구한다. T052의 Lint 게이트가 이것을 요구한다
 - [X] T052 `./gradlew :app:assembleQaDebug` 통과 확인 (헌법 「품질 게이트」). Lint는 가능한 환경에서 `./gradlew lintDebug -Dorg.gradle.jvmargs="-XX:-TieredCompilation"`로 확인한다
-- [X] T070 `feature/main/src/main/java/team/mino/feature/main/MainActivity.kt`의 `onNavigateToPlaceDetail` 자리 표시용 `Toast`를 `PlaceDetailLauncher` 호출로 교체 — [SCR-003] 홈 카드 진입을 실제로 잇는다 ([contracts/place-detail-launcher.md §4](./contracts/place-detail-launcher.md), home spec FR-007). 결과를 받지 않으므로 `resultLauncher`를 넘기지 않는다(같은 계약 §3). plan 2.x에 없던 발견 작업이며, 「미결 사항」 1·10이 이 배선으로 실제로 드러난다. T019에 의존
-- [ ] T053 [quickstart.md §3](./quickstart.md)의 검증 시나리오 수행 — §4의 "검증하지 않는 것"은 제외한다
 
 ---
 
-## Phase 10: API 연결 — **이번 라운드 범위 밖**
+---
 
-**목적**: Fake를 실제 서버 연동으로 교체한다. 사용자 지시로 **이번 라운드에 착수하지 않는다.** 계약은 이미 확정돼 있으므로([contracts/place-api.md](./contracts/place-api.md)·[contracts/comment-api.md](./contracts/comment-api.md)) `/mino-task`를 다시 돌리지 않고 이 Phase만 이어서 진행하면 된다.
+## 폐기된 작업
 
-> **착수 전 필수**: [contracts/place-api.md §5](./contracts/place-api.md)의 서버 협의 항목 4건과 [contracts/comment-api.md §5](./contracts/comment-api.md)의 4건이 어떻게 닫혔는지 먼저 확인한다. 계약 근거는 2026-08-28T22:54:07+09:00 시점의 문서다.
+**완료(`[X]`)됐으나 plan 2.0.0의 구조 전환으로 산출물이 사라지는 작업 20건이다.** 이미 코드가 들어갔다는 뜻이므로 지우지 않고 정리 범위를 함께 남긴다. **이 번호들은 재사용하지 않는다.**
 
-- [ ] T054 [P] `core/data/.../network/dto/response/` 에 `PinDetailResponse`·`PlaceResponse`·`CommentResponse`·`CommentPageResponse` 생성
-- [ ] T055 `core/data/.../network/service/PinApiService.kt`에 `getPinDetail`·`recordAccess`·`duplicatePin` 추가 ([contracts/place-api.md §1·2·4](./contracts/place-api.md))
-- [ ] T056 [P] `core/data/.../network/service/CommentApiService.kt` 신설 — 코멘트 3종 ([contracts/comment-api.md](./contracts/comment-api.md))
-- [ ] T057 `core/data/.../datasource/PinRemoteDataSource.kt`(+Impl)에 3종 추가, `CommentRemoteDataSource.kt`(+Impl) 신설
-- [ ] T058 [P] `core/data/.../repository/mapper/PlaceDetailMapper.kt` 생성 — `label`은 서버가 주지 않으므로 `WORTH_VISITING`을 채운다 ([research.md D12](./research.md))
-- [ ] T059 [P] `core/data/.../repository/mapper/PlaceCommentMapper.kt` 생성 — `hasNext` → `hasOlder`
-- [ ] T060 `core/data/.../repository/PlaceRepositoryImpl.kt`·`PlaceCommentRepositoryImpl.kt` 생성과 `repository/di/` 바인딩 추가
-- [ ] T061 `RoomSummary.hasPlace` 추가와 `RoomRepository.getRooms(placeId)` 확장, `RoomApiService.listRooms(showHasPlaceId)`·`RoomSummaryMapper`·`RoomRepositoryImpl` 반영 ([research.md D9](./research.md), [contracts/place-repository.md §3](./contracts/place-repository.md)). 기존 호출자(`GetRoomPickerRoomsUseCase`·`:feature:sharereceiver`)가 깨지지 않는지 확인한다
-- [ ] T062 [US6] `.../main/vm/PlaceDetailViewModel.kt`에서 공유 시트 방 목록을 Fake에서 `getRooms(placeId)`로 교체하고 이미 저장된 방 판정을 `hasPlace`로 바꾼다. T061에 의존
-- [ ] T063 `feature/placedetail/.../di/PlaceDetailFakeDataModule.kt`와 `fake/` 패키지 삭제 — Fake 제거. T060·T062에 의존
-- [ ] T064 실제 데이터로 [quickstart.md §3](./quickstart.md) 재수행. 특히 「경과일 초기화 확인」이 진입 시 1회 나가는지, 비행기 모드에서 실패해도 화면이 정상인지 확인한다 (FR-026·EC-022)
+### 진입형 모듈 골격 — 모듈째 삭제 (T087이 정리)
+
+| ID | 원래 작업 | 폐기 사유 · 정리 범위 |
+|---|---|---|
+| T001 | `settings.gradle.kts`에 `include(":feature:placedetail")` | 편입으로 모듈이 사라진다. **정리**: 그 줄을 지운다 |
+| T002 | `feature/placedetail/build.gradle.kts` 작성 | 같음. **정리**: 파일 삭제 |
+| T003 | `AndroidManifest.xml`에 `PlaceDetailActivity` 등록 | Activity 폐기. **정리**: 파일 삭제 |
+| T004 | `app/build.gradle.kts`에 `implementation(projects.feature.placedetail)` | 같음. **정리**: 그 줄을 지운다 |
+| T015 | `PlaceDetailDestinations.kt` (`PlaceDetailMain(pinId)` Route) | 별도 Route가 아니라 `RoomMain`의 로컬 상태가 된다. **정리**: 파일 삭제 |
+| T016 | `PlaceDetailActivity.kt` | 진입형 폐기. **정리**: 파일 삭제. 단 외부 지도·원문 실행부는 **T085가 `MainActivity`로 이식한다** |
+| T017 | `PlaceDetailShell.kt` | 탭 셸(`MainShell`)이 대신한다. **정리**: 파일 삭제 |
+| T018 | `PlaceDetailNavHost.kt` | 목적지가 없어졌다. **정리**: 파일 삭제 |
+| T019 | `PlaceDetailLauncherImpl.kt`·`PlaceDetailNavigationModule.kt` | Launcher 계약 폐기. **정리**: 파일 삭제 |
+
+### 진입 계약 — 요청 홀더로 교체 (T071·T072·T084가 정리)
+
+| ID | 원래 작업 | 폐기 사유 · 정리 범위 |
+|---|---|---|
+| T005 | `PlaceDetailLauncher.kt` 신설과 `EXTRA_PLACE_DETAIL_PIN_ID` 추가 | 탭 간 진입을 Route 인자로 나를 수 없어 홀더로 바꾼다([research.md D18](./research.md)). **정리**: `PlaceDetailLauncher.kt` 삭제, `ExtraTag.kt`에서 상수 제거 |
+| T070 | `MainActivity`의 `onNavigateToPlaceDetail`을 `PlaceDetailLauncher` 호출로 교체 | 같음. **정리**: `holder.request(pinId)` + 탭 전환으로 교체(T084) |
+| T030 | `PlaceDetailActivity`에 `Exit` SideEffect → `finish()` 배선 | [나가기]가 화면 종료가 아니라 `selectedPinId = null`이 된다. **정리**: Activity와 함께 삭제. 대체는 T081 |
+
+### Fake 데이터 — 실 API로 교체 (Phase 13이 정리)
+
+| ID | 원래 작업 | 폐기 사유 · 정리 범위 |
+|---|---|---|
+| T011 | `FakePlaceDetailData.kt` | 실 API 연결([research.md D23](./research.md)). **정리**: 모듈 삭제로 함께 사라진다. **단 Preview가 이 원천을 쓰고 있으므로**, T073~T076 이식 시 Preview용 샘플을 `placedetail/screen/…Preview.kt` 안으로 옮기거나 `:feature:room`의 기존 Preview 관례에 맞춘다 |
+| T012 | `FakePlaceRepository.kt` | 같음. **정리**: 삭제 |
+| T013 | `FakePlaceCommentRepository.kt` | 같음. **정리**: 삭제 |
+| T014 | `PlaceDetailFakeDataModule.kt` | 같음. **정리**: 삭제. 바인딩은 `:core:data`가 갖는다(T060) |
+
+> **T063(Fake 삭제 작업)은 미착수 상태로 사라졌다.** 모듈째 삭제(T087)에 흡수되어 별도 작업이 필요 없다. 규칙에 따라 미착수 작업은 폐기 기록 없이 지웠으나, 번호는 재사용하지 않는다.
+
+### 지도·컨트롤 이중화 — 한 벌로 통합 (T074·T078·T086이 정리)
+
+| ID | 원래 작업 | 폐기 사유 · 정리 범위 |
+|---|---|---|
+| T025 | `PlaceDetailMap.kt` (`MinoMap` + 선택 핀) | 지도를 `RoomListMap` 한 벌로 합친다([research.md D25](./research.md)). **정리**: 파일 삭제. 선택 핀은 T078이 `RoomListMap`에 흡수 |
+| T065 | `CurrentLocationButton.kt`·`PlaceMapControls.kt` 생성 | `CurrentLocationButton`은 `RoomList`/`RoomDetail`이 이미 각자 갖고 있어 중복이다. **정리**: `CurrentLocationButton.kt` 삭제, `PlaceMapControls.kt`는 T074가 이식하고 T086이 `RoomListViewModel`에 연결 |
+
+### 구현 보류 산출물 — 실제 구현으로 교체 (Phase 14가 정리)
+
+| ID | 원래 작업 | 폐기 사유 · 정리 범위 |
+|---|---|---|
+| T006 | `PlaceLabel.kt` 생성 (4종 enum) | spec 4.0.0이 장소 상세의 라벨 노출을 없앴다([research.md D21](./research.md)). **정리**: T088이 파일과 `PlaceDetail.label`을 삭제 |
+| T029 | `SavedRoomsButton.kt` — 항상 비활성으로 그린다 | 서버가 `matchedPinId`를 신설해 전환을 구현할 수 있게 됐다([research.md D20](./research.md)). **정리**: 파일 삭제. 대체는 T093·T094 |
+
+**폐기가 만든 부채는 없다.** 20건 모두 이번 라운드의 작업(T071~T098)이 정리 범위를 흡수하며, 남는 잔여물은 T098이 확인한다.
 
 ---
 
@@ -224,30 +372,48 @@
 
 작업으로 만들 근거가 없거나, spec 요구사항이 이번 구현에서 닫히지 않는 지점. `/mino-analyze`가 검증할 대상이다.
 
-1. **FR-009 [나가기] 목적지** — `finish()`로 호출자 복귀까지만 구현한다([research.md D2](./research.md)). [SCR-005] 방 상세·지도 마커 진입은 호출자가 곧 목적지라 우연히 맞지만, **[SCR-003] 홈 카드와 [SCR-007] 알림 진입은 spec과 어긋난 채 남는다.** 방 상세(#161) 머지 후 별도 개정에서 닫는다. TS-006·TS-007·TS-037과 **EC-001**(알림 진입 시 최초 저장 방을 기준으로 잡고 그 방으로 나간다)이 미검증이다.
-2. **FR-023·FR-024·FR-025 저장된 방 전환** — 서버가 대상 `pinId`를 주지 않아 구현 보류([research.md D10](./research.md)). [저장된 방] 버튼은 T029가 항상 비활성으로 그린다. **유저 플로우 7 전체와 TS-041~TS-049·EC-024~EC-027·UX-011~UX-013·SC-008·SC-009가 이번 구현의 검증 대상이 아니다.** 다만 **UX-013은 절반이 성립한다** — T065가 버튼 행을 `Full`에서 숨기므로 "방 전환 조작이 콘텐츠를 읽는 동안 끼어들지 않는다"는 성질 자체는 지켜지고, 전환 기능만 없다.
-3. **FR-018 이미 저장된 방 판정** — 방 목록 자체는 실제 `getRooms()`로 받지만 `hasPlace`가 없어 **이미 저장된 방을 체크·비활성으로 표시하지 못한다**([research.md D15](./research.md)). 실제 연동은 T061·T062이며, 그때까지 TS-034·EC-019와 **SC-007**(고를 방이 없는 사용자가 막히지 않고 빠져나간다)이 검증되지 않는다 — `hasPlace`가 없어 그 상태 자체를 재현할 수 없다.
-4. **FR-005 장소분류 라벨** — 서버가 값을 주지 않아 항상 기본값 `가볼 만한 곳`이다([research.md D12](./research.md)). EC-005 덕에 spec 위반은 아니나 FR-005의 취지("홈에서 부여된 값을 그대로 표시")는 작동하지 않는다.
-5. **[현재 위치] 버튼의 동작** — 렌더링은 T065가 하지만 카메라 이동·위치 권한은 [SYS-004] 소관이라 정의된 곳이 없다. 눌러도 아무 일이 없는 상태로 남는다([research.md D16](./research.md)).
-6. **외부 지도 앱 선택 정책** — [spec.md §3.2](./spec.md)가 비목표로 둔 `[TBD]`. T044 착수 시 정한다.
-7. **[SYS-003] 방 선택 시트 내부 규칙** — 시트 높이(676dp)·카드 구성·비활성 시각 표현이 [SYS-003] spec 부재로 `[TBD]`다([research.md D13](./research.md)). T047 착수 시 정한 값과 근거를 남긴다.
-8. **TS-035·EC-020 (시트에서 새 방 만들고 복귀)** — [SYS-001] 호출이 [SYS-003] 시트 소관이라 이번 범위에 없다.
-9. **`EXTRA_PLACE_DETAIL_PIN_ID` 누락 시 처리** — [contracts/place-detail-launcher.md §2](./contracts/place-detail-launcher.md)가 `[TBD]`로 둔 방어 코드. T016 착수 시 정한다.
-10. **「경과일 초기화 확인」이 홈 진입에서 2회 나간다** — T070으로 [SCR-003] 홈 카드를 실제로 이으면서 드러났다. 홈은 카드 탭에서 `HomeDeckRepository.recordPlaceOpened`를 부르고(home spec FR-007·TS-034), 상세는 열릴 때마다 `PlaceRepository.recordAccess`를 부른다(FR-026). 두 호출이 같은 서버 기록으로 가므로 **카드 한 번 탭에 기록이 2회 쌓인다.** 「진입 경로와 무관하게 기록한다」는 FR-026이 이 기록의 소유자이므로 홈 쪽 호출을 걷어내는 것이 맞으나, home spec FR-007·TS-034가 홈에도 기록을 요구해 spec 개정 없이는 지울 수 없다. **사용자 지시로 이번 라운드는 중복을 둔 채 진행하며**, 걷어낼 코드라는 사실을 `HomeViewModel.openPlaceDetail`의 KDoc에 명시했다.
+**plan 1.1.0의 미결 10건 중 6건이 닫힌다.** 아래는 이번 라운드 이후에도 남는 것과, 이번에 새로 생긴 것이다.
+
+### 이번 라운드에서 닫히는 것 (기록)
+
+| 지난 미결 | 닫는 작업 |
+|---|---|
+| 1. FR-009 [나가기] 목적지 — 홈·알림 진입이 spec과 어긋남 | **T079·T081·T082·T084** — 상태 전이는 T079(`selectedPinId = null`), 시트 노출은 T081, 진입 시 목적지 확정은 T082·T084다. 편입으로 경로 무관 복귀가 성립하며 EC-001도 `pinId`→`roomId` 해석으로 충족 |
+| 2. FR-023~025 저장된 방 전환 — 서버가 `pinId`를 안 줌 | **Phase 14 (T092~T095)** — `matchedPinId` 신설 |
+| 3. FR-018 이미 저장된 방 판정 — `hasPlace` 없음 | **T061·T062** |
+| 4. FR-005 장소분류 라벨 — 서버가 값을 안 줌 | **T088·T089** — 요구사항 자체가 소멸 |
+| 5. [현재 위치] 버튼의 동작 | **T086** — 지도가 한 벌이 되며 `RoomListViewModel`이 소유 |
+| 9. `EXTRA_PLACE_DETAIL_PIN_ID` 누락 시 처리 | **T072** — 상수와 함께 사라진다 |
+
+### 남는 것
+
+1. **[SYS-003] 방 선택 시트 내부 규칙** — 시트 높이 단계(`Peek` 500dp / `Full` 676dp / 방 5개 이상 708dp)·카드 구성·비활성 시각 표현이 [SYS-003] spec 부재로 `[TBD]`다([research.md D13](./research.md)). **현재 `RoomShareSheet`는 `676.dp` 단일 앵커(`OPEN`/`GONE`)로 3단 중 하나만 구현돼 있다 — 의도적 축소가 아니라 미구현이다.** `[SYS-003]` spec이 서기 전에는 닫히지 않는다.
+   - **이 항목은 「저장된 방 시트」와 무관하다.** 그쪽 치수(442dp·312dp)는 FR-024가 직접 못박았고 이 스펙이 소유한다 — T093은 `RoomShareSheet`를 따라가지 않는다.
+2. **TS-035·EC-020 (시트에서 새 방 만들고 복귀)** — [SYS-001] 호출이 [SYS-003] 시트 소관이라 이번 범위에 없다.
+3. **외부 지도 앱 선택 정책** — [spec.md §3.2](./spec.md)가 비목표로 둔 `[TBD]`다. T044가 `geo:` 우선으로 정하고 근거를 남겼으며, T085가 그 판단을 그대로 이식한다. spec이 이 결정을 승인한 적은 없다.
+4. **아바타 색 enum 불일치** — 핀 상세의 `createdBy.avatar.color`에는 enum 제약이 없고 코멘트의 `author.avatar.color`에는 있다([contracts/place-api.md §1.3](./contracts/place-api.md)). **서버팀 협의 항목**이며, T058이 모르는 값을 `null`로 떨어뜨리는 것으로 버틴다.
+5. **코멘트 작성 시각의 기준 시계** — 기기 시각과 서버 `createdAt` 중 무엇을 기준으로 경과를 재는지 [spec.md §3.2](./spec.md)가 정의하지 않은 채 위임했고, 그 위임은 그대로 남는다([research.md D22](./research.md)). **plan 2.1.0이 이 항목의 절반은 닫았다** — 기기 시각을 어떻게 얻는지가 주입한 `Clock`으로 정해졌고(T099·T100, [research.md D26](./research.md)), 서버가 기준 시각을 내려주게 되면 `commentsObservedAt`의 공급원만 갈면 되어 화면 쪽 판정 함수(T091)는 손대지 않는다. 남은 위험은 EC-029(음수 흡수)가 덮는다.
+6. **「경과일 초기화 확인」이 홈 진입에서 2회 나간다** — plan 1.1.0에서 발견된 그대로 남는다. 홈이 `HomeDeckRepository.recordPlaceOpened`를(home spec FR-007·TS-034), 상세가 `PlaceRepository.recordAccess`를(FR-026) 각각 부른다. **편입해도 두 호출은 그대로라 중복이 유지된다.** FR-026이 이 기록의 소유자이므로 홈 쪽을 걷어내는 것이 맞으나 home spec 개정이 선행되어야 한다. `HomeViewModel.openPlaceDetail`의 KDoc에 명시돼 있다.
+
+### 새로 생긴 것
+
+7. **`restoreState`와 요청 홀더의 상호작용** — T084가 탭 전환과 홀더 적재를 함께 하는데, 저장 탭이 이미 열려 있던 상태로 복원되는 경우 `RoomListViewModel`이 구독을 유지하고 있는지 확인이 필요하다. [quickstart.md §5-4](./quickstart.md)가 이 지점을 본다.
+8. **`:feature:room` 모듈 비대화** — 화면 3개(리스트·방 상세·장소 상세)를 한 모듈이 갖는다. plan 2.0.0 「복잡도 추적」이 감수한 비용으로 기록했으나, 이후 화면이 더 붙으면 재검토가 필요하다.
 
 ---
 
 ## 구현 작업이 없는 요구사항
 
-아래 셋은 작업 목록에 대응 항목이 없다. **누락이 아니라 설계상 구현할 것이 없는 경우**이므로 근거를 남긴다.
+아래는 작업 목록에 대응 항목이 없다. **누락이 아니라 설계상 구현할 것이 없는 경우**이므로 근거를 남긴다.
 
 | 요구사항 | 왜 작업이 없는가 | 확인 방법 |
 |---|---|---|
 | FR-019 (코멘트가 (장소, 방) 단위에 귀속) | 서버가 코멘트를 `pinId` 경로에 매단다. 핀이 곧 (장소, 방)이므로 T010의 계약을 그대로 쓰는 것만으로 성립한다([research.md D4](./research.md)) | TS-024 — 같은 장소의 다른 방 `pinId`로 열면 코멘트가 다르다 |
-| FR-020 (바텀 네비게이션 비노출) | 진입형 Activity는 탭 셸 밖에서 뜨므로 바텀바가 애초에 그려지지 않는다. `ImmersiveRoute` 같은 판정 장치가 필요 없다([research.md D3](./research.md)) | TS-010 — 화면에 바텀바가 보이지 않는다 |
-| FR-027 (「지금 보고 있는 방」 초기값 결정) | `pinId` 안에 내포된다. 호출자가 어느 핀을 지목하느냐가 곧 어느 방의 눈으로 보는지다([research.md D4](./research.md)). 화면이 방을 따로 고르는 코드가 없다 | TS-002·TS-007 — 마커 색과 코멘트가 그 핀의 방을 따른다 |
-| EC-002 (중복 마커 클릭도 다른 마커와 동일하게 `Half`) | 이 화면이 아니라 **호출자**가 지키는 성질이다. 장소 상세는 `pinId` 하나로 열리므로 그 장소가 여러 방에 저장돼 있는지 알지도 못한다([research.md D4](./research.md)) | 호출자 화면(방 상세 지도)이 생길 때 그쪽에서 확인 |
-| SC-006 (90%가 첫 시도에 의도한 액션 완료) | 사용자 조사 지표라 코드로 만들 것이 없다 | 출시 후 측정. [quickstart.md §4](./quickstart.md)가 이미 제외로 적어 두었다 |
+| FR-027 (「지금 보고 있는 방」 초기값 결정) | `pinId` 안에 내포된다([research.md D4](./research.md)). 화면이 방을 따로 고르는 코드가 없다 | TS-002·TS-007 — 마커 색과 코멘트가 그 핀의 방을 따른다 |
+| EC-002 (중복 마커 클릭도 다른 마커와 동일하게 `Half`) | **호출자**가 지키는 성질이다. 장소 상세는 `pinId` 하나로 열린다. 편입 후 그 호출자는 `RoomListViewModel`의 `OnPlaceSelected`이며 방을 먼저 고르게 하는 분기가 없다 | [quickstart.md §4-2](./quickstart.md) |
+| SC-006 (90%가 첫 시도에 의도한 액션 완료) | 사용자 조사 지표라 코드로 만들 것이 없다 | 출시 후 측정 |
+
+> **FR-020(바텀 네비게이션 비노출)은 더 이상 이 표에 없다.** 진입형일 때는 "바텀바가 애초에 없어서" 구현이 필요 없었으나, 편입 후에는 탭 셸 안이라 **T081이 실제로 숨겨야 한다**([research.md D19](./research.md)).
 
 ---
 
@@ -255,88 +421,96 @@
 
 ### 단계 간 의존성
 
-- **Phase 1 셋업**: 의존성 없음 — 즉시 시작
-- **Phase 2 기반**: T001~T003 완료 후. 내부적으로 도메인(T006~T010) → Fake(T011~T014), 진입점(T015~T019), MVI(T020~T024)의 세 갈래가 있고 갈래끼리는 병렬이다
-- **Phase 3~8 스토리**: 각 작업이 **실제로 쓰는** 기반 산출물이 나오면 시작한다. Phase 2 전체를 기다리지 않는다
-- **Phase 9 마무리**: 목표한 스토리 완료 후
-- **Phase 10 API**: 이번 라운드 범위 밖. Phase 9와 무관하게 언제든 착수 가능하나 서버 협의가 선행 조건이다
+- **Phase 11 구조 전환**: 먼저 한다. 나머지 전부가 이 위에 선다. 내부 순서는 진입 계약(T071·T072) → 화면 이식(T073~T077) → 저장 탭 편입(T078~T083) → 셸·모듈 정리(T084~T087)
+- **Phase 12 spec 4.0.0**: 이식(T074·T075)이 끝나야 시작. 예외는 **T099(DI 모듈 신설)로, 새 파일 하나뿐이라 이식과 무관하게 언제든 할 수 있다.** Phase 13과 병렬 가능 — 건드리는 파일이 겹치지 않는다. 단계 내부 순서는 T090 → T099 → T100 → T091이다(시각 표기 갈래)
+- **Phase 13 API 연결**: `:core:data` 작업(T054~T060)은 Phase 11과 **완전히 병렬**이다. T061·T062만 이식 이후다
+- **Phase 14 저장된 방**: T062(방 목록 실연동) 이후. Phase 13에 의존하는 유일한 스토리다
+- **Phase 15 검증**: 전부 끝난 뒤. 단 T096(회귀)은 T081 직후에 한 번 먼저 보는 편이 낫다
+
+### 임계 경로
+
+```
+T071 → T084 ┐
+T073 → T074 → T075 → T076 → T080 → T081 → T096
+                              ↑
+T078 → T079 ──────────────────┘
+
+(별도 갈래) T054~T060 → T061 → T062 → T092 → T093 → T094 → T095
+
+(시각 표기 갈래) T090 ┐
+             T099 ┴→ T100 → T091
+```
+
+**가장 긴 사슬은 이식 → 편입 → 회귀 확인이다.** API 갈래는 그와 무관하게 먼저 끝낼 수 있다.
 
 ### 사용자 스토리 간 의존성
 
-- **US1**: 독립. Phase 2가 끝나면 바로 시작. 내부 순서 하나 — T065(버튼 행) → T029(그 안의 [저장된 방]) → T025(지도에 합성)
-- **US2**: T026(US1의 시트 골격)과 T027(확장형 헤더)에 의존 — 같은 파일을 이어서 고친다
-- **US3**: T033(US2의 스크롤 축)에 의존. 캐러셀 컴포넌트 자체(T036)는 US1·US2와 병렬 가능
-- **US4**: T033에 의존. 컴포넌트 3종(T038·T039·T041)은 US1~US3과 병렬 가능
-- **US5**: T028(액션 행)·T030(SideEffect 배선)에 의존. T046은 US2~US4의 상태가 다 있어야 확인 가능
-- **US6**: T021(UI 모델)에 의존. 나머지는 독립
+- **US1~US6**: 화면 자체는 지난 라운드에 완성됐다. 이번 라운드에서는 **이식으로 한꺼번에 옮겨지므로** 스토리별 순서가 없다. 예외는 US1의 헤더(T089)와 US4의 코멘트 시각(T090·T099·T100·T091) — spec 4.0.0 반영분과 plan 2.1.0이 더한 기준 시각 배선이다
+- **US7 (저장된 방 전환)**: 신규. T062에 의존하며 다른 스토리와 독립이다
 
 ### 병렬 처리 기회
 
-- Phase 1: T004·T005가 병렬
-- Phase 2: 도메인 3종(T006~T008) 병렬 → Fake 2종(T012·T013) 병렬. 진입점 갈래(T015~T019)와 MVI 갈래(T020~T022)는 도메인과 병렬
-- Phase 3: T025·T026·T028·T031·T065가 서로 다른 파일이라 병렬 (T029는 T065 뒤)
-- 컴포넌트 작업(T036·T038·T039)은 소속 스토리가 달라도 파일이 겹치지 않아 병렬
-- **파일 충돌 주의**: `PlaceDetailSheet.kt`(T026→T032→T033), `PlaceDetailHeader.kt`(T027→T034), `PlaceDetailViewModel.kt`(T023→T035→T043→T048), `PlaceDetailActivity.kt`(T016→T030→T044→T045)는 같은 파일을 여러 작업이 이어서 고치므로 병렬이 아니다
+- **가장 큰 기회**: Phase 13의 `:core:data` 작업(T054~T060)과 Phase 11의 이식·편입이 **파일이 전혀 겹치지 않아 완전 병렬**이다. 두 사람이 붙으면 라운드가 절반으로 줄어든다
+- Phase 11: T071·T072가 병렬, T073·T077·T078이 병렬
+- Phase 12: T088·T090·T099가 병렬(도메인 파일 둘과 신규 DI 파일 하나로 서로 겹치지 않는다)
+- Phase 13: T054·T056이 병렬, T058·T059가 병렬
+- **파일 충돌 주의**: `RoomListRoute.kt`(T081→T082→T085→T095), `RoomListScreen.kt`(T080), `RoomListViewModel`(T079→T082→T086), `PlaceDetailViewModel`(T075→T100→T062→T092), `PlaceDetailHeader.kt`(T089), `PlaceMapControls.kt`(T074→T086→T094)는 같은 파일을 여러 작업이 이어서 고치므로 병렬이 아니다
 
 ---
 
-## 병렬 실행 예시: Phase 2 기반 작업
+## 병렬 실행 예시: Phase 11 화면 이식
 
 ```bash
-# 도메인 모델 3종을 함께 생성:
-Task: "core/domain/.../model/PlaceLabel.kt 에 PlaceLabel 4종 enum 생성"
-Task: "core/domain/.../model/PlaceDetail.kt 에 PlaceDetail·PlaceRegistrant 생성"
-Task: "core/domain/.../model/PlaceComment.kt 에 PlaceComment·Author·Page 생성"
-
-# 도메인이 끝나면 Fake 2종을 함께 생성:
-Task: "feature/placedetail/.../fake/FakePlaceRepository.kt 생성"
-Task: "feature/placedetail/.../fake/FakePlaceCommentRepository.kt 생성"
+# 서로 다른 파일 계열이라 함께 옮길 수 있다:
+Task: "main/model/ 4종을 feature/room/.../placedetail/model/로 이식하고 RoomColorPalette를 RoomColorMapping에 합친다"
+Task: "feature/placedetail/src/main/res/values/strings.xml을 feature/room 리소스로 이식"
+Task: "MapPinUiModel에 selected 추가하고 RoomListMap의 PlacePin에 반영"
 ```
 
-## 병렬 실행 예시: Phase 3 (US1)
+## 병렬 실행 예시: 두 갈래 동시 진행
 
 ```bash
-Task: "feature/placedetail/.../component/PlaceDetailMap.kt 에 MinoMap + 선택 핀 구현"
-Task: "feature/placedetail/.../component/PlaceDetailSheet.kt 에 Half 369dp 앵커 구현"
-Task: "feature/placedetail/.../component/PlaceActionRow.kt 에 액션 버튼 3종 가로 스크롤 구현"
-Task: "feature/placedetail/.../component/PlaceMapControls.kt 에 지도 위 버튼 행 구현"
+# 갈래 A — 구조 전환 (feature 계층)
+Task: "Phase 11: :feature:placedetail을 :feature:room으로 편입"
+
+# 갈래 B — API 연결 (:core:data 계층, 파일이 겹치지 않는다)
+Task: "core/data/.../dto/response/에 PinDetailResponse·CommentResponse 생성"
+Task: "core/data/.../service/CommentApiService.kt 신설"
 ```
 
 ---
 
 ## 구현 전략
 
-### MVP 우선 (US1까지)
+### 먼저 구조를 세운다 (Phase 11까지)
 
-1. Phase 1 셋업 완료 → 모듈이 빌드에 올라간다
-2. Phase 2 기반 중 US1이 쓰는 것(T006·T007·T009·T011·T012·T014~T024) 완료
-3. Phase 3 US1 완료
-4. **중단하고 검증**: `adb`로 화면을 띄워 [quickstart.md §3.1](./quickstart.md) 수행
-5. 이 시점의 산출물이 "지도 위 요약 시트가 뜨고 닫힌다" — 데모 가능한 최소 단위다
+1. 진입 계약 교체(T071·T072) → 홀더가 생기고 Launcher가 사라진다
+2. 화면 이식(T073~T077) → 파일이 `:feature:room` 아래로 옮겨간다
+3. 저장 탭 편입(T078~T083) → 세 갈래 분기와 지도 공유가 선다
+4. 셸·모듈 정리(T084~T087) → 진입형 흔적이 사라진다
+5. **중단하고 검증**: [quickstart.md §4·§5·§10](./quickstart.md) 수행. **여기서 지도가 깜빡이면 편입이 덜 된 것이다**
+6. 이 시점의 산출물이 "홈에서 눌러 들어가 저장 탭 방 상세로 나온다" — 이번 라운드의 핵심 성과다
 
 ### 점진적 전달
 
-1. 셋업 + 기반 → US1 (요약 시트, MVP)
-2. US2 추가 (`Full`과 헤더 전환) → 시트가 완성된다
-3. US3 추가 (캐러셀) → 콘텐츠가 채워진다
-4. US4 추가 (코멘트) → 화면의 본체가 완성된다
-5. US5·US6 추가 (외부 연동·공유) → 액션 행이 전부 살아난다
-6. Phase 9 마무리 → UI 라운드 종료
-7. Phase 10은 서버 협의가 닫힌 뒤 별도로
+1. Phase 11 → 구조 전환 (핵심)
+2. Phase 12 → spec 4.0.0 반영 (헤더 닉네임·코멘트 시각)
+3. Phase 13 → 실 데이터로 교체
+4. Phase 14 → 저장된 방 전환 (마지막 미구현 유저 플로우가 닫힌다)
+5. Phase 15 → 회귀·게이트
 
 ### 팀 병렬 전략
 
-Phase 2까지 함께 끝낸 뒤:
-
-- 개발자 A: US1 → US2 (시트·헤더 — 같은 파일 계열이라 한 사람이 잇는 편이 낫다)
-- 개발자 B: US4 (코멘트 — 컴포넌트가 독립적이고 분량이 가장 크다)
-- 개발자 C: US3 + US6 (캐러셀·공유 시트)
-- US5는 A의 T030 이후 누구든
+- **개발자 A**: Phase 11 전체 (이식·편입 — 한 사람이 잇는 편이 낫다. 파일 충돌이 이 갈래에 몰려 있다)
+- **개발자 B**: Phase 13의 T054~T060 (`:core:data` — A와 완전히 독립)
+- 둘이 만나는 지점은 T061·T062. 그 뒤 B가 Phase 14를 이어받는다
+- Phase 12는 A의 T075 이후 누구든
 
 ---
 
 ## 참고 사항
 
-- 피해야 할 것: 모호한 작업, 동일 파일 충돌(위 「파일 충돌 주의」 참고), 스토리 독립성을 깨뜨리는 의존성
-- 커밋 단위는 [`docs/conventions/commit-message.md`](../../conventions/commit-message.md)의 쪼개기 원칙을 따른다
-- Fake는 이번 라운드 한정이다. T063이 지우는 범위(`fake/` 패키지와 `PlaceDetailFakeDataModule.kt`)를 넘어 Fake가 새어 나가지 않게 한다
+- 피해야 할 것: 모호한 작업, 동일 파일 충돌(위 「파일 충돌 주의」 참고), **이식 중 로직을 함께 고치는 것** — 옮기는 커밋과 고치는 커밋을 분리해야 회귀 원인을 좁힐 수 있다
+- 커밋 단위는 [`docs/conventions/commit-message.md`](../../conventions/commit-message.md)의 쪼개기 원칙을 따른다. 이식(T073~T077)은 파일 이동만 담은 커밋으로 두면 diff가 읽힌다
+- **T087(모듈 삭제)은 반드시 마지막이다.** 먼저 지우면 이식이 끝나지 않은 파일이 함께 사라진다
+- 폐기된 20건의 번호(T001~T006·T011~T019·T025·T029·T030·T065·T070)와 삭제된 T063은 **재사용하지 않는다**

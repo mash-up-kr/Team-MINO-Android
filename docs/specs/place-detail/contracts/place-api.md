@@ -1,101 +1,181 @@
-# 계약: 핀 상세 · 접근 기록 · 복제 · 방 목록 (Place API)
+# 계약: 장소(핀) API 대조
 
 **대상 스펙 경로**: `docs/specs/place-detail`
 
-**계획서**: [../plan.md](../plan.md)
+**계획서**: [plan.md](../plan.md)
 
-**참조 API 문서**: <https://api.gguk.org/api-docs-json> (Team MINO API 1.0.0) — 조회 시점 **2026-08-28T22:54:07+09:00**
+**출처**: <https://api.gguk.org/api-docs-json> (Team MINO API 1.0.0, 오퍼레이션 27개)
 
-이 문서의 스키마 인용은 위 시점의 문서 원문이다. 요약하지 않고 제약(`enum`·`nullable`·`required`)을 그대로 옮긴다.
+**조회 시점**: **2026-09-01T21:46:23+09:00**
+
+> plan 1.1.0의 대조 시점은 2026-08-28T22:54:07+09:00이었고 오퍼레이션이 25개였다. **이번 조회에서 두 개가 늘고 `GET /api/v1/rooms`의 응답이 넓어졌다.**
 
 ---
 
-## 1. `GET /api/v1/pins/{pinId}` — 핀 상세 조회
+## 0. 지난 대조에서 달라진 것
 
-> 설명: "장소 정보(places 컬럼 전체) + 출처 링크 + 저장한 멤버 프로필"
-
-**요청**: 경로 파라미터 `pinId: string`
-
-**응답 200 `data`**
-
-| 필드 | 타입 | 매핑 |
+| 항목 | plan 1.1.0 | plan 2.0.0 (이번 조회) |
 |---|---|---|
-| `id` | `string(uuid)` | `PlaceDetail.pinId` |
-| `roomId` | `string(uuid)` | `PlaceDetail.roomId` — 「지금 보고 있는 방」 |
-| `place.id` | `string(uuid)` | `PlaceDetail.placeId` |
-| `place.name` | `string` | `PlaceDetail.name` |
-| `place.address` | `string` | `PlaceDetail.address` |
-| `place.lat` / `place.lng` | `number` | `PlaceDetail.location: GeoPoint` |
-| `place.mapUrl` | `string, nullable` | `PlaceDetail.mapUrl` (FR-016) |
-| `place.category` | `string, nullable` | **매핑하지 않는다** — FR-005가 카테고리 미노출을 명시 |
-| `place.provider` | `enum(kakao, google)` | 매핑하지 않는다 |
-| `place.city` · `district` · `phone` · `providerPlaceId` · `createdAt` · `updatedAt` | | 매핑하지 않는다 |
-| `images` | `string[]` | `PlaceDetail.imageUrls` (FR-007). 설명에 "places.images — pins 이동 전 임시 매핑"이라 적혀 있다 |
-| `createdBy` | `object, nullable` | `PlaceDetail.registrant` (FR-003). `null`이면 기본 아바타(EC-004) |
-| `createdBy.userId` / `nickname` | `string` | |
-| `createdBy.avatar.color` | `string, nullable` | `RoomColor`로 매핑 — §4 협의 항목 참고 |
-| `sourceUrl` | `string, nullable` | `PlaceDetail.sourceUrl` (FR-017). `null`이면 [원문보기] 비활성(EC-017) |
-| `createdAt` | `string(date-time)` | 매핑하지 않는다 — 저장 경과일 미노출 |
+| `GET /api/v1/rooms?showHasPlaceId=` | `hasPlace`만 | **`hasPlace` + `matchedPinId`** → FR-024 구현 가능 |
+| `labelGroup` (핀 상세) | 없음 → 서버 협의 항목 | **협의 철회** — spec 4.0.0이 요구사항을 제거 |
+| `createdBy.nickname` | 있으나 미사용 | **FR-005의 공급원**이 되었다 |
 
-**어긋남**: 응답에 **`labelGroup`이 없다.** FR-005가 요구하는 장소분류 라벨을 이 엔드포인트에서 얻을 수 없다 → §4 협의 항목, [research.md D12](../research.md).
+---
 
-**어긋남**: 응답에 **방의 대표 색상이 없다.** `roomId`만 오고 그 방의 `color`가 없어 마커 색상(FR-002)을 그릴 수 없다. `GET /api/v1/rooms`로 받은 방 목록에서 `roomId`로 찾아 쓴다 — 방 목록은 [다른방에 공유] 시트를 위해 어차피 조회한다(§3).
+## 1. `GET /api/v1/pins/{pinId}` — 핀 상세 (FR-003·FR-005·FR-007·FR-016·FR-017·FR-027)
 
-**오류**: `401`(`UNAUTHORIZED` / `TOKEN_EXPIRED` / `USER_NOT_REGISTERED`). `MinoIdentityProofPlugin`이 헤더를 싣고 `convertDomainException`이 `MinoDomainException`으로 바꾼다 — 기존 `PinApiService`와 같다.
+**판정: 대응 API 있음.**
+
+```
+description: "장소 정보(places 컬럼 전체) + 출처 링크 + 저장한 멤버 프로필"
+parameters: pinId (path, required, string)
+```
+
+응답 `data`:
+
+```json
+{
+  "id":     { "type": "string", "format": "uuid" },
+  "roomId": { "type": "string", "format": "uuid" },
+  "place": {
+    "type": "object",
+    "description": "places 컬럼 전체 (images 제외 — 핀 응답으로 이동)",
+    "properties": {
+      "id":              { "type": "string", "format": "uuid" },
+      "provider":        { "type": "string", "enum": ["kakao", "google"] },
+      "providerPlaceId": { "type": "string" },
+      "name":            { "type": "string" },
+      "address":         { "type": "string" },
+      "city":            { "type": "string", "nullable": true },
+      "district":        { "type": "string", "nullable": true },
+      "lat":             { "type": "number" },
+      "lng":             { "type": "number" },
+      "category":        { "type": "string", "nullable": true },
+      "phone":           { "type": "string", "nullable": true },
+      "mapUrl":          { "type": "string", "nullable": true },
+      "createdAt":       { "type": "string", "format": "date-time" },
+      "updatedAt":       { "type": "string", "format": "date-time" }
+    }
+  },
+  "images":    { "type": "array", "items": { "type": "string" },
+                 "description": "게시물 이미지 (places.images — pins 이동 전 임시 매핑)" },
+  "createdBy": {
+    "type": "object", "nullable": true,
+    "description": "핀을 저장한 멤버 프로필 (\"누가 추가한 곳\" 표시용)",
+    "properties": {
+      "userId":   { "type": "string", "format": "uuid" },
+      "nickname": { "type": "string" },
+      "avatar":   { "type": "object", "nullable": true,
+                    "properties": { "color": { "type": "string", "example": "red" } } }
+    }
+  },
+  "createdAt": { "type": "string", "format": "date-time" },
+  "sourceUrl": { "type": "string", "nullable": true,
+                 "description": "출처 링크 (sources.original_url, 단일)" }
+}
+```
+
+### 1.1 매핑
+
+| 요구사항 | 응답 필드 | 비고 |
+|---|---|---|
+| FR-003 장소명·주소 | `place.name`·`place.address` | |
+| **FR-005 등록자 닉네임** | `createdBy.nickname` | **spec 4.0.0 신규 요구. 대응 있음** |
+| FR-003 등록자 아바타 | `createdBy.avatar.color` | `null`이면 기본 아바타(EC-004) |
+| FR-002 좌표 | `place.lat`·`place.lng` | |
+| FR-007 대표 이미지 | `images` | 비면 캐러셀 영역이 사라진다(EC-009) |
+| FR-016 외부 지도 | `place.mapUrl` | `geo:` 실패 시의 웹 대체 후보 |
+| FR-017 원문 | `sourceUrl` | `null`이면 [원문보기] 비활성(EC-017) |
+| FR-027 지금 보고 있는 방 | `roomId` | **탭 간 진입이 방을 해석하는 근거** |
+| FR-018·FR-024 질의 키 | `place.id` | `?showHasPlaceId=`에 싣는다 |
+
+### 1.2 담지 않는 필드
+
+`provider`·`providerPlaceId`·`city`·`district`·`category`·`phone`·`createdAt`·`updatedAt`. 카테고리와 저장 경과일을 장소 상세 어디에도 노출하지 않기로 한 spec §3.2의 규정이다.
+
+**`labelGroup`은 이 응답에 없고, 이제 필요하지도 않다.** plan 1.1.0이 세운 서버 협의 항목을 **철회한다** — spec 4.0.0 FR-005가 장소 상세에서 라벨 노출을 없앴다([research.md D21](../research.md)).
+
+### 1.3 남는 어긋남 — 아바타 표현의 불일치
+
+| 지점 | 서버 |
+|---|---|
+| `GET /pins/{pinId}` → `createdBy.avatar.color` | `{ "type": "string", "example": "red" }` — **enum 제약이 없다** |
+| `GET /pins/{pinId}/comments` → `author.avatar.color` | 13색 `enum` 명시 |
+
+같은 사용자 아바타 색인데 한쪽만 enum이 걸려 있다. **서버팀 협의 항목**이며, 그전까지 Mapper는 두 자리를 같은 13색 팔레트로 해석하고 모르는 값은 `null`로 떨어뜨린다(기본 아바타로 그려진다).
+
+---
 
 ## 2. `POST /api/v1/pins/{pinId}/accesses` — 접근 기록 (FR-026)
 
-> 설명: "홈 카드 덱의 묵힘 계산과 클릭수 집계의 원천. append-only 로그."
+**판정: 대응 API 있음.** 요약 "핀 접근 기록 (사용자별)".
 
-**요청**: 경로 파라미터 `pinId`. 본문 없음.
+- 열 때마다 그대로 호출한다. 디바운스·중복 제거를 하지 않는다(EC-023).
+- 실패를 삼킨다(EC-022) — Repository 안에서 닫고 화면으로 올리지 않는다([place-repository.md §1](./place-repository.md)).
 
-**응답 200**: `data: { ok: boolean }` — 반환값을 쓰지 않는다.
+---
 
-「경과일 초기화 확인」의 서버 대응이 정확히 이것이다. append-only라 중복 호출이 문제되지 않으므로 EC-023(짧은 간격이라도 횟수를 줄이지 않는다)을 그대로 지킬 수 있다. 실패는 삼킨다([research.md D7](../research.md)).
+## 3. `POST /api/v1/pins/{pinId}/duplicate` — 다른 방에 공유 (FR-018)
 
-## 3. `GET /api/v1/rooms` — 방 목록 + 저장 여부 (FR-018 · FR-022)
+**판정: 대응 API 있음.** 요약 `다른 방에 핀 복제 ("다른 방에 공유")`.
 
-> 설명: "나간 방은 제외. `?showHasPlaceId=`로 장소 저장 여부, `?showUsers=true`로 멤버 목록 포함."
+- 대상 방 목록을 싣는다. 서버가 `minItems: 1`이라 빈 목록으로 호출하지 않는다.
+- 이미 저장된 방이 섞이면 `409`. 별도 분기를 두지 않고 `MinoDomainException`으로 전파한다([research.md D14](../research.md)).
 
-**요청**: `?showHasPlaceId={placeId}` — `PlaceDetail.placeId`를 싣는다. `showUsers`는 쓰지 않는다(시트 카드에 멤버 아바타를 넣지 않는다).
+---
 
-> **문서 갭**: 이 오퍼레이션의 `parameters`가 `[]`로 비어 있다. 쿼리 파라미터가 `description` 문장에만 있고 스키마로 선언돼 있지 않다 → §4 협의 항목.
+## 4. `GET /api/v1/rooms?showHasPlaceId=` — 방 목록 (FR-018·FR-023·FR-024)
 
-**응답 200 `data[]`** — 기존 `RoomSummaryResponse`에 필드 하나가 는다.
+**판정: 대응 API 있음.** plan 1.1.0의 **구현 보류가 이 변경으로 해제된다.**
 
-| 필드 | 타입 | 매핑 |
-|---|---|---|
-| `id` · `name` · `description` · `type` · `color` · `pinCount` · `thumbnailList` | | 기존 `RoomSummary` 매핑 그대로([room-list-api.md](../../shared-link-receiver/contracts/room-list-api.md)) |
-| `hasPlace` | `boolean, nullable` | **`RoomSummary.hasPlace`** — "?showHasPlaceId= 지정 시에만 포함" |
-| `users` | `array, nullable` | 쓰지 않는다 |
+```
+description: "나간 방은 제외. ?showHasPlaceId=로 장소 저장 여부 및 매칭 핀 ID, ?showUsers=true로 멤버 목록 포함."
 
-`hasPlace == true`인 방을 체크·비활성으로 그린다(FR-018). 전부 `true`면 FR-022의 상태가 자연히 만들어진다.
-
-## 4. `POST /api/v1/pins/{pinId}/duplicate` — 다른 방에 공유 (FR-018)
-
-> 설명: "원본 방·모든 대상 방 멤버십 검증. 대상 방 중 하나라도 같은 장소가 있으면 409로 전체 거절."
-
-**요청 본문**
-
-```json
-{ "roomIds": { "type": "array", "items": { "type": "string", "format": "uuid" }, "minItems": 1 } }
+parameters:
+  showHasPlaceId  (query, optional, string/uuid)
+      "장소 UUID. 지정하면 각 방에 hasPlace와 matchedPinId를 함께 반환한다."
+  showUsers       (query, optional, enum["true","false"])
 ```
 
-`required: ["roomIds"]`. `minItems: 1`이라 방을 하나도 고르지 않은 요청은 스키마 위반이다 — 시트가 [공유하기]를 비활성으로 막는 규칙(FR-022)과 일치한다.
+응답 `data[]`에서 이 화면이 쓰는 것:
 
-**응답 200**: `data: { ok: boolean }`
+```json
+{
+  "id":            { "type": "string", "format": "uuid" },
+  "type":          { "type": "string", "enum": ["personal", "shared"] },
+  "name":          { "type": "string" },
+  "color":         { "type": "string", "enum": ["red","red_orange","orange","lime","green",
+                     "cyan","violet","pink","blue","brown","light_blue","purple","gray"],
+                     "description": "팔레트 색상 키(13색, snake_case). 개인방 기본은 gray." },
+  "pinCount":      { "type": "integer" },
+  "thumbnailList": { "type": "array", "items": { "type": "string" } },
+  "hasPlace":      { "type": "boolean", "nullable": true,
+                     "description": "?showHasPlaceId= 지정 시에만 포함" },
+  "matchedPinId":  { "type": "string", "format": "uuid" }
+}
+```
 
-**409 처리**: 시트가 이미 저장된 방을 비활성으로 막으므로 정상 흐름에서는 나오지 않는다. 다른 기기에서 먼저 저장된 경합에서 발생할 수 있고, 공통 에러 경로로 흘린다([research.md D14](../research.md)).
+### 4.1 매핑
 
-## 5. 서버팀 협의 항목
+| 요구사항 | 응답 필드 |
+|---|---|
+| FR-018 이미 저장된 방 표시 | `hasPlace` |
+| FR-023 [저장된 방] 활성 판정 | `hasPlace == true`인 방이 2개 이상 |
+| **FR-024 전환 대상 핀** | **`matchedPinId`** |
+| FR-002 마커·방 색 | `color` |
 
-이 절이 이번 대조에서 **spec을 따를지 서버 제약을 따를지 설계가 혼자 정할 수 없는** 지점이다.
+### 4.2 주의
 
-| # | 항목 | spec 요구 | 서버 현황 | 요청 |
-|---|---|---|---|---|
-| 1 | **저장된 방의 `pinId`** | FR-024·FR-025 — 방 카드를 누르면 그 방 기준으로 갱신 | `?showHasPlaceId=` 응답이 `roomId`·`hasPlace`만 준다. 옮겨 갈 핀을 특정할 수 없다 | `hasPlace: true`인 방에 그 방의 `pinId`를 함께 실어 달라 |
-| 2 | **핀 상세의 `labelGroup`** | FR-005 — 헤더에 장소분류 라벨 4종 중 부여된 값 표시 | `labelGroup`이 `GET /rooms/{roomId}/cards`에만 있다 | `GET /pins/{pinId}` 응답에 `labelGroup`을 추가해 달라 |
-| 3 | **아바타 표현 불일치** | FR-003·FR-010 — 등록자·작성자 프로필 이미지 | 같은 아바타를 엔드포인트마다 다르게 준다: 핀 상세·코멘트는 `avatar: { color }`, 홈 카드와 `GET /users/me`는 `avatar: { id: integer }` | 어느 쪽이 정본인지 확정해 달라. 이 저장소의 `Profile.avatarId: Int`는 `{id}` 쪽을 따르고 있다 |
-| 4 | **쿼리 파라미터 미선언** | — | `GET /rooms`의 `showHasPlaceId`·`showUsers`, `GET /pins`의 `roomId`·`page`·`pageSize`가 `description` 문장에만 있고 `parameters: []`다 | 스키마에 선언해 달라. 계약 근거가 문장뿐이라 타입·필수 여부를 확정할 수 없다 |
+`matchedPinId`는 스키마상 `nullable`로 표시돼 있지 않지만 **`hasPlace == false`인 방에는 의미가 없다.** 도메인에서는 `String?`로 받고 `hasPlace == true`인 방에서만 읽는다([data-model.md §3](../data-model.md)) — 서버가 저장돼 있지 않은 방에 무엇을 싣든 화면이 그것을 전환 대상으로 삼지 않게 하는 방어다.
 
-1·2번이 닫히기 전까지 FR-023~FR-025는 구현 보류, FR-005는 기본값 고정이다([research.md D10·D12](../research.md)).
+---
+
+## 5. 대응 API가 없거나 협의가 필요한 지점
+
+| 항목 | 상태 | 처리 |
+|---|---|---|
+| 아바타 색 enum 불일치(§1.3) | **서버팀 협의** | Mapper가 두 자리를 같은 팔레트로 해석. 모르는 값은 `null` |
+| `labelGroup` 부재 | **철회** | spec 4.0.0이 요구사항을 제거. 더 이상 갭이 아니다 |
+| 저장된 방 전환용 `pinId` | **해소** | 서버가 `matchedPinId` 신설 |
+
+**이번 개정에서 서버 협의 항목이 둘 줄고 하나 남았다.**
