@@ -58,5 +58,6 @@ ADR은 [`adr-writer` 스킬](../../.claude/skills/adr-writer/SKILL.md)이 자동
 | 2026-08-27 | [서버 응답의 `{ data }` 봉투는 제네릭 DTO 하나로 `ApiService`에서 벗긴다](2026-08-27-response-envelope-unwrapped-in-apiservice.md) | Accepted | Jaesung Lee |
 | 2026-08-28 | [실패 응답의 `errorCode`를 도메인 예외로 올리지 않고, 에러 본문 타입은 공용으로 하나만 둔다](2026-08-28-error-body-type-and-no-error-code-leaf.md) | Accepted | Jaesung Lee |
 | 2026-08-28 | [`ApiService`의 단위는 feature가 아니라 서버 리소스(OpenAPI 태그)다](2026-08-28-api-service-owned-per-server-tag.md) | Accepted | Jaesung Lee |
-| 2026-08-29 | [여러 탭에서 진입하는 몰입 화면은 탭 Route가 아니라 진입형 feature로 둔다](2026-08-29-entry-feature-for-cross-tab-immersive-screen.md) | Proposed | Jaesung Lee |
+| 2026-08-29 | [여러 탭에서 진입하는 몰입 화면은 탭 Route가 아니라 진입형 feature로 둔다](2026-08-29-entry-feature-for-cross-tab-immersive-screen.md) | Superseded | Jaesung Lee |
 | 2026-08-29 | [앱 진입 화면 판정은 온보딩이 소유하고, 스플래시는 그 판정을 소비한다](2026-08-29-onboarding-entry-decision-owned-by-onboarding.md) | Accepted | Jaesung Lee |
+| 2026-09-02 | [몰입 지도 화면의 배치는 진입점이 걸친 탭 수가 아니라 지도를 공유하는지로 가른다](2026-09-02-immersive-map-screen-shares-one-map-in-tab-feature.md) | Accepted | Jaesung Lee |
