@@ -26,7 +26,10 @@ import kotlin.time.toJavaInstant
  * 여기 담지 않는다(같은 문서 §6). 정렬은 서버가 준 순서를 그대로 따르므로 클라이언트가 [createdAt]으로 다시
  * 정렬하지 않는다.
  *
- * @property avatarColor 아바타 폴백이 쓰는 방 색. 색이 없는 작성자는 `null`이다.
+ * @property avatarColor 서버가 아바타 대신 주는 색. 색이 없는 작성자는 `null`이다. **아직 어디에도 그리지
+ *   않는다** — 시안의 코멘트 아바타는 기본 실루엣(`Avatar/Avatar`)이고 색을 쓰는 표현이 없다. 값을 여기까지
+ *   들고 오는 것은 정본이 정해졌을 때 변경이 이 경계 안에서 끝나게 하려는 것이며(위 문단), 그 협의가
+ *   `docs/specs/place-detail/contracts/place-api.md` §5에 열려 있다.
  * @property canDelete [⋮] 노출 여부의 유일한 근거다. 작성자 id와 내 id를 비교해 다시 판정하지 않는다
  *   (spec FR-015, `docs/specs/place-detail/research.md` D6).
  */
