@@ -83,6 +83,8 @@ sealed interface RoomListSideEffect : SideEffect {
 | `OnLocationPermissionResult(granted = false)` | 기본 디폴트 좌표로 `mapCenter` 설정(EC-002) |
 | `OnLocationPermissionResult(granted = true)` | 실제 위치로 `mapCenter` 설정 |
 
+**장소 상세가 열려 있으면(`selectedPinId != null`) 이 표의 `mapCenter` 설정을 건너뛴다** — 카메라는 선택 핀에 맞춘 자리를 지킨다. 근거와 범위는 [place-detail-main-contract.md §2.8](../../place-detail/contracts/place-detail-main-contract.md)이 소유한다.
+
 ## 분기 규칙 — Nudge·Ghost Card 노출 (FR-008~FR-010, D9)
 
 | `groupRooms.isEmpty()` | `showNudge` | `showGhostCard` |
