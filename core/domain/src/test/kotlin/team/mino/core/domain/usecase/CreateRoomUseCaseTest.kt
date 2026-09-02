@@ -152,7 +152,7 @@ private class FakeRoomRepository : RoomRepository {
 
     override fun observeMyRooms(): Flow<List<Room>> = flowOf(listOf(createdRoom))
 
-    override suspend fun getRooms(): List<RoomSummary> = error("CreateRoomUseCase는 getRooms를 부르지 않는다.")
+    override suspend fun getRooms(placeId: String?): List<RoomSummary> = error("CreateRoomUseCase는 getRooms를 부르지 않는다.")
 
     override suspend fun getRoom(roomId: String): Room = error("CreateRoomUseCase는 getRoom을 부르지 않는다.")
 

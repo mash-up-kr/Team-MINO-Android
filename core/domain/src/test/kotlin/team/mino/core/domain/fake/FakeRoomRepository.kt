@@ -26,10 +26,15 @@ class FakeRoomRepository : RoomRepository {
     var getRoomsCallCount: Int = 0
         private set
 
+    /** [getRooms]에 마지막으로 넘어온 `placeId`. */
+    var lastPlaceId: String? = null
+        private set
+
     override fun observeMyRooms(): Flow<List<Room>> = error("방 목록 조회는 observeMyRooms를 부르지 않는다.")
 
-    override suspend fun getRooms(): List<RoomSummary> {
+    override suspend fun getRooms(placeId: String?): List<RoomSummary> {
         getRoomsCallCount++
+        lastPlaceId = placeId
         return rooms
     }
 

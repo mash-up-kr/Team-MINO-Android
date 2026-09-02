@@ -10,7 +10,14 @@ internal class FakeRoomRemoteDataSource : RoomRemoteDataSource {
     var rooms: List<RoomSummaryResponse> = emptyList()
     var room: RoomResponse? = null
 
-    override suspend fun listRooms(): List<RoomSummaryResponse> = rooms
+    /** [listRooms]에 마지막으로 넘어온 `showHasPlaceId`. 쿼리가 실제로 흘러왔는지 확인한다. */
+    var lastShowHasPlaceId: String? = null
+        private set
+
+    override suspend fun listRooms(showHasPlaceId: String?): List<RoomSummaryResponse> {
+        lastShowHasPlaceId = showHasPlaceId
+        return rooms
+    }
 
     override suspend fun getRoom(roomId: String): RoomResponse = checkNotNull(room) { "room을 채운 뒤 getRoom을 부른다." }
 

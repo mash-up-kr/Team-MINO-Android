@@ -14,6 +14,7 @@ import team.mino.core.data.network.dto.request.PinDuplicateRequest
 import team.mino.core.data.network.dto.request.RoomRequest
 import team.mino.core.data.network.dto.response.CardPlaceResponse
 import team.mino.core.data.network.dto.response.CardResponse
+import team.mino.core.data.network.dto.response.PinDetailResponse
 import team.mino.core.data.network.dto.response.RoomInvitationResponse
 import team.mino.core.data.network.dto.response.RoomMemberDetailResponse
 import team.mino.core.data.network.dto.response.RoomResponse
@@ -141,6 +142,8 @@ class HomeDeckRepositoryImplTest {
 
         override suspend fun createPin(request: PinCreateRequest) = Unit
 
+        override suspend fun getPinDetail(pinId: String): PinDetailResponse = throw IllegalStateException("부르지 않는다")
+
         override suspend fun recordAccess(pinId: String) = Unit
 
         override suspend fun duplicatePin(
@@ -153,7 +156,8 @@ class HomeDeckRepositoryImplTest {
 
     /** 덱과 저장만 보는 테스트라 방 출처는 닿지 않는다. 닿으면 그것 자체가 실패다. */
     private object UnusedRoomRemoteDataSource : RoomRemoteDataSource {
-        override suspend fun listRooms(): List<RoomSummaryResponse> = throw IllegalStateException("부르지 않는다")
+        override suspend fun listRooms(showHasPlaceId: String?): List<RoomSummaryResponse> =
+            throw IllegalStateException("부르지 않는다")
 
         override suspend fun getRoom(roomId: String): RoomResponse = throw IllegalStateException("부르지 않는다")
 

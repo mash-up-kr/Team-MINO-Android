@@ -92,7 +92,7 @@ class RoomApiServiceTest {
         }
 
     @Test
-    fun `방 목록은 쿼리 파라미터 없이 요청한다`() =
+    fun `장소를 묻지 않으면 방 목록은 쿼리 파라미터 없이 요청한다`() =
         runTest {
             var requested: HttpRequestData? = null
             val engine = jsonEngine("""{"data":[]}""") { requested = it }
@@ -101,6 +101,39 @@ class RoomApiServiceTest {
 
             assertEquals("/api/v1/rooms", requested?.url?.encodedPath)
             assertEquals("", requested?.url?.encodedQuery)
+        }
+
+    @Test
+    fun `showHasPlaceId를 주면 쿼리로 붙는다`() =
+        runTest {
+            var requested: HttpRequestData? = null
+            val engine = jsonEngine("""{"data":[]}""") { requested = it }
+
+            service(engine).listRooms(showHasPlaceId = "place-1")
+
+            assertEquals("showHasPlaceId=place-1", requested?.url?.encodedQuery)
+        }
+
+    @Test
+    fun `showHasPlaceId 응답의 hasPlace와 matchedPinId를 읽는다`() =
+        runTest {
+            val engine =
+                jsonEngine(
+                    """
+                    {"data":[
+                      {"id":"r1","type":"shared","name":"맛집 탐방","description":null,"color":"gray",
+                       "ownerId":"u1","pinCount":3,"memberCount":2,
+                       "hasPlace":true,"matchedPinId":"pin-1"},
+                      {"id":"r2","type":"shared","name":"카페","description":null,"color":"blue",
+                       "ownerId":"u2","pinCount":0,"memberCount":1,"hasPlace":false}
+                    ]}
+                    """.trimIndent(),
+                )
+
+            val rooms = service(engine).listRooms(showHasPlaceId = "place-1")
+
+            assertEquals(listOf(true, false), rooms.map { it.hasPlace })
+            assertEquals(listOf("pin-1", null), rooms.map { it.matchedPinId })
         }
 
     @Test

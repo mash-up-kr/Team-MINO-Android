@@ -36,7 +36,7 @@ internal class FakeRoomRepository : RoomRepository {
 
     override fun observeMyRooms(): Flow<List<Room>> = error("방 선택 시트는 observeMyRooms를 부르지 않는다.")
 
-    override suspend fun getRooms(): List<RoomSummary> {
+    override suspend fun getRooms(placeId: String?): List<RoomSummary> {
         getRoomsCallCount++
         getRoomsFailure?.let { throw it }
         return rooms
