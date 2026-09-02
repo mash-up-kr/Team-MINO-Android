@@ -103,12 +103,14 @@ RoomListViewModel  ──collect(holder.pending)──> selectedPinId = pinId; h
 **`selectedPinId = null` 하나다.**
 
 ```
-[나가기] · 시트 아래로 드래그(EC-003) · 시스템 뒤로가기
+[나가기] · 시스템 뒤로가기
         ↓
 RoomListIntent.OnClosePlaceDetailClick
         ↓
 selectedPinId = null   →  selectedRoomId != null 이므로 방 상세 Half가 드러난다
 ```
+
+**시트 드래그는 이 경로에 없다.** `Half`가 시트의 하한이라 아래로 끌어도 닫히지 않는다(spec FR-001 · EC-003).
 
 진입 경로와 무관하게 사용자가 남는 자리는 「지금 보고 있는 방」의 방 상세다 — spec TS-006(방 상세 진입)·TS-007(알림 진입)·TS-037(홈 진입)이 모두 요구하는 그대로다.
 

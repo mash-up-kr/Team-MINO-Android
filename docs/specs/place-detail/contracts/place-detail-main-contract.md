@@ -96,7 +96,7 @@ BackHandler(enabled = selectedPinId != null || selectedRoomId != null) {
 
 ## 3. `PlaceDetailUiState`
 
-기존 정의에서 **`roomColor` 삭제**, **`savedRooms`·`commentsObservedAt` 추가**, `isSavedRoomsEnabled`의 근거 교체.
+기존 정의에서 **`roomColor` 삭제**, **`savedRooms`·`commentsObservedAt` 추가**, `isSavedRoomsVisible`의 근거 교체.
 
 ```kotlin
 @Immutable
@@ -129,7 +129,7 @@ internal data class PlaceDetailUiState(
 | 쓰임 | 근거 |
 |---|---|
 | [다른방에 공유] 시트의 이미 저장된 방 표시 | FR-018·FR-022 |
-| [저장된 방] 버튼의 활성 판정 | FR-023 |
+| [저장된 방] 버튼의 노출 판정 | FR-023 |
 | [저장된 방] 시트의 목록과 전환 대상 `matchedPinId` | FR-024 |
 
 **`place`가 도착한 뒤에 부른다** — 질의 키가 `placeId`인데 그 값이 핀 상세 응답에서 오기 때문이다.
@@ -140,12 +140,12 @@ internal data class PlaceDetailUiState(
 val isSubmitEnabled: Boolean get() = commentDraft.isNotBlank() && !isSubmittingComment
 val isSourceEnabled: Boolean get() = place?.sourceUrl != null
 
-/** FR-023 — 이 장소가 두 방 이상에 저장돼 있을 때만 열린다(TS-040·TS-041). */
-val isSavedRoomsEnabled: Boolean
+/** FR-023 — 이 장소가 두 방 이상에 저장돼 있을 때만 버튼이 그려진다(TS-040·TS-041). */
+val isSavedRoomsVisible: Boolean
     get() = savedRooms.count { it.hasPlace == true } >= 2
 ```
 
-**`isSavedRoomsEnabled`가 `false` 고정을 벗는다.** 서버가 `matchedPinId`를 내려주면서 전환 대상을 특정할 수 있게 됐다([research.md D20](../research.md)).
+**`false` 고정을 벗는다.** 서버가 `matchedPinId`를 내려주면서 전환 대상을 특정할 수 있게 됐다([research.md D20](../research.md)). **이름이 `isSavedRoomsEnabled`가 아니라 `isSavedRoomsVisible`인 것은 spec 5.0.0이 이 판정을 활성/비활성이 아니라 노출/미노출로 정했기 때문이다**(FR-023).
 
 ### 3.3 `SavedRoomsSheetUiState`
 
@@ -178,7 +178,7 @@ internal data class SavedRoomsSheetUiState(
 
 | 인텐트 | 근거 |
 |---|---|
-| `OnSavedRoomsClick` | FR-023 — [저장된 방] 시트를 연다. 비활성일 땐 도달하지 않는다 |
+| `OnSavedRoomsClick` | FR-023 — [저장된 방] 시트를 연다. 버튼이 없는 장소에서는 도달하지 않는다 |
 | `OnSavedRoomSelected(pinId, roomId)` | FR-024 — 전환 대상 핀. `matchedPinId`가 실린다 |
 | `OnSavedRoomsSheetDismiss` | 딤 바깥 탭·아래로 끌기·뒤로가기 |
 
@@ -280,6 +280,6 @@ internal fun BoxScope.PlaceDetailScreen(
 | 대상 | 사유 |
 |---|---|
 | `PlaceDetailUiState.roomColor` | §1 — `MapPinUiModel.color`가 이미 든다 |
-| `isSavedRoomsEnabled`의 `false` 고정 | §3.2 — 보류 해제 |
+| `isSavedRoomsEnabled`(이름 포함)의 `false` 고정 | §3.2 — 보류 해제, `isSavedRoomsVisible`로 대체 |
 | `PlaceDetail.label` 관련 헤더 표현 | FR-005 재정의([research.md D21](../research.md)) |
 | `PlaceDetailMap`·`CurrentLocationButton` | 지도·컨트롤 단일화 |

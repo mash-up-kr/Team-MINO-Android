@@ -70,7 +70,7 @@ suspend fun getRooms(placeId: String? = null): List<RoomSummary>
 - **정렬 책임은 여전히 없다.** 개인방을 최상단에 고정하는 판정은 `GetRoomPickerRoomsUseCase`가 계속 갖는다.
 - 실패는 던진다. 빈 목록으로 수렴시키는 것은 화면의 몫이다.
 
-**한 번의 호출이 세 곳을 먹인다** — 공유 시트(FR-018)·[저장된 방] 버튼 활성(FR-023)·[저장된 방] 시트(FR-024). 상세는 [place-detail-main-contract.md §3.1](./place-detail-main-contract.md).
+**한 번의 호출이 세 곳을 먹인다** — 공유 시트(FR-018)·[저장된 방] 버튼 노출(FR-023)·[저장된 방] 시트(FR-024). 상세는 [place-detail-main-contract.md §3.1](./place-detail-main-contract.md).
 
 ---
 

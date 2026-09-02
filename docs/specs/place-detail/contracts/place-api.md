@@ -160,7 +160,7 @@ parameters:
 | 요구사항 | 응답 필드 |
 |---|---|
 | FR-018 이미 저장된 방 표시 | `hasPlace` |
-| FR-023 [저장된 방] 활성 판정 | `hasPlace == true`인 방이 2개 이상 |
+| FR-023 [저장된 방] 노출 판정 | `hasPlace == true`인 방이 2개 이상 |
 | **FR-024 전환 대상 핀** | **`matchedPinId`** |
 | FR-002 마커·방 색 | `color` |
 
