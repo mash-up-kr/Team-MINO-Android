@@ -21,10 +21,13 @@ internal interface RoomRemoteDataSource {
      * 참여 중인 방 목록을 조회한다. 나간 방은 서버가 제외한다.
      *
      * 세션이 없거나(`401`) 네트워크·서버 오류면 `MinoDomainException`이 전파된다.
-     * 그 셋을 빈 목록으로 수렴시키는 것은 화면의 몫이다. 이 함수의 시그니처·실패 계약은
+     * 그 셋을 빈 목록으로 수렴시키는 것은 화면의 몫이다. 이 함수의 실패 계약은
      * 자리를 옮긴 뒤에도 `docs/specs/shared-link-receiver/contracts/room-list-api.md` §6이 소유한다.
+     *
+     * @param showHasPlaceId 장소 UUID. 주면 각 응답에 `hasPlace`·`matchedPinId`가 함께 온다
+     *  (`docs/specs/place-detail/contracts/place-api.md` §4).
      */
-    suspend fun listRooms(): List<RoomSummaryResponse>
+    suspend fun listRooms(showHasPlaceId: String? = null): List<RoomSummaryResponse>
 
     /** 없는 `roomId`면 `MinoDomainException.Http(404, ...)`가 전파된다. */
     suspend fun getRoom(roomId: String): RoomResponse

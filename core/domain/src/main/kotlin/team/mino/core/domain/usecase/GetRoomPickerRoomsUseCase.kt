@@ -18,7 +18,13 @@ import javax.inject.Inject
 class GetRoomPickerRoomsUseCase @Inject constructor(
     private val roomRepository: RoomRepository,
 ) {
-    suspend operator fun invoke(): List<RoomSummary> =
+    /**
+     * @param placeId 저장 여부를 함께 묻고 싶은 장소의 식별자. [RoomRepository.getRooms]로 그대로 흘려보내며,
+     *  주면 각 [RoomSummary]의 `hasPlace`·`matchedPinId`가 채워지고 주지 않으면 둘 다 `null`로 남는다 —
+     *  `null`은 "저장돼 있지 않다"가 아니라 "물어보지 않았다"다
+     *  (`docs/specs/place-detail/contracts/place-repository.md` §3). 정렬은 이 인자와 무관하게 언제나 한다.
+     */
+    suspend operator fun invoke(placeId: String? = null): List<RoomSummary> =
         // sortedBy는 안정 정렬이라 같은 키(= 공동방)끼리는 받은 순서가 보존된다.
-        roomRepository.getRooms().sortedBy { it.type != RoomType.PERSONAL }
+        roomRepository.getRooms(placeId).sortedBy { it.type != RoomType.PERSONAL }
 }

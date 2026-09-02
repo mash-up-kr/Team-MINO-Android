@@ -23,6 +23,9 @@ import javax.inject.Inject
  * [observeMyRooms]와 [getRooms]는 같은 [RoomRemoteDataSource.listRooms] 응답을 서로 다른 도메인
  * 모델로 읽는다 — room-list는 풍부한 [Room](`RoomMapper.toRoomListDomain`)을, 방 선택 시트는 얕은
  * [RoomSummary](`RoomSummaryMapper.toDomain`)를 쓴다.
+ *
+ * [getRooms]의 `placeId`는 쿼리 파라미터로만 흐른다 — 저장 여부를 클라이언트에서 계산하지 않고 서버가 실어 준
+ * 값을 그대로 읽으며, 그 값을 도메인 규칙에 맞춰 다듬는 것은 `RoomSummaryMapper`다.
  */
 internal class RoomRepositoryImpl @Inject constructor(
     private val remoteDataSource: RoomRemoteDataSource,
@@ -32,7 +35,8 @@ internal class RoomRepositoryImpl @Inject constructor(
             emit(remoteDataSource.listRooms().map { it.toRoomListDomain() })
         }
 
-    override suspend fun getRooms(): List<RoomSummary> = remoteDataSource.listRooms().map { it.toDomain() }
+    override suspend fun getRooms(placeId: String?): List<RoomSummary> =
+        remoteDataSource.listRooms(showHasPlaceId = placeId).map { it.toDomain() }
 
     override suspend fun getRoom(roomId: String): Room = remoteDataSource.getRoom(roomId).toDomain()
 
