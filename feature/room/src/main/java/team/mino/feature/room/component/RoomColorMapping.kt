@@ -1,4 +1,4 @@
-package team.mino.feature.room.main.model
+package team.mino.feature.room.component
 
 import team.mino.core.designsystem.component.roomcolorchip.MinoRoomColor
 import team.mino.core.domain.model.RoomColor
@@ -11,8 +11,10 @@ import team.mino.core.domain.model.RoomColor
  * 지도 핀(`RoomListMap`)이 공동방 핀 색을 정하는 데 쓴다 — 개인 방([RoomColor.GRAY])은 칩이 없어
  * `null`이고, [RoomMapPin]이 `null`을 기본(검정) 핀으로 그린다.
  *
- * `placedetail`로 옮겨 온 화면도 같은 표를 쓴다 — `:feature:placedetail`이 갖고 있던 `RoomColor.palette`가
- * 이름만 다른 같은 대응이라 이식하지 않고 여기로 합쳤다.
+ * **화면 패키지가 아니라 모듈 루트에 있다.** 방 리스트의 지도 핀, 장소 상세의 두 시트, 두 화면이 함께 부르는
+ * [RoomShareSheet]까지 소비자가 세 자리로 갈려, 어느 한 화면의 `model/`에 두면 나머지가 남의 화면 패키지를
+ * 참조하게 된다(`docs/architecture/feature-module.md` 「모듈 루트 `component/`」). `:feature:placedetail`이
+ * 갖고 있던 `RoomColor.palette`가 이름만 다른 같은 대응이라 이식하지 않고 여기로 합쳤다.
  */
 internal val RoomColor.chip: MinoRoomColor?
     get() = when (this) {

@@ -110,6 +110,7 @@ private val PREVIEW_ROOM = Room(
 private val PREVIEW_PLACES = persistentListOf(
     Place(
         id = "preview-place-1",
+        placeId = "preview-place-1",
         name = "을지로 골뱅이",
         address = "서울 중구 을지로 12길 8",
         category = PlaceCategoryFilter.RESTAURANT,
@@ -122,6 +123,7 @@ private val PREVIEW_PLACES = persistentListOf(
     ),
     Place(
         id = "preview-place-2",
+        placeId = "preview-place-2",
         name = "커피한약방",
         address = "서울 중구 수표로 13길 2",
         category = PlaceCategoryFilter.CAFE,

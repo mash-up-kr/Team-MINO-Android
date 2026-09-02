@@ -41,11 +41,11 @@ import team.mino.core.designsystem.util.modifier.surface.surface
 import team.mino.core.domain.model.Room
 import team.mino.core.domain.model.RoomMember
 import team.mino.core.domain.model.RoomThumbnail
+import team.mino.feature.room.component.toMinoRoomColor
 import team.mino.feature.room.main.model.image
-import team.mino.feature.room.main.model.toMinoRoomColor
 
 /**
- * [RoomInviteSheet] 치수 토큰. 시트 chrome(핸들·모서리)은 `RoomSelectSheet`(같은 디렉터리)와 동일 패턴을
+ * [RoomInviteSheet] 치수 토큰. 시트 chrome(핸들·모서리)은 `component/RoomShareSheet`와 동일 패턴을
  * 재사용한다 — 같은 시트 계열이라 값도 같다.
  *
  * Figma `004-4-2_친구 초대 클릭`(node `2542-125843`) 대조 결과 — 헤더 줄(방 커버 46×46 + 이름 + 닫기),
@@ -138,7 +138,7 @@ internal fun RoomInviteSheet(
             sticky = true,
         )
     }
-    // onDismiss는 RoomSelectSheet와 같은 이유로 이 컴포저블이 스스로 소비하지 않는다 — 호스팅하는
+    // onDismiss는 `RoomShareSheet`와 같은 이유로 이 컴포저블이 스스로 소비하지 않는다 — 호스팅하는
     // 바텀시트 컨테이너가 바깥 영역 클릭·백 제스처에 연결한다. 헤더의 닫기 버튼만 예외로 직접 문다.
 }
 

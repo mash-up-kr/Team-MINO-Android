@@ -49,6 +49,8 @@ import team.mino.core.designsystem.theme.MinoAndroidTheme
 import team.mino.core.designsystem.util.modifier.shadow.dropShadow
 import team.mino.core.designsystem.util.modifier.surface.surface
 import team.mino.core.designsystem.util.preview.UiModePreviews
+import team.mino.feature.room.component.SheetContainerShape
+import team.mino.feature.room.component.SheetDragHandle
 import team.mino.feature.room.placedetail.model.PlaceSheetLevel
 import kotlin.math.roundToInt
 

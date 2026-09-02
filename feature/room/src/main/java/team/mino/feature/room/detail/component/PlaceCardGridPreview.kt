@@ -35,6 +35,7 @@ private fun PlaceCardGridPreview() {
 private val PREVIEW_GRID_PLACES = persistentListOf(
     Place(
         id = "preview-grid-place-1",
+        placeId = "preview-grid-place-1",
         name = "레이어스튜디오 10",
         address = "서울 성동구 상원4길 10",
         category = PlaceCategoryFilter.CAFE,
@@ -47,6 +48,7 @@ private val PREVIEW_GRID_PLACES = persistentListOf(
     ),
     Place(
         id = "preview-grid-place-2",
+        placeId = "preview-grid-place-2",
         name = "온기정육식당",
         address = "서울 성동구 성수이로 20",
         category = PlaceCategoryFilter.RESTAURANT,
@@ -59,6 +61,7 @@ private val PREVIEW_GRID_PLACES = persistentListOf(
     ),
     Place(
         id = "preview-grid-place-3",
+        placeId = "preview-grid-place-3",
         name = "카페 노티드 성수",
         address = "서울 성동구 아차산로 15길 11",
         category = PlaceCategoryFilter.CAFE,

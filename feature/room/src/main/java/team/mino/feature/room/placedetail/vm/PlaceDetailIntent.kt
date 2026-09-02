@@ -70,6 +70,23 @@ internal sealed interface PlaceDetailIntent : Intent {
     data object OnShareSheetDismiss : PlaceDetailIntent
 
     /**
+     * 공유 시트의 [새 방 만들기](spec FR-022 · EC-020).
+     *
+     * 속한 모든 방에 그 장소가 이미 있는 사용자에게는 이것이 유일한 출구다 — 나머지 카드가 전부 비활성이라
+     * 여기서 새 방을 만들지 않으면 시트를 닫는 길밖에 없다(spec UX-010 · SC-007).
+     */
+    data object OnShareCreateRoomClick : PlaceDetailIntent
+
+    /**
+     * 새 방을 만들고 공유 시트로 돌아왔다(spec EC-020).
+     *
+     * @param createdRoomId 만들어진 방. 만들지 않고 나왔으면 `null`이라 아무 일도 일어나지 않는다.
+     */
+    data class OnShareRoomFormResult(
+        val createdRoomId: String?,
+    ) : PlaceDetailIntent
+
+    /**
      * [저장된 방]. 시트를 연다.
      *
      * 이 장소가 저장된 방이 하나뿐이면 버튼이 비활성이라(spec EC-024) 도달하지 않는다.

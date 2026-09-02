@@ -22,7 +22,7 @@ import team.mino.core.domain.model.PlaceDetail
 import team.mino.core.domain.model.PlaceRegistrant
 import team.mino.core.domain.model.RoomColor
 import team.mino.core.errorhandling.MinoDomainException
-import team.mino.feature.room.placedetail.component.previewRoomPickerItems
+import team.mino.feature.room.component.previewRoomShareItems
 import team.mino.feature.room.placedetail.model.PlaceCommentUiModel
 import team.mino.feature.room.placedetail.model.PlaceHeaderMode
 import team.mino.feature.room.placedetail.model.PlaceSheetLevel
@@ -156,7 +156,7 @@ private fun PlaceDetailScreenShareSheetPreview() {
     PlaceDetailScreenPreviewContainer(
         baseState().copy(
             shareSheet = ShareSheetUiState(
-                rooms = previewRoomPickerItems(),
+                rooms = previewRoomShareItems(),
                 selectedRoomIds = persistentSetOf(SELECTED_ROOM_ID),
             ),
         ),

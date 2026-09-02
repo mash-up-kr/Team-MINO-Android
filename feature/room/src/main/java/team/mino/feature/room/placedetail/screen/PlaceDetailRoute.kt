@@ -1,6 +1,9 @@
 package team.mino.feature.room.placedetail.screen
 
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.rememberTextFieldState
@@ -18,10 +21,11 @@ import team.mino.core.common.ui.architecture.CollectSideEffect
 import team.mino.core.common.ui.error.CollectDomainError
 import team.mino.core.common.ui.scaffold.LocalSnackbarHostState
 import team.mino.core.errorhandling.DomainErrorEmitter
-import team.mino.feature.room.R
+import team.mino.core.navigation.activity.launcher.EXTRA_ROOM_FORM_RESULT_ROOM_ID
 import team.mino.feature.room.placedetail.vm.PlaceDetailIntent
 import team.mino.feature.room.placedetail.vm.PlaceDetailSideEffect
 import team.mino.feature.room.placedetail.vm.PlaceDetailViewModel
+import team.mino.feature.room.showShareCompleted
 
 /**
  * [PlaceDetailScreen]의 연결부. ViewModel을 얻어 상태를 구독하고 인텐트를 넘긴다.
@@ -69,6 +73,17 @@ internal fun BoxScope.PlaceDetailRoute(
     val snackbarHostState = LocalSnackbarHostState.current
     val scope = rememberCoroutineScope()
     val resources = LocalResources.current
+    val activity = checkNotNull(LocalActivity.current) { "PlaceDetailRoute는 Activity 컨텍스트 안에서만 그려진다." }
+
+    // 공유 시트의 [새 방 만들기] — 돌아온 결과에서 방 id만 받아 넘긴다(spec EC-020). 방 상세의
+    // `shareCreateRoomResultLauncher`와 같은 계약이다
+    // (docs/specs/group-room-form/contracts/room-form-launcher.md §3).
+    val createRoomResultLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult(),
+    ) { result ->
+        val createdRoomId = result.data?.getStringExtra(EXTRA_ROOM_FORM_RESULT_ROOM_ID)
+        viewModel.processIntent(PlaceDetailIntent.OnShareRoomFormResult(createdRoomId))
+    }
 
     // 코멘트의 편집 버퍼는 화면이 아니라 여기가 든다. 상한을 자르는 것은 입력 컴포넌트라 버퍼가 이미 잘린 값을
     // 갖고 있고, 그 변화를 그대로 ViewModel로 옮긴다.
@@ -104,10 +119,12 @@ internal fun BoxScope.PlaceDetailRoute(
             PlaceDetailSideEffect.Exit -> onExit()
             is PlaceDetailSideEffect.OpenExternalMap -> onOpenExternalMap(effect.mapUrl, effect.query)
             is PlaceDetailSideEffect.OpenSourceLink -> onOpenSourceLink(effect.url)
+            // 문구와 3초 노출은 방 상세와 한 곳에서 나온다(spec TS-033, `ShareCompletedToast.kt`).
             PlaceDetailSideEffect.ShowShareCompleted ->
-                scope.launch {
-                    snackbarHostState.showSnackbar(resources.getString(R.string.placedetail_share_completed))
-                }
+                scope.launch { snackbarHostState.showShareCompleted(resources) }
+
+            PlaceDetailSideEffect.OpenCreateRoomForm ->
+                viewModel.roomFormLauncher.launch(activity, resultLauncher = createRoomResultLauncher)
 
             // 방을 바꾸는 것은 이 화면의 상태 변경이 아니라 위쪽 화면의 것이다 — 새 pinId가 내려오면 이 Route가
             // 그 key로 ViewModel을 새로 세우고, 그 결과로 코멘트 초안·캐러셀·시트 단계가 초기화된다(spec TS-047).

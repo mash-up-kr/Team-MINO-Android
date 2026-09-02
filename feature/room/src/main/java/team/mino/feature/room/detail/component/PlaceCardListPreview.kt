@@ -55,6 +55,7 @@ private fun PlaceListItemPreview() {
 private val PREVIEW_PLACES = persistentListOf(
     Place(
         id = "preview-place-1",
+        placeId = "preview-place-1",
         name = "레이어스튜디오 10",
         address = "서울 성동구 상원4길 10",
         category = PlaceCategoryFilter.CAFE,
@@ -67,6 +68,7 @@ private val PREVIEW_PLACES = persistentListOf(
     ),
     Place(
         id = "preview-place-2",
+        placeId = "preview-place-2",
         name = "온기정육식당",
         address = "서울 성동구 성수이로 20",
         category = PlaceCategoryFilter.RESTAURANT,

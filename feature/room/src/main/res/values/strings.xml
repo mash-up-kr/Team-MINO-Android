@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="placedetail_saved_rooms">저장된 방</string>
-    <string name="placedetail_room_place_count">장소 %1$d개</string>
     <string name="placedetail_current_location">현재 위치</string>
     <string name="placedetail_action_view_place">장소보기</string>
     <string name="placedetail_action_view_source">원문보기</string>
@@ -18,8 +17,12 @@
     <string name="placedetail_comment_empty">아직 코멘트가 없어요!</string>
     <string name="placedetail_comment_input_placeholder">코멘트를 입력해 보세요.</string>
     <string name="placedetail_comment_submit">등록</string>
-    <string name="placedetail_share_confirm">공유하기</string>
-    <string name="placedetail_share_completed">공유가 완료되었습니다.</string>
+    <!-- [SYS-003] 방 선택 시트 — 방 상세·장소 상세 두 진입점이 함께 쓴다. -->
+    <string name="roomshare_confirm">공유하기</string>
+    <string name="roomshare_create_room">새 방 만들기</string>
+    <string name="roomshare_completed">공유가 완료됐습니다.</string>
+    <!-- 방 카드의 장소 개수 — 공유 시트와 [저장된 방] 시트가 함께 쓴다. -->
+    <string name="room_place_count">장소 %1$d개</string>
     <string name="placedetail_error_generic">문제가 생겼어요. 잠시 후 다시 시도해주세요.</string>
     <string name="placedetail_error_retry">다시 시도</string>
 </resources>

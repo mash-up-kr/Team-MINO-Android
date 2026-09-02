@@ -1,6 +1,5 @@
 package team.mino.feature.room.detail.vm
 
-import kotlinx.collections.immutable.ImmutableList
 import team.mino.core.common.android.architecture.Intent
 import team.mino.core.domain.model.MapMarkerSortOption
 import team.mino.core.domain.model.Place
@@ -56,7 +55,11 @@ internal sealed interface RoomDetailIntent : Intent {
 
     data object OnPlaceDeleteCancel : RoomDetailIntent
 
-    data class OnRoomSelectConfirm(val targetRoomIds: ImmutableList<String>) : RoomDetailIntent
+    /** [FR-009] 공유 시트의 방 카드 탭. 같은 방을 다시 누르면 선택이 풀린다. */
+    data class OnRoomSelectToggle(val roomId: String) : RoomDetailIntent
+
+    /** [FR-009] 공유 시트의 [공유하기]. 고른 방은 상태가 들고 있어 인자가 없다. */
+    data object OnRoomSelectConfirm : RoomDetailIntent
 
     data object OnRoomSelectDismiss : RoomDetailIntent
 
@@ -65,7 +68,7 @@ internal sealed interface RoomDetailIntent : Intent {
 
     /**
      * `RoomFormLauncher` 생성 모드 결과 수신([OnShareCreateRoomClick]에서 연 폼) — `createdRoomId`가
-     * 있으면(생성 완료) 그 방을 [RoomDetailUiState.myRooms]에 더한다. `null`(취소)이면 아무 것도 하지
+     * 있으면(생성 완료) 공유 후보 목록을 다시 받아 그 방을 고른 것으로 둔다. `null`(취소)이면 아무 것도 하지
      * 않는다. [OnRoomFormResult]는 "현재 방 편집" 전용이라 이 결과와 섞으면 안 된다.
      */
     data class OnShareRoomFormResult(val createdRoomId: String?) : RoomDetailIntent

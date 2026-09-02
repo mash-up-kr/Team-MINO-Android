@@ -19,6 +19,8 @@ import team.mino.core.errorhandling.DomainErrorEmitter
 import team.mino.core.errorhandling.domainErrorEmitter
 import team.mino.core.errorhandling.onDomainFailure
 import team.mino.core.errorhandling.runCatchingDomain
+import team.mino.core.navigation.activity.launcher.RoomFormLauncher
+import team.mino.feature.room.component.RoomShareItem
 import team.mino.feature.room.placedetail.model.PlaceCommentUiModel
 import team.mino.feature.room.placedetail.model.PlaceHeaderMode
 import team.mino.feature.room.placedetail.model.RoomPickerItem
@@ -63,6 +65,9 @@ internal class PlaceDetailViewModel @AssistedInject constructor(
     private val placeRepository: PlaceRepository,
     private val placeCommentRepository: PlaceCommentRepository,
     private val getRoomPickerRooms: GetRoomPickerRoomsUseCase,
+    // Route가 Activity 전환을 실행할 때 쓴다. 주입 지점이 ViewModel인 것은 Composable이 Hilt 주입을 받지
+    // 못해서이며, `RoomDetailViewModel.roomFormLauncher`가 같은 이유로 같은 모양이다.
+    val roomFormLauncher: RoomFormLauncher,
 ) : ViewModel(),
     MviContainer<PlaceDetailUiState, PlaceDetailSideEffect> by mviContainer(
         PlaceDetailUiState(pinId = pinId),
@@ -104,6 +109,10 @@ internal class PlaceDetailViewModel @AssistedInject constructor(
             is PlaceDetailIntent.OnShareRoomToggle -> toggleShareRoom(intent.roomId)
             PlaceDetailIntent.OnShareConfirmClick -> confirmShare()
             PlaceDetailIntent.OnShareSheetDismiss -> updateState { copy(shareSheet = null) }
+            PlaceDetailIntent.OnShareCreateRoomClick ->
+                launchSafely { postSideEffect(PlaceDetailSideEffect.OpenCreateRoomForm) }
+
+            is PlaceDetailIntent.OnShareRoomFormResult -> addCreatedRoomToShareSheet(intent.createdRoomId)
             PlaceDetailIntent.OnSavedRoomsClick -> openSavedRoomsSheet()
             is PlaceDetailIntent.OnSavedRoomSelected -> switchRoom(intent.pinId, intent.roomId)
             PlaceDetailIntent.OnSavedRoomsSheetDismiss -> updateState { copy(savedRoomsSheet = null) }
@@ -331,18 +340,21 @@ internal class PlaceDetailViewModel @AssistedInject constructor(
      * 방이 되살아나지 않는다.
      */
     private fun openShareSheet() {
-        updateState { copy(shareSheet = ShareSheetUiState(rooms = savedRooms)) }
+        updateState { copy(shareSheet = ShareSheetUiState(rooms = savedRooms.toShareItems())) }
     }
 
     /**
      * 같은 방을 다시 누르면 선택이 풀린다. 선택을 시트 상태 한 곳에만 두어 목록이 다시 그려져도 흩어지지 않는다.
      *
-     * 이미 저장된 방을 여기서 걸러 내지 않는다. 그 카드는 체크된 채 비활성이라 눌리지 않는다는 것이
-     * 계약의 전제다(spec FR-018 · FR-022).
+     * **이미 저장된 방은 선택에 들이지 않는다**(spec FR-018 · FR-022 · TS-058). 그 카드는 체크된 채
+     * 비활성이라 화면에서 눌리지 않지만, 그 사실을 전제로만 두지 않고 여기서도 막는다 — 표시와 입력이
+     * 갈리면 이미 저장된 방이 복제 요청에 실려 서버가 `409`로 거절하고, 사용자에게는 이유를 알 수 없는
+     * 실패만 남는다(`docs/specs/place-detail/contracts/place-detail-main-contract.md` §3.4.1).
      */
     private fun toggleShareRoom(roomId: String) {
         updateState {
             val sheet = shareSheet ?: return@updateState this
+            if (sheet.rooms.any { it.id == roomId && it.alreadySaved }) return@updateState this
             val selected = sheet.selectedRoomIds.toPersistentSet()
             copy(
                 shareSheet =
@@ -351,6 +363,43 @@ internal class PlaceDetailViewModel @AssistedInject constructor(
                             if (roomId in selected) selected.remove(roomId) else selected.add(roomId),
                     ),
             )
+        }
+    }
+
+    /**
+     * 새로 만든 방까지 담은 목록으로 공유 시트를 갈아 끼우고, 그 방을 고른 것으로 둔다(spec EC-020).
+     *
+     * **다시 조회한다.** 방 생성 화면이 돌려주는 것은 방 id 하나뿐이라(`RoomFormLauncher` 결과 계약)
+     * 이름·썸네일·장소 개수를 알 방법이 없다 — 그 값들 없이 카드를 세우면 빈 줄이 보인다. 시트는 열린 채
+     * 두므로(EC-020) 사용자가 보는 것은 목록이 한 번 갱신되는 것뿐이다.
+     *
+     * **이미 고른 방은 지키고 새 방을 더한다.** 시트를 닫았다 여는 것이 아니므로 만들러 가기 전의 선택이
+     * 사라질 이유가 없다.
+     *
+     * **새 방은 바로 선택된 상태다.** 모든 방이 비활성이던 시트에서는 이 방이 유일한 선택지이고, 그때
+     * [공유하기]가 활성으로 바뀌는 것이 EC-020의 규정이다 — 돌아와서 한 번 더 눌러야 한다면 그 규정이
+     * 성립하지 않는다.
+     *
+     * 조회가 실패하면 목록을 갈아 끼우지 않고 알림만 남긴다. 시트는 만들러 가기 전의 목록 그대로 남으므로
+     * 새 방만 안 보일 뿐 고르던 것을 잃지 않는다.
+     */
+    private fun addCreatedRoomToShareSheet(createdRoomId: String?) {
+        val roomId = createdRoomId ?: return
+        val placeId = state.value.place?.placeId ?: return
+        launchSafely {
+            runCatchingDomain { getRoomPickerRooms(placeId) }
+                .onSuccess { loaded ->
+                    val rooms = loaded.toPickerItems()
+                    updateState {
+                        copy(
+                            savedRooms = rooms,
+                            shareSheet = shareSheet?.copy(
+                                rooms = rooms.toShareItems(),
+                                selectedRoomIds = shareSheet.selectedRoomIds.toPersistentSet().add(roomId),
+                            ),
+                        )
+                    }
+                }.onDomainFailure(::emitDomainError)
         }
     }
 
@@ -417,6 +466,26 @@ internal class PlaceDetailViewModel @AssistedInject constructor(
         updateState { copy(savedRoomsSheet = null) }
         launchSafely { postSideEffect(PlaceDetailSideEffect.SwitchRoom(targetPinId, roomId)) }
     }
+
+    /**
+     * 시트가 그대로 그릴 수 있는 모양으로 옮겨 담는다.
+     *
+     * [RoomPickerItem]을 시트에 그냥 넘기지 않는 것은 그 시트를 방 상세와 함께 쓰기 때문이다 — 한쪽의
+     * 모델을 받으면 다른 쪽이 남의 화면 패키지를 참조하게 되고, 시트가 쓰지 않는 `matchedPinId`가 딸려
+     * 간다(`docs/specs/place-detail/contracts/place-detail-main-contract.md` §3.4.5).
+     */
+    private fun ImmutableList<RoomPickerItem>.toShareItems(): ImmutableList<RoomShareItem> =
+        map {
+            RoomShareItem(
+                id = it.id,
+                name = it.name,
+                description = it.description,
+                placeCount = it.placeCount,
+                thumbnailImageUrls = it.thumbnailImageUrls,
+                color = it.color,
+                alreadySaved = it.hasPlace,
+            )
+        }.toImmutableList()
 
     private fun List<RoomSummary>.toPickerItems(): ImmutableList<RoomPickerItem> =
         map { it.toPickerItem() }.toImmutableList()

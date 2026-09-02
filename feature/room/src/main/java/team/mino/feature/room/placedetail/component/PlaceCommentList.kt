@@ -20,6 +20,7 @@ import team.mino.core.designsystem.theme.MinoAndroidAppTheme
 import team.mino.core.designsystem.theme.MinoAndroidTheme
 import team.mino.core.designsystem.util.preview.UiModePreviews
 import team.mino.core.domain.model.RoomColor
+import team.mino.feature.room.component.SheetDividerThickness
 import team.mino.feature.room.placedetail.model.PlaceCommentUiModel
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
