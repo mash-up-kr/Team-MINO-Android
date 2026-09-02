@@ -8,9 +8,10 @@ import kotlinx.serialization.Serializable
  * [roomIds]는 최소 1개 필요하다(`minItems: 1`). 대상 방 중 하나라도 같은 장소가 이미 저장돼 있으면
  * 서버가 `409 DUPLICATE_PIN_IN_ROOM`으로 전체 요청을 거절한다.
  *
- * **호출부가 두 갈래다.** room-detail의 `RoomPlacesRepository.sharePlaces`([PlaceApiService] 경유)와
- * place-detail의 `PlaceRepository.duplicatePin`([PinApiService] 경유)이 각자 독립적으로 만들어져 이
- * 요청 DTO를 공유하게 됐다 — 근거: `docs/specs/room-detail/contracts/place-repository.md`,
+ * **호출부는 `PinApiService` 하나다.** room-detail이 `RoomPlacesRepository.sharePlaces`로,
+ * place-detail이 `PlaceRepository.duplicatePin`으로 같은 엔드포인트를 각자 부르던 두 갈래는 두 화면이
+ * [SYS-003] 시트를 한 벌로 합치면서 뒤쪽으로 모였다 — 근거:
+ * `docs/specs/place-detail/contracts/place-detail-main-contract.md` §3.4.6,
  * `docs/specs/home-deck-exploration/contracts/deck-api.md` §3.3.
  *
  * [PinCreateRequest]와 합치지 않는다 — 그쪽은 공유받은 `url`에서 핀을 새로 만들고, 이쪽은 이미 있는 핀을

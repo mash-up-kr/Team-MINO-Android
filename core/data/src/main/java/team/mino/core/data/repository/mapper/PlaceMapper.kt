@@ -12,8 +12,8 @@ import kotlin.time.Instant
 /**
  * `PinResponse.toDomain()` — `Pin`과 그 안의 `place`를 합쳐 도메인 `Place`로 변환한다.
  *
- * [Place.id]는 `Pin.id`를 쓴다(`Pin.place.id`가 아니다) — 공유·삭제 호출이 이 값을 그대로 쓰기 때문이다
- * (근거: docs/specs/room-detail/data-model.md §1).
+ * **식별자를 둘 나른다** — [Place.id]는 `Pin.id`(공유·삭제가 쓰는 값), [Place.placeId]는 `Pin.place.id`
+ * (어느 방에 이미 담겼는지 묻는 값)다. 근거: docs/specs/room-detail/data-model.md §1.
  *
  * [Place.commentCount]·[Place.isGgukPick]은 서버 응답에 없어 임시 목데이터/플레이스홀더로 채운다
  * (근거: docs/specs/room-detail/data-model.md §4 `[TBD]`, contracts/place-repository.md "DTO 갭 대응").
@@ -24,6 +24,7 @@ import kotlin.time.Instant
 internal fun PinResponse.toDomain(): Place =
     Place(
         id = id,
+        placeId = place.id,
         name = place.name,
         address = place.address,
         category = place.category.toPlaceCategoryFilter(),
