@@ -14,11 +14,11 @@ import team.mino.core.common.ui.scaffold.MinoScaffold
  * 로깅이 거기 딸려 온다(feature-module.md 4장). 시작 목적지는 하나뿐이라 Activity에서 받지 않고
  * 그래프가 갖는다.
  *
- * **셸이 받은 인셋 패딩을 화면에 걸지 않는다.** 디자인은 상태바를 화면 안에 겹쳐 그린 채로 각
- * 요소의 자리를 재므로, 위아래 모두 기준이 시스템 바가 아니라 화면 끝이다. 인셋을 여기서
- * 소비하면 아래에 배경색 띠가 남아 배경 아트가 바닥에 닿지 못하고, 위 요소는 상태바 높이만큼
- * 통째로 밀린다. 그래서 화면은 전체 영역에 그리고,
- * [team.mino.feature.splash.main.screen.SplashScreen]도 인셋을 소비하지 않는다.
+ * **셸이 받은 인셋 패딩을 화면에 걸지 않는다.** 디자인이 위아래 인셋을 다르게 다루기 때문이다 —
+ * 상태바는 화면 위에 겹쳐 그려져 위 여백의 기준이 화면 최상단이고, 마스코트는 내비게이션 바
+ * 위에서 잘린다. 여기서 한꺼번에 소비하면 위 요소가 상태바 높이만큼 밀린다. 그래서 화면은 전체
+ * 영역에 그리고, 어느 쪽을 소비할지는
+ * [team.mino.feature.splash.main.screen.SplashScreen]이 정한다.
  */
 @Composable
 internal fun SplashShell(
