@@ -1,4 +1,4 @@
-package team.mino.feature.room.placedetail.component
+package team.mino.feature.room.component
 
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
@@ -40,15 +40,16 @@ import team.mino.core.designsystem.util.modifier.clickable.singleClickable
 import team.mino.core.designsystem.util.modifier.surface.surface
 
 /*
- * 이 화면의 시트들이 함께 쓰는 조각들.
+ * 이 모듈의 시트들이 함께 쓰는 조각들.
  *
  * 손잡이·구분선·모서리는 어느 시트냐와 무관하게 같은 값이어야 한다. 시트마다 한 벌씩 두면 디자인이 손잡이
  * 치수나 모서리를 바꿀 때 한쪽만 따라가고, 같은 화면 안에서 두 시트가 서로 다른 모양이 된다. 아래로 끌어
  * 닫는 동작도 같다 — 되돌아오는 거리와 닫혔다고 보는 지점이 시트마다 다르면 같은 손짓이 다르게 먹는다.
  *
- * 이 모듈 밖으로는 올리지 않는다 — 세 번째 소비자가 다른 feature에서 나오면 그때
- * [`component-asset-placement.md`](../../../../../../../../../../docs/conventions/component-asset-placement.md)
- * §2.1이 승격 자리를 정한다.
+ * **화면 패키지가 아니라 모듈 루트에 있는 것은 쓰는 화면이 둘이기 때문이다** — 장소 상세의 시트 셋과 방
+ * 상세·장소 상세가 함께 부르는 [RoomShareSheet]가 같은 값을 본다(`docs/architecture/feature-module.md`
+ * 「모듈 루트 `component/`」). 이 모듈 밖으로는 올리지 않는다 — 세 번째 소비자가 다른 feature에서 나오면
+ * 그때 `docs/conventions/component-asset-placement.md` §2.1이 승격 자리를 정한다.
  */
 
 /** 시트 컨테이너의 위쪽 모서리. 두 시트가 같은 곡률로 올라온다. */

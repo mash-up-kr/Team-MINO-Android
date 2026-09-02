@@ -13,20 +13,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.ImmutableSet
-import kotlinx.collections.immutable.persistentSetOf
-import kotlinx.collections.immutable.toImmutableList
-import kotlinx.collections.immutable.toImmutableSet
 import team.mino.core.designsystem.foundation.icons.MinoIcons
 import team.mino.core.designsystem.foundation.icons.icons.MyLocation
 import team.mino.core.designsystem.theme.MinoAndroidTheme
@@ -35,6 +28,7 @@ import team.mino.core.designsystem.util.modifier.shadow.dropShadow
 import team.mino.core.domain.model.Place
 import team.mino.core.domain.model.Room
 import team.mino.core.domain.model.RoomMember
+import team.mino.feature.room.component.RoomShareSheet
 import team.mino.feature.room.detail.component.PlaceActionMenu
 import team.mino.feature.room.detail.component.PlaceCardGrid
 import team.mino.feature.room.detail.component.PlaceCardList
@@ -44,7 +38,6 @@ import team.mino.feature.room.detail.component.RoomDetailMapControls
 import team.mino.feature.room.detail.component.RoomInviteSheet
 import team.mino.feature.room.detail.component.RoomLeaveConfirmDialog
 import team.mino.feature.room.detail.component.RoomOwnerLeaveDialog
-import team.mino.feature.room.detail.component.RoomSelectSheet
 import team.mino.feature.room.detail.component.roomDetailBottomSheetHeightOrNull
 import team.mino.feature.room.detail.model.PlaceViewType
 import team.mino.feature.room.detail.vm.LeaveDialogState
@@ -155,11 +148,19 @@ internal fun BoxScope.RoomDetailScreen(
         },
     )
 
-    if (state.showRoomSelectSheet) {
-        RoomDetailRoomSelectOverlay(
-            place = state.placeToShare,
-            myRooms = state.myRooms,
-            onIntent = onIntent,
+    val placeToShare = state.placeToShare
+    if (placeToShare != null) {
+        RoomShareSheet(
+            placeName = placeToShare.name,
+            placeAddress = placeToShare.address,
+            placeImageUrl = placeToShare.thumbnailUrl,
+            rooms = state.shareRooms,
+            selectedRoomIds = state.shareSelectedRoomIds,
+            isShareEnabled = state.isShareEnabled,
+            onRoomToggle = { roomId -> onIntent(RoomDetailIntent.OnRoomSelectToggle(roomId)) },
+            onCreateRoomClick = { onIntent(RoomDetailIntent.OnShareCreateRoomClick) },
+            onShareClick = { onIntent(RoomDetailIntent.OnRoomSelectConfirm) },
+            onDismissRequest = { onIntent(RoomDetailIntent.OnRoomSelectDismiss) },
         )
     }
 
@@ -211,8 +212,10 @@ internal fun BoxScope.RoomDetailScreen(
 }
 
 /**
- * 초대 시트([RoomInviteSheet]) 오버레이 — [RoomDetailRoomSelectOverlay]와 같은 배경 스크림 + 하단 정렬
- * 패턴(T048)을 재사용한다.
+ * 초대 시트([RoomInviteSheet]) 오버레이 — 배경 스크림 + 하단 정렬.
+ *
+ * 공유 시트는 이 패턴을 쓰지 않는다. 그쪽은 `DimmedSheetContainer`가 딤과 시스템 바 처리를 함께 갖고 있어
+ * 오버레이를 따로 두지 않는다 — 이 시트도 두 번째 소비자가 생기면 그리로 옮길 자리다.
  */
 @Composable
 private fun RoomDetailInviteOverlay(
@@ -237,62 +240,6 @@ private fun RoomDetailInviteOverlay(
             onDismiss = { onIntent(RoomDetailIntent.OnInviteSheetDismiss) },
             onInviteClick = { onIntent(RoomDetailIntent.OnInviteConfirmClick) },
             onCopyLinkClick = { onIntent(RoomDetailIntent.OnCopyInviteLinkClick) },
-            // 시트 콘텐츠 자체의 빈 여백을 눌러도 바깥 스크림 클릭으로 잘못 전달돼 닫히지 않도록
-            // 클릭 이벤트를 여기서 소비한다(별도 시각 효과 없음, indication = null) —
-            // RoomDetailRoomSelectOverlay와 같은 이유(T048).
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .clickable(interactionSource = noRippleInteractionSource, indication = null, onClick = {}),
-        )
-    }
-}
-
-/**
- * "다른 방에 공유" 시트([RoomSelectSheet])를 화면 하단에 덮는 오버레이.
- *
- * [alreadySavedRoomIds]는 항상 빈 집합으로 둔다 — `Place`·`Room` 어느 도메인 모델에도 "이 장소가 이
- * 방에 이미 저장돼 있는지"를 판정할 수 있는 필드가 없다(`Place`는 room 소속 관계를 갖지 않고, `Room`은
- * 장소를 담지 않는다, `core/domain/model/Place.kt`·`Room.kt` 확인). 추후 Place-Room 소속 관계 데이터가
- * 추가되면 이 자리를 채워야 한다.
- *
- * [selectedRoomIds]는 이 오버레이가 열려 있는 동안만 유효한 화면 로컬 다중 선택 상태다 — `RoomDetailUiState`는
- * 선택 중인 방 목록을 들고 있지 않는다(공유 확정 시점에만 `RoomDetailIntent.OnRoomSelectConfirm`으로
- * ViewModel에 전달).
- */
-@Composable
-private fun RoomDetailRoomSelectOverlay(
-    place: Place?,
-    myRooms: ImmutableList<Room>,
-    onIntent: (RoomDetailIntent) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    var selectedRoomIds by remember { mutableStateOf<ImmutableSet<String>>(persistentSetOf()) }
-    val alreadySavedRoomIds: ImmutableSet<String> = persistentSetOf()
-    val noRippleInteractionSource = remember { MutableInteractionSource() }
-
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MinoAndroidTheme.colors.materialDimmer)
-            .rippleSingleClickable(onClick = { onIntent(RoomDetailIntent.OnRoomSelectDismiss) }),
-    ) {
-        RoomSelectSheet(
-            place = place,
-            rooms = myRooms,
-            alreadySavedRoomIds = alreadySavedRoomIds,
-            selectedRoomIds = selectedRoomIds,
-            onRoomToggle = { roomId ->
-                selectedRoomIds = if (roomId in selectedRoomIds) {
-                    (selectedRoomIds - roomId).toImmutableSet()
-                } else {
-                    (selectedRoomIds + roomId).toImmutableSet()
-                }
-            },
-            onCreateRoomClick = { onIntent(RoomDetailIntent.OnShareCreateRoomClick) },
-            onShareClick = {
-                onIntent(RoomDetailIntent.OnRoomSelectConfirm(selectedRoomIds.toImmutableList()))
-            },
-            onDismiss = { onIntent(RoomDetailIntent.OnRoomSelectDismiss) },
             // 시트 콘텐츠 자체의 빈 여백을 눌러도 바깥 스크림 클릭으로 잘못 전달돼 닫히지 않도록
             // 클릭 이벤트를 여기서 소비한다(별도 시각 효과 없음, indication = null).
             modifier = Modifier

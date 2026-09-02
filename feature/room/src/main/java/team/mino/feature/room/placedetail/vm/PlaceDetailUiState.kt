@@ -8,6 +8,7 @@ import kotlinx.collections.immutable.persistentSetOf
 import team.mino.core.common.android.architecture.UiState
 import team.mino.core.domain.model.PlaceDetail
 import team.mino.core.errorhandling.MinoDomainException
+import team.mino.feature.room.component.RoomShareItem
 import team.mino.feature.room.placedetail.model.PlaceCommentUiModel
 import team.mino.feature.room.placedetail.model.PlaceHeaderMode
 import team.mino.feature.room.placedetail.model.PlaceSheetLevel
@@ -113,13 +114,16 @@ internal data class SavedRoomsSheetUiState(
  * 선택은 [selectedRoomIds] 한 곳에만 있다. 카드가 자기 선택 여부를 들지 않으므로 목록이 다시 그려지거나 시트가
  * 스크롤돼도 선택이 흩어지지 않는다.
  *
- * @property rooms `hasPlace`가 `true`인 방은 체크된 채 비활성이라 [selectedRoomIds]에 들어오지 않는다
+ * @property rooms 시트가 그대로 그리는 목록. [RoomPickerItem]이 아니라 [RoomShareItem]인 것은 이 시트를
+ *  방 상세와 함께 쓰기 때문이다 — 시트가 어느 화면의 모델도 알지 않도록 여는 시점에 옮겨 담는다
+ *  (`docs/specs/place-detail/contracts/place-detail-main-contract.md` §3.4.5).
+ *  [RoomShareItem.alreadySaved]가 `true`인 방은 체크된 채 비활성이라 [selectedRoomIds]에 들어오지 않는다
  *  (spec FR-018 · FR-022).
  * @property isSubmitting 공유 요청이 도는 동안 CTA를 잠가 같은 방에 두 번 보내지지 않게 한다.
  */
 @Immutable
 internal data class ShareSheetUiState(
-    val rooms: ImmutableList<RoomPickerItem> = persistentListOf(),
+    val rooms: ImmutableList<RoomShareItem> = persistentListOf(),
     val selectedRoomIds: ImmutableSet<String> = persistentSetOf(),
     val isSubmitting: Boolean = false,
 ) {

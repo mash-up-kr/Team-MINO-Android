@@ -35,10 +35,10 @@ import team.mino.core.errorhandling.onDomainFailure
 import team.mino.core.errorhandling.runCatchingDomain
 import team.mino.core.navigation.activity.launcher.RoomFormLauncher
 import team.mino.core.navigation.entry.PlaceDetailRequestHolder
+import team.mino.feature.room.component.chip
 import team.mino.feature.room.main.component.DefaultMapCenter
 import team.mino.feature.room.main.model.BottomSheetLevel
 import team.mino.feature.room.main.model.MapPinUiModel
-import team.mino.feature.room.main.model.chip
 import team.mino.feature.room.main.model.toMemberSummary
 import javax.inject.Inject
 import kotlin.coroutines.resume

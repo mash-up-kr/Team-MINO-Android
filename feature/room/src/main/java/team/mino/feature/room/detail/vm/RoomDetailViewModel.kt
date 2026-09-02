@@ -7,7 +7,9 @@ import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toPersistentSet
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.catch
@@ -20,15 +22,18 @@ import team.mino.core.domain.model.Place
 import team.mino.core.domain.model.PlaceCategoryFilter
 import team.mino.core.domain.model.Room
 import team.mino.core.domain.model.RoomMemberSummary
+import team.mino.core.domain.repository.PlaceRepository
 import team.mino.core.domain.repository.ProfileRepository
 import team.mino.core.domain.repository.RoomPlacesRepository
 import team.mino.core.domain.repository.RoomRepository
+import team.mino.core.domain.usecase.GetRoomPickerRoomsUseCase
 import team.mino.core.errorhandling.DomainErrorEmitter
 import team.mino.core.errorhandling.MinoDomainException
 import team.mino.core.errorhandling.domainErrorEmitter
 import team.mino.core.errorhandling.onDomainFailure
 import team.mino.core.errorhandling.runCatchingDomain
 import team.mino.core.navigation.activity.launcher.RoomFormLauncher
+import team.mino.feature.room.component.toRoomShareItems
 import team.mino.feature.room.detail.model.PlaceViewType
 import team.mino.feature.room.main.model.BottomSheetLevel
 import team.mino.feature.room.main.model.toMemberSummary
@@ -47,6 +52,8 @@ internal class RoomDetailViewModel @AssistedInject constructor(
     @Assisted private val roomId: String,
     private val roomRepository: RoomRepository,
     private val roomPlacesRepository: RoomPlacesRepository,
+    private val placeRepository: PlaceRepository,
+    private val getRoomPickerRooms: GetRoomPickerRoomsUseCase,
     private val profileRepository: ProfileRepository,
     private val inviteLinkBuilder: InviteLinkBuilder,
     val roomFormLauncher: RoomFormLauncher,
@@ -88,7 +95,8 @@ internal class RoomDetailViewModel @AssistedInject constructor(
             is RoomDetailIntent.OnPlaceDeleteClick -> onPlaceDeleteClick(intent.place)
             RoomDetailIntent.OnPlaceDeleteConfirm -> onPlaceDeleteConfirm()
             RoomDetailIntent.OnPlaceDeleteCancel -> onPlaceDeleteCancel()
-            is RoomDetailIntent.OnRoomSelectConfirm -> onRoomSelectConfirm(intent.targetRoomIds)
+            is RoomDetailIntent.OnRoomSelectToggle -> onRoomSelectToggle(intent.roomId)
+            RoomDetailIntent.OnRoomSelectConfirm -> onRoomSelectConfirm()
             RoomDetailIntent.OnRoomSelectDismiss -> onRoomSelectDismiss()
             RoomDetailIntent.OnShareCreateRoomClick -> onShareCreateRoomClick()
             is RoomDetailIntent.OnShareRoomFormResult -> onShareRoomFormResult(intent.createdRoomId)
@@ -148,7 +156,6 @@ internal class RoomDetailViewModel @AssistedInject constructor(
     private fun onScreenExited() {
         updateState {
             copy(
-                showRoomSelectSheet = false,
                 placeToShare = null,
                 leaveDialogState = LeaveDialogState.None,
                 selectedDelegateMemberId = null,
@@ -270,49 +277,93 @@ internal class RoomDetailViewModel @AssistedInject constructor(
     /**
      * [FR-009] 다른 방에 공유 — 공유 대상 장소를 기록하고 시트를 연다.
      *
-     * 시트가 열릴 때마다 매번 [RoomRepository.observeMyRooms]를 구독한다 — 화면 진입 시점부터 미리
-     * 구독해 둘 이유가 없고(시트가 열리기 전엔 목록이 필요 없다), 열릴 때마다 최신 방 목록을 받는 편이
-     * 오래 열어둔 화면에서 새로 만든 방이 후보에서 빠지는 사고를 막는다.
+     * **여는 순간 조회한다.** 화면 진입 시점부터 미리 받아 둘 이유가 없고(시트가 열리기 전엔 목록이 필요
+     * 없다), 열 때마다 받는 편이 오래 열어 둔 화면에서 새로 만든 방이 후보에서 빠지는 사고를 막는다.
+     *
+     * **`observeMyRooms()`가 아니라 `getRooms(placeId)`다.** 이 시트는 이미 그 장소가 담긴 방을 체크된 채
+     * 비활성으로 그려야 하는데([spec.md](../../../../../../../../../docs/specs/room-detail/spec.md) EC-004)
+     * `Room` 목록에는 그 판정에 쓸 값이 없다. `RoomSummary.hasPlace`가 그 값이며, 묻는 키가 핀이 아니라
+     * **장소**라 [Place.placeId]를 싣는다 — [Place.id]는 방마다 다른 핀 id다.
      */
     private fun onShareToOtherRoomClick(place: Place) {
         // menuTargetPlace를 같이 지워야 카드 더보기 메뉴([PlaceActionMenu])가 닫힌다 — 이걸 빼먹으면
         // 그 메뉴가 계속 열린 채로 이 공유 시트 위/아래에 겹쳐 보인다(실기기 확인).
-        updateState { copy(showRoomSelectSheet = true, placeToShare = place, menuTargetPlace = null) }
-        launchSafely {
-            roomRepository
-                .observeMyRooms()
-                .catch { throwable ->
-                    if (throwable is MinoDomainException) {
-                        emitDomainError(throwable)
-                    } else {
-                        throw throwable
-                    }
-                }.collect { rooms ->
-                    updateState { copy(myRooms = rooms.toImmutableList()) }
-                }
+        updateState {
+            copy(
+                placeToShare = place,
+                menuTargetPlace = null,
+                shareRooms = persistentListOf(),
+                shareSelectedRoomIds = persistentSetOf(),
+                isSharing = false,
+            )
+        }
+        launchSafely { loadShareRooms(place.placeId) }
+    }
+
+    /**
+     * 공유 후보 방 목록을 받아 시트에 싣는다.
+     *
+     * 실패하면 목록을 비운 채 알림만 남긴다 — 시트는 이미 떠 있고, 방 상세 본문은 이 조회와 무관하므로
+     * `loadError`로 화면 전체를 오류로 덮지 않는다.
+     */
+    private suspend fun loadShareRooms(placeId: String) {
+        runCatchingDomain { getRoomPickerRooms(placeId) }
+            .onSuccess { rooms -> updateState { copy(shareRooms = rooms.toRoomShareItems()) } }
+            .onDomainFailure(::emitDomainError)
+    }
+
+    /**
+     * [FR-009] 공유 시트의 방 카드 탭. 같은 방을 다시 누르면 선택이 풀린다.
+     *
+     * **이미 담긴 방은 선택에 들이지 않는다**(EC-004). 그 카드는 화면에서 비활성이라 눌리지 않지만, 표시와
+     * 입력이 갈리면 이미 담긴 방이 복제 요청에 실려 서버가 `409`로 거절하고 사용자에게는 이유를 알 수 없는
+     * 실패만 남는다.
+     */
+    private fun onRoomSelectToggle(roomId: String) {
+        updateState {
+            if (shareRooms.any { it.id == roomId && it.alreadySaved }) return@updateState this
+            val selected = shareSelectedRoomIds.toPersistentSet()
+            copy(
+                shareSelectedRoomIds =
+                    if (roomId in selected) selected.remove(roomId) else selected.add(roomId),
+            )
         }
     }
 
     /**
      * [FR-009] 방 선택 확정 — 선택한 방들에 장소를 공유한다.
      *
+     * 보내는 것은 [PlaceRepository.duplicatePin]이다. 예전에는 `RoomPlacesRepository.sharePlaces`를 썼는데
+     * 두 메서드가 같은 엔드포인트(`POST /pins/{pinId}/duplicate`)를 가리키는 중복이라, 장소 상세와 시트를
+     * 한 벌로 합치면서 이쪽으로 모았다. 싣는 값은 그대로 [Place.id](= 핀 id)다.
+     *
      * 일회성 사용자 액션 실패이므로 [loadRoom]과 달리 `loadError`가 아니라 [DomainErrorEmitter]로
      * 방출한다(`409 DUPLICATE_PIN_IN_ROOM` 포함 모든 실패, `docs/conventions/error_handling.md` §5).
+     * 실패해도 시트를 닫지 않는다 — 잠금만 풀고 고른 방은 그대로 둔다.
      */
-    private fun onRoomSelectConfirm(targetRoomIds: ImmutableList<String>) {
-        val place = state.value.placeToShare ?: return
+    private fun onRoomSelectConfirm() {
+        val current = state.value
+        val place = current.placeToShare ?: return
+        if (!current.isShareEnabled) return
+        val targetRoomIds = current.shareSelectedRoomIds.toList()
+        updateState { copy(isSharing = true) }
         launchSafely {
-            runCatchingDomain { roomPlacesRepository.sharePlaces(place.id, targetRoomIds) }
+            runCatchingDomain { placeRepository.duplicatePin(place.id, targetRoomIds) }
                 .onSuccess {
                     postSideEffect(RoomDetailSideEffect.ShowShareCompleteToast)
-                    updateState { copy(showRoomSelectSheet = false, placeToShare = null) }
-                }.onDomainFailure(::emitDomainError)
+                    updateState { copy(placeToShare = null, isSharing = false) }
+                }.onDomainFailure { error ->
+                    updateState { copy(isSharing = false) }
+                    emitDomainError(error)
+                }
         }
     }
 
     /** [FR-009] 방 선택 시트 닫기 — 공유 관련 상태를 초기화한다. */
     private fun onRoomSelectDismiss() {
-        updateState { copy(showRoomSelectSheet = false, placeToShare = null) }
+        updateState {
+            copy(placeToShare = null, shareRooms = persistentListOf(), shareSelectedRoomIds = persistentSetOf())
+        }
     }
 
     /** [FR-009] 공유 시트의 [+ 새 방 만들기] — 전환 결정만 발행한다(실제 호출은 Route, `OnEditRoomClick`과 같은 패턴). */
@@ -321,16 +372,18 @@ internal class RoomDetailViewModel @AssistedInject constructor(
     }
 
     /**
-     * [FR-009] 공유 시트에서 새로 만든 방을 [RoomDetailUiState.myRooms] 목록에 더한다 — 시트를 다시 열지
-     * 않아도 방금 만든 방이 바로 보여야 공유 대상으로 고를 수 있다. `observeMyRooms()`는 한 번만 emit하는
-     * 콜드 플로우라 자동으로 갱신되지 않는다.
+     * [FR-009] 공유 시트에서 새 방을 만들고 돌아왔다 — 목록을 다시 받아 그 방을 고른 것으로 둔다.
+     *
+     * 방 생성 화면이 돌려주는 것은 방 id 하나뿐이라 이름·썸네일·장소 개수를 알 방법이 없고, 그 값 없이
+     * 카드를 세우면 빈 줄이 보인다. 시트는 닫지 않으므로 사용자가 보는 것은 목록이 한 번 갱신되는 것뿐이다.
+     * 만들러 가기 전에 고른 방은 그대로 두고 새 방을 얹는다.
      */
     private fun onShareRoomFormResult(createdRoomId: String?) {
         val id = createdRoomId ?: return
+        val placeId = state.value.placeToShare?.placeId ?: return
         launchSafely {
-            runCatchingDomain { roomRepository.getRoom(id) }
-                .onSuccess { room -> updateState { copy(myRooms = (myRooms + room).toImmutableList()) } }
-                .onDomainFailure(::emitDomainError)
+            loadShareRooms(placeId)
+            updateState { copy(shareSelectedRoomIds = shareSelectedRoomIds.toPersistentSet().add(id)) }
         }
     }
 

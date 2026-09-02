@@ -43,6 +43,9 @@ import team.mino.core.designsystem.theme.MinoAndroidTheme
 import team.mino.core.domain.model.PlaceDetail
 import team.mino.core.errorhandling.MinoDomainException
 import team.mino.feature.room.R
+import team.mino.feature.room.component.RoomShareSheet
+import team.mino.feature.room.component.SheetSectionDivider
+import team.mino.feature.room.component.systemBarBleed
 import team.mino.feature.room.placedetail.component.PlaceActionRow
 import team.mino.feature.room.placedetail.component.PlaceCommentInput
 import team.mino.feature.room.placedetail.component.PlaceCommentList
@@ -51,10 +54,7 @@ import team.mino.feature.room.placedetail.component.PlaceDetailExpandedHeader
 import team.mino.feature.room.placedetail.component.PlaceDetailSheet
 import team.mino.feature.room.placedetail.component.PlaceImageCarousel
 import team.mino.feature.room.placedetail.component.PlaceMapControls
-import team.mino.feature.room.placedetail.component.RoomShareSheet
 import team.mino.feature.room.placedetail.component.SavedRoomsSheet
-import team.mino.feature.room.placedetail.component.SheetSectionDivider
-import team.mino.feature.room.placedetail.component.systemBarBleed
 import team.mino.feature.room.placedetail.model.PlaceHeaderMode
 import team.mino.feature.room.placedetail.vm.PlaceDetailIntent
 import team.mino.feature.room.placedetail.vm.PlaceDetailUiState
@@ -190,8 +190,11 @@ internal fun BoxScope.PlaceDetailScreen(
                 placeName = place.name,
                 placeAddress = place.address,
                 placeImageUrl = place.imageUrls.firstOrNull(),
-                state = shareSheet,
+                rooms = shareSheet.rooms,
+                selectedRoomIds = shareSheet.selectedRoomIds,
+                isShareEnabled = shareSheet.isShareEnabled,
                 onRoomToggle = { roomId -> onIntent(PlaceDetailIntent.OnShareRoomToggle(roomId)) },
+                onCreateRoomClick = { onIntent(PlaceDetailIntent.OnShareCreateRoomClick) },
                 onShareClick = { onIntent(PlaceDetailIntent.OnShareConfirmClick) },
                 onDismissRequest = { onIntent(PlaceDetailIntent.OnShareSheetDismiss) },
             )

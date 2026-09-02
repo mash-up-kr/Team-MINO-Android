@@ -12,12 +12,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.toClipEntry
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import team.mino.core.common.ui.architecture.CollectSideEffect
 import team.mino.core.common.ui.scaffold.LocalSnackbarHostState
@@ -28,6 +28,7 @@ import team.mino.core.navigation.activity.launcher.ROOM_FORM_OUTCOME_UPDATED
 import team.mino.feature.room.detail.vm.RoomDetailIntent
 import team.mino.feature.room.detail.vm.RoomDetailSideEffect
 import team.mino.feature.room.detail.vm.RoomDetailViewModel
+import team.mino.feature.room.showShareCompleted
 
 /**
  * 방 상세의 유일한 Route — `RoomListRoute`가 `selectedRoomId != null`일 때 [RoomListScreen]의
@@ -61,6 +62,7 @@ internal fun BoxScope.RoomDetailRoute(
     val activity = checkNotNull(LocalActivity.current) { "RoomDetailRoute는 Activity 컨텍스트 안에서만 그려진다." }
     val snackbarHostState = LocalSnackbarHostState.current
     val clipboard = LocalClipboard.current
+    val resources = LocalResources.current
     val scope = rememberCoroutineScope()
 
     // [FR-012] 방 편집 — RoomFormLauncher 결과 계약은
@@ -97,15 +99,10 @@ internal fun BoxScope.RoomDetailRoute(
             RoomDetailSideEffect.ShowEditCompleteSnackbar ->
                 scope.launch { snackbarHostState.showSnackbar("방 편집이 완료되었어요") }
 
-            // [FR-009] 공유 완료 — 3초 노출(UX-002). SnackbarDuration.Short는 4초라 duration을
-            // 직접 지정하지 않고, 3초 뒤 스스로 dismiss하는 launch로 표현한다.
+            // [FR-009] 공유 완료 — 문구와 3초 노출은 장소 상세와 한 곳에서 나온다
+            // (`ShareCompletedToast.kt`). 같은 [SYS-003] 시트라 진입점에 따라 갈리지 않는다.
             RoomDetailSideEffect.ShowShareCompleteToast ->
-                scope.launch {
-                    // Figma `2542-125820`("004-2-3 방 상세 half_공유 피드백 토스트 표출") 실측 문구.
-                    val job = launch { snackbarHostState.showSnackbar("공유가 완료됐습니다.") }
-                    delay(SHARE_COMPLETE_TOAST_DURATION_MS)
-                    job.cancel()
-                }
+                scope.launch { snackbarHostState.showShareCompleted(resources) }
 
             // [SYS-007] 나가기 완료 — 방 상세는 room-list 백스택 위에 쌓인 nested Route라
             // NavigateBack과 같은 popBackStackIfResumed(entry) 메커니즘으로 SCR-004에 복귀한다
@@ -155,9 +152,6 @@ internal fun BoxScope.RoomDetailRoute(
         modifier = modifier,
     )
 }
-
-/** [UX-002] 공유 완료 토스트 노출 시간. */
-private const val SHARE_COMPLETE_TOAST_DURATION_MS = 3000L
 
 /** 클립 항목의 식별자 — 화면에 나오는 문구가 아니라 고정 문자열이다(`InviteRoute.CLIP_LABEL`과 같은 이유). */
 private const val INVITE_LINK_CLIP_LABEL = "invite_link"

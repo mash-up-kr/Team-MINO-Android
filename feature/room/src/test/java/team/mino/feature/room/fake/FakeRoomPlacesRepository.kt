@@ -20,11 +20,6 @@ internal class FakeRoomPlacesRepository : RoomPlacesRepository {
 
     override fun observePlaces(roomId: String): Flow<List<Place>> = places
 
-    override suspend fun sharePlaces(
-        pinId: String,
-        targetRoomIds: List<String>,
-    ): Unit = error("FakeRoomPlacesRepository는 sharePlaces를 지원하지 않는다.")
-
     override suspend fun deletePlace(
         roomId: String,
         pinId: String,

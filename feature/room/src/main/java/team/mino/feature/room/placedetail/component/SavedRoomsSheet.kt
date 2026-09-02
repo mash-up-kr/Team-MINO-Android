@@ -37,7 +37,12 @@ import team.mino.core.designsystem.util.modifier.surface.surface
 import team.mino.core.designsystem.util.preview.UiModePreviews
 import team.mino.core.domain.model.RoomColor
 import team.mino.feature.room.R
-import team.mino.feature.room.main.model.chip
+import team.mino.feature.room.component.DimmedSheetContainer
+import team.mino.feature.room.component.SheetContainerShape
+import team.mino.feature.room.component.SheetDividerThickness
+import team.mino.feature.room.component.SheetDragHandle
+import team.mino.feature.room.component.chip
+import team.mino.feature.room.component.rememberSheetDismissDragState
 import team.mino.feature.room.placedetail.model.RoomPickerItem
 import team.mino.feature.room.placedetail.vm.SavedRoomsSheetUiState
 import kotlin.math.roundToInt
@@ -172,7 +177,7 @@ private fun SavedRoomsList(
             items(items = rooms, key = { it.id }) { room ->
                 MinoRoomChevronCard(
                     title = room.name,
-                    placeCountLabel = stringResource(R.string.placedetail_room_place_count, room.placeCount),
+                    placeCountLabel = stringResource(R.string.room_place_count, room.placeCount),
                     onClick = { room.matchedPinId?.let { pinId -> onRoomSelected(pinId, room.id) } },
                     thumbnail = {
                         MinoRoomThumbnail(

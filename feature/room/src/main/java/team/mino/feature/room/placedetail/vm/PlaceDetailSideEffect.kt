@@ -32,6 +32,15 @@ internal sealed interface PlaceDetailSideEffect : SideEffect {
     data object ShowShareCompleted : PlaceDetailSideEffect
 
     /**
+     * 공동방 생성 화면을 연다(spec FR-022 · EC-020).
+     *
+     * 상태가 아니라 SideEffect인 것은 Activity 전환이라 화면만 할 수 있기 때문이다 — 방 상세의
+     * `NavigateToCreateRoomForm`과 같은 이유이며, 만들어진 방은 Route가 받아
+     * [PlaceDetailIntent.OnShareRoomFormResult]로 되돌려 준다.
+     */
+    data object OpenCreateRoomForm : PlaceDetailSideEffect
+
+    /**
      * 「지금 보고 있는 방」을 [roomId]로 바꾼다(spec FR-025).
      *
      * 상태 변경인데도 SideEffect인 것은 **바꿔야 할 값이 다른 ViewModel의 것**이기 때문이다. 이 화면은 자기

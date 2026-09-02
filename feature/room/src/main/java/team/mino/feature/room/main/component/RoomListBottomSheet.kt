@@ -40,8 +40,8 @@ import team.mino.core.designsystem.theme.MinoAndroidTheme
 import team.mino.core.designsystem.util.modifier.clickable.rippleSingleClickable
 import team.mino.core.domain.model.Room
 import team.mino.core.domain.model.RoomThumbnail
+import team.mino.feature.room.component.toMinoRoomColor
 import team.mino.feature.room.main.model.BottomSheetLevel
-import team.mino.feature.room.main.model.toMinoRoomColor
 import team.mino.feature.room.main.model.toRoomCardParams
 
 /**

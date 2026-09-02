@@ -1,7 +1,9 @@
 package team.mino.feature.room.detail.vm
 
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentSetOf
 import team.mino.core.common.android.architecture.UiState
 import team.mino.core.domain.model.MapMarkerSortOption
 import team.mino.core.domain.model.Place
@@ -9,6 +11,7 @@ import team.mino.core.domain.model.PlaceCategoryFilter
 import team.mino.core.domain.model.Room
 import team.mino.core.domain.model.RoomMember
 import team.mino.core.errorhandling.MinoDomainException
+import team.mino.feature.room.component.RoomShareItem
 import team.mino.feature.room.detail.model.PlaceViewType
 import team.mino.feature.room.main.model.BottomSheetLevel
 
@@ -30,9 +33,11 @@ internal data class RoomDetailUiState(
     val isPersonalRoom: Boolean = false,
     val showMoreMenu: Boolean = false,
     val menuTargetPlace: Place? = null,
-    val showRoomSelectSheet: Boolean = false,
+    // [SYS-003] 공유 시트. null이 닫힘이다 — 여는 순간 대상 장소가 정해지므로 열림 플래그를 따로 두지 않는다.
     val placeToShare: Place? = null,
-    val myRooms: ImmutableList<Room> = persistentListOf(),
+    val shareRooms: ImmutableList<RoomShareItem> = persistentListOf(),
+    val shareSelectedRoomIds: ImmutableSet<String> = persistentSetOf(),
+    val isSharing: Boolean = false,
     val showInviteSheet: Boolean = false,
     val inviteCode: String? = null,
     val roomMembers: ImmutableList<RoomMember> = persistentListOf(),
@@ -40,7 +45,11 @@ internal data class RoomDetailUiState(
     val leaveDialogState: LeaveDialogState = LeaveDialogState.None,
     val selectedDelegateMemberId: String? = null,
     val loadError: MinoDomainException? = null,
-) : UiState
+) : UiState {
+    /** 하나라도 고른 뒤에야 보낼 곳이 정해진다. 보내는 중에는 같은 방에 두 번 가지 않게 잠근다(FR-009). */
+    val isShareEnabled: Boolean
+        get() = shareSelectedRoomIds.isNotEmpty() && !isSharing
+}
 
 /**
  * 나가기/위임 모달 상태([SYS-007]).
