@@ -17,6 +17,7 @@ import team.mino.feature.main.placeholder.RoomFormEntryPoint
 internal fun MainShell(
     onNavigateToPlaceDetail: (pinId: String) -> Unit,
     onNavigateToRoomForm: () -> Unit,
+    onNavigateToProfileEdit: () -> Unit,
     roomFormEntryPoint: RoomFormEntryPoint,
     modifier: Modifier = Modifier,
 ) {
@@ -41,6 +42,7 @@ internal fun MainShell(
                 navController = navController,
                 onNavigateToPlaceDetail = onNavigateToPlaceDetail,
                 onNavigateToRoomForm = onNavigateToRoomForm,
+                onNavigateToProfileEdit = onNavigateToProfileEdit,
                 roomFormEntryPoint = roomFormEntryPoint,
                 modifier = Modifier.padding(innerPadding),
             )

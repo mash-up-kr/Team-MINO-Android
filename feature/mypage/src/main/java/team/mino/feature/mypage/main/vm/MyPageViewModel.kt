@@ -1,8 +1,11 @@
 package team.mino.feature.mypage.main.vm
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import team.mino.core.common.android.architecture.MviContainer
 import team.mino.core.common.android.architecture.mviContainer
 import team.mino.core.common.android.extension.launchSafely
@@ -31,6 +34,13 @@ class MyPageViewModel
         MviContainer<MyPageUiState, MyPageSideEffect> by mviContainer(MyPageUiState()),
         DomainErrorEmitter by domainErrorEmitter() {
         init {
+            // 원격이 원천, 로컬은 캐시다(core/domain/README.md·ProfileRepository 계약) — 닉네임·아바타는
+            // 이 구독 하나로만 갱신하고, refresh()는 캐시를 최신화시키는 트리거만 맡는다.
+            profileRepository
+                .observeProfile()
+                .onEach { profile ->
+                    updateState { copy(nickname = profile?.nickname.orEmpty(), avatar = profile?.avatar) }
+                }.launchIn(viewModelScope)
             launchSafely { refresh() }
         }
 
@@ -72,13 +82,11 @@ class MyPageViewModel
             }
         }
 
-        // 실패 시 State 리프가 아니라 emitDomainError(스낵바)로 알린다 — 계약에 에러 리프가 없다.
+        // 캐시를 서버 값으로 최신화한다. 성공하면 init의 observeProfile() 구독이 새 값을 자동으로 흘린다 —
+        // 여기서 State를 직접 쓰지 않는다. 실패 시 State 리프가 아니라 emitDomainError(스낵바)로 알린다.
         private suspend fun refreshProfile() {
-            runCatchingDomain { profileRepository.getProfile() }
+            runCatchingDomain { profileRepository.refreshProfile() }
                 .onDomainFailure(::emitDomainError)
-                .onSuccess { profile ->
-                    updateState { copy(nickname = profile.nickname, avatarId = profile.avatarId) }
-                }
         }
 
         private fun onNotificationSwitchClick(canShowSystemDialog: Boolean) {
