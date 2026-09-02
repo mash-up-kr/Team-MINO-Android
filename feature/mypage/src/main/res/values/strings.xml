@@ -1,15 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="mypage_profile_back_content_description">뒤로가기</string>
-    <string name="mypage_profile_top_bar_title">프로필 설정</string>
-    <string name="mypage_profile_headline">친구들에게 어떻게 보일까요?</string>
-    <string name="mypage_profile_avatar_content_description">아바타 %1$d번</string>
-    <string name="mypage_profile_nickname_label">이름 또는 닉네임</string>
-    <string name="mypage_profile_nickname_helper">한글·영문 2글자 이상을 입력해주세요.</string>
-    <string name="mypage_profile_avatar_section_label">프로필 이미지 선택</string>
-    <string name="mypage_profile_clear_button">지우기</string>
-    <string name="mypage_profile_save_button">저장</string>
-
     <string name="mypage_main_edit_profile_content_description">프로필 편집</string>
     <string name="mypage_main_app_settings_title">앱 설정</string>
     <string name="mypage_main_notification_setting_label">알림 설정</string>

@@ -17,10 +17,13 @@ import androidx.compose.ui.Modifier
 import androidx.core.net.toUri
 import dagger.hilt.android.AndroidEntryPoint
 import team.mino.core.designsystem.theme.MinoAndroidAppTheme
+import team.mino.core.navigation.activity.launcher.EXTRA_PROFILE_ENTRY_POINT
 import team.mino.core.navigation.activity.launcher.EXTRA_ROOM_FORM_ONBOARDING
 import team.mino.core.navigation.activity.launcher.EXTRA_ROOM_FORM_RESULT_OUTCOME
 import team.mino.core.navigation.activity.launcher.EXTRA_ROOM_FORM_RESULT_ROOM_ID
 import team.mino.core.navigation.activity.launcher.EXTRA_ROOM_FORM_ROOM_ID
+import team.mino.core.navigation.activity.launcher.PROFILE_ENTRY_POINT_EDIT
+import team.mino.core.navigation.activity.launcher.ProfileLauncher
 import team.mino.core.navigation.activity.launcher.RoomFormLauncher
 import team.mino.core.navigation.entry.PlaceDetailRequestHolder
 import team.mino.feature.main.placeholder.RoomFormEntryPoint
@@ -40,6 +43,9 @@ class MainActivity : ComponentActivity() {
      */
     @Inject
     lateinit var placeDetailRequestHolder: PlaceDetailRequestHolder
+
+    @Inject
+    lateinit var profileLauncher: ProfileLauncher
 
     private var roomFormResult by mutableStateOf<String?>(null)
 
@@ -63,6 +69,7 @@ class MainActivity : ComponentActivity() {
                     onOpenExternalMap = ::openExternalMap,
                     onOpenSourceLink = ::openSourceLink,
                     onNavigateToRoomForm = { launchRoomForm() },
+                    onNavigateToProfileEdit = ::launchProfileEdit,
                     // 결과가 바뀔 때만 새로 만든다. 매 리컴포지션마다 새 묶음을 넘기면 셸 아래의
                     // `NavHost`가 그래프 생성 키를 잃어 그래프를 통째로 다시 만든다.
                     roomFormEntryPoint =
@@ -120,6 +127,14 @@ class MainActivity : ComponentActivity() {
         } catch (notFound: ActivityNotFoundException) {
             false
         }
+
+    /**
+     * 마이페이지에서 프로필 편집을 연다. 결과가 필요 없다 — 돌아오면 구독 중인 `observeProfile()`
+     * Flow가 새 값을 흘린다(`docs/specs/profile/contracts/profile-launcher-contract.md` §호출 방법).
+     */
+    private fun launchProfileEdit() {
+        profileLauncher.launch(this) { putExtra(EXTRA_PROFILE_ENTRY_POINT, PROFILE_ENTRY_POINT_EDIT) }
+    }
 
     /**
      * 폼을 연다. `roomId`가 있으면 편집, 없으면 생성이다 — 모드를 가르는 값은 그 하나뿐이다
