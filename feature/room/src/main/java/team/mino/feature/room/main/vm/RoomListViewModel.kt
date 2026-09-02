@@ -94,10 +94,15 @@ class RoomListViewModel @Inject constructor(
     }
 
     /**
-     * 요청받은 핀의 장소 상세를 연다 — 「지금 보고 있는 방」과 그 방의 핀을 **함께** 세운다.
+     * 요청받은 핀의 장소 상세를 연다 — 「지금 보고 있는 방」·그 방의 핀·카메라를 **함께** 세운다.
      *
-     * 둘을 함께 세워야 [나가기](FR-009)가 드러낼 방 상세가 이미 그 아래에 있다. 홈·알림에서 들어오면 방
-     * 상세가 아직 안 열려 있어, 핀만 세우면 [나가기]가 빈자리로 떨어진다(TS-007·TS-037).
+     * 방과 핀을 함께 세워야 [나가기](FR-009)가 드러낼 방 상세가 이미 그 아래에 있다. 홈·알림에서 들어오면
+     * 방 상세가 아직 안 열려 있어, 핀만 세우면 [나가기]가 빈자리로 떨어진다(TS-007·TS-037).
+     *
+     * **카메라도 여기서 옮긴다**(FR-002·TS-056). 카메라 이동은 진입점 넷 전부에 걸리므로 탭 간 진입도
+     * 예외가 아니다. 좌표는 [onPlaceSelected]처럼 [placesByRoomId]에서 찾지 않고 **핀 상세 응답의
+     * `location`**을 쓴다 — 홈에서 콜드 진입하면 그 목록이 아직 비어 있어 못 찾고, 못 찾으면 카메라가
+     * 진입 직전 자리(현재 위치·기본 좌표)에 머물러 선택 핀이 화면 밖에 남는다(실기기 확인된 결함).
      *
      * **요청은 결과와 무관하게 먼저 비운다.** 남겨 두면 사용자가 [나가기]로 닫은 장소가 탭을 오갈 때마다
      * 다시 열린다(`PlaceDetailRequestHolder.pending` KDoc).
@@ -110,7 +115,10 @@ class RoomListViewModel @Inject constructor(
         placeDetailRequestHolder.consume()
         runCatchingDomain { placeRepository.getPlaceDetail(pinId) }
             .onSuccess { detail ->
-                updateState { copy(selectedRoomId = detail.roomId, selectedPinId = pinId) }
+                updateState {
+                    copy(selectedRoomId = detail.roomId, selectedPinId = pinId)
+                        .movingCameraTo(detail.location)
+                }
                 refreshMapPins()
             }.onDomainFailure {
                 // 삼킨다는 것이 이 경로의 계약이므로, 결과를 버리는 대신 빈 소비로 드러낸다
@@ -276,11 +284,7 @@ class RoomListViewModel @Inject constructor(
         updateState { copy(nudgeSheetDismissed = false) }
         observeMyRooms()
         if (hasLocationPermission()) {
-            launchSafely {
-                val center = resolveMapCenter(granted = true)
-                updateState { copy(mapCenter = center, mapCenterRequestId = mapCenterRequestId + 1) }
-                refreshMapPins()
-            }
+            moveCameraToResolvedLocation(granted = true)
         } else {
             launchSafely { postSideEffect(RoomListSideEffect.RequestLocationPermission) }
         }
@@ -288,21 +292,48 @@ class RoomListViewModel @Inject constructor(
 
     /** [EC-002] 거부 시 기본 디폴트 좌표, 허용 시 실제 위치로 `mapCenter`를 설정한다. */
     private fun onLocationPermissionResult(granted: Boolean) {
+        moveCameraToResolvedLocation(granted)
+    }
+
+    /**
+     * 화면 진입에 딸린 자동 카메라 이동 — [onScreenEntered]·[onLocationPermissionResult]가 공유한다.
+     *
+     * **장소 상세가 열려 있으면 카메라를 옮기지 않는다**(spec EC-030). 홈·알림 진입은 탭 전환(→
+     * [onScreenEntered])과 장소 상세 열기([openRequestedPlaceDetail])가 같은 순간에 일어나 두 카메라
+     * 이동이 겹치는데, 어느 쪽이 이기는지가 위치 해석 속도에 달린다 — 캐시된 마지막 위치가 있으면 즉시
+     * 끝나 장소 쪽이 이기지만, 없어서 활성 측위로 넘어가면 최대 `LOCATION_FETCH_TIMEOUT` 뒤에 도착해
+     * 선택 핀에 맞춰 둔 카메라를 현재 위치가 덮는다. 순서로는 고정되지 않으므로 규칙으로 고정한다.
+     *
+     * **판정이 위치 해석 앞뒤로 두 번 있다.** 뒤의 것이 위 경합을 닫는다 — 앞에서만 보면 해석을 기다리는
+     * 사이에 열린 장소 상세를 놓친다. 앞의 것은 낭비를 막는다 — 이미 열려 있는데 들어오면(탭 재진입)
+     * 캐시가 없는 기기에서 GPS를 켜고 [LOCATION_FETCH_TIMEOUT]까지 기다린 뒤 결과를 버리게 된다.
+     *
+     * @param skipWhenPlaceDetailOpen 위 가드를 걸지 여부. 사용자가 직접 누른 [현재 위치]
+     *  ([onCurrentLocationClick])만 `false`로 끈다 — 지목을 바꾸는 조작이라 규칙의 예외이며, 그 예외를
+     *  「이 함수를 안 거치면 된다」가 아니라 인자로 두어야 새 호출부가 규칙 밖에서 태어나지 않는다.
+     */
+    private fun moveCameraToResolvedLocation(
+        granted: Boolean,
+        skipWhenPlaceDetailOpen: Boolean = true,
+    ) {
+        if (skipWhenPlaceDetailOpen && state.value.selectedPinId != null) return
         launchSafely {
             val center = resolveMapCenter(granted)
-            updateState { copy(mapCenter = center, mapCenterRequestId = mapCenterRequestId + 1) }
+            if (skipWhenPlaceDetailOpen && state.value.selectedPinId != null) return@launchSafely
+            updateState { movingCameraTo(center) }
             refreshMapPins()
         }
     }
 
-    /** [research.md D10] 현재 위치 버튼 최소 구현 — `mapCenter`만 갱신한다. */
+    /**
+     * [research.md D10] 현재 위치 버튼 최소 구현 — `mapCenter`만 갱신한다.
+     *
+     * **사용자가 지목한 이동이라 EC-030 가드를 끈다.** 이 버튼은 장소 상세 위에도 서 있어
+     * (`PlaceDetailScreen`) 가드를 걸면 눌러도 지도가 안 움직인다.
+     */
     private fun onCurrentLocationClick() {
         if (!hasLocationPermission()) return
-        launchSafely {
-            val center = resolveMapCenter(granted = true)
-            updateState { copy(mapCenter = center, mapCenterRequestId = mapCenterRequestId + 1) }
-            refreshMapPins()
-        }
+        moveCameraToResolvedLocation(granted = true, skipWhenPlaceDetailOpen = false)
     }
 
     /** [FR-011] 지도 마커 정렬 드롭다운 — `NEARBY`는 [refreshMapPins]가 `mapCenter` 기준 3km 반경으로 거른다. */
@@ -377,9 +408,11 @@ class RoomListViewModel @Inject constructor(
     /**
      * [FR-002] 장소 상세를 연다 — `selectedPinId`를 세우고 카메라를 그 장소로 옮긴다.
      *
-     * 좌표는 이미 받아 둔 [placesByRoomId]에서 찾는다. 못 찾으면(그 방의 장소 조회가 아직 안 끝난
-     * 탭 간 진입 등) 카메라를 건드리지 않는다 — 좌표를 모르는 채로 [DefaultMapCenter] 같은 엉뚱한
-     * 곳으로 옮기면 사용자가 보던 자리를 잃는다.
+     * 좌표는 이미 받아 둔 [placesByRoomId]에서 찾는다. 이 인텐트는 저장 탭 **안**에서만 오므로 지금
+     * 화면에 그려져 있는 장소가 그 목록에 이미 들어 있다. 그래도 못 찾으면 카메라를 건드리지 않는다 —
+     * 좌표를 모르는 채로 [DefaultMapCenter] 같은 엉뚱한 곳으로 옮기면 사용자가 보던 자리를 잃는다.
+     * 탭 밖에서 오는 진입은 그 목록이 아직 비어 있을 수 있어 이 길로 오지 않는다
+     * ([openRequestedPlaceDetail]).
      *
      * [refreshMapPins]를 마지막에 부르는 이유는 두 가지다. 선택 표시(§2.4)를 핀에 반영해야 하고,
      * `mapCenter`가 바뀌면 `NEARBY` 정렬의 기준점도 함께 바뀌기 때문이다([onCurrentLocationClick]과
@@ -394,7 +427,7 @@ class RoomListViewModel @Inject constructor(
             if (location == null) {
                 copy(selectedPinId = pinId)
             } else {
-                copy(selectedPinId = pinId, mapCenter = location, mapCenterRequestId = mapCenterRequestId + 1)
+                copy(selectedPinId = pinId).movingCameraTo(location)
             }
         }
         refreshMapPins()
@@ -514,6 +547,14 @@ class RoomListViewModel @Inject constructor(
         val LOCATION_FETCH_TIMEOUT = 10.seconds
     }
 }
+
+/**
+ * 카메라를 [center]로 옮긴 상태. `mapCenterRequestId`를 함께 올리는 것이 이동의 조건이라
+ * ([RoomListUiState.mapCenterRequestId]) 두 필드를 따로 쓸 수 있게 두지 않는다 — 한쪽만 쓴 호출부는
+ * 지도를 못 움직이고도 컴파일된다.
+ */
+private fun RoomListUiState.movingCameraTo(center: GeoPoint): RoomListUiState =
+    copy(mapCenter = center, mapCenterRequestId = mapCenterRequestId + 1)
 
 /**
  * [RoomListSortOption.ALL]은 서버가 내려준 원래 순서를 유지한다(별도 정렬 기준 없음).
