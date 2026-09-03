@@ -32,23 +32,26 @@ import java.io.IOException
 /**
  * 두 「확인 이벤트」가 서로를 건드리지 않는다는 것만 판정한다(FR-023, `data-model.md` §2.3).
  *
- * | | 무엇이 일으키나 | 무엇을 바꾸나 |
- * |---|---|---|
- * | ① 경과일 초기화 확인 | 카드 본문 탭([HomeIntent.OpenPlaceDetail]) | 서버뿐 — 덱은 그대로다 |
- * | ② 카드 열람 확인 | 좌→우 스와이프([HomeIntent.SwipeForward]) | 화면 상태뿐 — 서버를 부르지 않는다 |
+ * | | 무엇이 일으키나 | 무엇을 바꾸나 | 홈이 서버를 부르나 |
+ * |---|---|---|---|
+ * | ① 경과일 초기화 확인 | 카드 본문 탭([HomeIntent.OpenPlaceDetail]) | 이동해 간 [SCR-006]이 기록한다 | **아니다**(spec 4.0.0) |
+ * | ② 카드 열람 확인 | 좌→우 스와이프([HomeIntent.SwipeForward]) | 화면 상태뿐 | 아니다 |
  *
- * 다루는 범위는 TS-034(①이 나간다)·TS-013(①이 덱을 안 건드린다)·TS-035(②가 서버를 안 부른다)·EC-017(되돌려도
- * ①은 취소되지 않는다)이다. **FR-023을 지키는 그물은 이 파일 하나뿐이다** — 둘이 뒤섞이면 사용자가 그냥 넘긴
- * 장소의 `꾹 Pick` 순위가 조용히 바뀌거나, 눌러 본 장소가 덱에서 사라진다.
+ * 다루는 범위는 TS-012(탭이 상세로 보낸다)·TS-034(홈이 ①을 중복 기록하지 않는다)·TS-013(탭이 덱을 안
+ * 건드린다)·TS-035(넘김이 서버를 안 부른다)·EC-017(되돌려도 ①은 취소되지 않는다)이다. **FR-023을 지키는
+ * 그물은 이 파일 하나뿐이다** — 둘이 뒤섞이면 사용자가 그냥 넘긴 장소의 `꾹 Pick` 순위가 조용히 바뀌거나,
+ * 눌러 본 장소가 덱에서 사라진다.
  *
- * 판정 근거는 상태가 아니라 [FakeHomeDeckRepository.openedPinIds]다 — 호출이 나갔는지는 화면에 드러나지 않는다.
+ * **spec 4.0.0에서 ①의 기록이 [SCR-006]으로 넘어가, 홈에는 그것을 보낼 통로 자체가 없다.** 그래서 판정 근거는
+ * 「기록이 나갔는가」가 아니라 「홈이 서버로 무엇을 보냈는가」다 — [FakeHomeDeckRepository.deckRequests]와
+ * SideEffect 목록으로 본다. 통로가 사라진 것을 되살리는 회귀는 컴파일에서 걸린다.
  *
  * **`다른 방 저장`(FR-005)도 여기서 본다.** 그것 역시 「덱을 건드리지 않고 서버에만 나가는 일」이라
  * 위 표의 ①과 같은 성질이고, 판정 근거도 같은 더블의 [FakeHomeDeckRepository.savedPins]다.
  * 시트를 여는 데까지(TS-011)는 `HomeViewModelRoomSheetTest`가 아니라 이 파일이 이어받는다.
  *
  * **여기서 보지 않는 것**: 넘김·되돌리기 자체의 덱 조작 규칙(TS-001·002, EC-001·003)은 `HomeViewModelDeckTest`가
- * 소유하고, 상세 이동 SideEffect(TS-012)는 어느 테스트도 아직 소유하지 않는다.
+ * 소유한다.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModelConfirmationTest {
@@ -73,20 +76,32 @@ class HomeViewModelConfirmationTest {
     }
 
     /**
-     * 카드 본문 탭은 그 장소의 「경과일 초기화 확인」을 서버에 알린다(FR-007·023, TS-034).
+     * 카드 본문 탭이 하는 일은 **그 장소의 상세로 보내는 것 하나뿐**이다(FR-007, TS-012·034).
      *
-     * 인자까지 본다 — 탭한 카드가 아닌 다른 pinId가 나가면 엉뚱한 장소의 순위가 올라간다.
+     * 인자까지 본다 — 탭한 카드가 아닌 다른 pinId로 보내면 엉뚱한 장소가 열리고, [SCR-006]이 그 장소의
+     * 경과일을 초기화한다.
+     *
+     * **SideEffect 목록 전체를 비교하는 것이 TS-034의 판정이다.** 홈이 「경과일 초기화 확인」을 따로 보내려면
+     * 서버로 나가는 무엇이 하나 더 있어야 하는데, 나간 것이 상세 이동 하나뿐임을 여기서 본다
+     * (덱 요청은 아래 [deckRequests] 단언이 함께 막는다).
      */
     @Test
-    fun `카드 본문을 탭하면 그 장소의 경과일 초기화가 서버로 나간다`() =
+    fun `카드 본문을 탭하면 그 장소의 상세로 보내는 것이 전부다`() =
         runTest {
             val cards = cards(count = 3)
             deckRepository.setDeck(ROOM_ID, DeckSort.GGUK_PICK, cards)
             val viewModel = createViewModel()
+            val effects = recordSideEffects(viewModel)
+            val deckRequestsBefore = deckRepository.deckRequests.size
 
             viewModel.processIntent(HomeIntent.OpenPlaceDetail(cards.first().pinId))
 
-            assertEquals(listOf(cards.first().pinId), deckRepository.openedPinIds)
+            assertEquals(listOf(HomeSideEffect.NavigateToPlaceDetail(cards.first().pinId)), effects)
+            assertEquals(
+                "홈이 「경과일 초기화 확인」을 따로 보내면 서버 요청이 하나 더 생긴다",
+                deckRequestsBefore,
+                deckRepository.deckRequests.size,
+            )
         }
 
     /**
@@ -129,26 +144,35 @@ class HomeViewModelConfirmationTest {
             val cards = cards(count = 3)
             deckRepository.setDeck(ROOM_ID, DeckSort.GGUK_PICK, cards)
             val viewModel = createViewModel()
+            val deckRequestsBefore = deckRepository.deckRequests.size
 
             viewModel.processIntent(HomeIntent.SwipeForward)
 
             assertEquals("넘김이 덱을 건드리지 않으면 판정할 넘김 자체가 없다", cards.drop(1), viewModel.state.value.cards)
-            assertEquals("넘김은 「카드 열람 확인」이고, 그것은 화면 안에서 끝난다", emptyList<String>(), deckRepository.openedPinIds)
+            assertEquals(
+                "넘김은 「카드 열람 확인」이고, 그것은 화면 안에서 끝난다",
+                deckRequestsBefore,
+                deckRepository.deckRequests.size,
+            )
         }
 
     /**
-     * 상세를 열어 본 카드를 넘겼다가 되돌려도 **이미 나간 초기화는 취소되지 않는다**(EC-017, `data-model.md` §2.2).
+     * 상세를 열어 본 카드를 넘겼다가 되돌려도 **[SCR-006]이 이미 기록한 초기화는 취소되지 않는다**
+     * (EC-017, `data-model.md` §2.2).
      *
-     * 되돌리기가 취소하는 것은 「카드 열람 확인」뿐이다. 카드는 최상단으로 돌아오지만 서버로 나간 기록은 그대로
-     * 한 건이다 — 되돌릴 때 보상 호출을 흘리는 구현은 목록이 두 건이 되어 여기서 걸린다.
+     * 되돌리기가 취소하는 것은 「카드 열람 확인」뿐이다. 카드는 최상단으로 돌아오고, 홈은 그동안 서버로
+     * 아무것도 보내지 않는다 — 되돌릴 때 보상 요청을 흘리는 구현은 여기서 걸린다. 상세 이동 SideEffect
+     * 하나만 나간 것까지 함께 본다.
      */
     @Test
-    fun `상세를 본 카드를 넘겼다가 되돌려도 초기화 기록은 남는다`() =
+    fun `상세를 본 카드를 넘겼다가 되돌려도 홈은 보상 요청을 흘리지 않는다`() =
         runTest {
             val cards = cards(count = 3)
             deckRepository.setDeck(ROOM_ID, DeckSort.GGUK_PICK, cards)
             val viewModel = createViewModel()
             val topPinId = cards.first().pinId
+            val effects = recordSideEffects(viewModel)
+            val deckRequestsBefore = deckRepository.deckRequests.size
 
             viewModel.processIntent(HomeIntent.OpenPlaceDetail(topPinId))
             viewModel.processIntent(HomeIntent.SwipeForward)
@@ -156,7 +180,8 @@ class HomeViewModelConfirmationTest {
             viewModel.processIntent(HomeIntent.SwipeBackward)
 
             assertEquals("되돌리기는 카드만 되돌린다", cards, viewModel.state.value.cards)
-            assertEquals("초기화는 한 번 나갔고, 취소도 재전송도 없다", listOf(topPinId), deckRepository.openedPinIds)
+            assertEquals(listOf(HomeSideEffect.NavigateToPlaceDetail(topPinId)), effects)
+            assertEquals("되돌리기가 서버로 무엇을 보내면 안 된다", deckRequestsBefore, deckRepository.deckRequests.size)
         }
 
     /**

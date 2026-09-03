@@ -58,15 +58,6 @@ internal class HomeDeckRepositoryImpl @Inject constructor(
     }
 
     /**
-     * `POST /api/v1/pins/{pinId}/accesses` 하나로 끝난다 — 계약 §3.2. 출처 구분자가 없어 홈에서 부르든
-     * 다른 화면에서 부르든 같은 요청이다.
-     *
-     * 실패를 삼키지 않는다. 결과를 기다리지 않고 화면을 전환하는 것은 호출자의 판정이므로(R-012) 여기서
-     * 미리 성공으로 만들어 두면 그 판정을 호출자에게서 뺏는다.
-     */
-    override suspend fun recordPlaceOpened(pinId: String) = pinRemoteDataSource.recordAccess(pinId)
-
-    /**
      * `POST /api/v1/pins/{pinId}/duplicate` — 계약 §3.3. 계약의 본문은 방 배열이고 도메인은 방 하나를
      * 받으므로 여기서 한 칸짜리 배열로 감싼다. 여러 방 저장은 spec §3.2가 비목표로 둔 범위다.
      *
