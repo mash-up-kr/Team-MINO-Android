@@ -25,7 +25,11 @@ internal class RoomPlacesRepositoryImpl @Inject constructor(
 
     /**
      * [FR-010] 장소 삭제 — 호출한 방에서만 제거한다(`DELETE /api/v1/pins/{pinId}`).
-     * 핀 레코드가 소속 방 ID를 들고 있어 엔드포인트에 [roomId]는 실리지 않는다.
+     *
+     * **[roomId]를 요청에 싣지 않아도 "그 방에서만 제거"가 지켜진다.** 핀 레코드(`PinResponse.roomId`)가
+     * 방 하나에 1:1로 귀속되고, 다른 방 복제(`POST /pins/{pinId}/duplicate`)는 새 `pinId`를 발급한다 —
+     * 다른 방의 사본은 애초에 다른 핀이라 이 삭제에 영향받지 않는다. 요청 유저가 그 방의 멤버인지는
+     * 서버가 검증한다.
      */
     override suspend fun deletePlace(
         roomId: String,
