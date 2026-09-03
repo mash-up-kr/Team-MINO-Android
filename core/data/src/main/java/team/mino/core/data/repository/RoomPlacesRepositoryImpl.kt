@@ -24,12 +24,13 @@ internal class RoomPlacesRepositoryImpl @Inject constructor(
         }
 
     /**
-     * no-op — 대응하는 서버 엔드포인트가 아직 없다(`docs/specs/room-detail/research.md` D14,
-     * `docs/specs/room-detail/contracts/place-repository.md` "DTO 갭 대응"). `PlaceRepository` 인터페이스와
-     * 도메인 모델은 이 갭 때문에 바꾸지 않고, 백엔드가 엔드포인트를 확정하면 이 구현만 교체한다.
+     * [FR-010] 장소 삭제 — 호출한 방에서만 제거한다(`DELETE /api/v1/pins/{pinId}`).
+     * 핀 레코드가 소속 방 ID를 들고 있어 엔드포인트에 [roomId]는 실리지 않는다.
      */
     override suspend fun deletePlace(
         roomId: String,
         pinId: String,
-    ) = Unit
+    ) {
+        remoteDataSource.deletePin(pinId)
+    }
 }
