@@ -147,6 +147,7 @@ ViewModel에 두면 같은 검증에 Android 테스트 환경이 필요해지고
 **Decision**: spec 3.0.0의 FR-023이 요구하는 독립을 **호출 경로 자체를 분리해** 지킨다.
 
 - **① 경과일 초기화 확인** — `OpenPlaceDetail` Intent를 받으면 `HomeDeckRepository.recordPlaceOpened(pinId)`를 부르고 **곧바로 화면 전환 SideEffect를 던진다.** 결과를 기다리지 않으며, 실패해도 화면을 막지 않는다.
+  > **spec 4.0.0에서 폐기됐다.** [SCR-006] 장소 상세가 배선되면서 `place-detail` FR-026이 같은 기록을 가져갔고, 두 곳이 같은 엔드포인트를 쳐 카드 한 번 탭에 두 건이 쌓였다. `recordPlaceOpened`를 걷어내 홈은 화면 전환 SideEffect만 던진다 — 이 결정에서 남은 것은 「결과를 기다리지 않는다」가 아니라 **「홈은 부르지 않는다」**다.
 - **② 카드 열람 확인** — `SwipeForward` Intent가 `HomeUiState`의 덱만 건드린다. **서버를 부르지 않는다.**
 
 **Rationale**: 1.0.0의 `recordCardConsumed(pinId)`는 이름 그대로 *넘김*을 서버에 알리는 함수였다. spec 3.0.0에서 넘김은 서버와 무관해졌으므로 **이 함수는 이름도 호출 시점도 틀렸다.** 상세 진입 시점으로 옮기고 이름을 `recordPlaceOpened`로 바꾼다.
