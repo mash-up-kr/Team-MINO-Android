@@ -38,8 +38,8 @@ internal class PlaceRepositoryImpl @Inject constructor(
      * 재시도·디바운스·중복 제거를 하지 않는다(EC-022·EC-023). append-only 로그라 서버도 중복을 문제
      * 삼지 않는다.
      *
-     * [HomeDeckRepositoryImpl.recordPlaceOpened]가 같은 엔드포인트를 치면서 실패를 삼키지 않는 것과
-     * 어긋나 보이지만 계약이 다르다 — 그쪽은 결과를 기다릴지를 호출자가 정한다.
+     * **이 기록의 유일한 주인이다.** 홈도 카드 탭에서 같은 엔드포인트를 쳤으나, 한 번 탭에 두 건이 쌓여
+     * home spec 4.0.0이 소유를 이쪽으로 넘겼다(FR-026, home spec FR-007·023).
      */
     override suspend fun recordAccess(pinId: String) {
         runCatchingDomain { pinRemoteDataSource.recordAccess(pinId) }

@@ -176,7 +176,7 @@ internal class HomeViewModel
          * 우→좌 되돌리기. 넘긴 순서의 **역순으로 한 장씩** 되돌린다(FR-002, `data-model.md` §2.2) —
          * 이 덱에서 넘긴 카드가 남아 있는 한 몇 번이든 이어서 되돌아간다.
          *
-         * 이미 나간 `recordPlaceOpened`는 취소하지 않는다 — 보상 호출을 흘리지 않는 것이 EC-017이다.
+         * [SCR-006]이 이미 기록한 「경과일 초기화 확인」은 취소하지 않는다 — 보상 호출을 흘리지 않는 것이 EC-017이다.
          * 되돌릴 것이 없으면 상태를 건드리지 않는다(EC-001).
          */
         private fun swipeBackward() {
@@ -216,24 +216,15 @@ internal class HomeViewModel
         }
 
         /**
-         * 카드 본문 탭. **덱의 진행 상태를 어느 것도 건드리지 않는다**(FR-023, TS-013).
+         * 카드 본문 탭. 상세로 보내는 것이 전부이고 **덱의 진행 상태를 어느 것도 건드리지 않는다**(FR-023, TS-013).
          *
-         * 두 코루틴으로 나누는 것이 R-012의 「결과를 기다리지 않는다」다. 하나로 묶으면 초기화 응답이
-         * 상세 전환 앞을 막고, 실패하면 전환이 아예 일어나지 않는다.
-         *
-         * **[HomeDeckRepository.recordPlaceOpened] 호출은 걷어낼 코드다.** [SCR-006] 장소 상세가 배선되면서
-         * 같은 「경과일 초기화 확인」을 상세가 열릴 때마다 기록한다(`docs/specs/place-detail/spec.md` FR-026 —
-         * 진입 경로와 무관하게 기록한다). 두 호출이 같은 서버 기록으로 가므로 카드 한 번 탭에 2회가 나간다.
-         * 이 스펙의 FR-007·TS-034가 홈에도 기록을 요구해 지금은 남겨 두며, 기록의 소유를 상세로 넘기는
-         * spec 개정과 함께 아래 첫 `launchSafely` 블록을 지운다.
+         * **「경과일 초기화 확인」을 여기서 보내지 않는다**(FR-007·023, TS-034). 이동한 [SCR-006] 장소 상세가
+         * 열리면서 기록하며(`docs/specs/place-detail/spec.md` FR-026 — 진입 경로와 무관하게 기록한다), 홈까지
+         * 부르면 같은 `POST /pins/{pinId}/accesses`가 카드 한 번 탭에 두 건 쌓인다. 홈에는 이 기록을 서버로
+         * 흘릴 통로 자체가 없다 — [HomeDeckRepository]에 해당 함수가 없는 것이 FR-023의 독립성을 지킨다.
          */
-        private fun openPlaceDetail(pinId: String) {
-            launchSafely {
-                runCatchingDomain { homeDeckRepository.recordPlaceOpened(pinId) }
-                    .onDomainFailure(::emitDomainError)
-            }
+        private fun openPlaceDetail(pinId: String) =
             launchSafely { postSideEffect(HomeSideEffect.NavigateToPlaceDetail(pinId)) }
-        }
 
         /**
          * 정렬 칩 직접 선택(FR-010, TS-020·021).

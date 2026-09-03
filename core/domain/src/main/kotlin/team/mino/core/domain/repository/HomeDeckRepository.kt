@@ -34,15 +34,9 @@ interface HomeDeckRepository {
         location: GeoPoint? = null,
     ): Deck
 
-    /**
-     * 「경과일 초기화 확인」을 알린다(FR-007·023). 카드를 눌러 상세로 이동할 때 부른다.
-     *
-     * 호출자는 결과를 기다리지 않으며 실패해도 화면 전환을 막지 않는다 — 초기화는 다음 덱 요청부터 반영되면 충분하다
-     * (`docs/specs/home-deck-exploration/research.md` R-012).
-     *
-     * 「카드 열람 확인」(넘김)은 이 함수가 다루지 않는다. 넘김은 서버와 무관한 클라이언트 전용 상태다.
-     */
-    suspend fun recordPlaceOpened(pinId: String)
+    // 「경과일 초기화 확인」을 알리는 함수는 여기에 없다. 그 기록은 [SCR-006] 장소 상세가 소유하며
+    // (`docs/specs/place-detail/spec.md` FR-026), 홈까지 부르면 카드 한 번 탭에 두 건이 쌓인다.
+    // 통로를 두지 않는 것이 FR-023의 「홈은 어느 확인 이벤트도 서버로 보내지 않는다」를 지키는 방법이다.
 
     /** FR-005. 실패는 `MinoDomainException`으로 던진다. */
     suspend fun savePinToRoom(
