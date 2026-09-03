@@ -56,8 +56,10 @@ fun NavGraphBuilder.homeGraph(
 **두 확인 이벤트는 서로를 건드리지 않는다**(FR-023).
 
 - `SwipeForward` → 덱에서 카드를 덜어낼 뿐 **서버를 부르지 않는다**(TS-035).
-- `OpenPlaceDetail` → `recordPlaceOpened`를 부르고 **덱은 그대로 둔다**(TS-013·034). 잔여 카드 수·소진 여부·되돌리기 이력 어느 것도 바뀌지 않는다.
-- `SwipeBackward` → 직전 `SwipeForward`만 취소한다. **이미 나간 `recordPlaceOpened`는 되돌리지 않는다**(EC-017).
+- `OpenPlaceDetail` → `NavigateToPlaceDetail` SideEffect를 던지는 것이 전부다. **덱은 그대로 두고**(TS-013), **「경과일 초기화 확인」도 홈이 보내지 않는다**(TS-034) — 이동해 간 [SCR-006]이 기록한다(`docs/specs/place-detail/spec.md` FR-026).
+- `SwipeBackward` → 직전 `SwipeForward`만 취소한다. **[SCR-006]이 이미 기록한 초기화는 되돌리지 않는다**(EC-017).
+
+> **홈은 두 확인 이벤트 중 어느 것도 서버로 보내지 않는다**(spec 4.0.0 FR-023). ①은 [SCR-006]이 소유하고 ②는 클라이언트 전용이라, 아래 Repository 계약에 기록 함수가 없다.
 
 **`isGuideVisible == true`이면 `DismissGuide`를 뺀 모든 Intent를 버린다**(FR-019, TS-030).
 **`isTransitioning == true`이면 `SwipeForward`·`SwipeBackward`를 버린다**(UX-001, TS-007).
@@ -112,18 +114,14 @@ interface HomeDeckRepository {
      */
     suspend fun getDeck(roomId: String, sort: DeckSort, location: GeoPoint? = null): Deck
 
-    /**
-     * 「경과일 초기화 확인」을 알린다(FR-007·023). 카드를 눌러 상세로 이동할 때 부른다.
-     * 결과를 기다리지 않으며 실패해도 화면 전환을 막지 않는다(R-012).
-     */
-    suspend fun recordPlaceOpened(pinId: String)
+    // 「경과일 초기화 확인」을 알리는 함수는 없다 — spec 4.0.0에서 [SCR-006]이 소유한다.
 
     /** FR-005. 실패는 MinoDomainException으로 던진다. */
     suspend fun savePinToRoom(pinId: String, roomId: String)
 }
 ```
 
-> **`recordCardConsumed`는 없어졌다.** plan 1.0.0은 *넘김*을 서버에 알리는 함수였는데, spec 3.0.0에서 넘김은 서버와 무관해졌다(「카드 열람 확인」은 클라이언트 전용). 호출 시점을 상세 진입으로 옮기고 이름을 `recordPlaceOpened`로 바꿨다.
+> **기록 함수가 두 번 바뀌어 끝내 사라졌다.** plan 1.0.0의 `recordCardConsumed`는 *넘김*을 서버에 알리는 함수였는데, spec 3.0.0에서 넘김이 서버와 무관해지면서(「카드 열람 확인」은 클라이언트 전용) 호출 시점을 상세 진입으로 옮기고 `recordPlaceOpened`로 바꿨다. spec 4.0.0에서는 그 기록의 소유가 [SCR-006]으로 넘어가 **함수 자체를 걷어냈다** — 홈과 상세가 같은 `POST /pins/{pinId}/accesses`를 쳐서 카드 한 번 탭에 두 건이 쌓였기 때문이다.
 
 > **`GeoPoint`는 [`core/map`](../../../../core/map/README.md)이 소유한다.** 새로 만들지 않는다.
 

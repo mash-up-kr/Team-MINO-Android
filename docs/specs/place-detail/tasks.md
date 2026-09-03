@@ -466,7 +466,7 @@ feature/placedetail/src/main/java/team/mino/feature/placedetail/main/
 3. **외부 지도 앱 선택 정책** — [spec.md §3.2](./spec.md)가 비목표로 둔 `[TBD]`다. T044가 `geo:` 우선으로 정하고 근거를 남겼으며, T085가 그 판단을 그대로 이식한다. spec이 이 결정을 승인한 적은 없다.
 4. **아바타 색 enum 불일치** — 핀 상세의 `createdBy.avatar.color`에는 enum 제약이 없고 코멘트의 `author.avatar.color`에는 있다([contracts/place-api.md §1.3](./contracts/place-api.md)). **서버팀 협의 항목**이며, T058이 모르는 값을 `null`로 떨어뜨리는 것으로 버틴다.
 5. **코멘트 작성 시각의 기준 시계** — 기기 시각과 서버 `createdAt` 중 무엇을 기준으로 경과를 재는지 [spec.md §3.2](./spec.md)가 정의하지 않은 채 위임했고, 그 위임은 그대로 남는다([research.md D22](./research.md)). **plan 2.1.0이 이 항목의 절반은 닫았다** — 기기 시각을 어떻게 얻는지가 주입한 `Clock`으로 정해졌고(T099·T100, [research.md D26](./research.md)), 서버가 기준 시각을 내려주게 되면 `commentsObservedAt`의 공급원만 갈면 되어 화면 쪽 판정 함수(T091)는 손대지 않는다. 남은 위험은 EC-029(음수 흡수)가 덮는다.
-6. **「경과일 초기화 확인」이 홈 진입에서 2회 나간다** — plan 1.1.0에서 발견된 그대로 남는다. 홈이 `HomeDeckRepository.recordPlaceOpened`를(home spec FR-007·TS-034), 상세가 `PlaceRepository.recordAccess`를(FR-026) 각각 부른다. **편입해도 두 호출은 그대로라 중복이 유지된다.** FR-026이 이 기록의 소유자이므로 홈 쪽을 걷어내는 것이 맞으나 home spec 개정이 선행되어야 한다. `HomeViewModel.openPlaceDetail`의 KDoc에 명시돼 있다.
+6. ~~**「경과일 초기화 확인」이 홈 진입에서 2회 나간다**~~ — **해소됐다.** `home-deck-exploration` spec을 **4.0.0**으로 개정해 이 기록의 소유를 `FR-026` 하나로 모으고, 홈 쪽 `HomeDeckRepository.recordPlaceOpened`를 도메인·데이터·테스트에서 걷어냈다. 홈에는 이 기록을 서버로 흘릴 통로 자체가 없어 중복이 구조적으로 불가능하다. 함께 고친 문서: home spec `FR-007`·`FR-023`·`TS-034`·`EC-017`과 §5 확정 항목, `contracts/home-ui.md`, `quickstart.md`, `research.md` R-012.
 
 ### 새로 생긴 것
 
