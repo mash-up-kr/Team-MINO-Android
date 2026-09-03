@@ -12,4 +12,8 @@ internal class PlaceRemoteDataSourceImpl @Inject constructor(
     private val service: PlaceApiService,
 ) : PlaceRemoteDataSource {
     override suspend fun getPins(roomId: String): List<PinResponse> = service.getPins(roomId)
+
+    override suspend fun deletePin(pinId: String) {
+        service.deletePin(pinId)
+    }
 }

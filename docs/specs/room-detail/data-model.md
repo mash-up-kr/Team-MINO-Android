@@ -74,9 +74,8 @@ enum class PlaceViewType { LIST, CARD }
 
 ## 4. `[TBD]` 항목
 
-plan 2.0.0의 서버 API 대조([research.md D14~D16](./research.md))로 대부분 해소됐다. 남는 것은 서버가 실제로 아직 제공하지 않는 두 가지뿐이다.
+plan 2.0.0의 서버 API 대조([research.md D14~D16](./research.md))로 대부분 해소됐다. 남는 것은 서버가 실제로 아직 제공하지 않는 한 가지뿐이다.
 
 - **`Place.commentCount`·`Place.isGgukPick`의 서버 원천** — "코멘트순"·"꾹 Pick" 정렬([FR-005])의 근거 필드가 `GET /api/v1/pins` 응답에 없다(댓글 수·꾹 Pick 판정 로직 모두 서버 미노출). 구현 시 임시 목데이터/플레이스홀더로 채운다([contracts/place-repository.md](./contracts/place-repository.md) "DTO 갭 대응" 참고).
-- **`deletePlace`([FR-010] 장소 삭제) 서버 계약** — `DELETE /pins/{pinId}` 같은 엔드포인트가 배포된 API에도 없다([research.md D14](./research.md)). 구현 시 임시 목처리로 남는다.
 
 `RoomFormLauncher` 편집 모드의 extra 키·result 스키마(서버 `PATCH /rooms/{roomId}` 자체는 이미 있음)는 클라이언트 크로스 feature 계약 문제라 이 목록에 포함하지 않는다 — [research.md NEEDS CLARIFICATION 해소 현황](./research.md) 참고.

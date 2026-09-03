@@ -398,8 +398,8 @@ internal class RoomDetailViewModel @AssistedInject constructor(
 
     /**
      * [FR-010] 장소 삭제 확정 — 성공하면 [rawPlaces]에서 즉시 제거하고 현재 정렬·필터를 다시 적용한다.
-     * `deletePlace`는 대응 엔드포인트가 없어 현재는 no-op이지만(`docs/specs/room-detail/research.md`
-     * D14), 서버 확정 시 자동으로 동작하도록 정상 배선해 둔다.
+     * 일회성 사용자 액션 실패이므로 [loadRoom]과 달리 `loadError`가 아니라 [DomainErrorEmitter]로
+     * 방출한다(`docs/conventions/error_handling.md` §5).
      */
     private fun onPlaceDeleteConfirm() {
         val place = state.value.placeToDelete ?: return

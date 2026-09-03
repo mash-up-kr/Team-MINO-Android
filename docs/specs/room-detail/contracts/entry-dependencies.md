@@ -68,4 +68,4 @@ roomFormLauncher.launch(activity, resultLauncher = editRoomResultLauncher) {
 - [SYS-006] 초대 링크 생성 — `RoomRepository.createInvitation(roomId)`, 서버 `POST /rooms/{roomId}/invitations` ([contracts/place-repository.md](./place-repository.md) "`RoomRepository` 확장")
 - [SYS-007] 나가기·위임 — `RoomRepository.leaveRoom`·`transferOwner`, 서버 `DELETE /rooms/{roomId}/members/me`·`PUT /rooms/{roomId}/owner` (같은 절)
 
-남는 [TBD]는 `deletePlace`(서버 엔드포인트 자체가 없음)와 `Place.commentCount`·`isGgukPick`(서버 미노출 필드)뿐이다 — [data-model.md §4](../data-model.md) 참조.
+남는 [TBD]는 `Place.commentCount`·`isGgukPick`(서버 미노출 필드)뿐이다 — [data-model.md §4](../data-model.md) 참조. `deletePlace`는 2026-09-03 `DELETE /api/v1/pins/{pinId}` 배포로 해소됐다.
