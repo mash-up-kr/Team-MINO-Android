@@ -172,6 +172,13 @@ internal fun RoomListDraggableSheet(
             RoomListSheetHeight.WrapContent -> Modifier
         }
 
+        // `Full`은 지도를 완전히 덮어 화면에 지도가 안 보이므로 상태바·내비게이션 바 뒤로 파고들
+        // 이유가 없다 — `MinoScaffold`가 이미 물러나 준 자리(= [maxHeight])를 그대로 채우면 그 아랫변이
+        // 내비게이션 바 위 경계와 정확히 맞물린다. Peek/Half와 똑같은 비-엣지투엣지 레이아웃이다(엣지투엣지로
+        // 시도했던 이전 구현은 지도가 실제로 보이는 다른 화면(장소 상세 Full)의 전제를 잘못 옮겨온 것이었다).
+        //
+        // Figma Full(`2661:157259`)엔 핸들 노드가 없다 — 헤더가 시트 맨 위(자체 12px 상단 패딩만 두고)
+        // 시작한다. Peek/Half엔 있다(핸들이 드래그 축소 어포던스, Full은 X 버튼이 그 역할을 대신).
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -180,7 +187,7 @@ internal fun RoomListDraggableSheet(
                 .then(if (nestedScrollConnection != null) Modifier.nestedScroll(nestedScrollConnection) else Modifier),
         ) {
             Column(modifier = Modifier.fillMaxWidth().then(dragModifier)) {
-                handle()
+                if (!isFull) handle()
                 header()
             }
             content()

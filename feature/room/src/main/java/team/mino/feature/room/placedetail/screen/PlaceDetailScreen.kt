@@ -56,6 +56,7 @@ import team.mino.feature.room.placedetail.component.PlaceImageCarousel
 import team.mino.feature.room.placedetail.component.PlaceMapControls
 import team.mino.feature.room.placedetail.component.SavedRoomsSheet
 import team.mino.feature.room.placedetail.model.PlaceHeaderMode
+import team.mino.feature.room.placedetail.model.PlaceSheetLevel
 import team.mino.feature.room.placedetail.vm.PlaceDetailIntent
 import team.mino.feature.room.placedetail.vm.PlaceDetailUiState
 import kotlin.time.ExperimentalTime
@@ -70,11 +71,18 @@ import kotlin.time.ExperimentalTime
  * **스크롤 축을 이 화면이 소유한다.** 시트가 그 축 위에 콘텐츠를 얹고 헤더 밀도는 그 축이 최상단인지로
  * 갈리므로(spec FR-008), 축을 만들어 시트에 넘기는 것도 그 위치를 인텐트로 올리는 것도 여기다.
  *
- * **`Full`의 윗변은 상태바 아래, 아랫변은 화면 바닥이다.** 이 화면이 받는 자리는 셸의 `MinoScaffold`가 상태바·
- * 내비게이션 바만큼 이미 물러난 뒤의 영역이다. 윗변은 그래서 아무것도 하지 않아야 상태바 바로 아래에 선다 —
- * 여기서 상태바를 한 번 더 빼면 그만큼 내려앉아 그 빈 띠를 뒤의 지도가 도로 차지한다. 아랫변은 반대로 물러난
- * 만큼을 되찾아야 화면 바닥에 닿으므로, 시트와 컨트롤 행을 담은 컨테이너를 내비게이션 바 인셋만큼 부풀린다
- * ([systemBarBleed]).
+ * **아랫변은 물러난 만큼을 되찾아야 화면 바닥에 닿는다.** 이 화면이 받는 자리는 셸의 `MinoScaffold`가 상태바·
+ * 내비게이션 바만큼 이미 물러난 뒤의 영역이라, 시트와 컨트롤 행을 담은 컨테이너를 내비게이션 바 인셋만큼
+ * 부풀린다([systemBarBleed]).
+ *
+ * **윗변은 `Full`일 때만 되찾는다.** `HALF`는 지도가 상태바 뒤까지 이어져야 해서(`RoomListScreen`의
+ * `mapBleed`) 이 컨테이너가 원래 자리(상태바 아래)에 그대로 있어야 하지만, `Full`은 지도가 아예 안 보이고
+ * 이 시트가 화면 전체를 대신 덮으므로 시트도 상태바 뒤까지 이어져야 한다 — 안 그러면 셸의 배경(흰색)이 그
+ * 자리에 그대로 드러난다(실기기 확인 — "완전히 흰 배경에 상태바가 있어" 결함). [PlaceDetailSheet]가
+ * `statusBarInset`과 자기 실제 위치([positionInWindow][androidx.compose.ui.layout.LayoutCoordinates.positionInWindow])를
+ * 견줘 상태바에 가리는 만큼만 `Full` 헤더 위 띠를 넓히므로([PlaceDetailSheet] KDoc), 이 컨테이너가
+ * `Full`일 때만 진짜로 화면 최상단부터 서야 그 계산이 0이 아닌 값을 낸다 — `HALF`에서 무조건 되찾으면
+ * `HALF` 시트·컨트롤 행이 상태바 자리로 밀려 올라간다.
  *
  * **그 컨테이너가 시트와 컨트롤 행의 세로 기준선을 함께 쥔다.** 컨트롤 행은 시트 윗변에서 거리를 재는데, 둘이
  * 서로 다른 바닥을 기준으로 서면 그 간격이 인셋만큼 벌어진다.
@@ -135,11 +143,13 @@ internal fun BoxScope.PlaceDetailScreen(
         Box(
             modifier = modifier
                 .fillMaxSize()
-                // 아래쪽만 되찾는다. **위를 함께 되찾지 않는 이유**는 이 화면이 놓이는 자리가 셸에서 이미 상태바만큼
-                // 물러나 있는지를 여기서 알 수 없기 때문이다 — 물러나 있지 않은데 위로 끌어올리면 시트가 화면
-                // 밖으로 밀려 헤더가 상태바 뒤로 들어간다(실기기에서 두 번 확인된 결함). 상태바와 겹치는 만큼을
-                // 재서 그만큼만 비우는 일은 시트가 자기 자리를 알고 하는 편이 확실하다.
-                .systemBarBleed(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),
+                // 아래쪽은 항상 되찾는다. 위쪽은 `Full`일 때만 되찾는다 — 위 화면 KDoc 참고.
+                // `HALF`에서 위까지 되찾으면 시트·컨트롤 행이 상태바 자리로 밀려 올라가는 회귀가 재현된다
+                // (실기기에서 두 번 확인된 결함이 바로 이 조건 없이 위를 되찾았을 때였다).
+                .systemBarBleed(
+                    top = if (state.sheetLevel == PlaceSheetLevel.FULL) statusBarInset else 0.dp,
+                    bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding(),
+                ),
             contentAlignment = Alignment.BottomCenter,
         ) {
             PlaceDetailSheet(
