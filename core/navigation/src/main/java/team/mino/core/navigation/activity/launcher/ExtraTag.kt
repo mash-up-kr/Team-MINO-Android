@@ -28,3 +28,12 @@ const val EXTRA_ONBOARDING_INVITE_CODE = "onboarding_invite_code"
 const val ROOM_FORM_OUTCOME_CREATED = "created"
 const val ROOM_FORM_OUTCOME_UPDATED = "updated"
 const val ROOM_FORM_OUTCOME_SKIPPED = "skipped"
+
+// 알림 탭 딥링크. 대상 feature 접두어를 붙이지 않는 이유는 docs/specs/push-notification/contracts/push-deeplink-contract.md §1.
+const val EXTRA_PUSH_DESTINATION_TYPE = "push_destination_type"
+const val EXTRA_PUSH_DESTINATION_ID = "push_destination_id"
+
+// EXTRA_PUSH_DESTINATION_TYPE에 실리는 값
+const val PUSH_DESTINATION_TYPE_PLACE = "place"
+const val PUSH_DESTINATION_TYPE_ROOM = "room"
+const val PUSH_DESTINATION_TYPE_NOTIFICATION_TAB = "notification_tab"
