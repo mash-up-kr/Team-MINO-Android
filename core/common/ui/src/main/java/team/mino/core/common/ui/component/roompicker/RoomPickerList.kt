@@ -1,4 +1,4 @@
-package team.mino.feature.sharereceiver.picker.component
+package team.mino.core.common.ui.component.roompicker
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -18,15 +18,15 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentSetOf
+import team.mino.core.common.ui.R
 import team.mino.core.common.ui.component.RoomThumbnailFallback
+import team.mino.core.common.ui.component.roompicker.model.RoomPickerItem
 import team.mino.core.designsystem.component.roomcard.MinoRoomCheckBoxCard
 import team.mino.core.designsystem.component.roomcolorchip.MinoRoomColor
 import team.mino.core.designsystem.component.roomthumbnail.MinoRoomThumbnail
 import team.mino.core.designsystem.component.scrollbar.MinoScrollBar
 import team.mino.core.designsystem.theme.MinoAndroidAppTheme
 import team.mino.core.designsystem.util.preview.UiModePreviews
-import team.mino.feature.sharereceiver.R
-import team.mino.feature.sharereceiver.picker.model.RoomPickerItem
 
 /**
  * 고를 수 있는 방을 세로로 늘어놓는 목록. 시트에서 유일하게 스크롤하는 영역이다(UX-004).
@@ -46,7 +46,7 @@ import team.mino.feature.sharereceiver.picker.model.RoomPickerItem
  * 보며 표시만 하고, 카드 폭 밖에 놓여 탭을 가로채지 않는다.
  */
 @Composable
-internal fun RoomPickerList(
+fun RoomPickerList(
     rooms: ImmutableList<RoomPickerItem>,
     selectedRoomIds: ImmutableSet<String>,
     onRoomToggle: (roomId: String) -> Unit,
@@ -109,7 +109,7 @@ private fun RoomPickerListPreview() {
                     id = "personal",
                     name = "내 장소",
                     description = null,
-                    placeCountLabel = stringResource(R.string.sharereceiver_room_place_count, 0),
+                    placeCountLabel = stringResource(R.string.room_picker_room_place_count, 0),
                     thumbnailImageUrls = persistentListOf(),
                     color = null,
                 ),
@@ -117,7 +117,7 @@ private fun RoomPickerListPreview() {
                     id = "shared-1",
                     name = "민호야 잘하자",
                     description = null,
-                    placeCountLabel = stringResource(R.string.sharereceiver_room_place_count, 9),
+                    placeCountLabel = stringResource(R.string.room_picker_room_place_count, 9),
                     thumbnailImageUrls = persistentListOf(),
                     color = MinoRoomColor.Cyan,
                 ),
@@ -125,7 +125,7 @@ private fun RoomPickerListPreview() {
                     id = "shared-2",
                     name = "매쉬업 화이팅",
                     description = "팀원 모두가 좋아할 만한 술집 모음",
-                    placeCountLabel = stringResource(R.string.sharereceiver_room_place_count, 2),
+                    placeCountLabel = stringResource(R.string.room_picker_room_place_count, 2),
                     thumbnailImageUrls = persistentListOf(),
                     color = MinoRoomColor.Orange,
                 ),

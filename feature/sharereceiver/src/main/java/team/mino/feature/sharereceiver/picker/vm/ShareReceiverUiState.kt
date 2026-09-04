@@ -6,8 +6,8 @@ import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentSetOf
 import team.mino.core.common.android.architecture.UiState
-import team.mino.feature.sharereceiver.picker.model.RoomPickerItem
-import team.mino.feature.sharereceiver.picker.model.SheetStep
+import team.mino.core.common.ui.component.roompicker.model.RoomPickerItem
+import team.mino.core.common.ui.component.roompicker.model.SheetStep
 
 /**
  * 공유받은 장소를 어느 방에 저장할지 고르는 시트의 상태.

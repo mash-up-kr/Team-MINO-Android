@@ -1,4 +1,4 @@
-package team.mino.feature.sharereceiver.picker.component
+package team.mino.core.common.ui.component.roompicker
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.AnchoredDraggableState
@@ -31,12 +31,12 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.constrainHeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.drop
+import team.mino.core.common.ui.component.roompicker.model.SheetStep
 import team.mino.core.designsystem.theme.MinoAndroidAppTheme
 import team.mino.core.designsystem.theme.MinoAndroidTheme
 import team.mino.core.designsystem.util.modifier.clickable.singleClickable
 import team.mino.core.designsystem.util.modifier.surface.surface
 import team.mino.core.designsystem.util.preview.UiModePreviews
-import team.mino.feature.sharereceiver.picker.model.SheetStep
 import kotlin.math.roundToInt
 
 /**
@@ -58,7 +58,7 @@ import kotlin.math.roundToInt
  * @param onStepChange 끌어 옮긴 시트가 멈춰 선 단계가 올라온다.
  */
 @Composable
-internal fun RoomPickerSheet(
+fun RoomPickerSheet(
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
     step: SheetStep = SheetStep.PEEK,

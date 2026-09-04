@@ -12,6 +12,8 @@ import kotlinx.collections.immutable.toPersistentSet
 import team.mino.core.common.android.architecture.MviContainer
 import team.mino.core.common.android.architecture.mviContainer
 import team.mino.core.common.android.extension.launchSafely
+import team.mino.core.common.ui.component.roompicker.model.RoomPickerItem
+import team.mino.core.common.ui.component.roompicker.model.SheetStep
 import team.mino.core.domain.model.RoomSummary
 import team.mino.core.domain.model.SharedPlaceSaveRequest
 import team.mino.core.domain.repository.AnonymousAuthRepository
@@ -19,8 +21,6 @@ import team.mino.core.domain.repository.SharedPlaceRepository
 import team.mino.core.domain.usecase.GetRoomPickerRoomsUseCase
 import team.mino.core.errorhandling.onDomainFailure
 import team.mino.core.errorhandling.runCatchingDomain
-import team.mino.feature.sharereceiver.picker.model.RoomPickerItem
-import team.mino.feature.sharereceiver.picker.model.SheetStep
 import team.mino.feature.sharereceiver.picker.model.toRoomPickerItem
 import javax.inject.Inject
 

@@ -1,4 +1,4 @@
-package team.mino.feature.sharereceiver.picker.component
+package team.mino.core.common.ui.component.roompicker
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -7,11 +7,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import team.mino.core.common.ui.R
 import team.mino.core.designsystem.component.actionarea.ActionAreaAction
 import team.mino.core.designsystem.component.actionarea.MinoActionArea
 import team.mino.core.designsystem.theme.MinoAndroidAppTheme
 import team.mino.core.designsystem.util.preview.UiModePreviews
-import team.mino.feature.sharereceiver.R
 
 /**
  * 시트 맨 아래에 고정으로 놓이는 저장 액션. 목록 밖에 있어 스크롤에 따라 움직이지 않고(UX-004),
@@ -26,7 +26,7 @@ import team.mino.feature.sharereceiver.R
  * 하단 시스템 인셋도 같은 이유로 여기서 얹지 않고 [modifier]로 받는다.
  */
 @Composable
-internal fun RoomPickerActionArea(
+fun RoomPickerActionArea(
     enabled: Boolean,
     onSaveClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -34,7 +34,7 @@ internal fun RoomPickerActionArea(
     MinoActionArea(
         modifier = modifier.fillMaxWidth(),
         mainAction = ActionAreaAction(
-            text = stringResource(R.string.sharereceiver_action_save),
+            text = stringResource(R.string.room_picker_action_save),
             onClick = onSaveClick,
             enabled = enabled,
         ),
