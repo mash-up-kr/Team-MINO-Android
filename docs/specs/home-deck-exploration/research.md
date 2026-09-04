@@ -233,9 +233,11 @@ suspend fun getDeck(roomId: String, sort: DeckSort, location: GeoPoint? = null):
 
 ## R-016. 방 전환 툴팁의 위치 표현 *(plan 3.0.0)*
 
-**Decision**: `MinoTooltip`의 기존 파라미터로 표현한다 — `position = TooltipPosition.Right`, `align = TooltipAlign.Center`. 새 컴포넌트도 새 파라미터도 만들지 않는다.
+**Decision**: `MinoTooltip`의 기존 파라미터로 표현한다 — `position = TooltipPosition.Left`, `align = TooltipAlign.Center`. 새 컴포넌트도 새 파라미터도 만들지 않는다.
 
-**Rationale**: 시안(노드 `2809:143382`)의 툴팁은 본문 158 + 화살표 8 = **166×56**이고 화살표가 **오른쪽 변 세로 중앙**에 붙어 캐릭터를 가리킨다. 종전 구현은 `Bottom`·`End`(화살표가 아래 변)였다. `TooltipPosition`에 `Right`가 이미 있고 `TooltipAlign.Center`가 세로 배치에서 중앙을 뜻하므로, 값 두 개를 바꾸는 것으로 끝난다.
+**Rationale**: 시안(노드 `2809:143382`)의 툴팁은 본문 158 + 화살표 8 = **166×56**이고 화살표가 **오른쪽 변 세로 중앙**에 붙어 캐릭터를 가리킨다. 종전 구현은 `Bottom`·`End`(화살표가 아래 변)였다. `TooltipAlign.Center`가 세로 배치에서 중앙을 뜻하므로 값 두 개를 바꾸는 것으로 끝난다.
+
+> **`position`은 화살표가 붙는 변이 아니라 말풍선이 놓이는 방향이다**(`MinoTooltip` KDoc: *"앵커를 기준으로 말풍선이 놓이는 방향이다. 화살표는 그 반대편, 즉 앵커를 향하는 변에 붙는다"*). 시안이 요구하는 것은 「말풍선이 캐릭터 **왼쪽**, 화살표는 그 오른쪽 변」이므로 값은 `Left`다. 3.0.0 작성 시점에 이 항목을 화살표 쪽 이름인 `Right`로 적어 두었고 구현이 그것을 바로잡았다 — 되돌리면 툴팁이 캐릭터 오른쪽으로 넘어가 시안과 어긋난다.
 
 **자리는 호출부가 정한다** — 툴팁 컴포저블은 이미 위치를 `modifier`로 받고 있어(`HomeTooltipOverlay` KDoc) 조립부의 오프셋만 시안값으로 맞춘다. 그 오프셋은 실측값이므로 [`figma-design-fidelity.md`](../../conventions/figma-design-fidelity.md) §2의 판정 4번을 따라 주석 없이 리터럴로 쓴다.
 
@@ -284,8 +286,14 @@ suspend fun getDeck(roomId: String, sort: DeckSort, location: GeoPoint? = null):
 
 | 종전 (plan 2.0.0) | 3.0.0 |
 |---|---|
-| `HomeDeckRepository.recordPlaceOpened(pinId)` | `PlaceRepository.recordAccess(pinId)` |
+| ~~`HomeDeckRepository.recordPlaceOpened(pinId)`~~ | ~~`PlaceRepository.recordAccess(pinId)`~~ → **호출 자체를 걷었다**(재검토됨, spec 4.0.0) |
 | `HomeDeckRepository.savePinToRoom(pinId, roomId)` | `PlaceRepository.duplicatePin(pinId, roomIds)` |
+
+> **①은 옮긴 것이 아니라 걷어냈다(재검토됨, spec 4.0.0).** 「같은 서버 호출에 계약이 둘」을 없애려 처음에는
+> `PlaceRepository.recordAccess`로 옮기려 했으나, [SCR-006] 장소 상세가 **진입 경로와 무관하게** 이미 기록하므로
+> (`place-detail` FR-026) 홈이 부르면 카드 한 번 탭에 두 건이 쌓인다. 「앱 전역에서 일어난다」는 PRD의 규정은
+> 어느 화면에서든 **한 번씩**이라는 뜻이지 여러 화면이 겹쳐 부른다는 뜻이 아니다. 그래서 옮기는 대신 홈에서
+> **지웠다** — 위 R-012의 갱신 주석과 같은 결론이고, `duplicatePin`만 `PlaceRepository`의 것을 쓴다.
 
 **Rationale**: 둘 다 **홈만의 동작이 아니다.** 「경과일 초기화 확인」은 PRD 「장소 확인 이벤트」 ①이 *"앱 전역에서 일어난다"* 고 못박은 이벤트이고, `다른 방 저장`은 PRD가 *"저장 동작 자체는 [SYS-003] 장소 복제와 같다"* 고 적은 경로다. [SCR-006] 장소 상세가 두 서버 호출을 이미 계약으로 갖고 구현까지 마친 상태라, 홈이 자기 이름의 함수를 따로 두면 **같은 서버 호출에 도메인 계약이 둘**이 된다 — 헌법 I(SSOT) 위반이다.
 

@@ -2,13 +2,13 @@
 
 **대상 스펙 경로**: `docs/specs/home-deck-exploration`
 
-**기준 plan 버전**: 3.0.0
+**기준 plan 버전**: 3.0.1
 
 **최초 작성일**: 2026-08-28
 
-**최종 수정일**: 2026-09-03
+**최종 수정일**: 2026-09-05
 
-**사전 조건**: [plan.md](./plan.md) 3.0.0 (필수), [spec.md](./spec.md) 4.0.0 (사용자 스토리), [research.md](./research.md), [data-model.md](./data-model.md), [contracts/](./contracts/)
+**사전 조건**: [plan.md](./plan.md) 3.0.1 (필수), [spec.md](./spec.md) 4.0.0 (사용자 스토리), [research.md](./research.md), [data-model.md](./data-model.md), [contracts/](./contracts/)
 
 **테스트**: 포함한다. plan 기술 컨텍스트가 `:core:domain` JVM 단위 테스트(전환 규칙)와 `:feature:home` ViewModel 테스트(화면 상태)를 설계에 못 박았고, [quickstart.md](./quickstart.md) §3이 검증 대상을 TS·EC ID로 지목한다.
 
@@ -16,10 +16,11 @@
 
 > ## 3.0.0 개정분 (2026-09-03)
 >
-> **이 기능은 이미 머지되어 동작한다.** T001~T073이 spec 3.0.0·plan 2.0.0 기준으로 구현을 끝냈고, 이번 개정은 그 위에 **T074~T103**을 얹어 두 가지를 갈아 끼운다.
+> **이 기능은 이미 머지되어 동작한다.** T001~T073이 spec 3.0.0·plan 2.0.0 기준으로 구현을 끝냈고, 이번 개정은 그 위에 **T074~T104**를 얹어 세 가지를 갈아 끼운다.
 >
 > 1. **spec 4.0.0의 탐색 축 반전** — 「한 방의 세 덱 → 다음 방」이 「한 정렬로 모든 방 → 다음 정렬」로 뒤집혔고, 자동·수동 규칙이 갈렸다(FR-011·012·024·025).
 > 2. **시안 개정** — 방 캐릭터가 방 색별 12 variant로, 완료 안내 일러스트·문구가, 툴팁 위치가 바뀌었다.
+> 3. **「경과일 초기화 확인」의 기록 소유 이관** — [SCR-006] 장소 상세가 진입 경로와 무관하게 이 기록을 가져가면서(`place-detail` FR-026), 홈이 같은 `POST /pins/{pinId}/accesses`를 계속 쳐 카드 한 번 탭에 두 건이 쌓였다. spec 4.0.0이 FR-007에서 기록 요구를 덜어내고 FR-023을 「홈은 두 이벤트 중 어느 것도 서버로 보내지 않는다」로 다시 썼으며, TS-034를 **「홈이 중복해서 내보내지 않는다」로 뒤집었다.** T089·T090이 그 자리다.
 >
 > **기존 작업의 ID와 체크 상태는 손대지 않았다.** T010·T049·T051처럼 이번에 동작이 바뀌는 자리도 그 작업 자체는 *그때 그렇게 만들었다*는 기록이라 그대로 두고, 바꾸는 일을 새 ID로 세웠다. 그래서 **폐기된 작업은 없다** — 지워지는 산출물이 아니라 내용이 바뀌는 산출물이기 때문이다.
 >
@@ -151,7 +152,7 @@ Android 다중 모듈이다. 모듈 경계와 파일 배치는 [plan.md](./plan.
 
 ### 테스트 ⚠️
 
-- [X] T035 [P] [US2] `feature/home/src/test/.../HomeViewModelConfirmationTest.kt`에 두 확인 이벤트의 독립 테스트 작성 — TS-013(탭은 덱을 안 건드림)·TS-034(탭이 `recordPlaceOpened`를 부름)·TS-035(넘김은 서버를 안 부름)·EC-017(되돌려도 초기화는 취소 안 됨). **FR-023을 지키는 유일한 그물이다**
+- [X] T035 [P] [US2] `feature/home/src/test/.../HomeViewModelConfirmationTest.kt`에 두 확인 이벤트의 독립 테스트 작성 — TS-013(탭은 덱을 안 건드림)·TS-034(**그때 기준** — 탭이 `recordPlaceOpened`를 부름. spec 4.0.0이 「홈은 부르지 않는다」로 뒤집어 T089·T090이 다시 닫는다)·TS-035(넘김은 서버를 안 부름)·EC-017(되돌려도 초기화는 취소 안 됨). **FR-023을 지키는 유일한 그물이다**
 
 ### 구현
 
@@ -168,8 +169,8 @@ Android 다중 모듈이다. 모듈 경계와 파일 배치는 [plan.md](./plan.
 - [X] T086 [US2] `feature/home/.../main/vm/HomeIntent.kt`에 `ToggleSaveTargetRoom`·`ConfirmSaveTargets`·`DismissSavePicker` 추가하고 `HomeUiState.kt`에 `savePicker: SavePickerState?` 추가 — 시트가 둘이므로 상태도 둘이다([contracts/home-ui.md](./contracts/home-ui.md) §2, [data-model.md](./data-model.md) §3)
 - [X] T087 [US2] `feature/home/.../main/vm/HomeViewModel.kt`의 `다른 방 저장` 경로를 「방 선택 시트」로 교체 — **`pendingSavePinId` 플래그를 제거**하고, 확정 시 `PlaceRepository.duplicatePin(pinId, roomIds)`를 부른다. 선택이 비면 확정을 막는다(EC-018) (T079·T084·T086에 의존)
 - [X] T088 [US2] `feature/home/.../main/screen/HomeScreen.kt`에 「방 선택 시트」 배선 — 「홈 방 시트」와 **다른 시트로 함께 존재**한다. 저장이 방 전환으로 뒤바뀌지 않는지가 검증 지점이다(FR-005·FR-017) (T084·T086에 의존)
-- [X] T089 [US2] `feature/home/.../main/vm/HomeViewModel.kt`의 상세 진입이 `PlaceRepository.recordAccess(pinId)`를 부르도록 정정 — T038이 부르던 `recordPlaceOpened`가 사라진다(R-019). 결과를 기다리지 않는 것과 덱을 건드리지 않는 것은 그대로다 (T079에 의존)
-- [X] T090 [P] [US2] `feature/home/src/test/.../HomeViewModelConfirmationTest.kt` 갱신 — `recordAccess` 호출로 정정(TS-034), 복수 선택 저장이 `duplicatePin`에 목록을 그대로 넘김(TS-011a), 이미 저장된 방도 고를 수 있음(TS-011b), 선택이 비면 확정 비활성(EC-018)
+- [X] T089 [US2] `feature/home/.../main/vm/HomeViewModel.kt`의 상세 진입에서 **기록 호출을 걷어낸다** — T038이 부르던 `recordPlaceOpened`를 지우고 상세 이동 SideEffect만 던진다. 「경과일 초기화 확인」은 [SCR-006]이 소유하므로 홈이 같은 기록을 내보내면 카드 한 번 탭에 두 건이 쌓인다(spec 4.0.0 FR-007·FR-023, [contracts/home-ui.md](./contracts/home-ui.md) §4.2.1). **홈에 통로 자체를 남기지 않아**(`HomeDeckRepository.recordPlaceOpened` 삭제) 되살리는 회귀가 컴파일에서 걸린다. 덱을 건드리지 않는 것은 그대로다 (T079에 의존)
+- [X] T090 [P] [US2] `feature/home/src/test/.../HomeViewModelConfirmationTest.kt` 갱신 — **홈이 초기화 기록을 중복해서 내보내지 않음**(뒤집힌 TS-034 — 탭이 하는 일은 상세로 보내는 것이 전부다), 복수 선택 저장이 `duplicatePin`에 목록을 그대로 넘김(TS-011a), 이미 저장된 방도 고를 수 있음(TS-011b), 선택이 비면 확정 비활성(EC-018)
 
 **체크포인트**: 액션 메뉴와 상세 진입이 동작하고, 두 확인 이벤트가 독립으로 검증된다
 
@@ -209,7 +210,7 @@ Android 다중 모듈이다. 모듈 경계와 파일 배치는 [plan.md](./plan.
 - [X] T095 [US3] 완료 안내에서 정렬 칩을 **`꾹 Pick` 선택 상태로** 표시 — 남은 칸이 없어 도달한 화면이므로 칩이 마지막으로 보던 정렬에 머물지 않는다(FR-014) (T092에 의존)
 - [X] T096 [P] [US3] 완료 안내 일러스트를 **209×209**로 재export — Figma 노드 `5073:101117`, `feature/home/src/main/res/drawable-{m,x,xx}hdpi/home_all_exhausted_illustration.webp` 교체(R-018)
 - [ ] T097 [US3] ⚠️ **잠긴 작업** — 완료 안내 문구를 `모든 장소를 다 봤어요!`로 교체(`home_all_exhausted_message`). **spec FR-014와 PRD [SCR-003] Flow E 개정이 머지된 뒤에 착수한다.** 지금 착수하면 구현이 명세를 앞지른다([plan.md](./plan.md) §복잡도 추적 #1, R-018)
-- [X] T098 [US3] `feature/home/.../main/component/HomeTooltipOverlay.kt`의 툴팁 위치를 **`position = Right`·`align = Center`** 로 교체하고, 조립부 오프셋을 시안값으로 맞춘다 — 화살표가 오른쪽 변 세로 중앙에서 캐릭터를 가리키고 툴팁 본문이 캐릭터 왼쪽에 놓인다(R-016, [contracts/home-ui.md](./contracts/home-ui.md) §5). **구현 중 정정**: `MinoTooltip.position`은 "말풍선이 놓이는 방향"이라 화살표는 그 반대편에 붙는다(`MinoTooltip.kt` KDoc) — 요구한 시각 결과(화살표가 오른쪽 변)를 실제로 내려면 코드값은 `position = Left`여야 해서 그렇게 구현했다. `contracts/home-ui.md` §5·`research.md` R-016의 "Right" 표기는 오기로 보인다(문서 정정은 이 스킬 범위 밖)
+- [X] T098 [US3] `feature/home/.../main/component/HomeTooltipOverlay.kt`의 툴팁 위치를 **`position = Left`·`align = Center`** 로 교체하고, 조립부 오프셋을 시안값으로 맞춘다 — 툴팁 본문이 캐릭터 왼쪽에 놓이고 화살표가 오른쪽 변 세로 중앙에서 캐릭터를 가리킨다(R-016, [contracts/home-ui.md](./contracts/home-ui.md) §5). **`position`은 화살표가 붙는 변이 아니라 말풍선이 놓이는 방향이다**(`MinoTooltip.kt` KDoc) — 3.0.0 작성 시점에 화살표 쪽 이름인 `Right`로 적혀 있던 것을 구현이 바로잡았고, 그에 맞춰 `contracts/home-ui.md` §5와 `research.md` R-016도 정정했다
 
 **체크포인트**: 사용자가 스와이프만으로 한 방의 세 덱을 훑고 다음 방까지 넘어간다. SC-001·SC-002·SC-003·SC-004가 성립한다
 
@@ -287,7 +288,7 @@ Android 다중 모듈이다. 모듈 경계와 파일 배치는 [plan.md](./plan.
 
 - [X] T102 [P] 시안 재대조 — [quickstart.md](./quickstart.md) §4.9의 4항목. **방 캐릭터 12종**·**툴팁 위치**·**완료 안내 일러스트**는 바뀐 값이고, **「홈 방 시트」 썸네일(노드 `4306:63731`)은 변경 없음 확인만** 한다. 절차는 [`figma-design-fidelity.md`](../../conventions/figma-design-fidelity.md) §4 (T083·T096·T098에 의존)
 - [ ] T103 spec 4.0.0 기준으로 [quickstart.md](./quickstart.md) §4 재수행 — 특히 **§4.6(축이 뒤집힌 자동 전환)**·**§4.7(수동 변경과 빈 방)**·**§4.7a(`다른 방 저장` 시트 교체)**. T097이 잠긴 동안 §4.9의 3번은 **미검증**으로 남긴다 (T100·T092에 의존)
-- [ ] T104 `./gradlew :app:assembleQaDebug`와 `:core:domain:test`·`:feature:home:testDebugUnitTest`·`:core:data:test` 통과 확인 — 도메인 계약이 바뀌어 기존 테스트가 함께 깨지는 자리를 여기서 잡는다
+- [X] T104 `./gradlew :app:assembleQaDebug`와 `:core:domain:test`·`:feature:home:testDebugUnitTest`·`:core:data:test` 통과 확인 — 도메인 계약이 바뀌어 기존 테스트가 함께 깨지는 자리를 여기서 잡는다. **2026-09-05 `--rerun-tasks`로 확인**: 빌드 통과, `:core:domain` 80건 · `:core:data` 202건 · `:feature:home` 48건 전부 실패 0. `:core:data:test`는 이 게이트를 걸 당시 **develop에서 이미 컴파일조차 되지 않던 상태**였다(`d7d0ca92`가 `UserRemoteDataSource.putPushToken`을 늘리면서 프로필 테스트 더블 둘이 따라가지 못했다) — 그 더블을 메워야 이 항목이 닫혔다
 
 ---
 
@@ -307,7 +308,7 @@ spec **4.0.0**의 요구사항이 어느 작업으로 닫히는지 적는다. �
 | FR-004 최대 10장 | T015·T017 |
 | FR-005 액션 메뉴 1항목 · **「방 선택 시트」 복수 선택** | T036·T037 → **T084~T088·T090** |
 | *FR-006 결번* | — |
-| FR-007 카드 클릭 → 상세 | T038 → **T089** |
+| FR-007 카드 클릭 → 상세 *(기록은 [SCR-006] 소유 — 홈은 안 부름)* | T038 → **T089** |
 | FR-008 장소분류 라벨 | T004·T039 |
 | FR-009 정렬 칩 3종 | T042 |
 | FR-010 칩 직접 선택 · 건너뛴 칸 복귀 | T048 → **T075·T076** |
@@ -323,7 +324,7 @@ spec **4.0.0**의 요구사항이 어느 작업으로 닫히는지 적는다. �
 | FR-020 빈 상태 | T045·T060 |
 | FR-021 상단 셸 *(방 색별 캐릭터 12종)* | T028 → **T082·T083** |
 | FR-022 시작 방 | T033 |
-| FR-023 두 확인 이벤트 독립 | T032·T038 → **T089** |
+| FR-023 두 확인 이벤트 독립 *(홈은 어느 것도 서버로 보내지 않음)* | T032·T038 → **T089** |
 | **FR-024 수동 방 변경 한정 규칙** | **T074·T077·T078·T099·T100·T101** |
 | **FR-025 자동 정렬 전환** | **T075·T076·T091·T094** |
 

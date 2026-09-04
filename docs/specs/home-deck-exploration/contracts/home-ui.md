@@ -205,7 +205,7 @@ interface HomePreferencesRepository {
 | **방 캐릭터 + 색상별 에셋 12종** | `:feature:home` | R-015. 사용처가 홈뿐이라 승격 기준 미충족. `:core:common:ui`의 `RoomThumbnailFallback`과 **다른 에셋군**이다 |
 | 홈 방 시트 (방 변경) | `:feature:home` | R-011 — 그대로 유지 |
 | **방 선택 시트 (`다른 방 저장`)** | `:core:common:ui`로 **승격** | R-017. `:feature:sharereceiver`가 이미 구현했고 홈이 세 번째 사용처다. 홈이 사본을 만들지 않는다 |
-| 툴팁 2종 | `:feature:home` | 사용처가 홈뿐. `MinoTooltip`을 `position = Right`·`align = Center`로 쓴다(R-016) |
+| 툴팁 2종 | `:feature:home` | 사용처가 홈뿐. `MinoTooltip`을 `position = Left`·`align = Center`로 쓴다 — `position`은 **말풍선이 놓이는 방향**이라 화살표는 그 반대편인 오른쪽 변에 붙는다(R-016) |
 | 액션 메뉴 | `:feature:home` | 카드 앵커에 묶인 형태 |
 | **완료 안내 일러스트** | `:feature:home` | 사용처가 홈뿐. 209×209, 노드 `5073:101117`에서 재export(R-018) |
 
