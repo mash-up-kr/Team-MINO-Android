@@ -35,12 +35,17 @@ private val PinIconHeight = 37.dp
  *
  * @param contentPadding 바텀시트·상태바에 가려 보이지 않는 가장자리. 카메라를 옮길 때 타깃이 이 패딩을 뺀
  *  영역의 중앙에 놓인다 — 값을 정하는 것은 시트를 아는 [RoomListScreen]이다.
+ * @param onPinClick 핀을 눌렀다 — 그 장소의 id([MapPinUiModel.place]`.id`)를 올린다. 장소 상세를 여는
+ *  것은 [RoomListViewModel][team.mino.feature.room.main.vm.RoomListViewModel]의 몫이라(FR-002) 이
+ *  컴포저블은 클릭 사실만 콜백으로 넘긴다. 방 상세도 이 지도를 그대로 공유해 쓰므로 같은 콜백 하나로
+ *  두 진입이 함께 배선된다(클래스 KDoc 참고).
  */
 @Composable
 internal fun RoomListMap(
     mapCenter: GeoPoint?,
     mapCenterRequestId: Int,
     mapPins: ImmutableList<MapPinUiModel>,
+    onPinClick: (String) -> Unit,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(),
 ) {
@@ -65,7 +70,7 @@ internal fun RoomListMap(
         modifier = modifier.fillMaxSize(),
         contentPadding = contentPadding,
     ) {
-        mapPins.forEach { pin -> PlacePin(pin) }
+        mapPins.forEach { pin -> PlacePin(pin, onClick = { onPinClick(pin.place.id) }) }
     }
 }
 
@@ -74,13 +79,24 @@ internal fun RoomListMap(
  *
  * [MarkerComposable]은 content를 비트맵으로 한 번 구워 두고 keys가 달라질 때만 다시 굽는다 — 핀 그림을
  * 고르는 두 값을 키로 넘기지 않으면 [MapPinUiModel.selected]가 뒤집혀도 마커가 이전 그림 그대로 남는다.
+ *
+ * [onClick]은 `true`를 돌려줘 기본 동작(정보창 표시·카메라 이동)을 막는다 — 장소 상세를 여는 것은
+ * [RoomListViewModel][team.mino.feature.room.main.vm.RoomListViewModel]이 `OnPlaceSelected`로 카메라까지
+ * 함께 옮기므로, 기본 동작이 먼저 끼어들면 그 사이에 지도가 한 번 더 움직이는 중간 상태가 보인다.
  */
 @Composable
 @GoogleMapComposable
-private fun PlacePin(pin: MapPinUiModel) {
+private fun PlacePin(
+    pin: MapPinUiModel,
+    onClick: () -> Unit,
+) {
     MarkerComposable(
         pin.color to pin.selected,
         state = rememberUpdatedMarkerState(position = pin.place.location.toLatLng()),
+        onClick = {
+            onClick()
+            true
+        },
     ) {
         RoomMapPin(
             color = pin.color,
