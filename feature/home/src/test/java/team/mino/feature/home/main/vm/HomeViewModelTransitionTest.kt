@@ -29,6 +29,7 @@ import team.mino.core.domain.model.RoomType
 import team.mino.core.domain.usecase.ResolveNextDeckUseCase
 import team.mino.feature.home.fake.FakeHomeDeckRepository
 import team.mino.feature.home.fake.FakeHomePreferencesRepository
+import team.mino.feature.home.fake.FakePlaceRepository
 import team.mino.feature.home.main.model.HomePhase
 import team.mino.feature.home.main.model.HomeTooltip
 
@@ -38,13 +39,20 @@ import team.mino.feature.home.main.model.HomeTooltip
  *
  * 다루는 범위는 TS-020·TS-022·TS-023과 EC-009·EC-012, spec §4 가정(예고 툴팁의 재노출 조건)이다.
  *
+ * **3.0.0 개정으로 자동 방 전환 절이 늘었다** — T049가 세운 「방이 바뀌면 정렬을 꾹 Pick으로 초기화」가
+ * 폐기되고 자동 전환이 정렬을 유지하게 됐다(spec 4.0.0 FR-012·FR-025). 여기서 보는 것은 **어느 칸으로
+ * 갈지가 아니라**(그건 `ResolveNextDeckUseCaseTest`의 몫이다) `NextDeck.NextRoom(roomId, sort)`가 실어 온
+ * `sort`를 `HomeViewModel`이 그대로 써서 여는가(TS-015·016), 그리고 그 방 전환에 툴팁이 하나만
+ * 뜨는가(TS-018)다. `EC-019`(장소 있는 방이 하나뿐)는 반대로 방이 안 바뀌는 경우를 본다 — 정렬만 넘어갈
+ * 때는 방 전환 툴팁이 없어야 한다.
+ *
  * **여기서 보지 않는 것**과 그 자리를 메우는 것:
  *
  * | 미검증 | 메우는 것 |
  * |---|---|
- * | 전환 규칙이 다음 덱을 무엇으로 고르는가(FR-011·012·013·014, TS-015~019·021·024) | `ResolveNextDeckUseCaseTest` |
+ * | 전환 규칙이 다음 덱으로 **어느 칸**을 고르는가(FR-011·013·014, TS-017·019·019a·021·024) | `ResolveNextDeckUseCaseTest` |
  * | 넘김·되돌리기·전환 중 입력(FR-001·002·023, TS-001·002·007) | [HomeViewModelDeckTest] |
- * | 방 전환 툴팁과 방 시트(FR-016·017·018, TS-025~028) | `HomeViewModelRoomSheetTest` |
+ * | 방 전환 툴팁의 노출·소멸 자체와 방 시트(FR-016·017·018, TS-025~028) | `HomeViewModelRoomSheetTest` |
  * | 툴팁의 위치·페이드·조작 비차단(UX-003) | 툴팁을 그리는 Compose 계층 |
  *
  * **예고 툴팁이 가리키는 대상은 「지금 보는 덱」이 아니라 「이 덱을 다 봤을 때 올 덱」이다**(FR-015, SC-004).
@@ -56,6 +64,7 @@ import team.mino.feature.home.main.model.HomeTooltip
 class HomeViewModelTransitionTest {
     private val deckRepository = FakeHomeDeckRepository()
     private val preferencesRepository = FakeHomePreferencesRepository()
+    private val placeRepository = FakePlaceRepository()
 
     @Before
     fun setUp() {
@@ -190,6 +199,131 @@ class HomeViewModelTransitionTest {
             assertEquals(latest, state.cards.toList())
         }
 
+    // ── 자동 방 전환은 정렬을 유지한다 (FR-012·FR-025, 3.0.0) ──────────────────
+    //
+    // T049가 세운 「방이 바뀌면 정렬을 꾹 Pick으로 초기화」가 폐기됐다(spec 4.0.0). 여기서 보는 것은
+    // `ResolveNextDeckUseCase`가 고른 칸이 아니라(그건 `ResolveNextDeckUseCaseTest`가 본다),
+    // `HomeViewModel`이 `NextDeck.NextRoom(roomId, sort)`의 `sort`를 **버리지 않고** 그대로 여는가다.
+
+    /**
+     * 덱을 소진하면 정렬은 그대로인 채 다음 방으로 넘어간다(TS-015, FR-012).
+     *
+     * 방이 둘뿐이라 `꾹 Pick`을 모두 훑으면 `최신순` 차례가 되고, 그 첫 후보가 다시 room-1이다 — 방을
+     * 오가는 동안에도 정렬이 살아 있는지를 보는 자리다.
+     *
+     * **가짜 저장소는 [FakeHomeDeckRepository.setDeck]으로 세운 덱을 스와이프로 비워도 지우지 않는다.**
+     * 그래서 방 전환이 정렬을 `꾹 Pick`으로 되감는 옛 규칙이 남아 있으면, room-1로 돌아왔을 때 이미
+     * 소진한 `꾹 Pick` 카드가 재조회로 다시 나타나 이 판정을 조용히 통과시킨다 — 정렬이 실제로 유지될
+     * 때만 `최신순` 덱이 열린다.
+     */
+    @Test
+    fun `자동 방 전환은 지금 정렬을 그대로 들고 다음 방으로 간다`() =
+        runTest {
+            stage(DeckSort.GGUK_PICK, count = 1)
+            val latest = stage(DeckSort.LATEST, count = 1)
+            val viewModel = createViewModel()
+
+            swipe(viewModel)
+
+            val state = viewModel.state.value
+            assertEquals("방이 바뀌어도 꾹 Pick으로 되감기지 않는다", DeckSort.LATEST, state.sort)
+            assertEquals(latest, state.cards.toList())
+            assertEquals(
+                FakeHomeDeckRepository.DeckRequest(roomId = ROOM_ID, sort = DeckSort.LATEST, location = null),
+                deckRepository.deckRequests.last(),
+            )
+        }
+
+    /**
+     * 정렬은 지금 정렬로 **모든 방**을 확인해야 다음 정렬로 넘어가고, 그다음엔 **첫 방부터** 다시
+     * 훑는다(TS-016, FR-025).
+     *
+     * 그 방 전환에는 방 전환 툴팁 하나만 뜬다 — 정렬이 바뀐 것을 알리는 별도 툴팁은 없다(TS-018,
+     * FR-016). [HomeTooltip]에는 애초에 그런 갈래가 없으므로, 이 자리가 실제로 가르는 것은 「room-1의
+     * 꾹 Pick을 정렬 초기화 없이 다시 열어 버려 방금 뜬 [HomeTooltip.RoomChanged]가 [HomeTooltip.DeckAhead]로
+     * 덮이는 것」과 「최신순으로 올바르게 넘어가 방 전환 툴팁이 그대로 남는 것」의 구별이다.
+     */
+    @Test
+    fun `정렬은 방을 모두 확인한 뒤에야 넘어가고 첫 방부터 다시 훑으며 방 전환 툴팁만 뜬다`() =
+        runTest {
+            deckRepository.rooms = listOf(roomSummary(ROOM_ID), roomSummary(NEXT_ROOM_ID), roomSummary(THIRD_ROOM_ID))
+            stage(DeckSort.GGUK_PICK, count = 1)
+            deckRepository.setDeck(roomId = NEXT_ROOM_ID, sort = DeckSort.GGUK_PICK, cards = listOf(card("gguk-b")))
+            deckRepository.setDeck(roomId = THIRD_ROOM_ID, sort = DeckSort.GGUK_PICK, cards = listOf(card("gguk-c")))
+            val latest = stage(DeckSort.LATEST, count = 3)
+            val viewModel = createViewModel()
+
+            repeat(3) { swipe(viewModel) } // room-1 → room-2 → room-3 순으로 꾹 Pick을 모두 소진한다.
+
+            val state = viewModel.state.value
+            assertEquals("세 방의 꾹 Pick을 다 봐야 최신순으로 넘어간다", DeckSort.LATEST, state.sort)
+            assertEquals("최신순은 첫 방부터 다시 훑는다", ROOM_ID, state.room?.id)
+            assertEquals(latest, state.cards.toList())
+            assertEquals(
+                "방이 바뀐 것 하나만 알리고, 정렬 전환을 따로 알리는 툴팁은 없다",
+                HomeTooltip.RoomChanged(roomSummary(ROOM_ID).name),
+                state.tooltip,
+            )
+        }
+
+    /**
+     * 위치 권한 거부는 `가까운순`을 **모든 방에 대해** 소진 처리한다(EC-009, R-013). 권한은 방별 값이
+     * 아니므로 다른 방의 `가까운순`을 다시 묻지 않는다.
+     *
+     * `꾹 Pick`·`최신순`을 두 방 모두 세우지 않아 시작하자마자 빈 덱으로 훑여 내려가 가까운순 권한
+     * 요청까지 곧장 닿는다. 권한을 한 번 거부한 뒤 **두 번째 방**의 가까운순을 또 묻는지가 판정
+     * 대상이다 — 방마다 다시 물으면 화면이 권한 다이얼로그를 기다리는 [HomePhase.LOADING]에 갇힌다.
+     */
+    @Test
+    fun `위치 권한 거부는 가까운순을 모든 방에 대해 소진 처리해 다시 묻지 않는다`() =
+        runTest {
+            val viewModel = createViewModel()
+            val sideEffects = recordSideEffects(viewModel)
+            assertEquals(
+                "초기 로드가 두 방의 꾹 Pick·최신순을 다 걷어내고 가까운순 권한을 문다",
+                1,
+                sideEffects.count { it == HomeSideEffect.RequestLocationPermission },
+            )
+
+            viewModel.processIntent(HomeIntent.LocationPermissionResult(null))
+
+            assertEquals(
+                "권한은 방별 값이 아니다 — 다른 방의 가까운순을 다시 물으면 안 된다",
+                1,
+                sideEffects.count { it == HomeSideEffect.RequestLocationPermission },
+            )
+            assertNotEquals(
+                "다시 묻는 채로 멈추면 화면이 로딩에서 걷히지 않는다",
+                HomePhase.LOADING,
+                viewModel.state.value.phase,
+            )
+        }
+
+    /**
+     * 장소가 있는 방이 하나뿐이면 「지금 정렬로 모든 방을 확인」이 곧 그 방 하나를 보는 것이므로, 덱을
+     * 소진할 때마다 정렬이 곧장 넘어간다(EC-019). 방이 바뀌지 않으므로 방 전환 툴팁은 뜨지 않는다.
+     */
+    @Test
+    fun `장소 있는 방이 하나뿐이면 방 전환 툴팁 없이 정렬만 곧장 넘어간다`() =
+        runTest {
+            deckRepository.rooms = listOf(roomSummary(ROOM_ID))
+            stage(DeckSort.GGUK_PICK, count = 3)
+            val latest = stage(DeckSort.LATEST, count = 3)
+            val viewModel = createViewModel()
+
+            repeat(2) { swipe(viewModel) } // 잔여 1장 — 같은 덱의 예고 툴팁이 뜬다(FR-015, 이 테스트의 관심사가 아니다).
+            advanceTimeBy(TOOLTIP_MILLIS + 1) // 그 예고를 걷어내야 다음 판정이 가려지지 않는다.
+            assertNull(viewModel.state.value.tooltip)
+
+            swipe(viewModel) // 꾹 Pick의 마지막 카드 — 방이 하나뿐이라 정렬만 최신순으로 넘어간다.
+
+            val state = viewModel.state.value
+            assertEquals("방이 하나뿐이면 정렬 소진마다 곧장 다음 정렬로 넘어간다", DeckSort.LATEST, state.sort)
+            assertEquals(ROOM_ID, state.room?.id)
+            assertEquals(latest, state.cards.toList())
+            assertNull("방이 바뀌지 않았으므로 방 전환 툴팁은 뜨지 않는다", state.tooltip)
+        }
+
     // ── 예고 툴팁 (FR-015) ────────────────────────────────────────────────
 
     /**
@@ -203,6 +337,7 @@ class HomeViewModelTransitionTest {
     @Test
     fun `잔여 두 장이 되면 다음 덱을 가리키는 예고 툴팁이 뜨고 삼 초 뒤 사라진다`() =
         runTest {
+            deckRepository.rooms = listOf(roomSummary(ROOM_ID))
             stage(DeckSort.GGUK_PICK, count = 10)
             stage(DeckSort.LATEST, count = 3)
             val viewModel = createViewModel()
@@ -285,6 +420,7 @@ class HomeViewModelTransitionTest {
     @Test
     fun `잔여가 이미 두 장인 덱으로 전환되면 예고 툴팁이 곧바로 뜬다`() =
         runTest {
+            deckRepository.rooms = listOf(roomSummary(ROOM_ID))
             stage(DeckSort.GGUK_PICK, count = 1)
             stage(DeckSort.LATEST, count = 2)
             val viewModel = createViewModel()
@@ -334,6 +470,7 @@ class HomeViewModelTransitionTest {
         HomeViewModel(
             homeDeckRepository = deckRepository,
             homePreferencesRepository = preferencesRepository,
+            placeRepository = placeRepository,
             resolveNextDeck = ResolveNextDeckUseCase(),
         )
 
@@ -420,6 +557,8 @@ class HomeViewModelTransitionTest {
         const val ROOM_ID = "room-1"
 
         const val NEXT_ROOM_ID = "room-2"
+
+        const val THIRD_ROOM_ID = "room-3"
 
         /** 툴팁 노출 시간(spec FR-015·016). */
         const val TOOLTIP_MILLIS = 3_000L

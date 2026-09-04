@@ -25,6 +25,7 @@ import team.mino.core.domain.usecase.ResolveNextDeckUseCase
 import team.mino.core.errorhandling.MinoDomainException
 import team.mino.feature.home.fake.FakeHomeDeckRepository
 import team.mino.feature.home.fake.FakeHomePreferencesRepository
+import team.mino.feature.home.fake.FakePlaceRepository
 import team.mino.feature.home.main.model.HomePhase
 import java.io.IOException
 
@@ -51,6 +52,7 @@ import java.io.IOException
 class HomeViewModelDeckTest {
     private val deckRepository = FakeHomeDeckRepository()
     private val preferencesRepository = FakeHomePreferencesRepository()
+    private val placeRepository = FakePlaceRepository()
 
     @Before
     fun setUp() {
@@ -365,6 +367,7 @@ class HomeViewModelDeckTest {
         HomeViewModel(
             homeDeckRepository = deckRepository,
             homePreferencesRepository = preferencesRepository,
+            placeRepository = placeRepository,
             resolveNextDeck = ResolveNextDeckUseCase(),
         )
 

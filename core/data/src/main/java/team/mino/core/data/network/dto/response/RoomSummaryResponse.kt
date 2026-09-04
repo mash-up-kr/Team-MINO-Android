@@ -23,6 +23,11 @@ import kotlinx.serialization.Serializable
  * (`docs/specs/shared-link-receiver/research.md` R-022). 필드가 없는 응답에서도 파싱이 깨지지 않도록
  * 기본값을 둔다.
  *
+ * [createdAt]은 도메인 모델([RoomSummary])에 오르지 않는다 — 어느 소비자도 그 값 자체를 쓰지 않는다.
+ * 대신 `HomeDeckRepositoryImpl.getRoomSummaries`가 이 값으로 「개인방 먼저, 그다음 생성 오래된 순」을
+ * 정렬한 **뒤에** 버린다(`docs/specs/home-deck-exploration/contracts/deck-api.md` §1·§3.1, FR-012).
+ * 값이 없는 응답에서도 다른 소비자(방 선택 시트)가 깨지지 않도록 기본값을 둔다.
+ *
  * 계약은 `docs/specs/shared-link-receiver/contracts/room-list-api.md` §1·§2가 소유한다.
  */
 @Serializable
@@ -38,6 +43,7 @@ internal data class RoomSummaryResponse(
     val thumbnailList: List<String> = emptyList(),
     val hasPlace: Boolean? = null,
     val matchedPinId: String? = null,
+    val createdAt: String = "",
 )
 
 /**

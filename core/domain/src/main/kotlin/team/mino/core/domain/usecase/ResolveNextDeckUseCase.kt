@@ -13,25 +13,25 @@ import javax.inject.Inject
  *
  * 부수효과도 I/O도 없다. 상태도 들지 않는다 — 전환 시점마다 다시 부르는 함수이기 때문이다(FR-011).
  *
- * [DeckContext.currentSort]는 읽지 않는다. 1단계는 [DeckSort] 선언 순서를 **처음부터 전부** 훑으므로
- * 현재 정렬보다 앞선 덱이 남아 있으면 그리로 되돌아간다(TS-015).
+ * **탐색 축은 「한 정렬로 모든 방 → 다음 정렬」이다.** [DeckSort] 선언 순서로 정렬을 훑고, 각 정렬에서
+ * [DeckContext.rooms] 순서로 방을 훑어 [DeckContext.exhausted]에 없고 `placeCount > 0`인 첫 칸을 고른다.
+ * [DeckContext.currentSort]는 읽지 않는다 — 현재 정렬보다 앞선 칸이 남아 있으면 그리로 되돌아간다(TS-021).
+ * [DeckContext.rooms]는 받은 순서 그대로 훑을 뿐 재배치하지 않는다(FR-012, TS-019a).
  */
 class ResolveNextDeckUseCase @Inject constructor() {
     operator fun invoke(context: DeckContext): NextDeck {
-        val remainingSort =
-            DeckSort.entries.firstOrNull { sort ->
-                DeckKey(roomId = context.currentRoomId, sort = sort) !in context.exhausted
+        for (sort in DeckSort.entries) {
+            for (room in context.rooms) {
+                if (room.placeCount <= 0) continue
+                if (DeckKey(roomId = room.id, sort = sort) in context.exhausted) continue
+
+                return if (room.id == context.currentRoomId) {
+                    NextDeck.SameRoom(sort)
+                } else {
+                    NextDeck.NextRoom(roomId = room.id, sort = sort)
+                }
             }
-        if (remainingSort != null) return NextDeck.SameRoom(remainingSort)
-
-        // 현재 방 **다음** 자리부터다. 앞으로 되돌아가지 않는다(FR-012, EC-010).
-        val nextRoom =
-            context.rooms
-                .asSequence()
-                .dropWhile { it.id != context.currentRoomId }
-                .drop(1)
-                .firstOrNull { it.placeCount > 0 }
-
-        return nextRoom?.let { NextDeck.NextRoom(it.id) } ?: NextDeck.AllExhausted
+        }
+        return NextDeck.AllExhausted
     }
 }

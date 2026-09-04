@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material3.Text
@@ -25,6 +26,12 @@ import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toImmutableSet
+import team.mino.core.common.ui.component.roompicker.RoomPickerActionArea
+import team.mino.core.common.ui.component.roompicker.RoomPickerHeader
+import team.mino.core.common.ui.component.roompicker.RoomPickerList
+import team.mino.core.common.ui.component.roompicker.RoomPickerSheet
+import team.mino.core.common.ui.component.roompicker.model.RoomPickerItem
 import team.mino.core.designsystem.theme.MinoAndroidAppTheme
 import team.mino.core.designsystem.theme.MinoAndroidTheme
 import team.mino.core.designsystem.util.preview.UiModePreviews
@@ -51,8 +58,10 @@ import team.mino.feature.home.main.component.RoomCharacter
 import team.mino.feature.home.main.component.SortChipRow
 import team.mino.feature.home.main.model.HomePhase
 import team.mino.feature.home.main.model.HomeTooltip
+import team.mino.feature.home.main.model.chip
 import team.mino.feature.home.main.vm.HomeIntent
 import team.mino.feature.home.main.vm.HomeUiState
+import team.mino.core.common.ui.R as CommonUiR
 
 /**
  * 홈 탭 화면. 상태와 콜백만으로 그린다 — ViewModel도 navController도 모른다.
@@ -102,6 +111,43 @@ internal fun HomeScreen(
             )
         }
 
+        // 「방 선택 시트」(다른 방 저장). 「홈 방 시트」와 별개로 함께 존재한다 — savePicker가 차 있는 동안은
+        // isRoomSheetOpen과 무관하게 이 시트만 뜬다(FR-005·FR-017).
+        state.savePicker?.let { savePicker ->
+            val pickerRooms = state.rooms
+                .map { room ->
+                    RoomPickerItem(
+                        id = room.id,
+                        name = room.name,
+                        description = room.description.ifBlank { null },
+                        placeCountLabel = stringResource(
+                            CommonUiR.string.room_picker_room_place_count,
+                            room.placeCount,
+                        ),
+                        thumbnailImageUrls = room.thumbnailImageUrls.toImmutableList(),
+                        color = room.color.chip,
+                    )
+                }.toImmutableList()
+
+            RoomPickerSheet(
+                onDismissRequest = { onIntent(HomeIntent.DismissSavePicker) },
+                roomCount = pickerRooms.size,
+            ) {
+                RoomPickerHeader()
+                RoomPickerList(
+                    rooms = pickerRooms,
+                    selectedRoomIds = savePicker.selectedRoomIds.toImmutableSet(),
+                    onRoomToggle = { roomId -> onIntent(HomeIntent.ToggleSaveTargetRoom(roomId)) },
+                    modifier = Modifier.weight(1f),
+                )
+                RoomPickerActionArea(
+                    enabled = savePicker.selectedRoomIds.isNotEmpty(),
+                    onSaveClick = { onIntent(HomeIntent.ConfirmSaveTargets) },
+                    modifier = Modifier.navigationBarsPadding(),
+                )
+            }
+        }
+
         if (state.isGuideVisible) {
             // 가이드는 상태바·바텀 네비까지 덮는다. 화면은 셸이 계산한 영역 안에 있어 그 안에 두면
             // 인셋만큼 밀리므로, 창 왼쪽 위를 원점으로 삼는 팝업으로 띄운다.
@@ -132,6 +178,7 @@ internal fun HomeScreen(
                         )
                     }
                     RoomCharacter(
+                        roomColor = state.room?.color ?: RoomColor.GRAY,
                         onClick = {},
                         modifier = Modifier
                             .align(Alignment.TopEnd)
@@ -226,6 +273,7 @@ private fun HomeContent(
         // 칩 행 위에 얹힌다. 앞서 그리면 겹치는 띠에서 칩 행이 탭을 먼저 받아 캐릭터의 아래쪽이
         // 먹히고, 캐릭터로 방 시트를 여는 경로가 그만큼 좁아진다(spec FR-017·TS-026).
         RoomCharacter(
+            roomColor = state.room?.color ?: RoomColor.GRAY,
             onClick = { onIntent(HomeIntent.OpenRoomSheet) },
             modifier = Modifier
                 .align(Alignment.TopEnd)
@@ -235,7 +283,7 @@ private fun HomeContent(
             tooltip = state.tooltip,
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .padding(top = TooltipTop, end = ContentHorizontalPadding),
+                .padding(top = TooltipTop, end = TooltipEnd),
         )
     }
 }
@@ -278,8 +326,11 @@ private val CardDeckTop = 236.dp
 
 private val NoticeTop = 279.dp
 
-/** 방 캐릭터 바로 아래. 툴팁은 캐릭터를 앵커로 삼는다(spec UX-003). */
-private val TooltipTop = 182.dp
+/** 캐릭터와 같은 높이대(화살표가 캐릭터를 가리키는 자리)에 놓인다. 캐릭터를 앵커로 삼는다(spec UX-003). */
+private val TooltipTop = 32.dp
+
+/** 캐릭터 왼쪽에 바짝 붙는 간격. 화살표가 캐릭터에 닿을 듯 붙어야 해 공용 여백보다 좁다. */
+private val TooltipEnd = 132.dp
 
 private val GuideBackdropBlurRadius = 6.dp
 

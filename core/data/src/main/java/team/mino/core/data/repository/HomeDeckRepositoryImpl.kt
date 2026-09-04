@@ -1,22 +1,25 @@
+@file:OptIn(ExperimentalTime::class)
+
 package team.mino.core.data.repository
 
 import team.mino.core.common.kotlin.geo.GeoPoint
 import team.mino.core.data.datasource.DeckRemoteDataSource
-import team.mino.core.data.datasource.PinRemoteDataSource
 import team.mino.core.data.datasource.RoomRemoteDataSource
-import team.mino.core.data.network.dto.request.PinDuplicateRequest
+import team.mino.core.data.network.dto.response.RoomSummaryResponse
+import team.mino.core.data.repository.mapper.PERSONAL_TYPE_IDENTIFIER
 import team.mino.core.data.repository.mapper.toDomain
 import team.mino.core.domain.model.Deck
 import team.mino.core.domain.model.DeckSort
 import team.mino.core.domain.model.RoomSummary
 import team.mino.core.domain.repository.HomeDeckRepository
 import javax.inject.Inject
+import kotlin.time.ExperimentalTime
+import kotlin.time.Instant
 
 /**
  * 홈 덱 계약(`docs/specs/home-deck-exploration/contracts/home-ui.md` §4.2)의 구현.
  *
- * 출처가 함수마다 갈리지만 전부 실서버다 — 덱은 [DeckRemoteDataSource], 방 목록은 [RoomRemoteDataSource],
- * 두 확인 이벤트는 [PinRemoteDataSource]가 맡는다.
+ * 출처가 함수마다 갈리지만 전부 실서버다 — 덱은 [DeckRemoteDataSource], 방 목록은 [RoomRemoteDataSource]가 맡는다.
  * 방 목록은 [RoomRepositoryImpl.getRooms]와 **같은 DataSource·같은 Mapper**를 쓰므로 조회가 두 벌로
  * 갈라지지 않는다. 도메인 계약이 둘로 나뉜 것은
  * 홈이 `pinCount`로 다음 방을 고르는 자기 용도를 §4.2에 명시했기 때문이고, Repository끼리는 의존하지
@@ -27,9 +30,20 @@ import javax.inject.Inject
 internal class HomeDeckRepositoryImpl @Inject constructor(
     private val deckRemoteDataSource: DeckRemoteDataSource,
     private val roomRemoteDataSource: RoomRemoteDataSource,
-    private val pinRemoteDataSource: PinRemoteDataSource,
 ) : HomeDeckRepository {
-    override suspend fun getRoomSummaries(): List<RoomSummary> = roomRemoteDataSource.listRooms().map { it.toDomain() }
+    /**
+     * 순회 순서를 여기서 확정한다 — 개인방(`type == "personal"`) 먼저, 그다음 방을 만든 지 오래된 순
+     * (FR-012, R-014, [계약 §1·§3.1](../../../../../../../docs/specs/home-deck-exploration/contracts/deck-api.md)).
+     * `GET /api/v1/rooms` 응답 순서는 계약이 보장하지 않으므로 여기서 매핑 전 원본(DTO)의 `type`·`createdAt`으로
+     * 재배치한 뒤에 도메인으로 옮긴다 — 정렬 재료(`createdAt`)가 [RoomSummary]에는 없기 때문이다.
+     */
+    override suspend fun getRoomSummaries(): List<RoomSummary> =
+        roomRemoteDataSource
+            .listRooms()
+            .sortedWith(
+                compareByDescending<RoomSummaryResponse> { it.type == PERSONAL_TYPE_IDENTIFIER }
+                    .thenBy { Instant.parse(it.createdAt) },
+            ).map { it.toDomain() }
 
     /**
      * 받은 카드를 **그대로** 담는다. 10장 절단은 서버가 이미 했으므로 여기서 다시 자르지도 정렬하지도 않는다
@@ -56,19 +70,4 @@ internal class HomeDeckRepositoryImpl @Inject constructor(
             )
         return Deck(roomId = roomId, sort = sort, cards = cards.map { it.toDomain() })
     }
-
-    /**
-     * `POST /api/v1/pins/{pinId}/duplicate` — 계약 §3.3. 계약의 본문은 방 배열이고 도메인은 방 하나를
-     * 받으므로 여기서 한 칸짜리 배열로 감싼다. 여러 방 저장은 spec §3.2가 비목표로 둔 범위다.
-     *
-     * 대상 방에 같은 장소가 있을 때의 `409`를 잡지 않는다 — 저장되지 않은 것이므로 `MinoDomainException`이
-     * 그대로 올라가 스낵바가 돼야 한다(FR-005, `docs/conventions/error_handling.md` §5).
-     */
-    override suspend fun savePinToRoom(
-        pinId: String,
-        roomId: String,
-    ) = pinRemoteDataSource.duplicatePin(
-        pinId = pinId,
-        request = PinDuplicateRequest(roomIds = listOf(roomId)),
-    )
 }

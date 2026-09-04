@@ -23,7 +23,9 @@ import team.mino.core.designsystem.theme.MinoAndroidTheme
 import team.mino.core.designsystem.util.modifier.clickable.rippleSingleClickable
 import team.mino.core.designsystem.util.modifier.clickable.singleClickable
 import team.mino.core.designsystem.util.preview.UiModePreviews
+import team.mino.core.domain.model.RoomColor
 import team.mino.feature.home.R
+import team.mino.feature.home.main.model.character
 
 /**
  * 홈 상단에 늘 남는 방 뱃지·인사 문구(spec FR-021).
@@ -65,15 +67,18 @@ internal fun HomeTopShell(
 /**
  * 방 캐릭터. 자리는 호출자가 정한다 — 화면 오른쪽 끝에 붙어 있어 콘텐츠 좌우 여백을 받지 않는다.
  *
+ * @param roomColor 지금 보고 있는 방의 대표 색. 색마다 다른 캐릭터 에셋을 그린다
+ *  ([team.mino.feature.home.main.model.character], Figma `Home_Avatar` `4306:63718`).
  * @param onClick 캐릭터를 눌렀을 때. 홈에서는 [HomeTopShell]의 뱃지와 같은 곳으로 간다.
  */
 @Composable
 internal fun RoomCharacter(
+    roomColor: RoomColor,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Image(
-        painter = painterResource(R.drawable.home_room_character),
+        painter = painterResource(roomColor.character),
         contentDescription = stringResource(R.string.home_room_change),
         modifier = modifier
             .size(CharacterWidth, CharacterHeight)
@@ -117,7 +122,7 @@ private val ShellStartPadding = 20.dp
 
 private val CharacterWidth = 126.dp
 
-private val CharacterHeight = 164.dp
+private val CharacterHeight = 172.dp
 
 // Figma md 변수 대응 — 토큰 미존재
 private val ShellSpacing = 12.dp
