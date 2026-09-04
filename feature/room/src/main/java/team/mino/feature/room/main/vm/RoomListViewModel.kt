@@ -8,11 +8,13 @@ import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Looper
+import android.os.SystemClock
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
@@ -72,6 +74,23 @@ class RoomListViewModel @Inject constructor(
     MviContainer<RoomListUiState, RoomListSideEffect> by mviContainer(RoomListUiState()) {
     /** 방마다 조회한 장소. 방 목록이 바뀌어도 이미 받아 둔 장소는 유지하려고 상태 밖에 둔다. */
     private var placesByRoomId: Map<String, List<Place>> = emptyMap()
+
+    /** [observeMyRooms] 재호출마다 이전 구독을 취소하기 위한 핸들 (issue #300). */
+    private var observeMyRoomsJob: Job? = null
+
+    /** [loadRoomPlaces]·[loadRoomMembers]도 방마다 재호출 시 이전 호출을 취소해 중복 누적을 막는다. */
+    private val roomPlacesJobs: MutableMap<String, Job> = mutableMapOf()
+    private val roomMembersJobs: MutableMap<String, Job> = mutableMapOf()
+
+    /**
+     * 이번 진입에서 위치 권한을 이미 요청했는지 — [onScreenEntered] KDoc·issue #300 참고. 권한이
+     * 거부된 채로 한 번 요청을 보냈다면 [onLocationPermissionResult]가 올 때까지(혹은 권한이 실제로
+     * 허용될 때까지) 같은 진입에서 다시 요청하지 않는다.
+     */
+    private var locationPermissionRequested = false
+
+    /** [onScreenEntered] 디바운스 기준 시각(issue #300) — [SystemClock.elapsedRealtime] 사용. */
+    private var lastScreenEnteredAtElapsedRealtime = 0L
 
     init {
         observeMyRooms()
@@ -167,9 +186,15 @@ class RoomListViewModel @Inject constructor(
      * 세션 확보를 전담하는 게 맞지만(`docs/adr/2026-08-22-session-retry-owned-by-caller.md`) 그
      * 화면이 아직 없어, 이 레이스를 막을 다른 호출자가 없다. `ensureSession()`은 멱등이라(같은 문서)
      * 이미 확보된 세션에서는 즉시 반환된다 — 매 호출마다 비용이 들지 않는다.
+     *
+     * **재호출 전에 이전 구독을 취소한다**(issue #300). `ON_RESUME`이 짧은 간격으로 여러 번 발생하는
+     * 경우(예: 위치 권한이 거부된 채로 [onScreenEntered]가 반복 실행되는 상황) 취소 없이 매번 새
+     * 코루틴을 띄우면 `/rooms`·`/pins`·`/members` 호출이 이전 호출 위에 계속 쌓여 기하급수적으로
+     * 늘어난다.
      */
     private fun observeMyRooms() {
-        launchSafely {
+        observeMyRoomsJob?.cancel()
+        observeMyRoomsJob = launchSafely {
             ensureAnonymousSessionUseCase()
             roomRepository.observeMyRooms().collect { rooms -> onRoomsUpdated(rooms) }
         }
@@ -203,7 +228,8 @@ class RoomListViewModel @Inject constructor(
      */
     @OptIn(ExperimentalTime::class)
     private fun loadRoomMembers(roomId: String) {
-        launchSafely {
+        roomMembersJobs[roomId]?.cancel()
+        roomMembersJobs[roomId] = launchSafely {
             val summary = roomRepository.getMembers(roomId).toMemberSummary()
             updateState {
                 copy(
@@ -219,7 +245,8 @@ class RoomListViewModel @Inject constructor(
      * (`Place.location`) 핀을 얹는다(PRD 「자신이 저장한 모든 장소를 지도뷰로 볼 수 있다」).
      */
     private fun loadRoomPlaces(roomId: String) {
-        launchSafely {
+        roomPlacesJobs[roomId]?.cancel()
+        roomPlacesJobs[roomId] = launchSafely {
             roomPlacesRepository.observePlaces(roomId).collect { places ->
                 placesByRoomId = placesByRoomId + (roomId to places)
                 refreshMapPins()
@@ -310,22 +337,42 @@ class RoomListViewModel @Inject constructor(
      * `nudgeSheetDismissed = false`)에 `observeMyRooms()` 응답으로 `showNudge`가 먼저 `true`가 되면
      * 억제 중이어야 할 팝업이 한 프레임 반짝 떴다 사라지는 콜드 스타트 결함이 있었다(실기기 확인) —
      * [RoomListUiState.isNudgeSheetVisible] KDoc 참고.
+     *
+     * **권한이 없을 때 [locationPermissionRequested]로 재요청을 한 번만 보낸다**(issue #300). `Route`가
+     * `ON_RESUME`마다 이 함수를 다시 부르는데, 권한 요청 런처를 여는 것 자체가(시스템 권한 다이얼로그가
+     * 호스트 Activity를 일시정지·재개시킨다) 또 다른 `ON_RESUME`을 유발해 요청→재개→재요청이 사용자
+     * 개입 없이 맞물려 돌면서 [observeMyRooms]까지 매번 다시 실행되어 API 호출이 기하급수적으로
+     * 늘어나는 결함이 있었다(실기기 확인). 권한이 실제로 허용되면 [onLocationPermissionResult]가
+     * 플래그를 내려 다음 거부 시 다시 한 번 요청할 수 있게 한다.
+     *
+     * **[SCREEN_ENTERED_DEBOUNCE_MILLIS] 안의 재호출은 통째로 무시한다**(issue #300 실기기 확인).
+     * 일부 기기(삼성 One UI)에서는 권한 다이얼로그가 닫히는 짧은 순간에 호스트 Activity가 `ON_PAUSE`·
+     * `ON_RESUME`을 초당 백여 회 반복해, 위 두 가지 가드만으로는 [observeMyRooms]가 그 횟수만큼
+     * 취소·재시작을 반복해 짧은 시간에 API를 수백 번 두드리는 문제가 남는다. 정상적인 재진입(외부
+     * 공유 시트에서 복귀 등)은 최소 수백 ms~수 초 간격이라 이 디바운스에 걸리지 않는다.
      */
     private fun onScreenEntered() {
+        val now = SystemClock.elapsedRealtime()
+        if (now - lastScreenEnteredAtElapsedRealtime < SCREEN_ENTERED_DEBOUNCE_MILLIS) return
+        lastScreenEnteredAtElapsedRealtime = now
+
         launchSafely {
             val suppressed = isNudgeSuppressionActive()
             updateState { copy(nudgeSheetDismissed = suppressed, nudgeSuppressionChecked = true) }
         }
         observeMyRooms()
         if (hasLocationPermission()) {
+            locationPermissionRequested = false
             moveCameraToResolvedLocation(granted = true)
-        } else {
+        } else if (!locationPermissionRequested) {
+            locationPermissionRequested = true
             launchSafely { postSideEffect(RoomListSideEffect.RequestLocationPermission) }
         }
     }
 
     /** [EC-002] 거부 시 기본 디폴트 좌표, 허용 시 실제 위치로 `mapCenter`를 설정한다. */
     private fun onLocationPermissionResult(granted: Boolean) {
+        locationPermissionRequested = false
         moveCameraToResolvedLocation(granted)
     }
 
@@ -623,6 +670,9 @@ class RoomListViewModel @Inject constructor(
 
         /** [SYS-009] [나중에 만들래요] 클릭 시 Nudge 팝업을 재표출하지 않는 기간(PRD 11.1.0). */
         val NUDGE_SUPPRESSION_DURATION = 14.days
+
+        /** [onScreenEntered] 디바운스 폭 — issue #300 실기기 재현 시 관측된 반복 간격(수십 ms)보다 넉넉히 크게 잡는다. */
+        const val SCREEN_ENTERED_DEBOUNCE_MILLIS = 500L
     }
 }
 
