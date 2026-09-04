@@ -213,6 +213,36 @@ class HomeViewModelRoomSheetTest {
         }
 
     /**
+     * **모든 방이 비어 있으면 시트로 방을 골라도 빈 상태다**(EC-011). 「고른 방만 비어 있으면 완료 안내,
+     * 모든 방을 통틀어 볼 장소가 없으면 빈 상태」가 spec §5의 확정이고, 둘을 가르는 것은 `[공동방 만들기]` CTA다.
+     *
+     * 자동 순회(`advance`)는 이 판정을 이미 하고 있었으나 수동 선택(`enterRoom`)이 무조건 완료 안내로 보내,
+     * 볼 장소가 하나도 없는 사용자가 시트를 열었다 닫는 것만으로 방 생성 CTA를 잃었다.
+     */
+    @Test
+    fun `모든 방이 비어 있으면 시트에서 방을 골라도 빈 상태 안내가 유지된다`() =
+        runTest {
+            deckRepository.rooms =
+                listOf(
+                    roomSummary(ROOM_ID, placeCount = 0),
+                    roomSummary(OTHER_ROOM_ID, placeCount = 0),
+                )
+            val viewModel = createViewModel()
+            assertEquals("볼 장소가 없는 계정은 빈 상태로 시작한다", HomePhase.EMPTY, viewModel.state.value.phase)
+
+            viewModel.processIntent(HomeIntent.OpenRoomSheet)
+            viewModel.processIntent(HomeIntent.SelectRoom(OTHER_ROOM_ID))
+
+            val state = viewModel.state.value
+            assertEquals("고른 방을 단 채로 머문다 — SC-008", OTHER_ROOM_ID, state.room?.id)
+            assertEquals(
+                "볼 장소가 하나도 없으므로 완료 안내가 아니라 빈 상태다 — CTA를 잃으면 안 된다(EC-011, FR-020)",
+                HomePhase.EMPTY,
+                state.phase,
+            )
+        }
+
+    /**
      * 현재 보고 있는 방을 다시 고르면 **시트만 닫는다**(EC-014).
      *
      * 넘긴 카드가 있는 상태에서 고르는 것이 핵심이다 — 덱을 다시 받는 구현은 이미 넘긴 카드가 되살아나고,
