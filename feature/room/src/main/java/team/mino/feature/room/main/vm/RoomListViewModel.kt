@@ -35,6 +35,7 @@ import team.mino.core.errorhandling.runCatchingDomain
 import team.mino.core.navigation.activity.launcher.RoomFormLauncher
 import team.mino.core.navigation.entry.PlaceDetailEntryOrigin
 import team.mino.core.navigation.entry.PlaceDetailRequestHolder
+import team.mino.core.navigation.entry.RoomDetailRequestHolder
 import team.mino.feature.room.RoomMain
 import team.mino.feature.room.component.chip
 import team.mino.feature.room.main.component.DefaultMapCenter
@@ -65,6 +66,7 @@ class RoomListViewModel @Inject constructor(
     private val ensureAnonymousSessionUseCase: EnsureAnonymousSessionUseCase,
     private val placeRepository: PlaceRepository,
     private val placeDetailRequestHolder: PlaceDetailRequestHolder,
+    private val roomDetailRequestHolder: RoomDetailRequestHolder,
     val roomFormLauncher: RoomFormLauncher,
 ) : ViewModel(),
     // 초대 딥링크(SYS-010)로 특정 방 상세부터 시작해야 하면 시작 라우트가 그 roomId를 싣고 온다 —
@@ -96,6 +98,7 @@ class RoomListViewModel @Inject constructor(
     init {
         observeMyRooms()
         observePlaceDetailRequests()
+        observeRoomDetailRequests()
     }
 
     /**
@@ -116,6 +119,29 @@ class RoomListViewModel @Inject constructor(
             placeDetailRequestHolder.pending
                 .filterNotNull()
                 .collect { request -> openRequestedPlaceDetail(request.pinId, request.origin) }
+        }
+    }
+
+    /**
+     * 다른 자리(알림 탭·푸시 딥링크)가 남긴 방 상세 요청을 받아 연다
+     * (`docs/specs/push-notification/contracts/push-deeplink-contract.md` §6).
+     *
+     * [observePlaceDetailRequests]와 대칭이지만 **방을 다시 조회하지 않는다** — [observeMyRooms]가 이미
+     * 관찰 중인 방 목록에 그 `roomId`가 있으면 방 상세가 그 데이터를 그대로 그린다. 방이 목록에 없거나
+     * 접근할 수 없는 경우는 이 화면 자신의 규칙에 맡긴다(같은 spec EC-010). 진입 출처도 싣지 않는다 —
+     * 방 상세의 [나가기]는 진입 경로에 따라 갈리지 않는다(`research.md` D8).
+     *
+     * 구독을 `init`에서 한 번만 여는 이유와, 요청을 결과와 무관하게 먼저 비우는 이유는
+     * [observePlaceDetailRequests]·[openRequestedPlaceDetail]과 같다.
+     */
+    private fun observeRoomDetailRequests() {
+        launchSafely {
+            roomDetailRequestHolder.pending
+                .filterNotNull()
+                .collect { roomId ->
+                    roomDetailRequestHolder.consume()
+                    updateState { copy(selectedRoomId = roomId) }
+                }
         }
     }
 

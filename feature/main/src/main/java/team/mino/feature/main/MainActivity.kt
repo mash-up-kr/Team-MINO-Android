@@ -20,14 +20,22 @@ import dagger.hilt.android.AndroidEntryPoint
 import team.mino.core.designsystem.theme.MinoAndroidAppTheme
 import team.mino.core.navigation.activity.launcher.EXTRA_MAIN_ROOM_ID
 import team.mino.core.navigation.activity.launcher.EXTRA_PROFILE_ENTRY_POINT
+import team.mino.core.navigation.activity.launcher.EXTRA_PUSH_DESTINATION_ID
+import team.mino.core.navigation.activity.launcher.EXTRA_PUSH_DESTINATION_TYPE
 import team.mino.core.navigation.activity.launcher.EXTRA_ROOM_FORM_ONBOARDING
 import team.mino.core.navigation.activity.launcher.EXTRA_ROOM_FORM_RESULT_OUTCOME
 import team.mino.core.navigation.activity.launcher.EXTRA_ROOM_FORM_RESULT_ROOM_ID
 import team.mino.core.navigation.activity.launcher.EXTRA_ROOM_FORM_ROOM_ID
 import team.mino.core.navigation.activity.launcher.PROFILE_ENTRY_POINT_EDIT
+import team.mino.core.navigation.activity.launcher.PUSH_DESTINATION_TYPE_PLACE
+import team.mino.core.navigation.activity.launcher.PUSH_DESTINATION_TYPE_ROOM
 import team.mino.core.navigation.activity.launcher.ProfileLauncher
 import team.mino.core.navigation.activity.launcher.RoomFormLauncher
+import team.mino.core.navigation.deeplink.SplashDeepLinkIntentFactory
+import team.mino.core.navigation.entry.MainEntryGate
+import team.mino.core.navigation.entry.PlaceDetailEntryOrigin
 import team.mino.core.navigation.entry.PlaceDetailRequestHolder
+import team.mino.core.navigation.entry.RoomDetailRequestHolder
 import team.mino.feature.main.placeholder.RoomFormEntryPoint
 import javax.inject.Inject
 
@@ -46,10 +54,31 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var placeDetailRequestHolder: PlaceDetailRequestHolder
 
+    /**
+     * 푸시 딥링크가 저장 탭에 남기는 방 상세 요청. 장소 상세와 같은 이유로 Route 인자가 아니라 홀더를 지난다
+     * (→ docs/specs/push-notification/contracts/push-deeplink-contract.md §4).
+     */
+    @Inject
+    lateinit var roomDetailRequestHolder: RoomDetailRequestHolder
+
+    /** 이 프로세스에서 스플래시가 Main 진입을 확정했는지. 콜드 우회 판정에만 읽는다(같은 계약 §3). */
+    @Inject
+    lateinit var mainEntryGate: MainEntryGate
+
+    /** 콜드 우회용 스플래시 Intent. 플래그는 팩토리가 걸고 여기서는 푸시 extra만 싣는다(같은 계약 §2). */
+    @Inject
+    lateinit var splashDeepLinkIntentFactory: SplashDeepLinkIntentFactory
+
     @Inject
     lateinit var profileLauncher: ProfileLauncher
 
     private var roomFormResult by mutableStateOf<String?>(null)
+
+    /**
+     * 웜 경로(`onNewIntent`)가 남기는 대기 중인 도착지 탭. NavHost가 이미 떠 있어 시작 목적지로는 못 옮기므로
+     * 상태로 들고 `MainShell`이 명령형으로 소비한 뒤 비운다(research.md D15).
+     */
+    private var pendingTab by mutableStateOf<MainTab?>(null)
 
     /** 폼이 마지막으로 돌려준 방 id. 편집 경로는 이 방을 연다. */
     private var lastRoomId by mutableStateOf<String?>(null)
@@ -62,6 +91,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // 콜드 우회는 반드시 setContent 전이어야 한다. 그 뒤로 미루면 ViewModel이 만들어져 첫 서버 요청이
+        // 세션 없이 나간다(research.md D13). 판정 범위는 푸시 extra가 있을 때뿐이다 — 최근 앱 복원은 건드리지 않는다.
+        if (bypassToSplashIfSessionNotReady()) return
         enableEdgeToEdge()
 
         // 하단 시스템 내비게이션 바 — 앱은 라이트 테마 하나로만 동작해(PRD, 다크모드 비목표) 그 바로 위는
@@ -71,6 +103,9 @@ class MainActivity : ComponentActivity() {
         // 시트별이 아니라 앱 전역에 한 번만 적용한다 — 내비게이션 바 아래는 시트 유무와 무관하게 항상 밝다.
         window.isNavigationBarContrastEnforced = false
         WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightNavigationBars = true
+
+        // 콜드 (C): 홀더 요청을 먼저 남기고 시작 목적지로 탭을 정한다(research.md D9).
+        val startTab = resolvePendingPushDestination() ?: MainTab.HOME
 
         setContent {
             MinoAndroidAppTheme {
@@ -94,8 +129,70 @@ class MainActivity : ComponentActivity() {
                             onEditLastRoom = { roomId -> launchRoomForm(roomId = roomId) },
                         ),
                     modifier = Modifier.fillMaxSize(),
+                    startTab = startTab,
+                    pendingTab = pendingTab,
+                    onPendingTabConsumed = { pendingTab = null },
                 )
             }
+        }
+    }
+
+    /**
+     * 웜 경로 — 매니페스트가 `singleTask`라 살아 있는 인스턴스에 알림 Intent가 이리로 온다(research.md D14).
+     * `setIntent`로 갈아 끼워야 [resolvePendingPushDestination]이 새 extra를 읽고, 재생성 시에도 같은 Intent를 본다.
+     */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        resolvePendingPushDestination()?.let { pendingTab = it }
+    }
+
+    /**
+     * (B) 콜드 우회. 프로세스가 죽은 채 알림을 누르면 스플래시 없이 Main이 뜨므로, 게이트가 아직 통과 표시가
+     * 아니면 TYPE·ID 두 extra만 그대로 실어 `SplashActivity`로 넘기고 끝낸다 — 시작 경로(세션 확보)를 그대로
+     * 지나게 하려는 것이다(spec FR-010). 값은 여기서 해석하지 않는다. 해석은 (C) 한 곳뿐이다(계약 §1).
+     *
+     * @return 우회했으면 `true`. 호출자는 그 자리에서 `onCreate`를 끝내야 한다.
+     */
+    private fun bypassToSplashIfSessionNotReady(): Boolean {
+        val pushType = intent.getStringExtra(EXTRA_PUSH_DESTINATION_TYPE) ?: return false
+        if (mainEntryGate.isPassed) return false
+
+        // 스플래시가 이미 진행 중이면 팩토리가 건 CLEAR_TOP이 이 Main을 정리하고 그 스플래시가 onNewIntent로 받는다(D16).
+        startActivity(
+            splashDeepLinkIntentFactory.create(this).apply {
+                putExtra(EXTRA_PUSH_DESTINATION_TYPE, pushType)
+                intent.getStringExtra(EXTRA_PUSH_DESTINATION_ID)?.let { putExtra(EXTRA_PUSH_DESTINATION_ID, it) }
+            },
+        )
+        finish()
+        return true
+    }
+
+    /**
+     * (C) 소비. 푸시 extra를 읽고 지운 뒤, 홀더에 요청을 남기고 갈 탭을 돌려준다. extra가 없으면 `null`.
+     *
+     * 지우는 이유는 회전 등 재생성 시 같은 요청이 중복 소비되지 않게 하기 위해서다(계약 §1). 홀더 요청은 탭 전환
+     * **전에** 끝나야 저장 탭이 들어오면서 요청을 본다(계약 §5). `PLACE`·`ROOM`인데 id가 없는 경우와 모르는
+     * 유형은 알림 탭으로 낙하한다(spec EC-009) — `PUSH_DESTINATION_TYPE_NOTIFICATION_TAB`도 같은 갈래다.
+     */
+    private fun resolvePendingPushDestination(): MainTab? {
+        val type = intent.getStringExtra(EXTRA_PUSH_DESTINATION_TYPE) ?: return null
+        val id = intent.getStringExtra(EXTRA_PUSH_DESTINATION_ID)
+        intent.removeExtra(EXTRA_PUSH_DESTINATION_TYPE)
+        intent.removeExtra(EXTRA_PUSH_DESTINATION_ID)
+        return when (type) {
+            PUSH_DESTINATION_TYPE_PLACE ->
+                id?.let {
+                    placeDetailRequestHolder.request(it, PlaceDetailEntryOrigin.NOTIFICATION)
+                    MainTab.SAVED
+                } ?: MainTab.NOTIFICATION
+            PUSH_DESTINATION_TYPE_ROOM ->
+                id?.let {
+                    roomDetailRequestHolder.request(it)
+                    MainTab.SAVED
+                } ?: MainTab.NOTIFICATION
+            else -> MainTab.NOTIFICATION
         }
     }
 

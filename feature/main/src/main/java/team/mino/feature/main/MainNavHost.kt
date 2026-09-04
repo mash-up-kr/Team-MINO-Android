@@ -29,10 +29,13 @@ internal fun MainNavHost(
     roomFormEntryPoint: RoomFormEntryPoint,
     initialRoomId: String? = null,
     modifier: Modifier = Modifier,
+    startTab: MainTab = MainTab.HOME,
 ) {
     MinoNavHost(
         navController = navController,
-        startDestination = if (initialRoomId != null) MainTab.SAVED.route else MainTab.HOME.route,
+        // 콜드 스타트 시작 탭을 정하는 딥링크는 둘이다 — 초대([initialRoomId])와 푸시([startTab]).
+        // 초대는 방 상세까지 지목하므로 탭만 정하는 푸시보다 앞선다.
+        startDestination = if (initialRoomId != null) MainTab.SAVED.route else startTab.route,
         modifier = modifier,
     ) {
         homeGraph(
