@@ -47,7 +47,7 @@
 
 **성능 목표**: [spec.md SC-001](./spec.md) — 방 상세 진입 후 3초 이내 지도+`Half` 시트 렌더링
 
-**제약 조건**: `Peek`(88dp)/`Half`(256dp) 고정 높이는 화면 비율이 아니라 고정 dp([spec.md §4](./spec.md)). 방 상세 진입 시 기본 시트 상태는 `Half`다 — room-list의 진입 기본값(`Half`, [room-list/spec.md FR-001])과 우연히 같은 값이지만 근거는 서로 다른 요구사항([spec.md §4](./spec.md))이라 상수를 공유하지 않는다.
+**제약 조건**: `Peek`(88dp)/`Half`(444dp) 고정 높이는 화면 비율이 아니라 고정 dp([spec.md §4](./spec.md)). 방 상세 진입 시 기본 시트 상태는 `Half`다 — room-list의 진입 기본값(`Half`, [room-list/spec.md FR-001])과 이름은 같지만 근거는 서로 다른 요구사항([spec.md §4](./spec.md))이라 상수를 공유하지 않는다.
 
 **규모/범위**: 화면 1개(`RoomDetailMain`, 시트 3단계는 화면 상태 — room-list D2 패턴 재사용), 신규 domain 모델 1종(`Place`) + repository 1종(`PlaceRepository`), 신규 feature 내부 컴포넌트(바텀시트 2종·모달 2종), `:core:navigation` 신규 공개 API 1종(`ImmersiveRoute`), 크로스 feature 계약은 `RoomFormLauncher` 재사용 1건뿐([research.md D9](./research.md))
 

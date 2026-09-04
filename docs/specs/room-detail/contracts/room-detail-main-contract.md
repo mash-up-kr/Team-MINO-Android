@@ -107,7 +107,7 @@ room-list의 [분기 규칙](../../room-list/contracts/room-list-main-contract.m
 |---|---|---|
 | `PEEK` | → `HALF` | (무시, 최하단) |
 | `HALF` | → `FULL` | → `PEEK`(88dp) |
-| `FULL` | (무시, 최상단) | → 직전 `HALF`(256dp)로 복귀 |
+| `FULL` | (무시, 최상단) | → 직전 `HALF`(444dp)로 복귀 |
 
 ## 분기 규칙 — 더보기[⋮] 위치 (FR-003)
 
