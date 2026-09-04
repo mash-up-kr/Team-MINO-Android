@@ -44,6 +44,7 @@ dependencies {
     implementation(project(":core:common:android"))
     implementation(project(":core:domain"))
     implementation(project(":core:data"))
+    implementation(project(":core:notification"))
     implementation(project(":core:design-system"))
     implementation(project(":core:common:ui"))
     // 진입형 feature만 등록한다. 탭 feature는 셸(:feature:main)을 통해 들어온다.
