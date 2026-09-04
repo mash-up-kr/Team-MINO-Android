@@ -1,9 +1,10 @@
 package team.mino.feature.room.main.component
 
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -37,7 +38,12 @@ sealed interface RoomListSheetHeight {
     /** 화면 비율이 아닌 고정 dp로 딱 자른다(대부분의 Peek/Half 단). */
     data class Fixed(val height: Dp) : RoomListSheetHeight
 
-    /** 이 dp 이상을 보장하되, 내용이 넘치면 시트가 그만큼 커지게 둔다. */
+    /**
+     * 이 dp 이상을 보장하되, 내용이 넘치면 시트가 그만큼 커지게 둔다.
+     *
+     * **이 단으로/에서 전환할 때는 애니메이션되지 않고 순간 전환된다.** 내용이 정하는 높이라 미리 알
+     * 목표 dp가 없다 — [RoomListDraggableSheet]의 부드러운 전환은 `Fixed`↔`Full` 사이에서만 동작한다.
+     */
     data class AtLeast(val minHeight: Dp) : RoomListSheetHeight
 
     /** 화면 전체를 채운다 — 지도 등 뒤 배경이 안 보이므로 [RoomListDraggableSheet]가 [fullShape]를 적용한다. */
@@ -149,25 +155,36 @@ internal fun RoomListDraggableSheet(
         null
     }
 
-    val heightModifier = when (currentHeight) {
-        is RoomListSheetHeight.Fixed -> Modifier.height(currentHeight.height)
-        is RoomListSheetHeight.AtLeast -> Modifier.heightIn(min = currentHeight.minHeight)
-        RoomListSheetHeight.Full -> Modifier.fillMaxSize()
-        RoomListSheetHeight.WrapContent -> Modifier
-    }
+    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+        // `Fixed`·`Full`끼리 전환할 때만 애니메이션한다 — `AtLeast`는 내용이 정하는 높이라 미리 알
+        // 목표값이 없고(억지로 하나 잡으면 그 값으로 딱 잘려 원래 이 타입을 도입한 이유였던 내용 잘림이
+        // 재현된다), `WrapContent`는 단일 단계라 전환 자체가 없다.
+        val animatedTargetDp = when (currentHeight) {
+            is RoomListSheetHeight.Fixed -> currentHeight.height
+            RoomListSheetHeight.Full -> maxHeight
+            else -> null
+        }?.let { animateDpAsState(it, label = "RoomListSheetHeight").value }
 
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .then(heightModifier)
-            .surface(shape = if (isFull) fullShape else shape, containerColor = containerColor)
-            .then(if (nestedScrollConnection != null) Modifier.nestedScroll(nestedScrollConnection) else Modifier),
-    ) {
-        Column(modifier = Modifier.fillMaxWidth().then(dragModifier)) {
-            handle()
-            header()
+        val heightModifier = when (currentHeight) {
+            is RoomListSheetHeight.Fixed -> Modifier.height(animatedTargetDp ?: currentHeight.height)
+            is RoomListSheetHeight.AtLeast -> Modifier.heightIn(min = currentHeight.minHeight)
+            RoomListSheetHeight.Full -> Modifier.height(animatedTargetDp ?: maxHeight)
+            RoomListSheetHeight.WrapContent -> Modifier
         }
-        content()
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(heightModifier)
+                .surface(shape = if (isFull) fullShape else shape, containerColor = containerColor)
+                .then(if (nestedScrollConnection != null) Modifier.nestedScroll(nestedScrollConnection) else Modifier),
+        ) {
+            Column(modifier = Modifier.fillMaxWidth().then(dragModifier)) {
+                handle()
+                header()
+            }
+            content()
+        }
     }
 }
 
