@@ -42,7 +42,7 @@ internal class HomeDeckRepositoryImpl @Inject constructor(
             .listRooms()
             .sortedWith(
                 compareByDescending<RoomSummaryResponse> { it.type == PERSONAL_TYPE_IDENTIFIER }
-                    .thenBy { Instant.parse(it.createdAt) },
+                    .thenBy(nullsLast<Instant>()) { it.createdAt.toCreatedAtOrNull() },
             ).map { it.toDomain() }
 
     /**
@@ -71,3 +71,15 @@ internal class HomeDeckRepositoryImpl @Inject constructor(
         return Deck(roomId = roomId, sort = sort, cards = cards.map { it.toDomain() })
     }
 }
+
+/**
+ * 생성 시각을 읽되 **읽히지 않으면 `null`이다.**
+ *
+ * [RoomSummaryResponse.createdAt]은 기본값 `""`를 갖는다 — 서버가 필드를 빼도 파싱이 깨지지 않게 한 방어인데,
+ * 그 값을 [Instant.parse]에 그대로 넣으면 예외가 나 **방 목록 전체가** 떨어진다. 그 예외는
+ * `MinoDomainException`이 아니라 `runCatchingDomain`도 잡지 않으므로 홈 첫 화면이 통째로 실패한다.
+ *
+ * 「방 하나의 값이 어긋났다는 이유로 목록 전체가 실패하면 안 된다」는 `RoomSummaryMapper`의 규칙을 정렬 키를
+ * 만드는 이 자리까지 잇는다. 읽히지 않은 방은 `nullsLast`로 순회 맨 뒤로 밀린다 — 순서를 잃을 뿐 목록은 산다.
+ */
+private fun String.toCreatedAtOrNull(): Instant? = runCatching { Instant.parse(this) }.getOrNull()

@@ -90,7 +90,12 @@ class HomeDeckRepositoryImplTest {
         runTest {
             // 응답 순서에 기대지 않는다는 것까지 함께 잡기 위해, 원래 순서(개인방-A-B)와 다르게 뒤섞어 넣는다
             // (FR-012, R-014). 개인방이 어디 끼어 있어도 최상단으로 올라와야 한다.
-            val personal = roomSummaryResponse(id = "room-personal", type = "personal", createdAt = "2026-01-01T00:00:00Z")
+            val personal =
+                roomSummaryResponse(
+                    id = "room-personal",
+                    type = "personal",
+                    createdAt = "2026-01-01T00:00:00Z",
+                )
             val groupA = roomSummaryResponse(id = "room-group-a", type = "shared", createdAt = "2026-01-02T00:00:00Z")
             val groupB = roomSummaryResponse(id = "room-group-b", type = "shared", createdAt = "2026-01-03T00:00:00Z")
             val roomRemoteDataSource = StubRoomRemoteDataSource(rooms = listOf(groupB, groupA, personal))
@@ -105,6 +110,36 @@ class HomeDeckRepositoryImplTest {
             assertEquals(
                 "개인방이 먼저, 그다음 공동방은 만든 지 오래된 순이어야 한다(TS-019a)",
                 listOf("room-personal", "room-group-a", "room-group-b"),
+                summaries.map { it.id },
+            )
+        }
+
+    @Test
+    fun `생성 시각을 읽을 수 없는 방이 있어도 목록이 떨어지지 않고 맨 뒤로 밀린다`() =
+        runTest {
+            // 서버가 createdAt을 빼면 DTO 기본값 ""가 남는다. 그 값이 정렬 키로 들어가도 목록 전체가 실패하지
+            // 않아야 한다 — 「방 하나의 값이 어긋났다는 이유로 목록 전체가 실패하면 안 된다」는 RoomSummaryMapper의
+            // 규칙을 정렬까지 이은 것이다. 예외가 나면 MinoDomainException이 아니라 홈 첫 화면이 통째로 죽는다.
+            val personal =
+                roomSummaryResponse(
+                    id = "room-personal",
+                    type = "personal",
+                    createdAt = "2026-01-01T00:00:00Z",
+                )
+            val groupA = roomSummaryResponse(id = "room-group-a", type = "shared", createdAt = "2026-01-02T00:00:00Z")
+            val broken = roomSummaryResponse(id = "room-broken", type = "shared", createdAt = "")
+            val roomRemoteDataSource = StubRoomRemoteDataSource(rooms = listOf(broken, groupA, personal))
+            val repositoryWithRooms =
+                HomeDeckRepositoryImpl(
+                    deckRemoteDataSource = deckRemoteDataSource,
+                    roomRemoteDataSource = roomRemoteDataSource,
+                )
+
+            val summaries = repositoryWithRooms.getRoomSummaries()
+
+            assertEquals(
+                "읽히지 않은 생성 시각은 순서를 잃을 뿐 목록에서 사라지지 않는다",
+                listOf("room-personal", "room-group-a", "room-broken"),
                 summaries.map { it.id },
             )
         }
