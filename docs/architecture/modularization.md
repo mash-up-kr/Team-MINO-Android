@@ -57,6 +57,10 @@ Android SDK 기반 공용 유틸리티 (Context 확장, Intent 헬퍼 등).
 분석 — 이벤트 로깅(`AnalyticsTracker`)과 화면 조회 자동 로깅(`TrackScreenViews`).
 → Android Library (Compose)
 
+### `:core:notification`
+FCM — `FirebaseMessagingService`·알림 채널·딥링크 `PendingIntent` 조립.
+→ Android Library
+
 ### `:feature:splash` (진입형)
 앱의 런처 진입점. `MAIN`·`LAUNCHER` intent-filter를 소유하고, 익명 세션 확보와 프로필 등록 여부로 온보딩·메인 탭을 가른다. 다른 feature가 이 화면을 여는 일이 없어 `XLauncher` 계약을 갖지 않는 유일한 진입형이다.
 → Android Library (Compose)
@@ -105,6 +109,7 @@ flowchart TD
     main[":feature:main<br/>탭 셸"]
     tab[":feature:h<br/>탭"]
     nav[":core:navigation"]
+    notification[":core:notification"]
     data[":core:data"]
     domain[":core:domain"]
     design[":core:design-system"]
@@ -115,6 +120,7 @@ flowchart TD
     app --> x
     app --> main
     app --> data
+    app --> notification
 
     main -- "탭 그래프 등록 (예외)" --> tab
     x -- "전환 계약" --> nav
@@ -130,6 +136,8 @@ flowchart TD
 
     data --> domain
     data --> android
+    notification --> domain
+    notification --> nav
     ui --> design
     ui --> android
     domain --> kotlin
