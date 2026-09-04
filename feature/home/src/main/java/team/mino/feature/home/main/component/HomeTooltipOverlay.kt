@@ -55,8 +55,11 @@ internal fun HomeTooltipOverlay(
         lastShown?.let {
             MinoTooltip(
                 text = it.message(),
-                position = TooltipPosition.Bottom,
-                align = TooltipAlign.End,
+                // MinoTooltip의 position은 "앵커 기준 말풍선이 놓이는 방향"이라 화살표는 그 반대편에
+                // 붙는다(KDoc) — 캐릭터가 이 툴팁의 오른쪽에 있으므로 본문은 Left(캐릭터의 왼쪽)에 놓고
+                // 화살표를 캐릭터를 향한 오른쪽 변에 붙인다(R-016, contracts/home-ui.md §5).
+                position = TooltipPosition.Left,
+                align = TooltipAlign.Center,
             )
         }
     }

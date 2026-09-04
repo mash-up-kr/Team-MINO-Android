@@ -26,10 +26,10 @@ sealed interface NextDeck {
     data class SameRoom(val sort: DeckSort) : NextDeck
 
     /**
-     * 현재 방의 세 덱이 모두 소진돼 다음 방으로 넘어간다. 정렬을 무엇으로 시작할지는 여기 담지 않는다 —
-     * 방이 바뀌면 항상 최우선 정렬로 초기화되므로 값으로 실어 보낼 것이 없다.
+     * 현재 방의 세 덱이 모두 소진돼 다음 방으로 넘어간다. 자동 전환은 정렬을 유지하므로(FR-012)
+     * [sort]가 그 다음 방에서 보여줄 정렬이다 — 종전처럼 방 전환 시 최우선 정렬로 초기화된다고 가정하지 않는다.
      */
-    data class NextRoom(val roomId: String) : NextDeck
+    data class NextRoom(val roomId: String, val sort: DeckSort) : NextDeck
 
     /** 순회할 방이 더 없다. 볼 것이 없는 상태(`Empty`)와는 다른 화면이다. */
     data object AllExhausted : NextDeck

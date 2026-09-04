@@ -8,8 +8,12 @@ import team.mino.core.domain.model.RoomType
  * 개인방의 서버 표현. 표의 소유자는 `docs/specs/shared-link-receiver/contracts/room-list-api.md` §1.1이다.
  *
  * 공동방(`"shared"`)을 짝으로 두지 않는 이유는 아래 [toRoomType]에 적었다.
+ *
+ * `internal`인 이유 — `HomeDeckRepositoryImpl.getRoomSummaries`가 개인방을 최상단에 고정하는 순회 순서를
+ * 확정할 때도 같은 식별자로 판정해야 하므로(`docs/specs/home-deck-exploration/contracts/deck-api.md` §3.1),
+ * 이 파일 하나에 갇혀 있으면 안 된다.
  */
-private const val PERSONAL_TYPE_IDENTIFIER = "personal"
+internal const val PERSONAL_TYPE_IDENTIFIER = "personal"
 
 /**
  * 썸네일 콜라주가 그릴 수 있는 최대 장수.

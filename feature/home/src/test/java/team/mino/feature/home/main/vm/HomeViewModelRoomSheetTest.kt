@@ -22,13 +22,16 @@ import team.mino.core.domain.model.RoomType
 import team.mino.core.domain.usecase.ResolveNextDeckUseCase
 import team.mino.feature.home.fake.FakeHomeDeckRepository
 import team.mino.feature.home.fake.FakeHomePreferencesRepository
+import team.mino.feature.home.fake.FakePlaceRepository
+import team.mino.feature.home.main.model.HomePhase
 import team.mino.feature.home.main.model.HomeTooltip
 
 /**
  * 「홈 방 시트」를 열고, 방을 고르고, 그냥 닫는 세 갈래를 판정한다.
  *
- * 다루는 범위는 TS-025·026(뱃지·캐릭터로 열기), TS-028(방 선택 즉시 적용), EC-014(현재 방 재선택)이다.
- * 규칙의 원문은 `spec.md` FR-017·FR-018과 `contracts/home-ui.md` §2가 소유한다.
+ * 다루는 범위는 TS-025·026(뱃지·캐릭터로 열기), TS-028·028a·028b·028c(방 선택 즉시 적용과 그 안의
+ * 정렬 초기화·소진 처리), EC-014(현재 방 재선택)·EC-020(장소 0개인 방)·EC-021(소진한 방 재선택)이다.
+ * 규칙의 원문은 `spec.md` FR-017·FR-018·FR-024와 `contracts/home-ui.md` §2·§4.1이 소유한다.
  *
  * **시트를 여는 두 입구(방 뱃지·방 캐릭터)는 여기서 한 케이스다.** 계약이 둘을 같은
  * [HomeIntent.OpenRoomSheet] 하나로 받기로 했으므로(§2), ViewModel은 어디를 눌러 왔는지 알지 못한다.
@@ -39,6 +42,7 @@ import team.mino.feature.home.main.model.HomeTooltip
  * | 미검증 | 메우는 것 |
  * |---|---|
  * | 3열 그리드·70dp 썸네일·첫 칸 `방 만들기`(FR-018, TS-027) | 시트 Composable — 이번 실행에서 보류 |
+ * | 장소 0개인 방도 시트에서 체크·비활성으로 막지 않는 것(EC-022) | 시트 Composable(T101) |
  * | EC-015 `방 만들기` 선택 → [HomeSideEffect.NavigateToRoomForm] | **대응 Intent가 계약에 없다.** 첫 칸은 방 선택이 아니라 별개 입구여서 [HomeIntent.SelectRoom]으로 대신 쏠 수 없다 |
  * | 방 전환 툴팁이 3초 뒤 사라지는 것(FR-016) | 툴팁 수명을 소유하는 전환 테스트(T041) |
  * | 가이드가 떠 있는 동안 시트 Intent가 버려지는 것(FR-019, TS-030) | 가이드 테스트(T056) |
@@ -49,6 +53,7 @@ import team.mino.feature.home.main.model.HomeTooltip
 class HomeViewModelRoomSheetTest {
     private val deckRepository = FakeHomeDeckRepository()
     private val preferencesRepository = FakeHomePreferencesRepository()
+    private val placeRepository = FakePlaceRepository()
 
     @Before
     fun setUp() {
@@ -101,7 +106,7 @@ class HomeViewModelRoomSheetTest {
      * [HomeIntent.SelectRoom] 하나가 도착하면 시트는 닫혀 있고 새 방의 덱이 이미 실려 있어야 한다.
      *
      * **정렬을 기본값에서 옮겨 두고 시작한다.** 그러지 않으면 `꾹 Pick`으로 돌아왔다는 판정이 아무것도 하지 않은
-     * 구현에서도 성립한다(FR-012·013).
+     * 구현에서도 성립한다(FR-012·013). 이 「정렬이 `꾹 Pick`으로 되감긴다」가 TS-028a다.
      *
      * 마지막 방 저장(FR-022)을 여기서 함께 보는 것은 그것이 **상태로 드러나지 않기 때문**이다. 다음 실행에서만
      * 보이는 쓰기라 여기서 세지 않으면 통째로 빠뜨린 구현이 통과한다.
@@ -137,6 +142,73 @@ class HomeViewModelRoomSheetTest {
                 "방을 바꿨으면 다음 실행에서 돌아올 방이 저장돼야 한다",
                 OTHER_ROOM_ID,
                 preferencesRepository.recordedLastRoomIds.lastOrNull(),
+            )
+        }
+
+    /**
+     * 고른 방의 `꾹 Pick`이 이미 소진이면 **탐색 범위를 그 방 안으로 한정**해 남은 덱 중 최고 순위를 연다
+     * (FR-024, TS-028b). 다른 방(room-1)이 `꾹 Pick`을 갖고 있어도 그리로 넘어가면 안 된다 —
+     * `ResolveRoomEntryDeckUseCase`는 `NextRoom`을 절대 내지 않는다(`contracts/home-ui.md` §4.1).
+     *
+     * **다른 방(room-1)에도 미소진 `꾹 Pick`을 심어 둔다.** 그러지 않으면 자동 전환용
+     * `ResolveNextDeckUseCase`로 처리해도 이 케이스가 우연히 통과한다 — room-1이 격자 순회에서 room-2보다
+     * 앞자리라 자동 전환은 그리로 튕긴다. 이 테스트가 잡는 것이 바로 그 튕김이다.
+     */
+    @Test
+    fun `시트에서 고른 방의 꾹 Pick이 소진이면 다른 방으로 넘기지 않고 그 방의 남은 정렬을 연다`() =
+        runTest {
+            deckRepository.setDeck(ROOM_ID, DeckSort.GGUK_PICK, cards(count = 3, prefix = "room1-gguk"))
+            deckRepository.setDeck(OTHER_ROOM_ID, DeckSort.GGUK_PICK, emptyList())
+            val otherLatest = cards(count = 2, prefix = "room2-latest")
+            deckRepository.setDeck(OTHER_ROOM_ID, DeckSort.LATEST, otherLatest)
+            val viewModel = createViewModel()
+            val deckRequestsBeforeSelect = deckRepository.deckRequests.size
+
+            viewModel.processIntent(HomeIntent.OpenRoomSheet)
+            viewModel.processIntent(HomeIntent.SelectRoom(OTHER_ROOM_ID))
+
+            val state = viewModel.state.value
+            assertFalse(state.isRoomSheetOpen)
+            assertEquals("다른 방으로 넘어가면 안 된다 — FR-024·SC-008", OTHER_ROOM_ID, state.room?.id)
+            assertEquals("소진된 꾹 Pick 대신 남은 최고 순위 정렬이 떠야 한다", DeckSort.LATEST, state.sort)
+            assertEquals(otherLatest, state.cards.toList())
+
+            val newRequests = deckRepository.deckRequests.drop(deckRequestsBeforeSelect)
+            assertTrue(
+                "room-2를 골랐는데 room-1로 덱 요청이 나가면 다른 방으로 튕긴 것이다",
+                newRequests.all { it.roomId == OTHER_ROOM_ID },
+            )
+        }
+
+    /**
+     * 고른 방의 저장 장소가 0개면 세 정렬이 모두 후보 0건이라 **그 방의 뱃지·캐릭터를 단 채** 완료 안내로
+     * 간다(FR-024, FR-014, TS-028c, EC-020). 다른 방(room-1)에 볼 것이 남아 있어도 그리로 넘기지 않는다
+     * (SC-008).
+     *
+     * 덱 요청 수가 시작 때 그대로인 것으로 「넘기지 않았다」를 확인한다 — room-2는 저장 장소가 0개라 애초에
+     * 덱을 묻지 않고, room-1은 이미 보고 있던 방이라 다시 물을 이유가 없다. 요청이 하나라도 늘면 room-1로
+     * 자동 전환을 태운 것이다.
+     */
+    @Test
+    fun `시트에서 저장 장소가 0개인 방을 고르면 그 방을 단 채 완료 안내로 간다`() =
+        runTest {
+            deckRepository.rooms = listOf(roomSummary(ROOM_ID), roomSummary(OTHER_ROOM_ID, placeCount = 0))
+            deckRepository.setDeck(ROOM_ID, DeckSort.GGUK_PICK, cards(count = 3))
+            val viewModel = createViewModel()
+            val deckRequestsBeforeSelect = deckRepository.deckRequests.size
+
+            viewModel.processIntent(HomeIntent.OpenRoomSheet)
+            viewModel.processIntent(HomeIntent.SelectRoom(OTHER_ROOM_ID))
+
+            val state = viewModel.state.value
+            assertFalse(state.isRoomSheetOpen)
+            assertEquals("다른 방으로 넘어가면 안 된다 — SC-008", OTHER_ROOM_ID, state.room?.id)
+            assertEquals(HomePhase.ALL_EXHAUSTED, state.phase)
+            assertTrue(state.cards.isEmpty())
+            assertEquals(
+                "room-2는 애초에 덱을 묻지 않고, room-1로도 넘기지 않았으면 요청이 늘지 않는다",
+                deckRequestsBeforeSelect,
+                deckRepository.deckRequests.size,
             )
         }
 
@@ -191,6 +263,53 @@ class HomeViewModelRoomSheetTest {
         }
 
     /**
+     * 이미 소진한 방(EC-020으로 완료 안내에 가 있는 방)을 시트에서 다시 골라도 **소진 상태가 되살아나지
+     * 않는다**(FR-024, EC-021). 덱을 다시 채워 주면 같은 방을 반복해 고르는 것이 스펙아웃된
+     * `장소 더 보기`의 우회로가 된다(spec §3.2) — 그래서 재선택은 새 덱 요청 없이 완료 안내 그대로여야 한다.
+     *
+     * **다른 방(room-1)을 한 번 거쳐 되돌아온다.** room-2가 계속 현재 방이면 이 재선택이 EC-014("현재 방
+     * 재선택")와 구별되지 않는다 — room-1로 옮겼다가 다시 room-2를 골라야 "이미 소진한 다른 방을 다시
+     * 고른" 것이 된다.
+     */
+    @Test
+    fun `이미 소진한 방을 다시 골라도 소진 상태가 되살아나지 않는다`() =
+        runTest {
+            deckRepository.rooms = listOf(roomSummary(ROOM_ID), roomSummary(OTHER_ROOM_ID, placeCount = 0))
+            deckRepository.setDeck(ROOM_ID, DeckSort.GGUK_PICK, cards(count = 3))
+            val viewModel = createViewModel()
+
+            viewModel.processIntent(HomeIntent.OpenRoomSheet)
+            viewModel.processIntent(HomeIntent.SelectRoom(OTHER_ROOM_ID))
+            assertEquals(
+                "이 테스트의 전제가 성립하려면 room-2가 먼저 완료 안내에 가 있어야 한다",
+                HomePhase.ALL_EXHAUSTED,
+                viewModel.state.value.phase,
+            )
+
+            // room-1로 옮겨 room-2가 "현재 방"이 아니게 만든다 — 그래야 다음 SelectRoom(room-2)이
+            // EC-014(현재 방 재선택)가 아니라 EC-021(소진한 다른 방 재선택)이 된다.
+            viewModel.processIntent(HomeIntent.OpenRoomSheet)
+            viewModel.processIntent(HomeIntent.SelectRoom(ROOM_ID))
+            assertEquals(ROOM_ID, viewModel.state.value.room?.id)
+
+            val deckRequestsBeforeReselect = deckRepository.deckRequests.size
+
+            viewModel.processIntent(HomeIntent.OpenRoomSheet)
+            viewModel.processIntent(HomeIntent.SelectRoom(OTHER_ROOM_ID))
+
+            val state = viewModel.state.value
+            assertFalse(state.isRoomSheetOpen)
+            assertEquals(OTHER_ROOM_ID, state.room?.id)
+            assertEquals("소진 상태가 되살아나면 안 된다", HomePhase.ALL_EXHAUSTED, state.phase)
+            assertTrue(state.cards.isEmpty())
+            assertEquals(
+                "이미 소진한 방을 다시 골랐는데 덱 요청이 나가면 소진 상태를 되살리려 한 것이다",
+                deckRequestsBeforeReselect,
+                deckRepository.deckRequests.size,
+            )
+        }
+
+    /**
      * 방을 고르지 않고 닫으면 연 적 없는 것과 같은 상태로 돌아온다(FR-017). 여닫기가 진행 상태를 축내지 않는다.
      *
      * **전제부터 단언한다.** "아무 변화 없음"은 아무것도 하지 않는 구현에서도 성립하므로, 덱이 실려 있는지와
@@ -224,6 +343,7 @@ class HomeViewModelRoomSheetTest {
         HomeViewModel(
             homeDeckRepository = deckRepository,
             homePreferencesRepository = preferencesRepository,
+            placeRepository = placeRepository,
             resolveNextDeck = ResolveNextDeckUseCase(),
         )
 
@@ -246,15 +366,21 @@ class HomeViewModelRoomSheetTest {
     /** 방 전환 툴팁이 담는 것은 방 이름이라(FR-016) 세우는 쪽과 단언하는 쪽이 같은 규칙을 쓰게 한다. */
     private fun roomName(id: String): String = "$id 방"
 
-    /** 방 전환 대상이 되도록 [RoomSummary.placeCount]를 0보다 크게 둔다(FR-013). */
-    private fun roomSummary(id: String): RoomSummary =
+    /**
+     * 기본은 [RoomSummary.placeCount]를 0보다 크게 둔다(FR-013) — 방 전환 대상이 되려면 필요하다.
+     * [placeCount]를 0으로 주면 TS-028c·EC-020·EC-021이 쓰는 「저장 장소가 0개인 방」이 된다.
+     */
+    private fun roomSummary(
+        id: String,
+        placeCount: Int = 10,
+    ): RoomSummary =
         RoomSummary(
             id = id,
             name = roomName(id),
             description = "",
             type = RoomType.GROUP,
             color = RoomColor.GRAY,
-            placeCount = 10,
+            placeCount = placeCount,
             thumbnailImageUrls = emptyList(),
         )
 
