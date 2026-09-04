@@ -309,6 +309,11 @@ internal class HomeViewModel
          * `onExhausted`로 넘겨 같은 방 안에서 다시 판정한다 — [ResolveRoomEntryDeckUseCase]는 애초에
          * [NextDeck.NextRoom]을 내지 않는다(FR-024, SC-008). 재귀는 최대 3단계(정렬 셋을 각각 한 번씩
          * 소진 처리)로 반드시 [NextDeck.AllExhausted]에 닿아 끝난다.
+         *
+         * **완료 안내와 빈 상태를 가르는 기준은 [advance]와 같다**(EC-011·EC-020). 「고른 방**만** 비어 있으면
+         * 완료 안내, 모든 방을 통틀어 볼 장소가 없으면 빈 상태」가 spec §5의 확정이고, 후자를 가리는 값이
+         * [hasShownCard]다 — 이 값이 거짓이면 순회가 어느 방에서도 카드를 못 띄웠다는 뜻이라
+         * `[공동방 만들기]` CTA가 붙은 빈 상태가 맞다(FR-020).
          */
         private suspend fun enterRoom(room: RoomSummary) {
             when (val next = resolveRoomEntryDeck(deckContext(room.id, exhausted), room.id)) {
@@ -326,7 +331,8 @@ internal class HomeViewModel
                             room = room,
                             isRoomSheetOpen = false,
                             sort = DeckSort.GGUK_PICK,
-                            phase = HomePhase.ALL_EXHAUSTED,
+                            // 볼 것이 있었는지가 완료 안내와 빈 상태 안내를 가른다(EC-011, EC-020, FR-020).
+                            phase = if (hasShownCard) HomePhase.ALL_EXHAUSTED else HomePhase.EMPTY,
                             cards = persistentListOf(),
                             isTransitioning = false,
                             undoStack = persistentListOf(),
