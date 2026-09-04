@@ -31,6 +31,7 @@ import team.mino.core.domain.model.RoomThumbnail
 import team.mino.core.domain.usecase.EnsureAnonymousSessionUseCase
 import team.mino.core.navigation.entry.PlaceDetailEntryOrigin
 import team.mino.core.navigation.entry.PlaceDetailRequestHolder
+import team.mino.core.navigation.entry.RoomDetailRequestHolder
 import team.mino.feature.room.fake.FakeAnonymousAuthRepository
 import team.mino.feature.room.fake.FakeLocationContext
 import team.mino.feature.room.fake.FakePlaceRepository
@@ -64,6 +65,7 @@ class RoomListViewModelTest {
 
     /** 홀더는 요청을 담는 그릇일 뿐이라 테스트 더블을 두지 않고 실물을 쓴다. */
     private val placeDetailRequestHolder = PlaceDetailRequestHolder()
+    private val roomDetailRequestHolder = RoomDetailRequestHolder()
     private val roomPreferencesRepository = FakeRoomPreferencesRepository()
 
     @Before
@@ -644,6 +646,7 @@ class RoomListViewModelTest {
             ensureAnonymousSessionUseCase = EnsureAnonymousSessionUseCase(FakeAnonymousAuthRepository()),
             placeRepository = placeRepository,
             placeDetailRequestHolder = placeDetailRequestHolder,
+            roomDetailRequestHolder = roomDetailRequestHolder,
             roomFormLauncher = FakeRoomFormLauncher(),
         )
 
