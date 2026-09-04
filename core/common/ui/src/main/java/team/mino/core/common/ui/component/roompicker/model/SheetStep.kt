@@ -1,4 +1,4 @@
-package team.mino.feature.sharereceiver.picker.model
+package team.mino.core.common.ui.component.roompicker.model
 
 /**
  * 방 선택 시트가 멈춰 서는 단계.
@@ -9,7 +9,7 @@ package team.mino.feature.sharereceiver.picker.model
  *
  * 방이 몇 개든 단계는 이 둘뿐이다(spec EC-005 · TS-020). 방이 적으면 카드 아래가 빌 뿐 단계가 줄지 않는다.
  */
-internal enum class SheetStep {
+enum class SheetStep {
     /** 진입 기본값. */
     PEEK,
 

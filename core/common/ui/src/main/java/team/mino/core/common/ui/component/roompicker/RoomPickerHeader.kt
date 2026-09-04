@@ -1,4 +1,4 @@
-package team.mino.feature.sharereceiver.picker.component
+package team.mino.core.common.ui.component.roompicker
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -11,10 +11,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import team.mino.core.common.ui.R
 import team.mino.core.designsystem.theme.MinoAndroidAppTheme
 import team.mino.core.designsystem.theme.MinoAndroidTheme
 import team.mino.core.designsystem.util.preview.UiModePreviews
-import team.mino.feature.sharereceiver.R
 
 /**
  * 시트 맨 위에 고정으로 놓이는 제목·안내 두 줄. 목록이 스크롤해도 움직이지 않고, 방이 하나도 없는
@@ -25,7 +25,7 @@ import team.mino.feature.sharereceiver.R
  * 시트 손잡이는 여기 없다 — [RoomPickerSheet]가 갖는다.
  */
 @Composable
-internal fun RoomPickerHeader(modifier: Modifier = Modifier) {
+fun RoomPickerHeader(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -39,12 +39,12 @@ internal fun RoomPickerHeader(modifier: Modifier = Modifier) {
         horizontalAlignment = Alignment.Start,
     ) {
         Text(
-            text = stringResource(R.string.sharereceiver_header_title),
+            text = stringResource(R.string.room_picker_header_title),
             style = MinoAndroidTheme.typography.heading2Bold,
             color = MinoAndroidTheme.colors.labelNormal,
         )
         Text(
-            text = stringResource(R.string.sharereceiver_header_subtitle),
+            text = stringResource(R.string.room_picker_header_subtitle),
             style = MinoAndroidTheme.typography.label1NormalRegular,
             color = MinoAndroidTheme.colors.labelNeutral,
         )
