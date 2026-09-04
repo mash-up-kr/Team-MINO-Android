@@ -21,9 +21,7 @@ internal data object MyPageMain : Route
  * `ProfileLauncher`로 여는 것이 셸(Activity)의 책임이다(`docs/specs/profile/contracts/profile-launcher-contract.md`
  * §호출 방법 — 마이페이지 진입). 이 함수는 그 실행을 셸에서 받은 콜백으로만 위임받는다.
  */
-fun NavGraphBuilder.mypageGraph(
-    onNavigateToProfileEdit: () -> Unit,
-) {
+fun NavGraphBuilder.mypageGraph(onNavigateToProfileEdit: () -> Unit) {
     graph<MyPageGraph>(startDestination = MyPageMain) {
         screen<MyPageMain> {
             MyPageRoute(
