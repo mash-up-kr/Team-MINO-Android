@@ -9,7 +9,6 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -42,6 +41,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowInsetsControllerCompat
+import kotlinx.collections.immutable.persistentListOf
 import team.mino.core.designsystem.component.actionarea.ActionAreaAction
 import team.mino.core.designsystem.component.actionarea.MinoActionArea
 import team.mino.core.designsystem.component.button.ButtonSize
@@ -51,7 +51,6 @@ import team.mino.core.designsystem.foundation.icons.MinoIcons
 import team.mino.core.designsystem.foundation.icons.icons.Plus
 import team.mino.core.designsystem.theme.MinoAndroidTheme
 import team.mino.core.designsystem.util.modifier.clickable.singleClickable
-import team.mino.core.designsystem.util.modifier.surface.surface
 import team.mino.feature.room.R
 
 /**
@@ -140,7 +139,6 @@ private object RoomNudgeAutoSheetTokens {
     val HandleSize = DpSize(38.dp, 4.dp)
     val HandleShape = RoundedCornerShape(4.dp)
     val HandleVerticalPadding = 12.dp
-    val DragDismissThreshold = 24.dp
     val ContentPadding = 20.dp
     val ContentSpacing = 24.dp
     val TitleSubtitleSpacing = 8.dp
@@ -208,15 +206,16 @@ internal fun RoomNudgeAutoSheet(
     DisposableEffect(visible, isDarkTheme, activity) {
         val window = activity?.window
         val controller = window?.let { WindowInsetsControllerCompat(it, view) }
+        // 시스템이 대비 확보용으로 얹는 스크림은 함께 끈다 — 이미 깔린 딤 위에 한 번 더 덮여 상태바
+        // 자리만 유독 시커멓게 보인다(실기기 확인). `MainActivity.onCreate`가 끄는 건 내비게이션 바
+        // 뿐이라(항상 흰 배경 위) 상태바는 이 시트처럼 딤이 뜨는 화면마다 직접 껐다 켜야 한다
+        // (`SheetParts.kt`의 `LightStatusBarIcons`와 같은 이유).
         if (visible) {
-            // 밝은(흰) 상태바 아이콘으로 바꾸면 시스템이 대비 확보용 스크림을 자동으로 얹어, 이미
-            // 있는 우리 딤 위에 한 번 더 덮여 상태바 자리가 시커멓게 보인다(실기기 확인된 결함) —
-            // 우리 딤 자체가 대비를 이미 확보하므로 시스템 스크림은 끈다.
             window?.isStatusBarContrastEnforced = false
             controller?.isAppearanceLightStatusBars = false
         }
         // visible이 true→false로 바뀌면 이 onDispose가 먼저 실행돼 원래 값으로 되돌리므로, else
-        // 분기로 같은 두 줄을 한 번 더 반복할 필요가 없다.
+        // 분기로 같은 줄을 한 번 더 반복할 필요가 없다.
         onDispose {
             controller?.isAppearanceLightStatusBars = !isDarkTheme
             window?.isStatusBarContrastEnforced = true
@@ -266,57 +265,60 @@ internal fun RoomNudgeAutoSheet(
             // 위치)와 그 아래 내비게이션 바 높이만큼의 흰 연장 스트립을 합친 자연 높이가 정확히
             // 부풀린 하단(=실제 화면 하단)에 맞물려, 카드 자체는 원래 자리에서 한 치도 움직이지 않는다.
             Column(modifier = Modifier.fillMaxWidth()) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .surface(
-                            shape = RoomNudgeAutoSheetTokens.SheetShape,
-                            containerColor = MinoAndroidTheme.colors.backgroundElevatedNormal,
-                        )
-                        // 시트가 히트 테스트에 잡혀야 그 위의 탭이 뒤의 딤으로 내려가 닫히지 않는다.
-                        .pointerInput(Unit) {},
-                ) {
-                    RoomNudgeAutoSheetDragHandle(onDraggedDown = onDismissRequest)
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(RoomNudgeAutoSheetTokens.ContentPadding),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.room_nudge_illustration),
-                            contentDescription = null,
-                            contentScale = ContentScale.Fit,
-                            modifier = Modifier.size(RoomNudgeAutoSheetTokens.IllustrationSize),
-                        )
-                        Text(
+                // 단일 단계(레벨 전환 없음) 시트라 heights는 1개짜리 목록이다 — RoomInviteSheet와
+                // 같은 이유(#290, #144).
+                RoomListDraggableSheet(
+                    levelIndex = 0,
+                    heights = persistentListOf(RoomListSheetHeight.WrapContent),
+                    onDraggedUp = {},
+                    onDraggedDown = {},
+                    onDismiss = onDismissRequest,
+                    // 시트가 히트 테스트에 잡혀야 그 위의 탭이 뒤의 딤으로 내려가 닫히지 않는다.
+                    modifier = Modifier.pointerInput(Unit) {},
+                    shape = RoomNudgeAutoSheetTokens.SheetShape,
+                    handle = { RoomNudgeAutoSheetDragHandle() },
+                    header = {
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(top = RoomNudgeAutoSheetTokens.ContentSpacing),
-                            text = "공동방을 생성해보세요!",
-                            color = MinoAndroidTheme.colors.primaryNormal,
-                            style = MinoAndroidTheme.typography.title3Bold,
-                            textAlign = TextAlign.Center,
+                                .padding(RoomNudgeAutoSheetTokens.ContentPadding),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.room_nudge_illustration),
+                                contentDescription = null,
+                                contentScale = ContentScale.Fit,
+                                modifier = Modifier.size(RoomNudgeAutoSheetTokens.IllustrationSize),
+                            )
+                            Text(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = RoomNudgeAutoSheetTokens.ContentSpacing),
+                                text = "공동방을 생성해보세요!",
+                                color = MinoAndroidTheme.colors.primaryNormal,
+                                style = MinoAndroidTheme.typography.title3Bold,
+                                textAlign = TextAlign.Center,
+                            )
+                            Text(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = RoomNudgeAutoSheetTokens.TitleSubtitleSpacing),
+                                text = "\"저번에 말한 거기가 어디였지?\"\n더 이상 묻지 마세요.",
+                                color = MinoAndroidTheme.colors.labelAlternative,
+                                style = MinoAndroidTheme.typography.label1NormalRegular,
+                                textAlign = TextAlign.Center,
+                            )
+                        }
+                        // navigationBarsPadding()을 여기서 또 얹지 않는다 — 부풀린 컨테이너 덕에 이
+                        // Column은 이미 원래(늘리기 전) 안전 위치에 그대로 있고, 내비게이션 바 자리는
+                        // 아래 흰 연장 스트립이 따로 채운다. 여기서 또 적용하면 인셋이 두 번 들어가
+                        // 하단 간격이 Figma보다 훨씬 크게 보인다(실기기 확인된 결함).
+                        MinoActionArea(
+                            mainAction = ActionAreaAction(text = "공동방 만들기", onClick = onCreateClick),
+                            subAction = ActionAreaAction(text = "나중에 만들래요", onClick = onDismissRequest),
                         )
-                        Text(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = RoomNudgeAutoSheetTokens.TitleSubtitleSpacing),
-                            text = "\"저번에 말한 거기가 어디였지?\"\n더 이상 묻지 마세요.",
-                            color = MinoAndroidTheme.colors.labelAlternative,
-                            style = MinoAndroidTheme.typography.label1NormalRegular,
-                            textAlign = TextAlign.Center,
-                        )
-                    }
-                    // navigationBarsPadding()을 여기서 또 얹지 않는다 — 부풀린 컨테이너 덕에 이
-                    // Column은 이미 원래(늘리기 전) 안전 위치에 그대로 있고, 내비게이션 바 자리는
-                    // 아래 흰 연장 스트립이 따로 채운다. 여기서 또 적용하면 인셋이 두 번 들어가
-                    // 하단 간격이 Figma보다 훨씬 크게 보인다(실기기 확인된 결함).
-                    MinoActionArea(
-                        mainAction = ActionAreaAction(text = "공동방 만들기", onClick = onCreateClick),
-                        subAction = ActionAreaAction(text = "나중에 만들래요", onClick = onDismissRequest),
-                    )
-                }
+                    },
+                )
                 // 카드의 흰 배경을 내비게이션 바 높이만큼 그대로 이어 붙인다 — 모서리를 둥글리지
                 // 않는 평평한 스트립이라 카드와 이음매 없이 붙는다.
                 Box(
@@ -330,34 +332,13 @@ internal fun RoomNudgeAutoSheet(
     }
 }
 
-/**
- * 드래그 핸들. `RoomInviteSheet`·`RoomSelectSheet`와 같은 패턴(`detectVerticalDragGestures` + 임계값)
- * 으로 아래로 끌면 [onDraggedDown](=[onDismissRequest])을 호출한다(#290 QA로 발견 — 예전엔 핸들
- * 모양만 그리고 실제 드래그 제스처가 연결돼 있지 않아 손가락으로 끌어도 반응이 없었다).
- */
+/** 드래그 핸들. 실제 드래그 감지는 [RoomListDraggableSheet]가 갖고, 이 컴포저블은 시각 요소만 그린다. */
 @Composable
-private fun RoomNudgeAutoSheetDragHandle(
-    onDraggedDown: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
+private fun RoomNudgeAutoSheetDragHandle(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = RoomNudgeAutoSheetTokens.HandleVerticalPadding)
-            .pointerInput(onDraggedDown) {
-                var accumulatedDrag = 0f
-                val thresholdPx = RoomNudgeAutoSheetTokens.DragDismissThreshold.toPx()
-                detectVerticalDragGestures(
-                    onDragStart = { accumulatedDrag = 0f },
-                    onVerticalDrag = { change, dragAmount ->
-                        accumulatedDrag += dragAmount
-                        change.consume()
-                    },
-                    onDragEnd = {
-                        if (accumulatedDrag >= thresholdPx) onDraggedDown()
-                    },
-                )
-            },
+            .padding(vertical = RoomNudgeAutoSheetTokens.HandleVerticalPadding),
         contentAlignment = Alignment.Center,
     ) {
         Box(
