@@ -247,7 +247,12 @@ class RoomListViewModel @Inject constructor(
      * 같게 둔다(값이 전부 0이라 정렬해도 의미가 없다).
      */
     private fun refreshMapPins() {
-        val rooms = listOfNotNull(state.value.personalRoom) + state.value.groupRooms
+        val allRooms = listOfNotNull(state.value.personalRoom) + state.value.groupRooms
+        // [FR-001] 방 상세(`selectedRoomId`)가 열려 있으면 그 방의 장소만 지도에 남긴다 — "해당 방의
+        // 장소만 표시된 지도 초기화"(spec.md FR-001). 리스트로 돌아오면(`selectedRoomId == null`)
+        // 다시 모든 방을 합친다.
+        val selectedRoomId = state.value.selectedRoomId
+        val rooms = if (selectedRoomId != null) allRooms.filter { it.id == selectedRoomId } else allRooms
         val selectedPinId = state.value.selectedPinId
         val allPins = rooms.flatMap { room ->
             val color = if (room.isPersonal) null else room.color.chip
@@ -300,11 +305,16 @@ class RoomListViewModel @Inject constructor(
      * (PRD 11.1.0 [SYS-009] — [나중에 만들래요] 클릭 시 2주 동안 재표출하지 않는다). 예전엔 매 진입마다
      * 무조건 `false`로 되돌려 세션당 1회 제한조차 없었는데(#290 QA로 발견), 그때는 아직 2주 억제 조건
      * 자체가 PRD에 없었다 — 이제는 그 조건이 생겼으니 저장된 값을 반영해야 한다.
+     *
+     * `nudgeSuppressionChecked`를 조회 완료와 같은 시점에 함께 세운다 — 조회가 끝나기 전(기본값
+     * `nudgeSheetDismissed = false`)에 `observeMyRooms()` 응답으로 `showNudge`가 먼저 `true`가 되면
+     * 억제 중이어야 할 팝업이 한 프레임 반짝 떴다 사라지는 콜드 스타트 결함이 있었다(실기기 확인) —
+     * [RoomListUiState.isNudgeSheetVisible] KDoc 참고.
      */
     private fun onScreenEntered() {
         launchSafely {
             val suppressed = isNudgeSuppressionActive()
-            updateState { copy(nudgeSheetDismissed = suppressed) }
+            updateState { copy(nudgeSheetDismissed = suppressed, nudgeSuppressionChecked = true) }
         }
         observeMyRooms()
         if (hasLocationPermission()) {
@@ -414,6 +424,7 @@ class RoomListViewModel @Inject constructor(
      */
     private fun onRoomCardClick(roomId: String) {
         updateState { copy(selectedRoomId = roomId) }
+        refreshMapPins()
     }
 
     /**
@@ -426,6 +437,7 @@ class RoomListViewModel @Inject constructor(
      */
     private fun onCloseRoomDetailClick() {
         updateState { copy(selectedRoomId = null) }
+        refreshMapPins()
         observeMyRooms()
     }
 

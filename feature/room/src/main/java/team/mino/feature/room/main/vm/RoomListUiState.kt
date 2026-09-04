@@ -39,6 +39,14 @@ data class RoomListUiState(
      * (PRD 11.1.0). 세션 로컬 상태가 아니라 기기에 영속 저장된다.
      */
     val nudgeSheetDismissed: Boolean = false,
+    /**
+     * [FR-008][SYS-009] [isNudgeSuppressionActive] 조회가 끝났는지 — 끝나기 전까지는 [nudgeSheetDismissed]가
+     * 기본값 `false`(억제 안 됨)라서, [isNudgeSheetVisible]이 그 값만 보면 콜드 스타트마다 "억제 중인
+     * 팝업이 한 프레임 반짝 떴다 사라지는" 깜빡임이 생긴다(`showNudge`가 `observeMyRooms()` 응답으로
+     * `true`가 되는 시점이 이 조회보다 먼저 끝나는 경우, 실기기 확인). [onScreenEntered]가 조회를 마치는
+     * 순간에만 `true`로 세운다 — 조회 전엔 억제 여부를 모르니 팝업을 보류한다.
+     */
+    val nudgeSuppressionChecked: Boolean = false,
     val mapCenter: GeoPoint? = null,
     /**
      * `mapCenter`가 갱신될 때마다 1씩 증가하는 값. 값이 아니라 "이동 요청이 있었다는 사실" 자체를
@@ -94,9 +102,18 @@ data class RoomListUiState(
      * 있었다(실기기 확인 — 그 스파이크가 `RoomListRoute`의 바텀 네비게이션 토글을 오발화시켜 그 아래
      * `GoogleMap`이 하얗게 남는 문제로 이어짐). 이 조건 자체에 `selectedRoomId == null`을 넣어야
      * 호출부의 타이밍과 무관하게 항상 안전하다.
+     *
+     * **`nudgeSuppressionChecked`도 같은 이유로 필요하다.** [nudgeSheetDismissed] 하나만 보면, 2주
+     * 억제 조회([isNudgeSuppressionActive])가 끝나기 전(기본값 `false`)에 `showNudge`가 먼저 `true`가
+     * 되는 경우 억제 중인 팝업이 한 프레임 반짝 떴다 사라진다(실기기 확인) — 조회가 끝나기 전까지는
+     * 아예 후보에서 제외한다.
      */
     val isNudgeSheetVisible: Boolean
-        get() = selectedRoomId == null && showNudge && !nudgeSheetDismissed && sheetLevel != BottomSheetLevel.FULL
+        get() = selectedRoomId == null &&
+            showNudge &&
+            nudgeSuppressionChecked &&
+            !nudgeSheetDismissed &&
+            sheetLevel != BottomSheetLevel.FULL
 
     /**
      * 셸의 바텀 네비게이션을 숨겨야 하는지 — [RoomListRoute]가 이 값 하나만 보고 판정한다(FR-003,
