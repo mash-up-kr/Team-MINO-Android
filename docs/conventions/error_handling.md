@@ -36,6 +36,7 @@ Ktor·인증 제공자 SDK의 예외 타입 등 구현 디테일은 data 레이�
 |---|---|---|
 | HTTP (Ktor) | `HttpClient` 설정의 `HttpResponseValidator` (`core:data`의 `convertDomainException`) | `expectSuccess = true`를 유지해 HTTP 에러도 예외로 받아 실패 모델을 throw로 통일한다 |
 | 인증 제공자 SDK | `Task` → suspend 변환 지점 (`core:data`의 `awaitDomain`) | 인증 제공자 호출은 반드시 `Task`를 반환하고 데이터 레이어 계약은 전부 `suspend`이므로, 이 변환을 우회하는 호출 경로가 없다 |
+| FCM Messaging SDK | `Task` → suspend 변환 지점 (`core:data`의 `push/extension/Task.kt` `awaitDomain`) | 인증 제공자용과 형태는 같지만 지점은 별개다 — 화이트리스트가 원천마다 다르므로 재사용하지 않는다. 배경은 [push-notification research D10](../specs/push-notification/research.md#d10-firebase-messaging-sdk-예외의-도메인-매핑-지점을-새로-연다) |
 
 `HttpClient`를 거치지 않는 원천(다른 SDK·시스템 API)이 추가되면 같은 형태를 따른다 — 그 원천의 모든 호출이 통과하는 변환·접근 지점을 하나 만들고 매핑을 거기에만 둔다. 지점이 여럿이라고 데이터소스별 catch가 열리는 것은 아니다. 결정 배경은 [원천별 매핑 지점 ADR](../adr/2026-08-22-domain-exception-mapping-per-source.md).
 
@@ -48,6 +49,8 @@ Ktor·인증 제공자 SDK의 예외 타입 등 구현 디테일은 data 레이�
 | HTTP | `IOException` 계열 | `MinoDomainException.Network` |
 | 인증 제공자 | 연결 실패 | `MinoDomainException.Network` |
 | 인증 제공자 | 세션·신원 증명 발급 실패 (호출 한도 초과·인증 구성 오류 등) | `MinoDomainException.Auth` |
+| FCM Messaging SDK | 연결 실패 | `MinoDomainException.Network` |
+| FCM Messaging SDK | 토큰 조회 실패 (서비스 불가·전달자 서비스 없음 등) | `MinoDomainException.Network` |
 | 공통 | 그 외 전부 (직렬화 예외 포함) | rethrow → CEH (버그 취급) |
 
 - 직렬화 실패는 서버 계약 위반(버그)으로 본다 — 도메인 예외로 매핑하지 않는다.
