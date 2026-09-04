@@ -2,6 +2,7 @@ package team.mino.feature.room.detail.screen
 
 import android.content.ClipData
 import android.content.Intent
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -53,11 +54,13 @@ internal fun BoxScope.RoomDetailRoute(
     onCurrentLocationClick: () -> Unit,
     onOpenPlaceDetail: (pinId: String) -> Unit,
     modifier: Modifier = Modifier,
-) {
-    val viewModel: RoomDetailViewModel = hiltViewModel<RoomDetailViewModel, RoomDetailViewModel.Factory>(
+    // compose-lints `ViewModels` 규칙 — hiltViewModel() 호출은 컴포저블 시그니처에서 명시적으로 드러나야
+    // 하므로 본문이 아니라 기본 파라미터 자리에 둔다(`RoomListRoute.rememberDetailSheetLevel`과 같은 이유).
+    viewModel: RoomDetailViewModel = hiltViewModel<RoomDetailViewModel, RoomDetailViewModel.Factory>(
         key = roomId,
         creationCallback = { factory -> factory.create(roomId) },
-    )
+    ),
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val activity = checkNotNull(LocalActivity.current) { "RoomDetailRoute는 Activity 컨텍스트 안에서만 그려진다." }
     val snackbarHostState = LocalSnackbarHostState.current
@@ -143,6 +146,15 @@ internal fun BoxScope.RoomDetailRoute(
     // onDispose에서 화면 이탈을 알린다.
     DisposableEffect(Unit) {
         onDispose { viewModel.processIntent(RoomDetailIntent.OnScreenExited) }
+    }
+
+    // [state.dismissibleOverlayIntent]가 있는 동안엔 이 BackHandler가 부모(RoomListRoute)의
+    // BackHandler보다 먼저 뒤로가기를 가로챈다(#290 QA로 발견 — 예전엔 이 화면 전용 오버레이가 열려
+    // 있어도 뒤로가기를 누르면 그 오버레이가 아니라 방 상세 전체가 닫혔다). 어떤 오버레이를 닫을지·
+    // 우선순위는 [RoomDetailUiState.dismissibleOverlayIntent] 하나가 판정한다 — 여기서 조건을 다시
+    // 나열하지 않아야, 오버레이 종류가 늘어도 그 값 하나만 고치면 된다.
+    BackHandler(enabled = state.dismissibleOverlayIntent != null) {
+        state.dismissibleOverlayIntent?.let(viewModel::processIntent)
     }
 
     RoomDetailScreen(

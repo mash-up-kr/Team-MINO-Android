@@ -1,7 +1,5 @@
 package team.mino.feature.room.component
 
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,7 +18,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,8 +26,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.layout
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -54,10 +49,11 @@ import team.mino.core.designsystem.foundation.icons.icons.Image
 import team.mino.core.designsystem.foundation.icons.icons.Plus
 import team.mino.core.designsystem.theme.MinoAndroidAppTheme
 import team.mino.core.designsystem.theme.MinoAndroidTheme
-import team.mino.core.designsystem.util.modifier.surface.surface
 import team.mino.core.designsystem.util.preview.UiModePreviews
 import team.mino.core.domain.model.RoomColor
 import team.mino.feature.room.R
+import team.mino.feature.room.detail.component.RoomDetailDraggableSheet
+import team.mino.feature.room.detail.component.RoomDetailSheetHeight
 
 /**
  * 장소 하나를 내가 속한 다른 방들에도 담는 방 선택 시트 — [SYS-003].
@@ -106,75 +102,56 @@ internal fun RoomShareSheet(
     modifier: Modifier = Modifier,
 ) {
     var level by remember { mutableStateOf(RoomShareSheetLevel.PEEK) }
-    // `by`로 풀지 않는다 — 값을 컴포지션에서 읽으면 전환하는 매 프레임마다 시트 본문이 통째로 다시 그려진다.
-    // 읽는 자리를 [animatedHeight]의 측정 람다 안으로 미뤄 재구성 없이 높이만 움직인다.
-    val sheetHeight = animateDpAsState(
-        targetValue = listAreaHeight(level, rooms.size) + FixedChromeHeight,
-        label = "RoomShareSheetHeight",
-    )
 
     DimmedSheetContainer(onDismissRequest = onDismissRequest, modifier = modifier) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .animatedHeight(sheetHeight)
-                .surface(
-                    shape = SheetContainerShape,
-                    containerColor = MinoAndroidTheme.colors.backgroundElevatedNormal,
-                ),
-        ) {
-            LevelDragHandle(
-                onDragUp = { level = RoomShareSheetLevel.FULL },
-                onDragDown = {
-                    when (level) {
-                        RoomShareSheetLevel.FULL -> level = RoomShareSheetLevel.PEEK
-                        RoomShareSheetLevel.PEEK -> onDismissRequest()
-                    }
-                },
-            )
-            TargetPlaceRow(
-                placeName = placeName,
-                placeAddress = placeAddress,
-                placeImageUrl = placeImageUrl,
-            )
-            CreateRoomRow(onCreateRoomClick = onCreateRoomClick)
-            SheetSectionDivider(horizontalPadding = HorizontalPadding)
-            RoomList(
-                rooms = rooms,
-                selectedRoomIds = selectedRoomIds,
-                onRoomToggle = onRoomToggle,
-                // 남는 자리를 목록이 가져간다. 위아래 고정 영역은 자기 높이를 지켜 스크롤에서 빠진다.
-                modifier = Modifier.weight(1f),
-            )
-            // 시트 아랫변이 내비게이션 바 뒤까지 닿으므로(`DimmedSheetContainer`) 시스템 바를 피하는 건
-            // 맨 밑 요소인 액션 영역 몫이다. Figma의 102dp도 홈 바 자리를 품은 값이라 둘이 어긋나지 않는다.
-            MinoActionArea(
-                modifier = Modifier.navigationBarsPadding(),
-                mainAction = ActionAreaAction(
-                    text = stringResource(R.string.roomshare_confirm),
-                    onClick = onShareClick,
-                    enabled = isShareEnabled,
-                ),
-                // 목록이 이 영역 밑으로 지나가며 잘리므로, 배경과 그 위 페이드가 함께 필요하다.
-                sticky = true,
-            )
-        }
+        RoomDetailDraggableSheet(
+            levelIndex = level.ordinal,
+            heights = persistentListOf(
+                RoomDetailSheetHeight.Fixed(FixedChromeHeight + listAreaHeight(RoomShareSheetLevel.PEEK, rooms.size)),
+                RoomDetailSheetHeight.Fixed(FixedChromeHeight + listAreaHeight(RoomShareSheetLevel.FULL, rooms.size)),
+            ),
+            onDraggedUp = { level = RoomShareSheetLevel.FULL },
+            onDraggedDown = { level = RoomShareSheetLevel.PEEK },
+            onDismiss = onDismissRequest,
+            // 손잡이는 이 모듈의 시트가 함께 쓰는 [SheetDragHandle](30dp)을 그대로 쓴다 — RoomDetailDraggableSheet
+            // 기본 손잡이(20dp)로 두면 [FixedChromeHeight]가 어긋난다.
+            handle = { SheetDragHandle() },
+            // 손잡이만 끄는 것을 받는다 — header를 비워 두면 RoomDetailDraggableSheet의 드래그 인식 영역이
+            // 손잡이에만 걸린다([RoomShareSheet] KDoc "끄는 것을 받는 자리는 손잡이 하나다" 참고). 아래
+            // 행들은 content로 내려 목록 스크롤과 같은 자리에서 갈리지 않게 한다.
+            content = {
+                TargetPlaceRow(
+                    placeName = placeName,
+                    placeAddress = placeAddress,
+                    placeImageUrl = placeImageUrl,
+                )
+                CreateRoomRow(onCreateRoomClick = onCreateRoomClick)
+                SheetSectionDivider(horizontalPadding = HorizontalPadding)
+                RoomList(
+                    rooms = rooms,
+                    selectedRoomIds = selectedRoomIds,
+                    onRoomToggle = onRoomToggle,
+                    // 시트 전체 높이가 이미 [listAreaHeight]를 포함해 고정되므로, 목록도 같은 값으로 직접
+                    // 잘라 받는다 — `weight(1f)`는 RoomDetailDraggableSheet의 `content` 슬롯이 ColumnScope가
+                    // 아니라 못 쓴다.
+                    modifier = Modifier.height(listAreaHeight(level, rooms.size)),
+                )
+                // 시트 아랫변이 내비게이션 바 뒤까지 닿으므로(`DimmedSheetContainer`) 시스템 바를 피하는 건
+                // 맨 밑 요소인 액션 영역 몫이다. Figma의 102dp도 홈 바 자리를 품은 값이라 둘이 어긋나지 않는다.
+                MinoActionArea(
+                    modifier = Modifier.navigationBarsPadding(),
+                    mainAction = ActionAreaAction(
+                        text = stringResource(R.string.roomshare_confirm),
+                        onClick = onShareClick,
+                        enabled = isShareEnabled,
+                    ),
+                    // 목록이 이 영역 밑으로 지나가며 잘리므로, 배경과 그 위 페이드가 함께 필요하다.
+                    sticky = true,
+                )
+            },
+        )
     }
 }
-
-/**
- * 애니메이션 중인 높이를 **측정 단계에서** 읽어 세운다.
- *
- * `Modifier.height(state.value)`처럼 컴포지션에서 읽으면 그 값을 읽은 컴포저블이 프레임마다 다시 실행된다 —
- * 시트 본문 전체(모디파이어 체인·문자열 조회·목록 측정)가 애니메이션 내내 재구성된다. 람다 안에서 읽으면
- * 그 구독이 측정 단계에 묶여 재구성이 일어나지 않는다.
- */
-private fun Modifier.animatedHeight(height: State<Dp>): Modifier =
-    layout { measurable, constraints ->
-        val heightPx = height.value.roundToPx()
-        val placeable = measurable.measure(constraints.copy(minHeight = heightPx, maxHeight = heightPx))
-        layout(placeable.width, heightPx) { placeable.place(x = 0, y = 0) }
-    }
 
 /** [RoomShareSheet]가 멈춰 서는 두 단계. 진입 기본값은 [PEEK]이다. */
 private enum class RoomShareSheetLevel { PEEK, FULL }
@@ -194,41 +171,6 @@ private fun listAreaHeight(
         RoomShareSheetLevel.FULL ->
             if (roomCount > FULL_EXACT_ROOM_COUNT) FullListHeight + ScrollHintHeight else FullListHeight
     }
-
-/**
- * 단계를 바꾸는 손잡이. 표식 자체는 [SheetDragHandle]이 그리고 여기서는 끄는 것만 받는다.
- *
- * 방향만 보고 판정한다 — 얼마나 끌었는지로 중간 자리를 정하지 않는 2단 시트라, 임계값을 넘긴 방향이 곧
- * 결과다. `RoomListBottomSheet`의 헤더 드래그와 같은 패턴이다.
- */
-@Composable
-private fun LevelDragHandle(
-    onDragUp: () -> Unit,
-    onDragDown: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier = modifier.pointerInput(onDragUp, onDragDown) {
-            var accumulated = 0f
-            val thresholdPx = DragThreshold.toPx()
-            detectVerticalDragGestures(
-                onDragStart = { accumulated = 0f },
-                onVerticalDrag = { change, dragAmount ->
-                    accumulated += dragAmount
-                    change.consume()
-                },
-                onDragEnd = {
-                    when {
-                        accumulated <= -thresholdPx -> onDragUp()
-                        accumulated >= thresholdPx -> onDragDown()
-                    }
-                },
-            )
-        },
-    ) {
-        SheetDragHandle()
-    }
-}
 
 /**
  * 어느 장소를 공유하는지 알리는 대상 장소 행(Figma `Frame 277`).
@@ -377,8 +319,6 @@ private val ScrollHintHeight = 32.dp
 
 /** 이 수를 넘으면 `Full`이 [ScrollHintHeight]만큼 커진다. */
 private const val FULL_EXACT_ROOM_COUNT = 4
-
-private val DragThreshold = 24.dp
 
 private val HorizontalPadding = 20.dp
 

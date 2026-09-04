@@ -15,6 +15,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.net.toUri
+import androidx.core.view.WindowInsetsControllerCompat
 import dagger.hilt.android.AndroidEntryPoint
 import team.mino.core.designsystem.theme.MinoAndroidAppTheme
 import team.mino.core.navigation.activity.launcher.EXTRA_PROFILE_ENTRY_POINT
@@ -61,6 +62,14 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        // 하단 시스템 내비게이션 바 — 앱은 라이트 테마 하나로만 동작해(PRD, 다크모드 비목표) 그 바로 위는
+        // 항상 앱 자체의 흰 배경(바텀 네비게이션·시트)인데, 시스템이 대비 확보용으로 얹는 기본 스크림 때문에
+        // 실기기에서 그 흰 배경과 안 어울리게 회색으로 떠 있었다(#290 QA). `SheetParts.kt`의
+        // `LightStatusBarIcons`가 상태바에 쓰는 것과 같은 `WindowInsetsControllerCompat` API를 여기서는
+        // 시트별이 아니라 앱 전역에 한 번만 적용한다 — 내비게이션 바 아래는 시트 유무와 무관하게 항상 밝다.
+        window.isNavigationBarContrastEnforced = false
+        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightNavigationBars = true
 
         setContent {
             MinoAndroidAppTheme {

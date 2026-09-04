@@ -2,16 +2,13 @@ package team.mino.feature.room.detail.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -30,10 +27,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
@@ -42,6 +35,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import team.mino.core.designsystem.component.category.CategorySize
 import team.mino.core.designsystem.component.category.MinoCategory
@@ -69,22 +63,20 @@ import team.mino.core.designsystem.foundation.icons.icons.List as ListPlaceIcon
 /**
  * 방 상세 시트 [FR-002]·[FR-001] 높이 고정값. `room-list`의 [BottomSheetLevel]과 같은 3단 전이를
  * 쓰되(contracts/room-detail-main-contract.md "분기 규칙 — 시트 드래그 전이"), `Half`는 그룹방 수와
- * 무관하게 항상 256dp로 고정이다 — room-detail은 방 하나의 상세이지 방 개수를 세는 화면이 아니다.
+ * 무관하게 항상 444dp로 고정이다 — room-detail은 방 하나의 상세이지 방 개수를 세는 화면이 아니다.
  */
 private object RoomDetailBottomSheetTokens {
-    // Figma `2542:125409`(Peek) 실측 — 시트 프레임이 y=604에서 시작해 홈 바(y=778) 바로 위에서 끝난다
-    // (778-604=174dp). 기존 88dp는 핸들+헤더 줄(아바타/더보기/닫기)+`Header_Room`(제목·메모·장소 수)을
-    // 다 담기엔 너무 작아 헤더 내용이 시트 높이에 잘려 안 보이는 결함이 있었다.
-    val PeekHeight = 174.dp
+    /** spec.md FR-001·FR-002·plan.md §4 확정값. */
+    val PeekHeight = 88.dp
 
-    // Figma `2542:125383`(Half) 실측 — 시트 프레임이 y=368에서 시작해 홈 바(y=778) 바로 위에서 끝난다
-    // (778-368=410dp). 기존 256dp는 근거 없는 추정값이었다.
-    val HalfHeight = 410.dp
-    val Shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
-    val FullShape = RoundedCornerShape(0.dp)
-    val HandleWidth = 36.dp
-    val HandleHeight = 4.dp
-    val DragThreshold = 24.dp
+    /**
+     * spec.md FR-001·FR-002·plan.md §4 확정값(2026-09-04 정정 — 이전 256dp는 spec.md가 "PRD 디자인
+     * 정책 보드 확정값"으로 인용한 값이었으나, Figma `2542:125383`("방 상세 half") 실측과 명백히
+     * 어긋나 문서·코드를 함께 정정했다). 시트 상단부터 화면 하단까지 444dp — 드래그 핸들
+     * (`2542:125389`, [SheetParts.kt]의 `HandleContainerHeight` 30dp) + 나머지 콘텐츠(414dp)로 계산해도
+     * 같은 값이 나온다.
+     */
+    val HalfHeight = 444.dp
     val HeaderRowPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp)
     val HeaderRowSpacing = 8.dp
 
@@ -173,71 +165,31 @@ internal fun RoomDetailBottomSheet(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit = {},
 ) {
-    val heightModifier = when (sheetLevel) {
-        // 고정 높이(height)로 클립하면 메모가 있는 방은 제목+메모+위치 개수 줄이 174dp를 넘어 위치
-        // 개수 줄이 잘려 안 보이는 결함이 있었다(실기기 확인, 메모 없는 방은 안 잘림) — 최소 높이만
-        // 보장(heightIn)해 내용이 넘치면 시트가 그만큼 커지게 한다.
-        BottomSheetLevel.PEEK -> Modifier.heightIn(min = RoomDetailBottomSheetTokens.PeekHeight)
-        BottomSheetLevel.HALF -> Modifier.height(RoomDetailBottomSheetTokens.HalfHeight)
-        BottomSheetLevel.FULL -> Modifier.fillMaxSize()
-    }
-    // Full은 화면 전체를 덮어 뒤 배경(지도)이 보이지 않으므로 둥근 모서리를 두지 않는다 — room-list와
-    // 같은 판단(RoomListBottomSheet 참고).
-    val shape = if (sheetLevel == BottomSheetLevel.FULL) {
-        RoomDetailBottomSheetTokens.FullShape
-    } else {
-        RoomDetailBottomSheetTokens.Shape
-    }
-    val thresholdPx = with(LocalDensity.current) { RoomDetailBottomSheetTokens.DragThreshold.toPx() }
-    // `Half`(256dp)에서 헤더 아래 정렬줄·장소 리스트 영역이 드래그 인식 밖에 있어 위로 스와이프해도
-    // Full로 전이되지 않던 결함의 조치 — 시트 본문 전체를 [nestedScroll]에 태워, `content()`의
-    // `LazyColumn`/`LazyVerticalGrid`에서 시작한 스크롤도 시트 레벨 전이 신호로 넘어오게 한다.
-    // `Full`에서는 반대로 리스트가 스크롤 경계(최상단)에 닿아 더 소비할 스크롤이 없을 때만
-    // `onPostScroll`로 넘어온 나머지 드래그를 받아 `Half`로 접는다(리스트 자체 스크롤과 공존).
-    val sheetDragNestedScrollConnection = remember(sheetLevel, thresholdPx, onDraggedUp, onDraggedDown) {
-        SheetDragNestedScrollConnection(
-            sheetLevel = sheetLevel,
-            thresholdPx = thresholdPx,
-            onDraggedUp = onDraggedUp,
-            onDraggedDown = onDraggedDown,
-        )
-    }
-    val headerDragModifier = Modifier.pointerInput(onDraggedUp, onDraggedDown) {
-        var accumulatedDrag = 0f
-        detectVerticalDragGestures(
-            onDragStart = { accumulatedDrag = 0f },
-            onVerticalDrag = { change, dragAmount ->
-                accumulatedDrag += dragAmount
-                change.consume()
-            },
-            onDragEnd = {
-                when {
-                    accumulatedDrag <= -thresholdPx -> onDraggedUp()
-                    accumulatedDrag >= thresholdPx -> onDraggedDown()
-                }
-            },
-        )
-    }
-
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .then(heightModifier)
-            .clip(shape)
-            .background(MinoAndroidTheme.colors.backgroundElevatedNormal)
-            .nestedScroll(sheetDragNestedScrollConnection),
-    ) {
-        // 핸들 + 헤더 줄(아바타/More Vertical/Close)은 스크롤 가능한 자식이 없어 nestedScroll 이벤트를
-        // 스스로 만들지 못한다 — 이 영역만 별도로 raw pointerInput 드래그를 그대로 붙인다.
-        Column(modifier = Modifier.fillMaxWidth().then(headerDragModifier)) {
-            RoomDetailBottomSheetDragHandle()
+    RoomDetailDraggableSheet(
+        levelIndex = sheetLevel.ordinal,
+        heights = persistentListOf(
+            // 고정 높이로 클립하면 메모가 있는 방은 제목+메모+위치 개수 줄이 [PeekHeight]를 넘어 위치
+            // 개수 줄이 잘려 안 보이는 결함이 있었다(실기기 확인, 메모 없는 방은 안 잘림) — 최소 높이만
+            // 보장해 내용이 넘치면 시트가 그만큼 커지게 한다.
+            RoomDetailSheetHeight.AtLeast(RoomDetailBottomSheetTokens.PeekHeight),
+            RoomDetailSheetHeight.Fixed(RoomDetailBottomSheetTokens.HalfHeight),
+            RoomDetailSheetHeight.Full,
+        ),
+        onDraggedUp = onDraggedUp,
+        onDraggedDown = onDraggedDown,
+        // `Half`에서 헤더 아래 정렬줄·장소 리스트 영역이 드래그 인식 밖에 있어 위로 스와이프해도 Full로
+        // 전이되지 않던 결함의 조치 — `content()`의 `LazyColumn`/`LazyVerticalGrid`에서 시작한 스크롤도
+        // 시트 레벨 전이 신호로 받는다(nestedScroll, RoomDetailDraggableSheet KDoc 참고).
+        enableContentNestedScroll = true,
+        modifier = modifier,
+        header = {
             if (room != null) {
                 RoomDetailHeaderRow(
                     memberSummary = room.memberSummary,
                     showMoreMenu = showMoreMenu,
                     isOwner = isOwner,
                     isPersonalRoom = isPersonalRoom,
-                    // Peek는 시트 높이가 174dp뿐이라 더보기 메뉴를 버튼 아래로 펼 공간이 없어 위로 걸치게
+                    // Peek는 시트 높이가 [PeekHeight]뿐이라 더보기 메뉴를 버튼 아래로 펼 공간이 없어 위로 걸치게
                     // 띄운다 — Half/Full은 아래로 펼 공간이 충분해 표준 드롭다운처럼 아래로 편다
                     // ([RoomMoreMenu] KDoc 참고, 실기기 스크린샷으로 확정).
                     moreMenuExpandUpward = sheetLevel == BottomSheetLevel.PEEK,
@@ -263,12 +215,9 @@ internal fun RoomDetailBottomSheet(
                     memo = room.description.ifEmpty { null },
                 )
             }
-        }
-        if (sheetLevel == BottomSheetLevel.FULL) {
-            // Peek/Half의 정렬줄은 Figma 대조 결과 시트 안이 아니라 지도 위 오버레이([RoomDetailMapControls],
-            // RoomDetailScreen에서 그림)라 여기서는 Full일 때만 그린다 — 정렬줄도 스크롤 가능한 자식이
-            // 없어 위 핸들/헤더와 같은 이유로 raw 드래그를 함께 붙인다.
-            Box(modifier = Modifier.fillMaxWidth().then(headerDragModifier)) {
+            if (sheetLevel == BottomSheetLevel.FULL) {
+                // Peek/Half의 정렬줄은 Figma 대조 결과 시트 안이 아니라 지도 위 오버레이([RoomDetailMapControls],
+                // RoomDetailScreen에서 그림)라 여기서는 Full일 때만 그린다.
                 RoomDetailFullSortRow(
                     sortOption = sortOption,
                     categoryFilter = categoryFilter,
@@ -278,64 +227,9 @@ internal fun RoomDetailBottomSheet(
                     onViewTypeSelected = onViewTypeSelected,
                 )
             }
-        }
-        if (sheetLevel != BottomSheetLevel.PEEK) {
-            content()
-        }
-    }
-}
-
-/**
- * [SheetDragNestedScrollConnection] — [RoomDetailBottomSheet] 본문(정렬줄·장소 목록)에서 시작한 스크롤을
- * 시트 레벨 전이 신호로 바꾼다.
- *
- * - `Full`이 아닐 때: 아직 시트가 다 펼쳐지지 않은 상태이므로 리스트가 스스로 스크롤하게 두지 않고
- *   [onPreScroll]에서 세로 스크롤 시도를 전부 가로채 시트 드래그로 취급한다(`Half`에서 리스트가 짧아
- *   스크롤할 내용이 없는 것과도 일치 — 장소 목록을 끝까지 보려면 `Full`로 전이해야 한다는 게 기존 설계).
- * - `Full`일 때: 리스트가 정상적으로 스크롤하게 두고, 리스트가 스크롤 경계(최상단)에 닿아 더 소비할 수
- *   없는 나머지 드래그만 [onPostScroll]에서 받아 `Half`로 접는 신호로 쓴다.
- */
-private class SheetDragNestedScrollConnection(
-    private val sheetLevel: BottomSheetLevel,
-    private val thresholdPx: Float,
-    private val onDraggedUp: () -> Unit,
-    private val onDraggedDown: () -> Unit,
-) : NestedScrollConnection {
-    private var accumulatedDrag = 0f
-
-    override fun onPreScroll(
-        available: Offset,
-        source: NestedScrollSource,
-    ): Offset {
-        if (sheetLevel == BottomSheetLevel.FULL) return Offset.Zero
-        accumulatedDrag += available.y
-        fireIfThresholdReached()
-        return available
-    }
-
-    override fun onPostScroll(
-        consumed: Offset,
-        available: Offset,
-        source: NestedScrollSource,
-    ): Offset {
-        if (sheetLevel != BottomSheetLevel.FULL) return Offset.Zero
-        accumulatedDrag += available.y
-        fireIfThresholdReached()
-        return Offset.Zero
-    }
-
-    private fun fireIfThresholdReached() {
-        when {
-            accumulatedDrag <= -thresholdPx -> {
-                onDraggedUp()
-                accumulatedDrag = 0f
-            }
-            accumulatedDrag >= thresholdPx -> {
-                onDraggedDown()
-                accumulatedDrag = 0f
-            }
-        }
-    }
+        },
+        content = { if (sheetLevel != BottomSheetLevel.PEEK) content() },
+    )
 }
 
 /**
@@ -436,24 +330,6 @@ private fun RoomDetailHeaderIconButton(
             imageVector = icon,
             contentDescription = contentDescription,
             tint = MinoAndroidTheme.colors.labelNormal,
-        )
-    }
-}
-
-@Composable
-private fun RoomDetailBottomSheetDragHandle(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier.fillMaxWidth(),
-        contentAlignment = Alignment.TopCenter,
-    ) {
-        Box(
-            modifier = Modifier
-                .padding(top = 8.dp, bottom = 8.dp)
-                .size(
-                    width = RoomDetailBottomSheetTokens.HandleWidth,
-                    height = RoomDetailBottomSheetTokens.HandleHeight,
-                ).clip(RoundedCornerShape(percent = 50))
-                .background(MinoAndroidTheme.colors.lineSolidNeutral),
         )
     }
 }

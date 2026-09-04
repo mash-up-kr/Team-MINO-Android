@@ -29,6 +29,7 @@ import team.mino.core.domain.model.RoomListSortOption
 import team.mino.core.domain.model.RoomMemberSummary
 import team.mino.core.domain.repository.PlaceRepository
 import team.mino.core.domain.repository.RoomPlacesRepository
+import team.mino.core.domain.repository.RoomPreferencesRepository
 import team.mino.core.domain.repository.RoomRepository
 import team.mino.core.domain.usecase.EnsureAnonymousSessionUseCase
 import team.mino.core.errorhandling.onDomainFailure
@@ -43,6 +44,8 @@ import team.mino.feature.room.main.model.MapPinUiModel
 import team.mino.feature.room.main.model.toMemberSummary
 import javax.inject.Inject
 import kotlin.coroutines.resume
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
@@ -57,9 +60,10 @@ import kotlin.time.Instant
  */
 @HiltViewModel
 class RoomListViewModel @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val roomRepository: RoomRepository,
     private val roomPlacesRepository: RoomPlacesRepository,
+    private val roomPreferencesRepository: RoomPreferencesRepository,
     private val ensureAnonymousSessionUseCase: EnsureAnonymousSessionUseCase,
     private val placeRepository: PlaceRepository,
     private val placeDetailRequestHolder: PlaceDetailRequestHolder,
@@ -243,7 +247,12 @@ class RoomListViewModel @Inject constructor(
      * 같게 둔다(값이 전부 0이라 정렬해도 의미가 없다).
      */
     private fun refreshMapPins() {
-        val rooms = listOfNotNull(state.value.personalRoom) + state.value.groupRooms
+        val allRooms = listOfNotNull(state.value.personalRoom) + state.value.groupRooms
+        // [FR-001] 방 상세(`selectedRoomId`)가 열려 있으면 그 방의 장소만 지도에 남긴다 — "해당 방의
+        // 장소만 표시된 지도 초기화"(spec.md FR-001). 리스트로 돌아오면(`selectedRoomId == null`)
+        // 다시 모든 방을 합친다.
+        val selectedRoomId = state.value.selectedRoomId
+        val rooms = if (selectedRoomId != null) allRooms.filter { it.id == selectedRoomId } else allRooms
         val selectedPinId = state.value.selectedPinId
         val allPins = rooms.flatMap { room ->
             val color = if (room.isPersonal) null else room.color.chip
@@ -292,11 +301,21 @@ class RoomListViewModel @Inject constructor(
      * [D8] 상태 캐싱 없이 매 진입마다 OS 권한을 직접 조회한다.
      *
      * 재진입마다 `groupRooms.isEmpty()`로 `showNudge`·`showGhostCard`를 다시 계산한다([research.md D9]).
-     * `nudgeSheetDismissed`도 함께 `false`로 되돌려, 직전 방문에서 팝업을 닫았더라도 이번 진입에는
-     * 다시 표출되게 한다(FR-008, EC-005 — 세션당 1회로 제한하지 않음).
+     * `nudgeSheetDismissed`는 [isNudgeSuppressionActive]가 저장된 마지막 닫힘 시각을 조회해 판정한다
+     * (PRD 11.1.0 [SYS-009] — [나중에 만들래요] 클릭 시 2주 동안 재표출하지 않는다). 예전엔 매 진입마다
+     * 무조건 `false`로 되돌려 세션당 1회 제한조차 없었는데(#290 QA로 발견), 그때는 아직 2주 억제 조건
+     * 자체가 PRD에 없었다 — 이제는 그 조건이 생겼으니 저장된 값을 반영해야 한다.
+     *
+     * `nudgeSuppressionChecked`를 조회 완료와 같은 시점에 함께 세운다 — 조회가 끝나기 전(기본값
+     * `nudgeSheetDismissed = false`)에 `observeMyRooms()` 응답으로 `showNudge`가 먼저 `true`가 되면
+     * 억제 중이어야 할 팝업이 한 프레임 반짝 떴다 사라지는 콜드 스타트 결함이 있었다(실기기 확인) —
+     * [RoomListUiState.isNudgeSheetVisible] KDoc 참고.
      */
     private fun onScreenEntered() {
-        updateState { copy(nudgeSheetDismissed = false) }
+        launchSafely {
+            val suppressed = isNudgeSuppressionActive()
+            updateState { copy(nudgeSheetDismissed = suppressed, nudgeSuppressionChecked = true) }
+        }
         observeMyRooms()
         if (hasLocationPermission()) {
             moveCameraToResolvedLocation(granted = true)
@@ -405,6 +424,7 @@ class RoomListViewModel @Inject constructor(
      */
     private fun onRoomCardClick(roomId: String) {
         updateState { copy(selectedRoomId = roomId) }
+        refreshMapPins()
     }
 
     /**
@@ -417,6 +437,7 @@ class RoomListViewModel @Inject constructor(
      */
     private fun onCloseRoomDetailClick() {
         updateState { copy(selectedRoomId = null) }
+        refreshMapPins()
         observeMyRooms()
     }
 
@@ -509,9 +530,22 @@ class RoomListViewModel @Inject constructor(
         launchSafely { postSideEffect(RoomListSideEffect.NavigateToRoomForm) }
     }
 
-    /** [FR-008] 자동 팝업 Nudge 닫기 — `showNudge`(=`groupRooms.isEmpty()`)는 건드리지 않는다. */
+    /**
+     * [FR-008][SYS-009] 자동 팝업 Nudge 닫기 — `showNudge`(=`groupRooms.isEmpty()`)는 건드리지 않는다.
+     * 지금 시각을 [RoomPreferencesRepository]에 저장해, 다음 [onScreenEntered]부터 2주 동안
+     * [isNudgeSuppressionActive]가 재표출을 막는다.
+     */
+    @OptIn(ExperimentalTime::class)
     private fun onNudgeDismissClick() {
         updateState { copy(nudgeSheetDismissed = true) }
+        launchSafely { roomPreferencesRepository.setNudgeDismissedAt(Clock.System.now()) }
+    }
+
+    /** [SYS-009] 마지막으로 닫은 지 2주가 지나지 않았으면 `true` — 닫은 적이 없으면 `false`. */
+    @OptIn(ExperimentalTime::class)
+    private suspend fun isNudgeSuppressionActive(): Boolean {
+        val dismissedAt = roomPreferencesRepository.getNudgeDismissedAt() ?: return false
+        return Clock.System.now() < dismissedAt + NUDGE_SUPPRESSION_DURATION
     }
 
     /**
@@ -559,7 +593,9 @@ class RoomListViewModel @Inject constructor(
         return withTimeoutOrNull(LOCATION_FETCH_TIMEOUT) { requestSingleLocationUpdate(locationManager, provider) }
     }
 
-    /** [requestSingleUpdate]는 API 21부터 지원한다(minSdk 29) — `getCurrentLocation`(API 30+)보다 넓은 범위를 커버한다. */
+    /** [requestSingleUpdate]는 API 21부터 지원한다(minSdk 29) — `getCurrentLocation`(API 30+)보다 넓은 범위를 커버한다.
+     * `@Suppress("DEPRECATION")`은 그 이유로 대체하지 않고 그대로 쓰기로 한 의도적 선택이다. */
+    @Suppress("DEPRECATION")
     @SuppressLint("MissingPermission")
     private suspend fun requestSingleLocationUpdate(
         locationManager: LocationManager,
@@ -584,6 +620,9 @@ class RoomListViewModel @Inject constructor(
 
     private companion object {
         val LOCATION_FETCH_TIMEOUT = 10.seconds
+
+        /** [SYS-009] [나중에 만들래요] 클릭 시 Nudge 팝업을 재표출하지 않는 기간(PRD 11.1.0). */
+        val NUDGE_SUPPRESSION_DURATION = 14.days
     }
 }
 

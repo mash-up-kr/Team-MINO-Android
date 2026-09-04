@@ -26,14 +26,14 @@ import team.mino.feature.room.main.model.BottomSheetLevel
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
-/** `Peek` — 174dp, 헤더 줄(아바타+더보기+닫기)과 [MinoHeaderRoom]만. */
+/** `Peek` — 88dp, 헤더 줄(아바타+더보기+닫기)과 [MinoHeaderRoom]만. */
 @UiModePreviews
 @Composable
 private fun RoomDetailBottomSheetPeekPreview() {
     RoomDetailBottomSheetPreviewContainer(sheetLevel = BottomSheetLevel.PEEK)
 }
 
-/** `Half` — 410dp, 장소 목록까지 보인다(정렬줄은 지도 위 오버레이라 이 시트엔 없음). */
+/** `Half` — 444dp, 장소 목록까지 보인다(정렬줄은 지도 위 오버레이라 이 시트엔 없음). */
 @UiModePreviews
 @Composable
 private fun RoomDetailBottomSheetHalfPreview() {

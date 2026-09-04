@@ -3,7 +3,6 @@ package team.mino.feature.room.detail.component
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -25,6 +24,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 import team.mino.core.common.ui.component.RoomThumbnailFallback
 import team.mino.core.designsystem.R
 import team.mino.core.designsystem.component.actionarea.ActionAreaAction
@@ -37,7 +37,6 @@ import team.mino.core.designsystem.foundation.icons.icons.Close
 import team.mino.core.designsystem.foundation.icons.icons.Link
 import team.mino.core.designsystem.theme.MinoAndroidTheme
 import team.mino.core.designsystem.util.image.MinoAsyncImage
-import team.mino.core.designsystem.util.modifier.surface.surface
 import team.mino.core.domain.model.Room
 import team.mino.core.domain.model.RoomMember
 import team.mino.core.domain.model.RoomThumbnail
@@ -99,49 +98,51 @@ internal fun RoomInviteSheet(
     onCopyLinkClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .surface(
-                shape = RoomInviteSheetTokens.SheetShape,
-                containerColor = MinoAndroidTheme.colors.backgroundElevatedNormal,
-            ),
-    ) {
-        RoomInviteDragHandle()
+    // 단일 단계(레벨 전환 없음) 시트라 heights는 1개짜리 목록이다 — 그 경우 RoomDetailDraggableSheet는
+    // 위로 끌어도(onDraggedUp, 이미 최고단이라 무시) 반응하지 않고, 아래로 끌면(이미 최하단이라)
+    // 곧장 onDismiss로 이어진다(#290, #144).
+    RoomDetailDraggableSheet(
+        levelIndex = 0,
+        heights = persistentListOf(RoomDetailSheetHeight.WrapContent),
+        onDraggedUp = {},
+        onDraggedDown = {},
+        onDismiss = onDismiss,
+        modifier = modifier,
+        shape = RoomInviteSheetTokens.SheetShape,
+        handle = { RoomInviteDragHandle() },
+        header = { RoomInviteHeader(room = room, onCloseClick = onDismiss) },
+        content = {
+            Spacer(modifier = Modifier.height(RoomInviteSheetTokens.HeaderToListSpacing))
 
-        RoomInviteHeader(room = room, onCloseClick = onDismiss)
-
-        Spacer(modifier = Modifier.height(RoomInviteSheetTokens.HeaderToListSpacing))
-
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(RoomInviteSheetTokens.MemberListHeight),
-        ) {
-            items(items = roomMembers, key = { it.userId }) { member ->
-                RoomInviteMemberRow(member = member)
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(RoomInviteSheetTokens.MemberListHeight),
+            ) {
+                items(items = roomMembers, key = { it.userId }) { member ->
+                    RoomInviteMemberRow(member = member)
+                }
             }
-        }
 
-        MinoActionArea(
-            mainAction = ActionAreaAction(
-                text = "초대하기",
-                onClick = onInviteClick,
-                enabled = inviteCode != null,
-            ),
-            alternativeAction = ActionAreaAction(
-                text = "링크 복사하기",
-                onClick = onCopyLinkClick,
-                enabled = inviteCode != null,
-                leadingIcon = { Icon(imageVector = MinoIcons.Link, contentDescription = null) },
-            ),
-            sticky = true,
-        )
-    }
-    // onDismiss는 `RoomShareSheet`와 같은 이유로 이 컴포저블이 스스로 소비하지 않는다 — 호스팅하는
-    // 바텀시트 컨테이너가 바깥 영역 클릭·백 제스처에 연결한다. 헤더의 닫기 버튼만 예외로 직접 문다.
+            MinoActionArea(
+                mainAction = ActionAreaAction(
+                    text = "초대하기",
+                    onClick = onInviteClick,
+                    enabled = inviteCode != null,
+                ),
+                alternativeAction = ActionAreaAction(
+                    text = "링크 복사하기",
+                    onClick = onCopyLinkClick,
+                    enabled = inviteCode != null,
+                    leadingIcon = { Icon(imageVector = MinoIcons.Link, contentDescription = null) },
+                ),
+                sticky = true,
+            )
+        },
+    )
 }
 
+/** 드래그 핸들. 실제 드래그 감지는 [RoomDetailDraggableSheet]가 갖고, 이 컴포저블은 시각 요소만 그린다. */
 @Composable
 private fun RoomInviteDragHandle(modifier: Modifier = Modifier) {
     Box(

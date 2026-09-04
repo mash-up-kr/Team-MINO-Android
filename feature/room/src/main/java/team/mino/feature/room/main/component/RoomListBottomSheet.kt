@@ -2,14 +2,12 @@ package team.mino.feature.room.main.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -24,10 +22,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import team.mino.core.common.ui.component.RoomThumbnailFallback
 import team.mino.core.designsystem.component.roomcard.MinoRoomCard
@@ -44,23 +42,14 @@ import team.mino.feature.room.component.toMinoRoomColor
 import team.mino.feature.room.main.model.BottomSheetLevel
 import team.mino.feature.room.main.model.toRoomCardParams
 
-/**
- * 방 리스트 시트 [FR-002] 높이 고정값. 화면 비율이 아닌 dp 값을 그대로 쓴다(UX-001).
- *
- * 드래그 제스처 인식·전환 애니메이션 자체는 이 spec의 범위 밖이다([spec.md §3.2] — 디자인 시스템 공용
- * 컴포넌트(이슈 #144)가 아직 없어, 여기서는 표준 Compose 드래그 감지로 discrete up/down 이벤트만
- * 판정하는 최소 구현을 둔다.
- */
+/** 방 리스트 시트 [FR-002] 높이 고정값. 화면 비율이 아닌 dp 값을 그대로 쓴다(UX-001). */
 private object RoomListBottomSheetTokens {
     val PeekHeight = 88.dp
     val HalfHeightNoGroupRoom = 256.dp
     val HalfHeightOneGroupRoom = 360.dp
     val HalfHeightManyGroupRooms = 380.dp
-    val Shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
-    val FullShape = RoundedCornerShape(0.dp)
     val HandleWidth = 36.dp
     val HandleHeight = 4.dp
-    val DragThreshold = 24.dp
     val RoomCardHorizontalPadding = 20.dp
 
     // Figma `Button/Icon/Outlined`(node 2661-157264/157265/157266) — 아이콘 20dp + 둘레 패딩 10dp로
@@ -111,93 +100,68 @@ internal fun RoomListBottomSheet(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit = {},
 ) {
-    val heightModifier = when (sheetLevel) {
-        BottomSheetLevel.PEEK -> Modifier.height(RoomListBottomSheetTokens.PeekHeight)
-        BottomSheetLevel.HALF -> Modifier.height(halfHeight(groupRoomCount))
-        BottomSheetLevel.FULL -> Modifier.fillMaxSize()
-    }
-    // Full은 화면 전체를 덮어 뒤 배경(지도)이 보이지 않으므로 둥근 모서리를 두지 않는다(Figma
-    // 003-1-3/003-2-3 대조) — Peek/Half만 지도 위에 떠 있는 카드 형태라 위쪽 모서리를 둥글린다.
-    val shape = if (sheetLevel == BottomSheetLevel.FULL) {
-        RoomListBottomSheetTokens.FullShape
-    } else {
-        RoomListBottomSheetTokens.Shape
-    }
-
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .then(heightModifier)
-            .clip(shape)
-            .background(MinoAndroidTheme.colors.backgroundElevatedNormal),
-    ) {
-        RoomListBottomSheetHeader(
-            sheetLevel = sheetLevel,
-            onAddRoomClick = onAddRoomClick,
-            onDraggedUp = onDraggedUp,
-            onDraggedDown = onDraggedDown,
-        )
-        if (sheetLevel != BottomSheetLevel.PEEK) {
-            content()
-        }
-    }
+    RoomListDraggableSheet(
+        levelIndex = sheetLevel.ordinal,
+        heights = persistentListOf(
+            RoomListSheetHeight.Fixed(RoomListBottomSheetTokens.PeekHeight),
+            RoomListSheetHeight.Fixed(halfHeight(groupRoomCount)),
+            RoomListSheetHeight.Full,
+        ),
+        onDraggedUp = onDraggedUp,
+        onDraggedDown = onDraggedDown,
+        modifier = modifier,
+        handle = { RoomListBottomSheetHandle() },
+        header = {
+            RoomListBottomSheetHeaderRow(
+                sheetLevel = sheetLevel,
+                onAddRoomClick = onAddRoomClick,
+                onCloseClick = onDraggedDown,
+            )
+        },
+        content = { if (sheetLevel != BottomSheetLevel.PEEK) content() },
+    )
 }
 
 @Composable
-private fun RoomListBottomSheetHeader(
-    sheetLevel: BottomSheetLevel,
-    onAddRoomClick: () -> Unit,
-    onDraggedUp: () -> Unit,
-    onDraggedDown: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(
+private fun RoomListBottomSheetHandle(modifier: Modifier = Modifier) {
+    Box(
         modifier = modifier
             .fillMaxWidth()
-            .pointerInput(onDraggedUp, onDraggedDown) {
-                var accumulatedDrag = 0f
-                val thresholdPx = RoomListBottomSheetTokens.DragThreshold.toPx()
-                detectVerticalDragGestures(
-                    onDragStart = { accumulatedDrag = 0f },
-                    onVerticalDrag = { change, dragAmount ->
-                        accumulatedDrag += dragAmount
-                        change.consume()
-                    },
-                    onDragEnd = {
-                        when {
-                            accumulatedDrag <= -thresholdPx -> onDraggedUp()
-                            accumulatedDrag >= thresholdPx -> onDraggedDown()
-                        }
-                    },
-                )
-            },
+            .padding(top = 8.dp),
+        contentAlignment = Alignment.TopCenter,
     ) {
         Box(
             modifier = Modifier
-                .padding(top = 8.dp)
-                .align(Alignment.CenterHorizontally)
                 .size(width = RoomListBottomSheetTokens.HandleWidth, height = RoomListBottomSheetTokens.HandleHeight)
                 .clip(RoundedCornerShape(percent = 50))
                 .background(MinoAndroidTheme.colors.lineSolidNeutral),
         )
+    }
+}
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = "방 리스트",
-                color = MinoAndroidTheme.colors.labelNormal,
-                style = MinoAndroidTheme.typography.title3Bold,
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                RoomListHeaderIconButton(icon = MinoIcons.Plus, onClick = onAddRoomClick)
-                if (sheetLevel == BottomSheetLevel.FULL) {
-                    RoomListHeaderIconButton(icon = MinoIcons.Close, onClick = onDraggedDown)
-                }
+@Composable
+private fun RoomListBottomSheetHeaderRow(
+    sheetLevel: BottomSheetLevel,
+    onAddRoomClick: () -> Unit,
+    onCloseClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = "방 리스트",
+            color = MinoAndroidTheme.colors.labelNormal,
+            style = MinoAndroidTheme.typography.title3Bold,
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            RoomListHeaderIconButton(icon = MinoIcons.Plus, onClick = onAddRoomClick)
+            if (sheetLevel == BottomSheetLevel.FULL) {
+                RoomListHeaderIconButton(icon = MinoIcons.Close, onClick = onCloseClick)
             }
         }
     }

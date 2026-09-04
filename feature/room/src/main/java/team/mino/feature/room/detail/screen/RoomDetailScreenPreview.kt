@@ -35,14 +35,14 @@ import kotlin.time.ExperimentalTime
  * 얹히는 바텀시트·정렬 오버레이·GPS 버튼은 지도와 무관하게 정상 렌더된다.
  */
 
-/** `Peek` — 174dp, 헤더 줄만. 정렬 오버레이·GPS 버튼은 지도 위에 뜬다. */
+/** `Peek` — 88dp, 헤더 줄만. 정렬 오버레이·GPS 버튼은 지도 위에 뜬다. */
 @UiModePreviews
 @Composable
 private fun RoomDetailScreenPeekPreview() {
     RoomDetailScreenPreviewContainer(sheetLevel = BottomSheetLevel.PEEK)
 }
 
-/** `Half` — 410dp, 장소 목록까지 보인다. */
+/** `Half` — 444dp, 장소 목록까지 보인다. */
 @UiModePreviews
 @Composable
 private fun RoomDetailScreenHalfPreview() {

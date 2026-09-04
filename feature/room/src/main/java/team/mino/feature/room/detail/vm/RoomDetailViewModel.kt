@@ -152,6 +152,11 @@ internal class RoomDetailViewModel @AssistedInject constructor(
      * [leaveDialogState]·[selectedDelegateMemberId]도 같은 이유로 지운다 — 실기기 확인된 결함:
      * 위임 대상 선택 화면([LeaveDialogState.DelegateOwner])까지 열어 두고 확정하지 않은 채(뒤로가기 등)
      * 이 화면을 벗어나면, 다음 재진입에 그 선택 화면이 그대로 다시 뜬다.
+     *
+     * [showInviteSheet]·[inviteCode]·[roomMembers]·[placeToDelete]·[showMoreMenu]·[menuTargetPlace]도
+     * 같은 이유로 함께 지운다(#290 QA로 발견 — 초대 시트를 연 채 시스템 뒤로가기로 나갔다가 같은 방에
+     * 재진입하면 초대 시트가 그대로 다시 떴다). 위 두 상태만 지우고 이 여섯을 빠뜨렸던 게 이 버그의
+     * 원인이다 — "이 화면 전용 오버레이는 전부 여기서 지운다"는 원칙에서 예외를 둘 이유가 없다.
      */
     private fun onScreenExited() {
         updateState {
@@ -159,6 +164,12 @@ internal class RoomDetailViewModel @AssistedInject constructor(
                 placeToShare = null,
                 leaveDialogState = LeaveDialogState.None,
                 selectedDelegateMemberId = null,
+                showInviteSheet = false,
+                inviteCode = null,
+                roomMembers = persistentListOf(),
+                placeToDelete = null,
+                showMoreMenu = false,
+                menuTargetPlace = null,
             )
         }
     }

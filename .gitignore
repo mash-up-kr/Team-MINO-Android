@@ -246,3 +246,6 @@ fabric.properties
 
 # Claude Code worktrees (병렬 작업용 격리 워크트리)
 .claude/worktrees/
+
+# Figma MCP로 임시로 받은 스크린샷 등 스크래치 파일
+.figma-tmp/

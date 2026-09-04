@@ -49,6 +49,24 @@ internal data class RoomDetailUiState(
     /** 하나라도 고른 뒤에야 보낼 곳이 정해진다. 보내는 중에는 같은 방에 두 번 가지 않게 잠근다(FR-009). */
     val isShareEnabled: Boolean
         get() = shareSelectedRoomIds.isNotEmpty() && !isSharing
+
+    /**
+     * 시스템 뒤로가기가 방 상세 전체를 닫기 전에 먼저 닫아야 할 오버레이가 있으면, 그걸 닫는 인텐트를
+     * 돌려준다(#290 QA로 발견 — 예전엔 `RoomListRoute`의 `BackHandler`가 이 화면의 오버레이 상태를 몰라
+     * 무조건 방 상세 전체를 닫았다). "오버레이가 있는지"와 "무엇을 닫을지"를 한 값에서 함께 판정해야,
+     * 오버레이 종류가 늘어날 때 이 자리 하나만 고치면 되고 `RoomDetailRoute`의 `BackHandler`가 따로
+     * 조건을 다시 나열하다 하나만 빠뜨리는 사고를 막는다. 얼럿류(`leaveDialogState`·`placeToDelete`)가
+     * 시트류보다 항상 위에 뜨므로 먼저 닫는다.
+     */
+    val dismissibleOverlayIntent: RoomDetailIntent?
+        get() = when {
+            leaveDialogState != LeaveDialogState.None -> RoomDetailIntent.OnLeaveCancel
+            placeToDelete != null -> RoomDetailIntent.OnPlaceDeleteCancel
+            showInviteSheet -> RoomDetailIntent.OnInviteSheetDismiss
+            placeToShare != null -> RoomDetailIntent.OnRoomSelectDismiss
+            showMoreMenu -> RoomDetailIntent.OnMoreMenuDismiss
+            else -> null
+        }
 }
 
 /**
