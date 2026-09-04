@@ -89,6 +89,11 @@ private class FakeRegistrationRemoteDataSource : UserRemoteDataSource {
     override suspend fun register(request: ProfileRequest): ProfileResponse = error("이 저장소는 저장하지 않는다")
 
     override suspend fun updateMe(request: ProfileRequest): ProfileResponse = error("이 저장소는 저장하지 않는다")
+
+    override suspend fun putPushToken(
+        token: String,
+        platform: String,
+    ) = error("푸시 토큰 등록은 PushNotificationRepositoryImpl의 몫이다 — 이 저장소는 부르지 않는다")
 }
 
 private class FakeRegistrationLocalDataSource : ProfileLocalDataSource {

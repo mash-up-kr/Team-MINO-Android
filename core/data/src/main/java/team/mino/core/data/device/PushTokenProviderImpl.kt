@@ -11,7 +11,9 @@ internal class PushTokenProviderImpl @Inject constructor() : PushTokenProvider {
     // Task.await() 확장을 새로 의존성 추가하지 않고, addOnCompleteListener를 suspend로 감싼다.
     override suspend fun getToken(): String =
         suspendCancellableCoroutine { continuation ->
-            FirebaseMessaging.getInstance().token
+            FirebaseMessaging
+                .getInstance()
+                .token
                 .addOnCompleteListener { task ->
                     val exception = task.exception
                     if (task.isSuccessful) {

@@ -20,6 +20,7 @@ import team.mino.core.domain.model.RoomColor
 import team.mino.core.domain.model.RoomSummary
 import team.mino.core.domain.model.RoomType
 import team.mino.core.domain.usecase.ResolveNextDeckUseCase
+import team.mino.core.domain.usecase.ResolveRoomEntryDeckUseCase
 import team.mino.feature.home.fake.FakeHomeDeckRepository
 import team.mino.feature.home.fake.FakeHomePreferencesRepository
 import team.mino.feature.home.fake.FakePlaceRepository
@@ -320,7 +321,11 @@ class HomeViewModelRoomSheetTest {
             // EC-014(현재 방 재선택)가 아니라 EC-021(소진한 다른 방 재선택)이 된다.
             viewModel.processIntent(HomeIntent.OpenRoomSheet)
             viewModel.processIntent(HomeIntent.SelectRoom(ROOM_ID))
-            assertEquals(ROOM_ID, viewModel.state.value.room?.id)
+            assertEquals(
+                ROOM_ID,
+                viewModel.state.value.room
+                    ?.id,
+            )
 
             val deckRequestsBeforeReselect = deckRepository.deckRequests.size
 
@@ -375,6 +380,7 @@ class HomeViewModelRoomSheetTest {
             homePreferencesRepository = preferencesRepository,
             placeRepository = placeRepository,
             resolveNextDeck = ResolveNextDeckUseCase(),
+            resolveRoomEntryDeck = ResolveRoomEntryDeckUseCase(),
         )
 
     /** 순서를 눈으로 구별할 수 있게 pinId에 번호를 매긴다. 카드의 나머지 필드는 판정에 쓰이지 않는다. */
