@@ -13,7 +13,7 @@ import team.mino.core.domain.model.PermissionType
 import team.mino.core.domain.repository.AppSettingsRepository
 import team.mino.core.domain.repository.PermissionRepository
 import team.mino.core.domain.repository.ProfileRepository
-import team.mino.core.domain.repository.PushNotificationRepository
+import team.mino.core.domain.usecase.RegisterPushTokenUseCase
 import team.mino.core.errorhandling.DomainErrorEmitter
 import team.mino.core.errorhandling.domainErrorEmitter
 import team.mino.core.errorhandling.onDomainFailure
@@ -29,7 +29,7 @@ class MyPageViewModel
         private val profileRepository: ProfileRepository,
         private val permissionRepository: PermissionRepository,
         private val appSettingsRepository: AppSettingsRepository,
-        private val pushNotificationRepository: PushNotificationRepository,
+        private val registerPushToken: RegisterPushTokenUseCase,
     ) : ViewModel(),
         MviContainer<MyPageUiState, MyPageSideEffect> by mviContainer(MyPageUiState()),
         DomainErrorEmitter by domainErrorEmitter() {
@@ -141,7 +141,8 @@ class MyPageViewModel
                 runCatchingDomain {
                     if (granted) {
                         appSettingsRepository.setNotificationDeliveryEnabled(true)
-                        pushNotificationRepository.syncPushToken()
+                        // 등록 실패는 PushRegistrationRepository.registerCurrentToken 계약대로 밖으로 오르지 않는다.
+                        registerPushToken()
                     } else {
                         permissionRepository.markPermissionRequested(PermissionType.NOTIFICATION)
                     }

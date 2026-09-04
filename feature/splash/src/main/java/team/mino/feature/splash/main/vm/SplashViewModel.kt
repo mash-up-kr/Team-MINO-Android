@@ -12,6 +12,7 @@ import team.mino.core.common.android.extension.launchSafely
 import team.mino.core.domain.model.SplashEntry
 import team.mino.core.domain.usecase.EnsureAnonymousSessionUseCase
 import team.mino.core.domain.usecase.JoinRoomByInviteCodeUseCase
+import team.mino.core.domain.usecase.RegisterPushTokenUseCase
 import team.mino.core.domain.usecase.ResolveSplashEntryUseCase
 import team.mino.core.errorhandling.DomainErrorEmitter
 import team.mino.core.errorhandling.domainErrorEmitter
@@ -25,6 +26,7 @@ internal class SplashViewModel @Inject constructor(
     private val ensureAnonymousSession: EnsureAnonymousSessionUseCase,
     private val resolveSplashEntry: ResolveSplashEntryUseCase,
     private val joinRoomByInviteCode: JoinRoomByInviteCodeUseCase,
+    private val registerPushToken: RegisterPushTokenUseCase,
 ) : ViewModel(),
     MviContainer<SplashUiState, SplashSideEffect> by mviContainer(SplashUiState()),
     DomainErrorEmitter by domainErrorEmitter() {
@@ -36,6 +38,12 @@ internal class SplashViewModel @Inject constructor(
 
     /** 직전 안내로부터 [NOTICE_INTERVAL]이 지날 때까지 살아 있는 작업. 살아 있는 동안은 발행하지 않는다. */
     private var noticeCooldown: Job? = null
+
+    /**
+     * 토큰 등록은 앱 시작마다 한 번이다(spec §4 가정). 세션은 확보됐지만 진입 판정이 실패해 재시도가
+     * 돌면 [awaitEntry]가 세션 확보를 다시 지나가므로, 그때 두 번째 등록을 띄우지 않도록 여기 붙잡아 둔다.
+     */
+    private var pushTokenRegistration: Job? = null
 
     fun processIntent(intent: SplashIntent) {
         when (intent) {
@@ -122,6 +130,7 @@ internal class SplashViewModel @Inject constructor(
             launchSafely {
                 val attempt = runCatchingDomain {
                     ensureAnonymousSession()
+                    registerPushTokenOnce()
                     resolveSplashEntry()
                 }
                 attempt.onDomainFailure { if (claimNoticeSlot()) emitDomainError(it) }
@@ -131,6 +140,19 @@ internal class SplashViewModel @Inject constructor(
             resolved?.let { return it }
             delay(RETRY_INTERVAL)
         }
+    }
+
+    /**
+     * 세션이 확보된 직후에만 불린다(EC-003). 진입 판정과 별개 작업으로 띄우고 기다리지 않는다 —
+     * 등록이 스플래시 대기 시간에 더해지지 않게 하기 위해서다(research.md D5).
+     *
+     * 실패는 Repository가 삼키므로 여기서 `runCatchingDomain`을 다시 두지 않는다(UX-002). 매핑되지 않은
+     * 실패만 CEH로 간다.
+     */
+    private fun registerPushTokenOnce() {
+        if (pushTokenRegistration != null) return
+
+        pushTokenRegistration = launchSafely { registerPushToken() }
     }
 
     /**

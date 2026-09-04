@@ -3,6 +3,7 @@ package team.mino.feature.main
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -24,9 +25,21 @@ internal fun MainShell(
     roomFormEntryPoint: RoomFormEntryPoint,
     initialRoomId: String? = null,
     modifier: Modifier = Modifier,
+    // 콜드 진입은 시작 목적지로, 웜 진입(onNewIntent)은 이미 떠 있는 NavHost에 명령형으로 탭을 옮긴다
+    // (→ docs/specs/push-notification/contracts/push-deeplink-contract.md §5).
+    startTab: MainTab = MainTab.HOME,
+    pendingTab: MainTab? = null,
+    onPendingTabConsumed: () -> Unit = {},
 ) {
     val navController = rememberNavController()
     TrackScreenViews(navController)
+    // 소비를 컴포지션 생명주기에 묶어 두면 시간 지연 가정 없이 NavHost가 준비된 뒤에만 전환된다.
+    LaunchedEffect(pendingTab) {
+        pendingTab?.let {
+            navController.navigateToTab(it)
+            onPendingTabConsumed()
+        }
+    }
     val bottomNavVisibility = remember { mutableStateOf(true) }
 
     CompositionLocalProvider(LocalBottomNavVisibility provides bottomNavVisibility) {
@@ -44,6 +57,7 @@ internal fun MainShell(
         ) { innerPadding ->
             MainNavHost(
                 navController = navController,
+                startTab = startTab,
                 onRequestPlaceDetail = onRequestPlaceDetail,
                 onOpenExternalMap = onOpenExternalMap,
                 onOpenSourceLink = onOpenSourceLink,
