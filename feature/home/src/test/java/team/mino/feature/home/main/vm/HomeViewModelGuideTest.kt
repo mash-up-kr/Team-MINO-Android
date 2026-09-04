@@ -23,6 +23,7 @@ import team.mino.core.domain.model.RoomColor
 import team.mino.core.domain.model.RoomSummary
 import team.mino.core.domain.model.RoomType
 import team.mino.core.domain.usecase.ResolveNextDeckUseCase
+import team.mino.core.domain.usecase.ResolveRoomEntryDeckUseCase
 import team.mino.feature.home.fake.FakeHomeDeckRepository
 import team.mino.feature.home.fake.FakeHomePreferencesRepository
 import team.mino.feature.home.fake.FakePlaceRepository
@@ -231,6 +232,7 @@ class HomeViewModelGuideTest {
             homePreferencesRepository = preferencesRepository,
             placeRepository = placeRepository,
             resolveNextDeck = ResolveNextDeckUseCase(),
+            resolveRoomEntryDeck = ResolveRoomEntryDeckUseCase(),
         )
 
     /** 순서를 눈으로 구별할 수 있게 pinId에 번호를 매긴다. 카드의 나머지 필드는 판정에 쓰이지 않는다. */

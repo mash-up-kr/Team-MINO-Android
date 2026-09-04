@@ -60,7 +60,7 @@ internal class HomeViewModel
         private val homePreferencesRepository: HomePreferencesRepository,
         private val resolveNextDeck: ResolveNextDeckUseCase,
         private val placeRepository: PlaceRepository,
-        private val resolveRoomEntryDeck: ResolveRoomEntryDeckUseCase = ResolveRoomEntryDeckUseCase(),
+        private val resolveRoomEntryDeck: ResolveRoomEntryDeckUseCase,
     ) :
     ViewModel(),
         MviContainer<HomeUiState, HomeSideEffect> by mviContainer(HomeUiState()),

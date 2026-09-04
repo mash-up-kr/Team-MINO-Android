@@ -19,7 +19,10 @@ import javax.inject.Inject
  * (EC-020·022).
  */
 class ResolveRoomEntryDeckUseCase @Inject constructor() {
-    operator fun invoke(context: DeckContext, roomId: String): NextDeck {
+    operator fun invoke(
+        context: DeckContext,
+        roomId: String,
+    ): NextDeck {
         val remainingSort =
             DeckSort.entries.firstOrNull { sort ->
                 DeckKey(roomId = roomId, sort = sort) !in context.exhausted

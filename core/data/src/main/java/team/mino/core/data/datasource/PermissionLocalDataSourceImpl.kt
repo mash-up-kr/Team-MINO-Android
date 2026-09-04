@@ -18,10 +18,11 @@ internal class PermissionLocalDataSourceImpl @Inject constructor(
         dataStore.edit { preferences -> preferences[type.toKey()] = true }
     }
 
-    private fun PermissionType.toKey() = when (this) {
-        PermissionType.NOTIFICATION -> KEY_NOTIFICATION_PERMISSION_REQUESTED
-        PermissionType.LOCATION -> KEY_LOCATION_PERMISSION_REQUESTED
-    }
+    private fun PermissionType.toKey() =
+        when (this) {
+            PermissionType.NOTIFICATION -> KEY_NOTIFICATION_PERMISSION_REQUESTED
+            PermissionType.LOCATION -> KEY_LOCATION_PERMISSION_REQUESTED
+        }
 
     private companion object {
         val KEY_NOTIFICATION_PERMISSION_REQUESTED = booleanPreferencesKey("notification_permission_requested")

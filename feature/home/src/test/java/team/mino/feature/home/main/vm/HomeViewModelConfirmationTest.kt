@@ -23,6 +23,7 @@ import team.mino.core.domain.model.RoomColor
 import team.mino.core.domain.model.RoomSummary
 import team.mino.core.domain.model.RoomType
 import team.mino.core.domain.usecase.ResolveNextDeckUseCase
+import team.mino.core.domain.usecase.ResolveRoomEntryDeckUseCase
 import team.mino.core.errorhandling.MinoDomainException
 import team.mino.feature.home.fake.FakeHomeDeckRepository
 import team.mino.feature.home.fake.FakeHomePreferencesRepository
@@ -229,17 +230,31 @@ class HomeViewModelConfirmationTest {
 
             assertEquals(
                 listOf(
-                    FakePlaceRepository.DuplicatePinRequest(pinId = pinId, roomIds = listOf(OTHER_ROOM_ID, THIRD_ROOM_ID)),
+                    FakePlaceRepository.DuplicatePinRequest(
+                        pinId = pinId,
+                        roomIds = listOf(OTHER_ROOM_ID, THIRD_ROOM_ID),
+                    ),
                 ),
                 placeRepository.duplicatePinCalls,
             )
             assertEquals(listOf(HomeSideEffect.ShowSaveResult), effects)
             assertNull("확정되면 시트는 닫힌다", viewModel.state.value.savePicker)
-            assertEquals("저장은 방 전환이 아니다", ROOM_ID, viewModel.state.value.room?.id)
-            assertEquals("카드가 그대로 남아야 한다", cards, viewModel.state.value.cards.toList())
+            assertEquals(
+                "저장은 방 전환이 아니다",
+                ROOM_ID,
+                viewModel.state.value.room
+                    ?.id,
+            )
+            assertEquals(
+                "카드가 그대로 남아야 한다",
+                cards,
+                viewModel.state.value.cards
+                    .toList(),
+            )
             assertTrue(
                 "저장은 넘김이 아니므로 되돌릴 카드가 생기지 않는다",
-                viewModel.state.value.undoStack.isEmpty(),
+                viewModel.state.value.undoStack
+                    .isEmpty(),
             )
         }
 
@@ -289,7 +304,10 @@ class HomeViewModelConfirmationTest {
             viewModel.processIntent(HomeIntent.SaveToAnotherRoom(cards.first().pinId))
             assertTrue(
                 "선택 없음을 판정하려면 시트가 선택 없이 열려 있어야 한다",
-                viewModel.state.value.savePicker?.selectedRoomIds.orEmpty().isEmpty(),
+                viewModel.state.value.savePicker
+                    ?.selectedRoomIds
+                    .orEmpty()
+                    .isEmpty(),
             )
 
             viewModel.processIntent(HomeIntent.ConfirmSaveTargets)
@@ -345,6 +363,7 @@ class HomeViewModelConfirmationTest {
             homePreferencesRepository = preferencesRepository,
             placeRepository = placeRepository,
             resolveNextDeck = ResolveNextDeckUseCase(),
+            resolveRoomEntryDeck = ResolveRoomEntryDeckUseCase(),
         )
 
     /** pinId로 카드를 구별할 수 있게 번호를 매긴다. 나머지 필드는 판정에 쓰이지 않는다. */
