@@ -1,7 +1,10 @@
 package team.mino.core.domain.repository
 
 import kotlinx.coroutines.flow.Flow
+import team.mino.core.common.kotlin.geo.GeoPoint
+import team.mino.core.domain.model.MapMarkerSortOption
 import team.mino.core.domain.model.Place
+import team.mino.core.domain.model.PlaceCategoryFilter
 
 /**
  * 방에 저장된 장소(핀) 목록 단위 동작 계약 — 핀 한 개 자체의 조회·기록·복제는 [PlaceRepository] 소관이다.
@@ -14,8 +17,22 @@ import team.mino.core.domain.model.Place
  * 두 화면이 [SYS-003] 시트를 한 벌로 합치면서 [PlaceRepository] 쪽으로 모았다.
  */
 interface RoomPlacesRepository {
-    /** 특정 방에 저장된 장소(핀) 전체를 실시간 관찰. */
-    fun observePlaces(roomId: String): Flow<List<Place>>
+    /**
+     * 핀 목록을 실시간 관찰. 필터·정렬은 서버가 수행한다(클라이언트 메모리 필터링 아님).
+     *
+     * @param roomId 생략(`null`)하면 내가 속한 모든 활성 방의 핀을 조회한다(전체 지도용). 지정하면 그 방
+     * 핀만 조회하며 멤버십 검증은 서버가 한다.
+     * @param category 카테고리 필터. 기본값 [PlaceCategoryFilter.ALL]은 필터 없음(기존과 동일).
+     * @param sort 정렬 기준. 기본값 [MapMarkerSortOption.ALL]은 최신순(기존과 동일).
+     * @param currentLocation [sort]가 [MapMarkerSortOption.NEARBY](거리순)일 때만 서버가 요구하는 내 위치.
+     * 그 외 정렬에서는 `null`이어도 된다.
+     */
+    fun observePlaces(
+        roomId: String? = null,
+        category: PlaceCategoryFilter = PlaceCategoryFilter.ALL,
+        sort: MapMarkerSortOption = MapMarkerSortOption.ALL,
+        currentLocation: GeoPoint? = null,
+    ): Flow<List<Place>>
 
     /**
      * [FR-010] 장소 삭제 — 호출한 방에서만 제거한다(다른 방에 복제된 사본은 남는다).

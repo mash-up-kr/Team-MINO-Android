@@ -10,8 +10,21 @@ import team.mino.core.data.network.dto.response.PinResponse
  * 가리키고 있어 [team.mino.core.domain.repository.PlaceRepository] 한 갈래로 모았다.
  */
 internal interface PlaceRemoteDataSource {
-    /** 특정 방에 저장된 핀 전체 조회. `GET /api/v1/pins?roomId={roomId}`. */
-    suspend fun getPins(roomId: String): List<PinResponse>
+    /**
+     * 핀 목록 조회. `GET /api/v1/pins`.
+     *
+     * [roomId]를 생략하면 내가 속한 모든 활성 방의 핀을 조회한다. [category]·[sort]는 서버 쿼리 파라미터
+     * 값(`"all"`/`"cafe"`/`"restaurant"`, `"all"`/`"latest"`/`"ggukPick"`/`"distance"`/`"commented"`)을
+     * 그대로 받는다 — 값 변환은 `RoomPlacesRepositoryImpl`이 도메인 enum을 받아 여기 넘기기 전에 끝낸다.
+     * [lat]·[lng]는 `sort = "distance"`일 때만 서버가 요구한다.
+     */
+    suspend fun getPins(
+        roomId: String? = null,
+        category: String = "all",
+        sort: String = "all",
+        lat: Double? = null,
+        lng: Double? = null,
+    ): List<PinResponse>
 
     /** 특정 핀 삭제. `DELETE /api/v1/pins/{pinId}`. */
     suspend fun deletePin(pinId: String)

@@ -18,10 +18,28 @@ import javax.inject.Inject
 internal class PlaceApiService @Inject constructor(
     private val client: HttpClient,
 ) {
-    suspend fun getPins(roomId: String): List<PinResponse> =
+    /**
+     * [roomId]를 생략하면 내가 속한 모든 활성 방의 핀을 조회한다(전체 지도용). 지정하면 해당 방 핀만
+     * 조회하며 멤버십 검증은 서버가 한다.
+     *
+     * [category]·[sort]는 서버 기본값이 각각 `"all"`이라 생략 시 기존과 동일하게 동작한다(하위 호환).
+     * [lat]·[lng]는 `sort = "distance"`일 때만 서버가 요구하며, 그 외에는 넘겨도 서버가 무시한다. Ktor의
+     * `parameter()`는 값이 `null`이면 쿼리 파라미터 자체를 붙이지 않는다.
+     */
+    suspend fun getPins(
+        roomId: String? = null,
+        category: String = "all",
+        sort: String = "all",
+        lat: Double? = null,
+        lng: Double? = null,
+    ): List<PinResponse> =
         client
             .get("api/v1/pins") {
                 parameter("roomId", roomId)
+                parameter("category", category)
+                parameter("sort", sort)
+                parameter("lat", lat)
+                parameter("lng", lng)
             }.body<MinoResponse<List<PinResponse>>>()
             .data
 
