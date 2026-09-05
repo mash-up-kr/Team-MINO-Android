@@ -25,6 +25,10 @@ internal class PlaceApiService @Inject constructor(
      * [category]·[sort]는 서버 기본값이 각각 `"all"`이라 생략 시 기존과 동일하게 동작한다(하위 호환).
      * [lat]·[lng]는 `sort = "distance"`일 때만 서버가 요구하며, 그 외에는 넘겨도 서버가 무시한다. Ktor의
      * `parameter()`는 값이 `null`이면 쿼리 파라미터 자체를 붙이지 않는다.
+     *
+     * [page]·[pageSize]를 둘 다 생략하면 서버가 전체를 offset 없이 반환한다(지도 전체 보기 — 지도는 이
+     * 둘을 넘기지 않는다, `RoomListViewModel.observePlaces` 참고). 방 상세 장소 목록처럼 나눠 받을 때만
+     * 채운다([RoomPlacesRepositoryImpl.getPlacesPage]).
      */
     suspend fun getPins(
         roomId: String? = null,
@@ -32,6 +36,8 @@ internal class PlaceApiService @Inject constructor(
         sort: String = "all",
         lat: Double? = null,
         lng: Double? = null,
+        page: Int? = null,
+        pageSize: Int? = null,
     ): List<PinResponse> =
         client
             .get("api/v1/pins") {
@@ -40,6 +46,8 @@ internal class PlaceApiService @Inject constructor(
                 parameter("sort", sort)
                 parameter("lat", lat)
                 parameter("lng", lng)
+                parameter("page", page)
+                parameter("pageSize", pageSize)
             }.body<MinoResponse<List<PinResponse>>>()
             .data
 

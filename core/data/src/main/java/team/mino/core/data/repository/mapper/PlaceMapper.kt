@@ -28,7 +28,7 @@ internal fun PinResponse.toDomain(): Place =
         name = place.name,
         address = place.address,
         category = place.category.toPlaceCategoryFilter(),
-        thumbnailUrl = images.firstOrNull(),
+        thumbnailUrls = images,
         savedAt = Instant.parse(createdAt),
         // 서버 미노출 필드 — 백엔드 확정 전까지 플레이스홀더.
         commentCount = 0,

@@ -40,6 +40,25 @@ internal class RoomPlacesRepositoryImpl @Inject constructor(
             )
         }
 
+    override suspend fun getPlacesPage(
+        roomId: String?,
+        category: PlaceCategoryFilter,
+        sort: MapMarkerSortOption,
+        currentLocation: GeoPoint?,
+        page: Int,
+        pageSize: Int,
+    ): List<Place> =
+        remoteDataSource
+            .getPins(
+                roomId = roomId,
+                category = category.toQueryValue(),
+                sort = sort.toQueryValue(),
+                lat = currentLocation?.latitude,
+                lng = currentLocation?.longitude,
+                page = page,
+                pageSize = pageSize,
+            ).map { it.toDomain() }
+
     /**
      * [FR-010] 장소 삭제 — 호출한 방에서만 제거한다(`DELETE /api/v1/pins/{pinId}`).
      *

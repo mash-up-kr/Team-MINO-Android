@@ -17,7 +17,9 @@ internal class PlaceRemoteDataSourceImpl @Inject constructor(
         sort: String,
         lat: Double?,
         lng: Double?,
-    ): List<PinResponse> = service.getPins(roomId, category, sort, lat, lng)
+        page: Int?,
+        pageSize: Int?,
+    ): List<PinResponse> = service.getPins(roomId, category, sort, lat, lng, page, pageSize)
 
     override suspend fun deletePin(pinId: String) {
         service.deletePin(pinId)

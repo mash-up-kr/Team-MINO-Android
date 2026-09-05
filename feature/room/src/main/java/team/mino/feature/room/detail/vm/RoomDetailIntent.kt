@@ -34,6 +34,12 @@ internal sealed interface RoomDetailIntent : Intent {
 
     data class OnViewTypeSelected(val viewType: PlaceViewType) : RoomDetailIntent
 
+    /**
+     * 장소 목록(리스트형/카드형)이 스크롤 끝에 가까워졌을 때 — 다음 페이지(20개)를 이어 받는다("api
+     * 낭비 없게"). 이미 로딩 중이거나 더 받을 페이지가 없으면 [RoomDetailViewModel]이 조용히 무시한다.
+     */
+    data object OnPlacesLoadMore : RoomDetailIntent
+
     data object OnCloseClick : RoomDetailIntent
 
     /**
@@ -100,6 +106,12 @@ internal sealed interface RoomDetailIntent : Intent {
     data object OnLeaveCancel : RoomDetailIntent
 
     data class OnOwnerDelegateSelected(val memberId: String) : RoomDetailIntent
+
+    /** 방장 위임 안내 팝업의 [다음] — 위임 대상 선택 화면([LeaveDialogState.DelegateOwner])으로 넘어간다. */
+    data object OnOwnerDelegateIntroConfirm : RoomDetailIntent
+
+    /** 위임 대상 선택 화면의 [이전으로] — 방장 위임 안내 팝업으로 되돌아간다. */
+    data object OnOwnerDelegateBack : RoomDetailIntent
 
     data object OnOwnerDelegateConfirm : RoomDetailIntent
 

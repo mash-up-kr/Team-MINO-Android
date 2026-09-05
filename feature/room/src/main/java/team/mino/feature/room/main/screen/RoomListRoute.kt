@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -17,8 +18,10 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import team.mino.core.common.ui.architecture.CollectSideEffect
 import team.mino.core.common.ui.scaffold.LocalBottomNavVisibility
+import team.mino.core.common.ui.scaffold.LocalSnackbarHostState
 import team.mino.core.navigation.activity.launcher.EXTRA_ROOM_FORM_RESULT_ROOM_ID
 import team.mino.feature.room.detail.screen.RoomDetailRoute
 import team.mino.feature.room.detail.vm.RoomDetailViewModel
@@ -61,6 +64,10 @@ internal fun RoomListRoute(
     val activity = checkNotNull(LocalActivity.current) { "RoomListRoute는 Activity 컨텍스트 안에서만 그려진다." }
     val selectedRoomId = state.selectedRoomId
     val selectedPinId = state.selectedPinId
+    // [SYS-007] 나가기 완료 토스트 — `RoomDetailRoute`는 `onBack()`과 함께 컴포지션에서 사라지므로,
+    // 계속 살아있는 이 Route의 스코프로 띄워야 스낵바가 취소되지 않는다(RoomDetailRoute.onLeaveRoom KDoc).
+    val snackbarHostState = LocalSnackbarHostState.current
+    val scope = rememberCoroutineScope()
 
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions(),
@@ -143,6 +150,10 @@ internal fun RoomListRoute(
                     onBack = { viewModel.processIntent(RoomListIntent.OnCloseRoomDetailClick) },
                     onCurrentLocationClick = { viewModel.processIntent(RoomListIntent.OnCurrentLocationClick) },
                     onOpenPlaceDetail = { pinId -> viewModel.processIntent(RoomListIntent.OnPlaceSelected(pinId)) },
+                    onLeaveRoom = { message ->
+                        viewModel.processIntent(RoomListIntent.OnCloseRoomDetailClick)
+                        scope.launch { snackbarHostState.showSnackbar(message) }
+                    },
                 )
             }
         } else {

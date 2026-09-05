@@ -39,6 +39,21 @@ internal class FakeRoomPlacesRepository : RoomPlacesRepository {
         return places
     }
 
+    var lastGetPlacesPageArgs: GetPlacesPageArgs? = null
+        private set
+
+    override suspend fun getPlacesPage(
+        roomId: String?,
+        category: PlaceCategoryFilter,
+        sort: MapMarkerSortOption,
+        currentLocation: GeoPoint?,
+        page: Int,
+        pageSize: Int,
+    ): List<Place> {
+        lastGetPlacesPageArgs = GetPlacesPageArgs(roomId, category, sort, currentLocation, page, pageSize)
+        return places.value.drop(page * pageSize).take(pageSize)
+    }
+
     override suspend fun deletePlace(
         roomId: String,
         pinId: String,
@@ -51,5 +66,14 @@ internal class FakeRoomPlacesRepository : RoomPlacesRepository {
         val category: PlaceCategoryFilter,
         val sort: MapMarkerSortOption,
         val currentLocation: GeoPoint?,
+    )
+
+    internal data class GetPlacesPageArgs(
+        val roomId: String?,
+        val category: PlaceCategoryFilter,
+        val sort: MapMarkerSortOption,
+        val currentLocation: GeoPoint?,
+        val page: Int,
+        val pageSize: Int,
     )
 }

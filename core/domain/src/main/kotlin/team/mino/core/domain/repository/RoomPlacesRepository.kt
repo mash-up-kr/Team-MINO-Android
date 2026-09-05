@@ -35,6 +35,24 @@ interface RoomPlacesRepository {
     ): Flow<List<Place>>
 
     /**
+     * 핀 목록을 [page]("0부터 시작") 단위로 나눠 한 번만 조회한다 — 방 상세 장소 목록([RoomDetailViewModel])
+     * 전용. [observePlaces]와 달리 전체를 한 번에 받지 않아, 장소가 많은 방에서도 화면에 필요한 만큼만
+     * 불러온다("api 낭비 없게").
+     *
+     * @param pageSize 한 번에 받을 개수. 기본값 [DEFAULT_PLACES_PAGE_SIZE](20).
+     * @return 결과 개수가 [pageSize]보다 적으면 더 가져올 다음 페이지가 없다는 뜻이다(호출부가 그 크기로
+     * 판정한다).
+     */
+    suspend fun getPlacesPage(
+        roomId: String? = null,
+        category: PlaceCategoryFilter = PlaceCategoryFilter.ALL,
+        sort: MapMarkerSortOption = MapMarkerSortOption.ALL,
+        currentLocation: GeoPoint? = null,
+        page: Int,
+        pageSize: Int = DEFAULT_PLACES_PAGE_SIZE,
+    ): List<Place>
+
+    /**
      * [FR-010] 장소 삭제 — 호출한 방에서만 제거한다(다른 방에 복제된 사본은 남는다).
      *
      * [roomId]는 "어느 방에서 지우는가"라는 호출자의 의도를 계약에 남기려고 받는다 — 그 값을 서버 요청에
@@ -46,3 +64,6 @@ interface RoomPlacesRepository {
         pinId: String,
     )
 }
+
+/** [RoomPlacesRepository.getPlacesPage] 기본 페이지 크기. */
+const val DEFAULT_PLACES_PAGE_SIZE = 20
