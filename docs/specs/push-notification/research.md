@@ -22,7 +22,7 @@
 
 **Rationale**: (사용자 결정, 2026-09-03) 실제 payload는 `placeId`와 `pinId`를 함께 싣는데, 코드베이스에는 이미 탭 간 장소 상세 진입 인프라(`PlaceDetailRequestHolder` + `PlaceRepository.getPlaceDetail(pinId)`, `docs/specs/place-detail/contracts/place-detail-entry.md`)가 있고 `PlaceDetailEntryOrigin.NOTIFICATION`이 이 용도로 이미 예약돼 있다(`core/navigation/entry/PlaceDetailRequestHolder.kt`). `pinId`를 그대로 쓰면 이 인프라를 온전히 재사용해 별도 방 조회를 만들 필요가 없다.
 
-**spec.md와의 괴리**: FR-013은 "장소 식별자 하나만 싣고, 방은 앱이 [SYS-004] 표시 기준 방을 읽어 정한다"고 확정되어 있고, `pinId`는 "장소·방 쌍"이라는 이유로 TBD 답변에서 명시적으로 기각된 후보였다(spec §5). 그런데 [SYS-004] 표시 기준 방("최초로 저장한 방", PRD 5.1.0)을 `placeId`만으로 조회하는 API·UseCase는 코드베이스 어디에도 없다 — 기존 `RoomRepository.getRooms(placeId)`는 "이미 저장돼 있는지"만 묻고 "어느 방을 기본으로 보여줄지"는 응답하지 않는다. 이 설계는 spec의 문언과 다르게 구현되므로, **완료 보고에서 spec.md FR-013의 PATCH 개정(가정 갱신 — 서버 payload가 `pinId`를 함께 보낸다는 사실 반영)을 제안한다.** 사용자 시나리오·완료 조건 관점에서는 두 방식 모두 "그 알림이 가리키는 장소의 장소 상세로 이동한다"는 요구를 충족하므로 요구사항 경계 변경은 아니다.
+**spec.md와의 괴리 (해소됨)**: 이 결정을 내릴 때 FR-013은 "장소 식별자 하나만 싣고, 방은 앱이 [SYS-004] 표시 기준 방을 읽어 정한다"였고 `pinId`는 TBD 답변에서 명시적으로 기각된 후보였다(spec §5 Q4). 그러나 [SYS-004] 표시 기준 방을 `placeId`만으로 조회하는 API·UseCase가 코드베이스에도 서버에도 없었다. **spec 1.0.2가 FR-013을 이 결정에 맞춰 재확정해 괴리가 닫혔고**, 2026-09-04에는 [SCR-007] 알림함마저 5.0.0에서 같은 규칙으로 옮겨 왔다 — REST 알림 응답에도 `pinId`가 실리는 것이 확인됐기 때문이다. 이 결정이 감수했던 "앱 안·밖 도착지가 갈린다"는 대가는 남지 않는다(spec §5 Q4의 1.0.4 기록).
 
 **Alternatives considered**: `placeId` + 신규 "표시 기준 방 조회" API를 서버에 요청 — 서버 개발 범위가 늘고, 이미 동작하는 `pinId` 경로를 두고 별도 경로를 유지해야 해 기각.
 
