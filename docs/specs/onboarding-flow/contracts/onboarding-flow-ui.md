@@ -35,6 +35,7 @@ Activity 스코프 ViewModel이다. 스텝 전이 규칙 전체를 여기가 소
 | `isLoading` | `Boolean` | `true` | 저장된 진행 상태를 읽는 동안 참 | FR-023 |
 | `step` | `OnboardingStep` | `PROFILE` | 현재 스텝 | FR-001 |
 | `createdRoomId` | `String?` | `null` | 이 온보딩에서 만든 공동방 | FR-008·UX-001 |
+| `invitedRoomId` | `String?` | `null` | 초대 딥링크(SYS-010)로 자동 참여까지 끝난 방. 튜토리얼을 마쳤을 때 `NavigateToHome`이 아니라 `NavigateToHomeWithRoom`으로 갈지를 가른다 | SYS-010 |
 
 - `isLoading`을 별도 필드로 두는 이유 → [UiState isLoading 분리형 ADR](../../../adr/2026-07-25-uistate-isloading-over-sealed-status.md).
 - **진행률을 든 필드가 없다**(UX-006). 남은 스텝 수·전체 스텝 수를 상태에 두지 않는 것이 그 요구사항의 표현이다.
@@ -71,14 +72,18 @@ Activity 스코프 ViewModel이다. 스텝 전이 규칙 전체를 여기가 소
 | 현재 `step` | Intent | 저장 (전환 **전**) | 새 `step` | SideEffect |
 |---|---|---|---|---|
 | — | `Start` | 없음(읽기만) | `ResolveOnboardingStepUseCase(progress)` | 그 스텝에 해당하는 Launch/Navigate |
-| `PROFILE` | `ProfileSaved` | `setCurrentStep(ROOM_FORM)` | `ROOM_FORM` | `LaunchRoomForm` |
+| `PROFILE` | `ProfileSaved`(초대 코드 없음, 또는 있으나 참여 실패) | `setCurrentStep(ROOM_FORM)` | `ROOM_FORM` | `LaunchRoomForm` |
+| `PROFILE` | `ProfileSaved`(초대 코드 보유, 참여 성공 — SYS-010) | `setInvitedRoomId(roomId)` → `setCurrentStep(TUTORIAL)` | `TUTORIAL` | `NavigateToTutorial` |
 | `ROOM_FORM` | `RoomCreated(id)` | `setCreatedRoomId(id)` → `setCurrentStep(INVITE)` | `INVITE` | `NavigateToInvite(id)` |
 | `ROOM_FORM` | `RoomFormSkipped` | `setCurrentStep(TUTORIAL)` | `TUTORIAL` | `NavigateToTutorial` |
 | `ROOM_FORM` | `RoomFormCanceled` | 없음 | `ROOM_FORM` | `LaunchRoomForm` |
 | `INVITE` | `InviteClosed` | `setCurrentStep(TUTORIAL)` | `TUTORIAL` | `NavigateToTutorial` |
-| `TUTORIAL` | `TutorialFinished` | `markCompleted()` | — | `NavigateToHome` |
+| `TUTORIAL` | `TutorialFinished`(`invitedRoomId` 없음) | `markCompleted()` | — | `NavigateToHome` |
+| `TUTORIAL` | `TutorialFinished`(`invitedRoomId` 있음 — SYS-010) | `markCompleted()` | — | `NavigateToHomeWithRoom(invitedRoomId)` |
 
 **중복 조작 방지(UX-005·EC-003)**: 각 Intent는 **현재 `step`이 표의 왼쪽 칸과 같을 때만** 처리한다. 같은 버튼을 연달아 눌러도 두 번째 Intent는 이미 바뀐 `step`과 맞지 않아 버려진다. 이 가드가 있으므로 화면 쪽에서 버튼을 비활성화하는 처리는 두지 않는다.
+
+**SYS-010(초대 딥링크) 갈래**: 초대 코드로 온보딩에 진입한 신규 유저는 공동방 생성·친구 초대 두 스텝만 건너뛰고 튜토리얼은 그대로 거친다(Figma 스펙 — 온보딩 → 프로필 설정 → 튜토리얼 → 초대받은 방 상세). `invitedRoomId`는 재개 경로에도 필요해 [`OnboardingProgressRepository.setInvitedRoomId`](../../../../core/domain/repository/OnboardingProgressRepository.kt)로 영속화한다 — `createdRoomId`가 친구 초대 스텝 재개를 위해 저장되는 것과 같은 이유다.
 
 **저장이 전환보다 앞선다** — 이 규칙의 단일 출처가 여기다. FR-024가 요구하는 것은 기록 자체이고, **순서**는 이 계획이 정한다: 순서를 뒤집으면 기록 직전에 죽은 프로세스가 같은 스텝을 두 번 실행한다(EC-019·SC-008).
 
