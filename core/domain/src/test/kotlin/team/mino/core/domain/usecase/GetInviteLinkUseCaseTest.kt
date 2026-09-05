@@ -6,6 +6,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Test
 import team.mino.core.domain.invite.InviteLinkBuilder
+import team.mino.core.domain.model.InvitationPreview
 import team.mino.core.domain.repository.RoomInvitationRepository
 import java.io.IOException
 
@@ -68,6 +69,13 @@ private class FakeRoomInvitationRepository : RoomInvitationRepository {
         failure?.let { throw it }
         return code
     }
+
+    override suspend fun previewInvitation(inviteCode: String): InvitationPreview = error("not used in this test")
+
+    override suspend fun joinRoom(
+        roomId: String,
+        inviteCode: String,
+    ) = error("not used in this test")
 }
 
 /** 호스트·경로를 아는 것은 `:core:data`의 구현이므로, 여기서는 "코드가 조립기를 거쳤다"만 관찰한다. */

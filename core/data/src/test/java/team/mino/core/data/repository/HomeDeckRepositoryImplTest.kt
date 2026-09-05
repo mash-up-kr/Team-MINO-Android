@@ -218,6 +218,11 @@ class HomeDeckRepositoryImplTest {
             roomId: String,
             nextOwnerId: String,
         ): Unit = throw IllegalStateException("부르지 않는다")
+
+        override suspend fun joinRoom(
+            roomId: String,
+            inviteCode: String,
+        ): Unit = throw IllegalStateException("부르지 않는다")
     }
 
     /** 순회 순서 테스트 전용. `listRooms`만 재정의하고 나머지는 [UnusedRoomRemoteDataSource]에 위임한다. */
