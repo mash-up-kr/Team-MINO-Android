@@ -2,15 +2,13 @@ package team.mino.feature.main
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavHostController
 import team.mino.core.navigation.entry.PlaceDetailEntryOrigin
 import team.mino.core.navigation.screen.MinoNavHost
-import team.mino.core.navigation.screen.screen
 import team.mino.feature.home.homeGraph
 import team.mino.feature.main.placeholder.RoomFormEntryPoint
-import team.mino.feature.main.placeholder.screen.MainTabPlaceholderScreen
 import team.mino.feature.mypage.mypageGraph
+import team.mino.feature.notifications.notificationGraph
 import team.mino.feature.room.roomGraph
 
 /**
@@ -22,6 +20,7 @@ import team.mino.feature.room.roomGraph
 internal fun MainNavHost(
     navController: NavHostController,
     onRequestPlaceDetail: (pinId: String, origin: PlaceDetailEntryOrigin) -> Unit,
+    onRequestRoomDetail: (roomId: String) -> Unit,
     onOpenExternalMap: (mapUrl: String?, query: String) -> Unit,
     onOpenSourceLink: (url: String) -> Unit,
     onNavigateToRoomForm: () -> Unit,
@@ -66,9 +65,22 @@ internal fun MainNavHost(
             // 진입 인자를 그대로 흘려보낸다.
             initialRoomId = initialRoomId,
         )
-        // 아직 탭 feature 모듈이 없는 탭은 전환 검증용 placeholder다. 모듈이 생기면 홈처럼 그 모듈의
-        // 등록 함수 호출로 교체하고 Route 소유도 그쪽으로 옮긴다(→ docs/architecture/feature-navigation.md 3장).
-        screen<Notification> { MainTabPlaceholderScreen(label = stringResource(MainTab.NOTIFICATION.labelRes)) }
+        // 알림 탭 밖으로 나가는 두 전환. 장소 상세도 방 상세도 저장 탭 안의 화면이라 홈과 같은 모양으로
+        // 홀더에 요청을 남기고 탭만 옮긴다 — 알림 모듈은 pinId·roomId를 올리는 것까지만 안다
+        // (→ docs/specs/notifications/contracts/notification-ui.md §1, research.md D10·D14).
+        notificationGraph(
+            navController = navController,
+            // origin이 NOTIFICATION이라고 도착 화면의 소속이나 [나가기] 규칙이 달라지지는 않는다.
+            // 그 갈림은 장소 상세가 홀더에서 읽어 집행한다(notifications spec UX-013·UX-016).
+            onNavigateToPlaceDetail = { pinId ->
+                onRequestPlaceDetail(pinId, PlaceDetailEntryOrigin.NOTIFICATION)
+                navController.navigateToTab(MainTab.SAVED)
+            },
+            onNavigateToRoomDetail = { roomId ->
+                onRequestRoomDetail(roomId)
+                navController.navigateToTab(MainTab.SAVED)
+            },
+        )
         mypageGraph(onNavigateToProfileEdit = onNavigateToProfileEdit)
     }
 }

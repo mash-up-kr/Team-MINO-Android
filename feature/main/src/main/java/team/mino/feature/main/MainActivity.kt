@@ -55,8 +55,9 @@ class MainActivity : ComponentActivity() {
     lateinit var placeDetailRequestHolder: PlaceDetailRequestHolder
 
     /**
-     * 푸시 딥링크가 저장 탭에 남기는 방 상세 요청. 장소 상세와 같은 이유로 Route 인자가 아니라 홀더를 지난다
-     * (→ docs/specs/push-notification/contracts/push-deeplink-contract.md §4).
+     * 푸시 딥링크와 알림 탭이 저장 탭에 남기는 방 상세 요청. 장소 상세와 같은 이유로 Route 인자가 아니라
+     * 홀더를 지난다(→ docs/specs/push-notification/contracts/push-deeplink-contract.md §4,
+     * docs/specs/notifications/contracts/notification-ui.md §1).
      */
     @Inject
     lateinit var roomDetailRequestHolder: RoomDetailRequestHolder
@@ -111,6 +112,7 @@ class MainActivity : ComponentActivity() {
             MinoAndroidAppTheme {
                 MainShell(
                     onRequestPlaceDetail = placeDetailRequestHolder::request,
+                    onRequestRoomDetail = roomDetailRequestHolder::request,
                     onOpenExternalMap = ::openExternalMap,
                     onOpenSourceLink = ::openSourceLink,
                     onNavigateToRoomForm = { launchRoomForm() },

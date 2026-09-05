@@ -18,6 +18,7 @@ import team.mino.feature.main.placeholder.RoomFormEntryPoint
 @Composable
 internal fun MainShell(
     onRequestPlaceDetail: (pinId: String, origin: PlaceDetailEntryOrigin) -> Unit,
+    onRequestRoomDetail: (roomId: String) -> Unit,
     onOpenExternalMap: (mapUrl: String?, query: String) -> Unit,
     onOpenSourceLink: (url: String) -> Unit,
     onNavigateToRoomForm: () -> Unit,
@@ -59,6 +60,7 @@ internal fun MainShell(
                 navController = navController,
                 startTab = startTab,
                 onRequestPlaceDetail = onRequestPlaceDetail,
+                onRequestRoomDetail = onRequestRoomDetail,
                 onOpenExternalMap = onOpenExternalMap,
                 onOpenSourceLink = onOpenSourceLink,
                 onNavigateToRoomForm = onNavigateToRoomForm,
