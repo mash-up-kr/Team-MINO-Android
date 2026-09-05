@@ -38,6 +38,8 @@ jobs:
           echo "TAG=qa-${version_name}" >> "$GITHUB_ENV"
 
       - name: Build qaRelease APK
+        env:
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
         run: >
           ./gradlew :app:assembleQaRelease
           -PversionCode=${{ github.run_number }}

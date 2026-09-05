@@ -49,6 +49,7 @@ jobs:
         env:
           VERSION_CODE: ${{ github.run_number }}
           VERSION_NAME: ${{ inputs.version_name }}
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
         run: bundle exec fastlane internal
 
       - name: Notify Discord (success)
