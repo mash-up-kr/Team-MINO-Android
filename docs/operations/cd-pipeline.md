@@ -24,6 +24,7 @@ GitHub Actions + Fastlane 기반 Play Store 배포 자동화. 배포는 `release
 | ④ 마무리 | (배포 아님) | git PR·태그 | main 태그 | ③ 제출 성공 후 |
 
 - `versionCode`는 `github.run_number`로 자동 주입(`-PversionCode`). `versionName`은 ①에서 release 브랜치명으로 파생, ②③은 dispatch 입력값.
+  - `run_number`는 워크플로별로 1부터 센다. Play는 이미 쓴 versionCode를 거부하므로, 콘솔에서 수동 업로드한 코드보다 낮은 번호의 ② 실행은 실패한다. 이때는 **새로 dispatch**한다 — Re-run은 번호가 오르지 않는다.
 - ③은 ②가 올린 빌드를 그대로 승급한다. `version_code` 입력을 비우면 internal 최신 빌드를 승급.
 
 ## 구성 요소
@@ -87,9 +88,17 @@ debug 서명이 flavor가 아니라 buildType에 붙는 이유는 [`Signing.kt`]
 | `com.mino.gguk` | 공용 debug | `3F:9A:EB:9E:76:B6:A7:B6:64:BB:B9:7D:B4:77:92:E5:EE:52:78:37` |
 | `com.mino.gguk.qa` | 공용 debug | 위와 동일 |
 | `com.mino.gguk.qa` | qa.jks | `F3:A9:D1:B7:8D:B3:A7:94:7D:AE:B2:48:AA:58:2F:0C:88:36:BB:BF` |
-| `com.mino.gguk` | Play 앱 서명 인증서 | Play Console → 테스트 및 출시 → 앱 무결성 |
+| `com.mino.gguk` | Play 앱 서명 키 | `DA:33:D6:32:46:3F:5F:AD:F2:27:88:D4:C8:45:05:E5:E1:9B:D5:B1` |
 
-`com.mino.gguk`의 release 빌드는 Play가 앱 서명 키로 재서명하므로, 업로드 키(`prod.jks`)가 아니라 **Play 앱 서명 인증서**의 SHA-1을 등록한다.
+`com.mino.gguk`의 release 빌드는 Play가 앱 서명 키로 재서명하므로, 업로드 키(`prod.jks`)가 아니라 **Play 앱 서명 키**의 SHA-1을 등록한다. Play Console → 테스트 및 출시 → 앱 무결성 → 앱 서명의 **"기존 키"** 값이다. 옆의 "양자 내성 암호화 키" 지문은 Android가 앱 식별에 쓰지 않으므로 등록해도 소용없다.
+
+콘솔 값을 믿지 말고 **실제 설치된 스토어 빌드의 서명을 실측**한다. 앱 서명 키를 교체(업그레이드)한 뒤에는 기존 설치 기기엔 이전 키로 서명된 업데이트가 계속 내려가므로, 이전 키와 새 키 둘 다 등록해야 한다.
+
+```sh
+adb pull "$(adb shell pm path com.mino.gguk | sed 's/package://')" store.apk
+apksigner verify --print-certs store.apk | grep SHA-1
+# 또는 지도 화면 진입 후: adb logcat -d | grep -A3 "Authorization failure"  ← SDK가 요구하는 (SHA-1;패키지) 쌍을 그대로 찍는다
+```
 
 업로드 키(`prod.jks`, SHA-1 `29:14:1C:D8:20:1D:FE:30:87:CE:F1:77:5A:2A:E1:4A:B4:B0:AE:87`)는 4쌍에 넣지 않는다. 로컬에서 빌드한 `prodRelease` APK를 기기에 직접 설치해 확인할 때만 임시로 추가한다.
 
@@ -113,9 +122,14 @@ SHA-1을 등록하면 Firebase가 Android OAuth 클라이언트를 자동 생성
 ## Play Console 사전 준비 (②③ 전제, 1회)
 
 1. `com.mino.gguk` 앱 생성 + 최초 설정(데이터 보안·콘텐츠 등급 등) 완료
-2. Google Cloud 서비스계정 생성 → Play Console 권한 부여(release) → JSON 키 발급 → `PLAY_SERVICE_ACCOUNT_JSON`
+2. Google Cloud 서비스계정 → Play Console 권한 부여 → JSON 키 발급 → `PLAY_SERVICE_ACCOUNT_JSON`
+   - 서비스계정은 `team-mino-prod` 프로젝트의 `gguk-android-publisher@team-mino-prod.iam.gserviceaccount.com`. GCP 역할은 필요 없다.
+   - Play Console과 GCP 프로젝트를 연결하는 절차는 없다. Play Console → 사용자 및 권한 → 새 사용자 초대에 서비스계정 이메일을 넣고 앱 권한 4개를 준다: 앱 정보 보기(읽기 전용) · 테스트 트랙에 앱 출시 · 테스트 트랙 관리 및 테스터 목록 수정 · 프로덕션에 출시.
+   - 조직 정책 `iam.disableServiceAccountKeyCreation`이 키 생성을 막는다. 조직 정책 관리자가 이 프로젝트에 한해 "시행 안 함"으로 재정의한 뒤 키를 만든다 (키 생성 후 정책을 되돌려도 기존 키는 유효).
+   - 시크릿은 base64가 아닌 JSON 원문: `gh secret set PLAY_SERVICE_ACCOUNT_JSON < <키파일>.json`
 3. **첫 AAB는 콘솔에서 수동 업로드 1회** (fastlane supply는 앱을 생성하지 못함)
-4. 내부테스트 테스터 목록(이메일/구글그룹) 등록
+4. **첫 production 출시도 콘솔에서** — production에 게시된 적 없는 "draft 앱"에는 API가 `completed` 릴리스를 만들지 못한다 (`Only releases with status draft may be created on draft app`). 프로덕션 → 새 버전 만들기 → 라이브러리에서 internal 빌드 추가 → 검토 → 출시. ③은 두 번째 출시부터 동작한다.
+5. 내부테스트 테스터 목록(이메일/구글그룹) 등록 → 참여 링크를 `PLAY_INTERNAL_OPT_IN_URL` 변수로
 
 ## 실행 방법
 
@@ -125,6 +139,6 @@ SHA-1을 등록하면 Firebase가 Android OAuth 클라이언트를 자동 생성
 
 ## 후속 과제
 
-- Play Console 앱 생성 + `PLAY_SERVICE_ACCOUNT_JSON` 등록 (②③ 실제 동작 전제)
+- 서비스계정 JSON 키 대신 Workload Identity Federation(GitHub OIDC)으로 전환 — 조직 정책 취지에 맞지만 fastlane `supply`의 ADC 인증 검증 필요
 - 디스코드 버튼으로 ② 트리거 — 별도 서버리스 중계 ([#21](https://github.com/mash-up-kr/Team-MINO-Android/issues/21))
 - 배포 단계 스킬화 (`/release-*`)
