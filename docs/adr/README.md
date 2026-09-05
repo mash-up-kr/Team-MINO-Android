@@ -61,3 +61,4 @@ ADR은 [`adr-writer` 스킬](../../.claude/skills/adr-writer/SKILL.md)이 자동
 | 2026-08-29 | [여러 탭에서 진입하는 몰입 화면은 탭 Route가 아니라 진입형 feature로 둔다](2026-08-29-entry-feature-for-cross-tab-immersive-screen.md) | Superseded | Jaesung Lee |
 | 2026-08-29 | [앱 진입 화면 판정은 온보딩이 소유하고, 스플래시는 그 판정을 소비한다](2026-08-29-onboarding-entry-decision-owned-by-onboarding.md) | Accepted | Jaesung Lee |
 | 2026-09-02 | [몰입 지도 화면의 배치는 진입점이 걸친 탭 수가 아니라 지도를 공유하는지로 가른다](2026-09-02-immersive-map-screen-shares-one-map-in-tab-feature.md) | Accepted | Jaesung Lee |
+| 2026-09-05 | [지도 핀 클러스터는 같은 방(색)의 핀끼리만 묶는다](2026-09-05-map-pin-cluster-groups-by-room-color-only.md) | Accepted | Chea-yunzi |
