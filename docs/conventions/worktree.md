@@ -1,6 +1,6 @@
 # Git Worktree 병렬 작업 컨벤션
 
-멀티모듈 + Git Flow 구조에서 경계가 다른 작업(예: `core:map` ↔ `feature:sample`)을 **메인 작업 트리를 점유하지 않고** 충돌 없이 병렬로 굴리기 위한 worktree 운영 규칙이다.
+멀티모듈 + Git Flow 구조에서 경계가 다른 작업(예: `core:map` ↔ `feature:mypage`)을 **메인 작업 트리를 점유하지 않고** 충돌 없이 병렬로 굴리기 위한 worktree 운영 규칙이다.
 
 > 브랜치 이름·prefix·slug·Git Flow 절차는 [`branch-naming.md`](branch-naming.md)를 단일 출처로 따른다. 이 문서는 worktree **운영 방식**만 다룬다.
 

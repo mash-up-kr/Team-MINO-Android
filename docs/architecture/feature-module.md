@@ -312,4 +312,4 @@ internal fun XNavHost(navController: NavHostController, startDestination: Route,
 
 > 이미 셸에 placeholder로 등록된 탭을 모듈로 떼어내는 경우라면, Route를 셸의 `MainDestinations`에서 새 모듈로 옮겨 `XGraph`로 만들고, `MainTab`이 그것을 참조하도록 바꾼 뒤 placeholder `screen<T>` 등록을 지운다.
 
-> 참고: 현재 `:feature:sample`이 진입형, `:feature:home`이 탭의 구현 예시다. 단 **데모용이라 추후 제거될 수 있으므로** 규약의 기준은 이 문서이며, 두 모듈의 존재에 의존하지 않는다.
+> 참고: 진입형은 `:feature:roomform`, 탭은 `:feature:home`이 구현 예시다. 단 규약의 기준은 어디까지나 이 문서이며, 특정 모듈의 존재에 의존하지 않는다.
