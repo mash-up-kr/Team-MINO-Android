@@ -8,6 +8,8 @@ plugins {
 }
 
 // Maps SDK 키는 VCS에 올리지 않는 local.properties(MAPS_API_KEY)에서 읽어 Manifest placeholder로 주입한다.
+// local.properties가 없는 CI에서는 같은 이름의 환경변수(GitHub Secret)로 받는다. 둘 다 없으면 빈 키가 들어가
+// 지도만 조용히 안 뜨므로 경고를 남긴다.
 val mapsApiKey: String =
     Properties()
         .apply {
@@ -15,7 +17,9 @@ val mapsApiKey: String =
             if (localPropertiesFile.exists()) {
                 localPropertiesFile.inputStream().use { load(it) }
             }
-        }.getProperty("MAPS_API_KEY", "")
+        }.getProperty("MAPS_API_KEY")
+        ?: System.getenv("MAPS_API_KEY")
+        ?: "".also { logger.warn("MAPS_API_KEY가 local.properties에도 환경변수에도 없어 빈 키로 빌드한다 — 지도가 렌더링되지 않는다.") }
 
 android {
     namespace = "team.mino"

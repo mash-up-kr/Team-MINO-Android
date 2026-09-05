@@ -50,6 +50,7 @@ fastlane/             Appfile · Fastfile (internal·promote 레인)
 | `KEYSTORE_QA_B64` | `keystore/qa.jks`의 base64 | ① |
 | `KEYSTORE_PROD_B64` | `keystore/prod.jks`의 base64 | ② |
 | `GOOGLE_SERVICES_JSON_B64` | `app/google-services.json`의 base64 | ①② |
+| `MAPS_API_KEY` | Maps SDK API 키 (원문, `local.properties`의 값과 동일) | ①② |
 | `PLAY_SERVICE_ACCOUNT_JSON` | Play 업로드용 서비스계정 JSON (원문) | ②③ |
 | `DISCORD_WEBHOOK_URL` | 배포 알림 webhook | ①②③ |
 
@@ -107,7 +108,7 @@ Firebase는 앱이 이미 패키지명으로 나뉘어 있어 쌍을 입력하�
 
 SHA-1을 등록하면 Firebase가 Android OAuth 클라이언트를 자동 생성해 `google-services.json`에 `oauth_client` 항목이 생긴다. 등록 후 파일을 다시 받아 `app/google-services.json`과 `GOOGLE_SERVICES_JSON_B64`를 갱신한다.
 
-> Maps API 키는 Firebase가 발급한 키가 아니라 `local.properties`의 `MAPS_API_KEY`(별개 키)다. Firebase에 지문을 넣어도 지도 제한은 바뀌지 않으므로, 위 4쌍 등록은 Google Cloud Console에서 따로 해야 한다.
+> Maps API 키는 Firebase가 발급한 키가 아니라 `local.properties`의 `MAPS_API_KEY`(별개 키)다. Firebase에 지문을 넣어도 지도 제한은 바뀌지 않으므로, 위 4쌍 등록은 Google Cloud Console에서 따로 해야 한다. CI에는 `local.properties`가 없어 같은 이름의 Secret을 환경변수로 주입한다 — 빠지면 빈 키로 빌드돼 지문을 아무리 등록해도 지도가 뜨지 않는다.
 
 ## Play Console 사전 준비 (②③ 전제, 1회)
 
