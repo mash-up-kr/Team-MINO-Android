@@ -298,8 +298,7 @@ class SplashViewModelTest {
      * 여기 있는 모든 케이스가 `inviteCode = null`로 시작하므로 호출되면 오히려 버그다.
      */
     private class FakeRoomInvitationRepository : RoomInvitationRepository {
-        override suspend fun issueInviteCode(roomId: String): String =
-            error("이 테스트는 초대 코드 발급을 부르지 않는다")
+        override suspend fun issueInviteCode(roomId: String): String = error("이 테스트는 초대 코드 발급을 부르지 않는다")
 
         override suspend fun previewInvitation(inviteCode: String): InvitationPreview =
             error("이 테스트는 inviteCode 없이 시작해 미리보기를 부르지 않는다")
