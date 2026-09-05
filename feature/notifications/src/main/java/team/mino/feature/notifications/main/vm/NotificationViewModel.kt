@@ -9,6 +9,7 @@ import kotlinx.collections.immutable.toPersistentList
 import team.mino.core.common.android.architecture.MviContainer
 import team.mino.core.common.android.architecture.mviContainer
 import team.mino.core.common.android.extension.launchSafely
+import team.mino.core.common.kotlin.util.elapsedTime
 import team.mino.core.domain.model.Notification
 import team.mino.core.domain.model.NotificationDestination
 import team.mino.core.domain.model.NotificationType
@@ -21,7 +22,6 @@ import team.mino.core.errorhandling.onDomainFailure
 import team.mino.core.errorhandling.runCatchingDomain
 import team.mino.feature.notifications.main.model.NotificationItemUiModel
 import team.mino.feature.notifications.main.model.NotificationThumbnail
-import team.mino.feature.notifications.main.util.elapsedTime
 import javax.inject.Inject
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime

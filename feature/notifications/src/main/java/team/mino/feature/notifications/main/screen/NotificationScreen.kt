@@ -21,6 +21,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
+import team.mino.core.common.kotlin.util.ElapsedTime
 import team.mino.core.designsystem.component.scrollbar.MinoScrollBar
 import team.mino.core.designsystem.foundation.icons.MinoIcons
 import team.mino.core.designsystem.foundation.icons.icons.Image
@@ -34,7 +35,6 @@ import team.mino.feature.notifications.main.component.NotificationListFooter
 import team.mino.feature.notifications.main.component.NotificationRow
 import team.mino.feature.notifications.main.model.NotificationItemUiModel
 import team.mino.feature.notifications.main.model.NotificationThumbnail
-import team.mino.feature.notifications.main.util.ElapsedTime
 import team.mino.feature.notifications.main.vm.NotificationIntent
 import team.mino.feature.notifications.main.vm.NotificationPhase
 import team.mino.feature.notifications.main.vm.NotificationUiState
@@ -205,7 +205,7 @@ private val SampleItems = persistentListOf(
         id = "3",
         typeLabel = "지은님이 들어왔어요",
         targetName = "언젠가 가야지 방",
-        elapsed = ElapsedTime.AbsoluteDate(month = 8, day = 10),
+        elapsed = ElapsedTime.AbsoluteDate(year = 2027, month = 8, day = 10),
         thumbnail = NotificationThumbnail.Image(url = null),
     ),
 )

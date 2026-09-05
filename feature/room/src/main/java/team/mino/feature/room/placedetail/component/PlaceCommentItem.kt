@@ -22,6 +22,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import team.mino.core.common.kotlin.util.ElapsedTime
+import team.mino.core.common.kotlin.util.elapsedTime
 import team.mino.core.designsystem.component.avatar.MinoAvatar
 import team.mino.core.designsystem.component.avatar.MinoAvatarSize
 import team.mino.core.designsystem.component.avatar.MinoAvatarVariant
@@ -33,9 +35,7 @@ import team.mino.core.designsystem.util.modifier.clickable.rippleSingleClickable
 import team.mino.core.designsystem.util.preview.UiModePreviews
 import team.mino.core.domain.model.RoomColor
 import team.mino.feature.room.R
-import team.mino.feature.room.placedetail.model.PlaceCommentTime
 import team.mino.feature.room.placedetail.model.PlaceCommentUiModel
-import team.mino.feature.room.placedetail.model.placeCommentTime
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.ExperimentalTime
@@ -47,7 +47,7 @@ import kotlin.time.Instant
  * **본문의 높이를 제한하지 않는다.** 줄 수를 자르지도 [더보기]로 접지도 않아 항상 전문이 보인다
  * (spec FR-021·TS-027). 입력 상한이 200자여서 높이는 그 안에서 저절로 묶인다.
  *
- * **작성 시각은 본문 아래 오른쪽 끝에 붙는다**(spec FR-028). 표기는 [placeCommentTime]이 그리는 시점에 한 번
+ * **작성 시각은 본문 아래 오른쪽 끝에 붙는다**(spec FR-028). 표기는 [elapsedTime]이 그리는 시점에 한 번
  * 고르고 다시 계산하지 않아, 목록을 띄워 둔 채로는 구간 경계를 넘어도 글자가 바뀌지 않는다(spec EC-028).
  *
  * **[⋮]는 [PlaceCommentUiModel.canDelete]가 `true`일 때만 그린다.** 남의 코멘트에는 비활성으로도 두지 않아
@@ -110,9 +110,11 @@ internal fun PlaceCommentItem(
             )
             Text(
                 modifier = Modifier.fillMaxWidth(),
-                text = remember(comment.createdAt, observedAt) {
-                    placeCommentTime(comment.createdAt, observedAt)
-                }.label(),
+                text = commentTimeLabel(
+                    time = remember(comment.createdAt, observedAt) {
+                        elapsedTime(comment.createdAt, observedAt)
+                    },
+                ),
                 color = MinoAndroidTheme.colors.labelAlternative,
                 style = MinoAndroidTheme.typography.caption2Regular,
                 textAlign = TextAlign.End,
@@ -124,19 +126,19 @@ internal fun PlaceCommentItem(
 /**
  * 고른 갈래에 문자열을 입힌다.
  *
- * 구간 판정([placeCommentTime])과 갈라 둔 것은 판정만 순수 함수로 남기기 위해서다 — 문자열은 리소스를 읽어야
- * 해서 컴포지션 밖에서 부를 수 없다.
+ * 확장이 아니라 인자로 받는 것은 [ElapsedTime]이 Compose 밖 모듈의 타입이라 리시버로 두면 불안정으로
+ * 읽히기 때문이다.
  */
 @Composable
-private fun PlaceCommentTime.label(): String =
-    when (this) {
-        PlaceCommentTime.JustNow -> stringResource(R.string.placedetail_comment_time_just_now)
-        is PlaceCommentTime.HoursAgo ->
-            stringResource(R.string.placedetail_comment_time_hours_ago, hours)
-        is PlaceCommentTime.DaysAgo ->
-            stringResource(R.string.placedetail_comment_time_days_ago, days)
-        is PlaceCommentTime.AbsoluteDate ->
-            stringResource(R.string.placedetail_comment_time_date, year, month, day)
+private fun commentTimeLabel(time: ElapsedTime): String =
+    when (time) {
+        ElapsedTime.JustNow -> stringResource(R.string.placedetail_comment_time_just_now)
+        is ElapsedTime.HoursAgo ->
+            stringResource(R.string.placedetail_comment_time_hours_ago, time.hours)
+        is ElapsedTime.DaysAgo ->
+            stringResource(R.string.placedetail_comment_time_days_ago, time.days)
+        is ElapsedTime.AbsoluteDate ->
+            stringResource(R.string.placedetail_comment_time_date, time.year, time.month, time.day)
     }
 
 /**

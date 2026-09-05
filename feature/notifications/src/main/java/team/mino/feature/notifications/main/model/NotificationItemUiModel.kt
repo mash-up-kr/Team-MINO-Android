@@ -1,7 +1,7 @@
 package team.mino.feature.notifications.main.model
 
 import androidx.compose.runtime.Immutable
-import team.mino.feature.notifications.main.util.ElapsedTime
+import team.mino.core.common.kotlin.util.ElapsedTime
 
 /**
  * 알림 행 한 줄이 그리는 것 전부(`docs/specs/notifications/data-model.md` §2.1, spec FR-002).

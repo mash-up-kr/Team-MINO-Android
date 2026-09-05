@@ -95,19 +95,19 @@ sealed interface NotificationDestination
 
 ### 2.1.1 `ElapsedTime` — 경과 시간 네 구간
 
-FR-003의 네 구간을 타입으로 세운다. **문구를 담지 않고 어느 갈래인지와 그 갈래가 쓰는 수만 든다.**
+FR-003의 네 구간을 타입으로 세운다. **문구를 담지 않고 어느 갈래인지와 그 갈래가 쓰는 수만 든다.** 이 타입과 판정 함수는 `:core:common:kotlin`의 `util/ElapsedTime.kt`가 소유한다 — 장소 상세의 코멘트 시각이 같은 규칙을 쓴다.
 
 ```
 sealed interface ElapsedTime
   JustNow                      — 1시간 미만
   HoursAgo(hours)              — 1시간 이상 24시간 미만
   DaysAgo(days)                — 24시간 이상 7일 미만
-  AbsoluteDate(month, day)     — 7일 이상. 경과가 아니라 발생한 날짜
+  AbsoluteDate(year, month, day) — 7일 이상. 경과가 아니라 발생한 날짜
 ```
 
 경계값은 **경계 자체가 다음 구간에 속한다**(판정이 `<`) — 정확히 60분이 지난 알림은 `방금`이 아니라 `1시간 전`이다(SC-005).
 
-**문자열을 화면 모델에 담지 않는 이유**는 둘이다. 문구를 만들려면 문자열 리소스가 필요하고, 그러면 ViewModel이 `Context`를 잡아 UI 문구를 조립하게 된다. 그리고 판정만 순수 함수로 남겨야 SC-005의 경계값 6개를 기기 없이 확인할 수 있다 — `:feature:notifications`에 Robolectric이 없다. 문구는 `NotificationRow`가 이 갈래를 받아 모듈의 `res/values/strings.xml`에서 꺼낸다. 같은 형태의 선례가 `:feature:room`의 `placeCommentTime`이다.
+**문자열을 화면 모델에 담지 않는 이유**는 둘이다. 문구를 만들려면 문자열 리소스가 필요하고, 그러면 ViewModel이 `Context`를 잡아 UI 문구를 조립하게 된다. 그리고 판정만 순수 함수로 남겨야 SC-005의 경계값 6개를 기기 없이 확인할 수 있다 — `:feature:notifications`에 Robolectric이 없다. 문구는 `NotificationRow`가 이 갈래를 받아 모듈의 `res/values/strings.xml`에서 꺼낸다 — 규칙은 공용이고 표기는 화면이 소유한다. 알림함은 `year`를 쓰지 않는다(연도를 쓰는 코멘트 쪽 때문에 타입이 들고 있을 뿐이다).
 
 `type`과 `target`을 화면 모델에 남기지 않는다. 화면이 하는 일은 행을 그리고 탭을 알리는 것뿐이고, 도착지 판정은 UseCase가 한다(D8). 탭 Intent는 `id`만 싣는다.
 
