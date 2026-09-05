@@ -81,8 +81,24 @@ BottomNavigation 탭 셸을 소유하고 탭 feature의 그래프를 조립한�
 외부 앱 공유(`ACTION_SEND`) 수신 화면. 받은 링크를 저장할 방을 고르는 바텀시트를 소유한다.
 → Android Library (Compose)
 
+### `:feature:onboarding` (진입형)
+최초 진입 플로우. 프로필 등록과 첫 방 생성을 차례로 거쳐 메인 탭까지 넘기는 과정을 조립한다.
+→ Android Library (Compose)
+
 ### `:feature:home` (탭)
 홈 탭. 방을 순회하며 저장한 장소를 탐색하는 시작 화면을 소유한다.
+→ Android Library (Compose)
+
+### `:feature:room` (탭)
+저장 탭. 지도 위의 방 리스트·방 상세·장소 상세를 한 그래프 안에서 소유한다.
+→ Android Library (Compose)
+
+### `:feature:notifications` (탭)
+알림 탭. 알림 목록과 저장 오류 안내 화면을 소유한다. 장소·방으로 나가는 전환은 셸에 올린다.
+→ Android Library (Compose)
+
+### `:feature:mypage` (탭)
+마이페이지 탭. 프로필 편집은 `:feature:profile`이 소유하므로 셸을 통해 연다.
 → Android Library (Compose)
 
 > feature는 단일 모듈이며 진입형·탭 두 종류로 나뉜다. 종류별 골격과 공개 범위는 `docs/architecture/feature-module.md`, 전환 규약은 `feature-navigation.md`.
