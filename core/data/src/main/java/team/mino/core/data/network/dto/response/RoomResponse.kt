@@ -15,6 +15,11 @@ import kotlinx.serialization.Serializable
  * 남긴 대로 원래 이 DTO엔 없었다 — 하지만 `room-detail`이 같은 `GET /rooms/{roomId}`·같은 [RoomResponse]를
  * 재사용해 방장이 아닌 개인방(`isPersonal`) 판정에 이 값이 필요해졌다. 안 읽으면 방 상세는 어떤 방이든
  * 항상 공동방으로 잘못 판정한다(실기기 확인된 결함 — 개인방 헤더에 초대·더보기 버튼이 계속 남아있었다).
+ *
+ * [pinCount]도 같은 이유로 뒤늦게 더했다 — 방 상세 헤더의 "장소 N개"가 예전엔 `RoomDetailUiState.places`
+ * (로드된 장소 목록)의 크기를 대신 셌는데, 장소 목록이 페이징(`RoomPlacesRepository.getPlacesPage`, 20개씩)
+ * 되면서 그 값이 더는 전체 개수가 아니게 됐다. `group-room-form`은 이 필드를 읽지 않으므로 기본값
+ * `0`이어도 그 feature에 영향이 없다.
  */
 @Serializable
 internal data class RoomResponse(
@@ -24,4 +29,5 @@ internal data class RoomResponse(
     val color: String,
     val ownerId: String,
     val type: String? = null,
+    val pinCount: Int = 0,
 )

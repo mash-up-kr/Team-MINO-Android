@@ -40,12 +40,16 @@ import team.mino.feature.room.main.model.image
  * - [LeaveDialogState.ConfirmOwnerSingle](방장 혼자뿐인 방) — 확인 문구만. `leaveRoom` 호출 시
  *   서버가 방을 자동 삭제한다. 정확한 문구는 spec.md·PRD 어디에도 지정이 없어 [RoomLeaveConfirmDialog]와
  *   같은 근거로 [TBD] 최소 구현.
- * - [LeaveDialogState.DelegateOwner](멤버 2명 이상인 방의 방장) — 위임 대상 멤버 목록(체크박스 단일
- *   선택) + [다음] 버튼을 그린다. `RoomDetailViewModel.onLeaveClick`이 이미 로드된 멤버 수로 곧장 이
- *   상태를 고른다 — 예전엔 `leaveRoom` 호출의 `409 OWNER_TRANSFER_REQUIRED` 응답을 받아야만 전이됐는데,
- *   그러면 그 사이 [ConfirmOwnerSingle]의 "혼자라 방이 삭제돼요" 문구가 먼저 잘못 보이는 결함이 실기기
- *   확인됐다(`docs/failures` 참고). 멤버 한 명당 레이아웃(48x48dp 원형 아바타 + 이름 + 16x16dp
- *   체크박스)은 Figma node 2542:125613(리드가 조회) 기준이다.
+ * - [LeaveDialogState.ConfirmOwnerDelegateIntro](멤버 2명 이상인 방의 방장, 나가기 1단계) — "방장을
+ *   넘기고 나갈까요?" 안내 카드. [다음]을 누르면 [LeaveDialogState.DelegateOwner]로 넘어간다(Figma node
+ *   2542:125501).
+ * - [LeaveDialogState.DelegateOwner](나가기 2단계) — 위임 대상 멤버 목록(체크박스 단일 선택) +
+ *   [이전으로]/[넘기고 나가기] 버튼을 그린다(Figma node 2542:125536). [이전으로]는 다시
+ *   [ConfirmOwnerDelegateIntro]로 돌아간다. `RoomDetailViewModel.onLeaveClick`이 멤버 수만으로 곧장
+ *   안내 카드부터 고른다 — 예전엔 `leaveRoom` 호출의 `409 OWNER_TRANSFER_REQUIRED` 응답을 받아야만
+ *   전이됐는데, 그러면 그 사이 [ConfirmOwnerSingle]의 "혼자라 방이 삭제돼요" 문구가 먼저 잘못 보이는
+ *   결함이 실기기 확인됐다(`docs/failures` 참고). 멤버 한 명당 레이아웃(48x48dp 원형 아바타 + 이름 +
+ *   16x16dp 체크박스)은 Figma node 2542:125613(리드가 조회) 기준이다.
  * - 그 외 상태([LeaveDialogState.None]·[LeaveDialogState.ConfirmMember])에서는 아무것도 그리지
  *   않는다 — `ConfirmMember`는 [RoomLeaveConfirmDialog]가 담당한다.
  *
@@ -71,6 +75,10 @@ internal fun RoomOwnerLeaveDialog(
             OwnerLeaveSingleConfirmDialog(onConfirm = onConfirm, onCancel = onCancel, modifier = modifier)
         }
 
+        LeaveDialogState.ConfirmOwnerDelegateIntro -> {
+            OwnerDelegateIntroDialog(onConfirm = onConfirm, onCancel = onCancel, modifier = modifier)
+        }
+
         LeaveDialogState.DelegateOwner -> {
             OwnerDelegateDialog(
                 roomMembers = roomMembers,
@@ -83,6 +91,28 @@ internal fun RoomOwnerLeaveDialog(
         }
 
         LeaveDialogState.None, LeaveDialogState.ConfirmMember -> Unit
+    }
+}
+
+/**
+ * 방장 위임 안내 카드([LeaveDialogState.ConfirmOwnerDelegateIntro]) — Figma node 2542:125501.
+ * [onConfirm]은 [다음](위임 대상 선택 화면으로 이동), [onCancel]은 [취소](나가기 전체 취소)다.
+ */
+@Composable
+private fun OwnerDelegateIntroDialog(
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    RoomConfirmDialog(onDismiss = onCancel, modifier = modifier) {
+        RoomConfirmDialogCard(
+            title = "방장을 넘기고 나갈까요?",
+            description = "방장은 나가기 전에 다른 멤버에게 방장을 넘겨야 해요",
+            cancelText = "취소",
+            onCancel = onCancel,
+            confirmText = "다음",
+            onConfirm = onConfirm,
+        )
     }
 }
 
@@ -107,8 +137,9 @@ private fun OwnerLeaveSingleConfirmDialog(
 }
 
 /**
- * N인 방 방장 위임 대상 선택 모달 — [PlaceDeleteConfirmDialog]("이 장소를 삭제할까요?")와 같은 카드에
- * 설명 문구 대신 위임 대상 목록을 얹는다. 멤버 행 레이아웃은 Figma node 2542:125613(리드가 조회) 기준.
+ * N인 방 방장 위임 대상 선택 모달(Figma node 2542:125536) — [PlaceDeleteConfirmDialog]("이 장소를
+ * 삭제할까요?")와 같은 카드에 설명 문구 아래 위임 대상 목록을 얹는다. 멤버 행 레이아웃은 Figma node
+ * 2542:125613(리드가 조회) 기준. [이전으로]는 [ConfirmOwnerDelegateIntro] 안내 카드로 돌아간다.
  */
 @Composable
 private fun OwnerDelegateDialog(
@@ -121,11 +152,11 @@ private fun OwnerDelegateDialog(
 ) {
     RoomConfirmDialog(onDismiss = onCancel, modifier = modifier) {
         RoomConfirmDialogCard(
-            // [TBD] 정확한 문구는 Figma·PRD 대조 필요.
-            title = "다음 방장을 선택해 주세요",
-            cancelText = "취소",
+            title = "새 방장을 선택해 주세요",
+            description = "선택한 멤버가 앞으로 이 방을 관리해요.",
+            cancelText = "이전으로",
             onCancel = onCancel,
-            confirmText = "다음",
+            confirmText = "넘기고 나가기",
             onConfirm = onConfirm,
             confirmEnabled = selectedMemberId != null,
         ) {

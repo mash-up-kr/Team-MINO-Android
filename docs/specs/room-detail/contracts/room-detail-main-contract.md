@@ -38,11 +38,11 @@ data class RoomDetailUiState(
     val leaveDialogState: LeaveDialogState = LeaveDialogState.None,  // SYS-007 나가기/위임 모달 상태(research.md D12·D15)
 ) : UiState
 
-enum class LeaveDialogState { None, ConfirmMember, ConfirmOwnerSingle, DelegateOwner }
+enum class LeaveDialogState { None, ConfirmMember, ConfirmOwnerSingle, ConfirmOwnerDelegateIntro, DelegateOwner }
 ```
 
 - `places`는 `sortOption`·`categoryFilter`로 이미 정렬·필터링된 최종 목록이다(room-list의 `groupRooms` 정렬 패턴과 동일하게 화면이 가공, [room-list/contracts/room-repository.md](../../room-list/contracts/room-repository.md) "정렬·필터는 클라이언트 쪽" 참고).
-- `LeaveDialogState`는 PRD [SYS-007] Flow A(일반 멤버)/Flow B(방장 — 1인 공동방은 위임 없이 즉시 삭제, N인 공동방은 위임 모달)를 표현한다.
+- `LeaveDialogState`는 PRD [SYS-007] Flow A(일반 멤버)/Flow B(방장 — 1인 공동방은 위임 없이 즉시 삭제, N인 공동방은 위임 안내 → 위임 대상 선택 2단계)를 표현한다. `ConfirmOwnerDelegateIntro`(Figma node 2542:125501, "방장을 넘기고 나갈까요?")가 1단계, `DelegateOwner`(Figma node 2542:125536, "새 방장을 선택해 주세요")가 2단계다.
 - **[SYS-003] 방 선택 시트는 [SCR-006] 장소 상세와 한 벌을 쓴다.** 시트 자체(`RoomShareItem` 포함)와 그 규칙은 [place-detail-main-contract.md §3.4](../../place-detail/contracts/place-detail-main-contract.md)가 소유하고, 이 화면은 목록을 만들어 넘기고 콜백을 받는 쪽이다. 목록 출처가 `RoomRepository.observeMyRooms()`에서 `GetRoomPickerRoomsUseCase(place.placeId)`로 바뀐 것도 그 시트가 요구하는 `hasPlace` 때문이며(EC-004), 복제는 `PlaceRepository.duplicatePin(place.id, roomIds)`이 보낸다.
 - 필드 근거·타입 상세는 [data-model.md](../data-model.md) 참조 — 이 계약과 data-model.md가 어긋나면 data-model.md를 갱신한다(중복 정의 금지).
 
@@ -80,6 +80,8 @@ sealed interface RoomDetailIntent : Intent {
     data object OnLeaveConfirm : RoomDetailIntent
     data object OnLeaveCancel : RoomDetailIntent
     data class OnOwnerDelegateSelected(val memberId: String) : RoomDetailIntent   // SYS-007 Flow B — roomMembers 중 선택
+    data object OnOwnerDelegateIntroConfirm : RoomDetailIntent                     // 위임 안내 [다음] — ConfirmOwnerDelegateIntro → DelegateOwner, roomMembers 조회
+    data object OnOwnerDelegateBack : RoomDetailIntent                             // 위임 대상 선택 [이전으로] — DelegateOwner → ConfirmOwnerDelegateIntro
     data object OnOwnerDelegateConfirm : RoomDetailIntent                          // RoomRepository.transferOwner 이어서 leaveRoom(research.md D15)
 }
 ```
@@ -93,7 +95,7 @@ sealed interface RoomDetailSideEffect : SideEffect {
     data object NavigateToRoomForm : RoomDetailSideEffect                  // RoomFormLauncher 편집 모드 호출 — FR-012, research.md D9([TBD] extra 키)
     data object ShowShareCompleteToast : RoomDetailSideEffect              // FR-009 "공유가 완료되었습니다." 3초 토스트, UX-002
     data object ShowEditCompleteSnackbar : RoomDetailSideEffect            // FR-012 "방 편집이 완료되었어요"
-    data object NavigateToRoomList : RoomDetailSideEffect                  // SYS-007 나가기 완료 → popBackStackIfResumed(entry)로 SCR-004 복귀, research.md D12
+    data class LeaveRoomCompleted(val message: String) : RoomDetailSideEffect  // SYS-007 나가기 완료 → popBackStackIfResumed(entry)로 SCR-004 복귀 + message 토스트("방을 나갔어요"/"방장을 넘기고 나갔어요", Figma node 2542:125755·3276:208669). RoomDetailRoute가 사라지기 전에 RoomListRoute에 message를 넘겨, 계속 살아있는 그 스코프가 토스트를 띄운다.
 }
 ```
 
@@ -128,12 +130,13 @@ room-list의 [분기 규칙](../../room-list/contracts/room-list-main-contract.m
 
 | `isOwner` | 방 멤버 수 | `leaveDialogState` 전이 | 서버 호출 |
 |---|---|---|---|
-| `false` | - | `None` → `ConfirmMember` → (확인) `NavigateToRoomList` | `RoomRepository.leaveRoom(roomId)` → `200` |
-| `true` | 1인(본인만) | `None` → `ConfirmOwnerSingle` → (확인) 즉시 삭제 → `NavigateToRoomList` | `leaveRoom(roomId)` → `200`(서버가 방을 자동 삭제) |
-| `true` | N인(2명 이상) | `None` → **곧장** `DelegateOwner` → 멤버 선택(`roomMembers`) → `OnOwnerDelegateConfirm` | `transferOwner(roomId, nextOwnerId)` → `200` → 이어서 `leaveRoom(roomId)` → `200` |
+| `false` | - | `None` → `ConfirmMember` → (확인) `LeaveRoomCompleted("방을 나갔어요")` | `RoomRepository.leaveRoom(roomId)` → `200` |
+| `true` | 1인(본인만) | `None` → `ConfirmOwnerSingle` → (확인) 즉시 삭제 → `LeaveRoomCompleted("방을 나갔어요")` | `leaveRoom(roomId)` → `200`(서버가 방을 자동 삭제) |
+| `true` | N인(2명 이상) | `None` → **곧장** `ConfirmOwnerDelegateIntro`("방장을 넘기고 나갈까요?") → (다음) `DelegateOwner`("새 방장을 선택해 주세요", `roomMembers`) → (이전으로) `ConfirmOwnerDelegateIntro` / (넘기고 나가기) `OnOwnerDelegateConfirm` → `LeaveRoomCompleted("방장을 넘기고 나갔어요")` | `transferOwner(roomId, nextOwnerId)` → `200` → 이어서 `leaveRoom(roomId)` → `200` |
 
 - **클라이언트가 멤버 수를 미리 본다.** [RoomDetailUiState.room]의 `memberSummary`(화면 진입 시 `GET /rooms/{roomId}/members`로 이미 채워짐)로 `OnLeaveClick` 시점에 곧장 올바른 모달을 고른다 — `leaveRoom` 호출의 `409`를 기다려 뒤늦게 `DelegateOwner`로 바꾸던 이전 방식은 그사이 "혼자라 방이 삭제돼요" 문구가 멤버 2명 이상인 방에도 잘못 보이는 결함으로 실기기에서 확인됐다([failures/2026-08-30-leave-flow-member-count.md](../../../failures/2026-08-30-leave-flow-member-count.md), `research.md` D15의 "클라이언트는 방 멤버 수를 사전에 세지 않는다" 판단을 뒤집음).
-- `onLeaveConfirm`의 `409 OWNER_TRANSFER_REQUIRED` 처리는 방어선으로 남긴다 — 판단 이후 경합(다른 멤버 탈퇴 등)이 생겨도 서버가 최종 판정한다.
+- **위임은 2단계다.** N인 방의 방장은 멤버 목록이 곧장 뜨지 않는다 — 먼저 `ConfirmOwnerDelegateIntro`("방장을 넘기고 나갈까요? 방장은 나가기 전에 다른 멤버에게 방장을 넘겨야 해요", 취소/다음)로 위임이 필수임을 알리고, [다음]을 눌러야 `DelegateOwner`(멤버 목록, 이전으로/넘기고 나가기)로 넘어간다. 실기기 확인 전에는 이 안내 단계 없이 곧장 멤버 목록이 떠 Figma(node 2542:125501)와 어긋난 결함이 있었다.
+- `onLeaveConfirm`의 `409 OWNER_TRANSFER_REQUIRED` 처리는 방어선으로 남긴다 — 판단 이후 경합(다른 멤버 탈퇴 등)이 생겨도 서버가 최종 판정하며, 이 경로는 안내 단계 없이 곧장 `DelegateOwner`로 전이한다(레이스 방어이지 정상 플로우가 아니다).
 - 위 표의 서버 계약은 [contracts/place-repository.md](./place-repository.md) "`RoomRepository` 확장" 절 참조.
 
 ## 재조회

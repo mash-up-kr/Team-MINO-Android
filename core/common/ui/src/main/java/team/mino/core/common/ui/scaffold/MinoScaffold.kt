@@ -2,7 +2,10 @@ package team.mino.core.common.ui.scaffold
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -66,6 +69,16 @@ fun MinoScaffold(
             // 표출 위치의 기준선이 스크린 하단이라 Scaffold의 snackbarHost 슬롯을 비워 두고 셸이
             // 직접 얹는다. 그 슬롯은 호스트를 bottomBar 위에 놓아 하단 바 유무로 기준선이 갈린다
             // (`docs/adr/2026-08-24-snackbar-host-owned-by-mino-scaffold.md`).
+            //
+            // 엣지투엣지 처리(status bar 투명화) 이후 Box 하단이 화면 물리적 끝(내비게이션 바 영역 포함)이
+            // 됐다 — 시스템 내비게이션 바가 있는 기기는 그 인셋 위로 35.5dp(Figma 실측)를 더 띄우고,
+            // 내비게이션 바가 없는(제스처 인셋이 0인) 기기는 기존 40dp를 그대로 유지한다.
+            val navigationBarInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+            val snackbarBottomMargin = if (navigationBarInset > 0.dp) {
+                navigationBarInset + SnackbarBottomMarginAboveNavigationBar
+            } else {
+                SnackbarBottomMarginNoNavigationBar
+            }
             SnackbarHost(
                 hostState = snackbarHostState,
                 modifier = Modifier
@@ -73,7 +86,7 @@ fun MinoScaffold(
                     .padding(
                         start = SnackbarHorizontalMargin,
                         end = SnackbarHorizontalMargin,
-                        bottom = SnackbarBottomMargin,
+                        bottom = snackbarBottomMargin,
                     ),
             ) { data ->
                 MinoSnackbar(
@@ -90,4 +103,9 @@ fun MinoScaffold(
 }
 
 private val SnackbarHorizontalMargin = 20.dp
-private val SnackbarBottomMargin = 40.dp
+
+/** 시스템 내비게이션 바가 있을 때 그 인셋 위로 띄우는 여백(Figma 실측). */
+private val SnackbarBottomMarginAboveNavigationBar = 35.5.dp
+
+/** 시스템 내비게이션 바가 없을 때(제스처 인셋 0) 화면 하단에서 띄우는 여백. */
+private val SnackbarBottomMarginNoNavigationBar = 40.dp

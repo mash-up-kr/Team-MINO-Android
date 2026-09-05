@@ -147,9 +147,11 @@ private fun RoomListBottomSheetHeaderRow(
     modifier: Modifier = Modifier,
 ) {
     Row(
+        // Figma `2661:157261` 대조 — 상12/하18 비대칭 패딩(카테고리 줄과의 간격이 헤더 텍스트와의
+        // 간격보다 넓다).
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 12.dp),
+            .padding(start = 20.dp, top = 12.dp, end = 20.dp, bottom = 18.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {

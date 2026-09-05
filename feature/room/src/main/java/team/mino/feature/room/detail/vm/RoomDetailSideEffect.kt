@@ -28,7 +28,8 @@ internal sealed interface RoomDetailSideEffect : SideEffect {
 
     data object ShowEditCompleteSnackbar : RoomDetailSideEffect
 
-    data object NavigateToRoomList : RoomDetailSideEffect
+    /** [SYS-007] 나가기 완료 — 방 목록으로 돌아가며 [message] 토스트를 띄운다("방을 나갔어요"/"방장을 넘기고 나갔어요"). */
+    data class LeaveRoomCompleted(val message: String) : RoomDetailSideEffect
 
     /** [FR-011] 초대 시트 "초대하기" — OS 공유 시트를 [link]로 연다(`OnboardingActivity.shareInviteLink`와 같은 패턴). */
     data class ShareInviteLink(val link: String) : RoomDetailSideEffect

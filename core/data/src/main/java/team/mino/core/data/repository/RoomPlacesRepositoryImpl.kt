@@ -2,9 +2,12 @@ package team.mino.core.data.repository
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import team.mino.core.common.kotlin.geo.GeoPoint
 import team.mino.core.data.datasource.PlaceRemoteDataSource
 import team.mino.core.data.repository.mapper.toDomain
+import team.mino.core.domain.model.MapMarkerSortOption
 import team.mino.core.domain.model.Place
+import team.mino.core.domain.model.PlaceCategoryFilter
 import team.mino.core.domain.repository.RoomPlacesRepository
 import javax.inject.Inject
 
@@ -18,10 +21,43 @@ import javax.inject.Inject
 internal class RoomPlacesRepositoryImpl @Inject constructor(
     private val remoteDataSource: PlaceRemoteDataSource,
 ) : RoomPlacesRepository {
-    override fun observePlaces(roomId: String): Flow<List<Place>> =
+    override fun observePlaces(
+        roomId: String?,
+        category: PlaceCategoryFilter,
+        sort: MapMarkerSortOption,
+        currentLocation: GeoPoint?,
+    ): Flow<List<Place>> =
         flow {
-            emit(remoteDataSource.getPins(roomId).map { it.toDomain() })
+            emit(
+                remoteDataSource
+                    .getPins(
+                        roomId = roomId,
+                        category = category.toQueryValue(),
+                        sort = sort.toQueryValue(),
+                        lat = currentLocation?.latitude,
+                        lng = currentLocation?.longitude,
+                    ).map { it.toDomain() },
+            )
         }
+
+    override suspend fun getPlacesPage(
+        roomId: String?,
+        category: PlaceCategoryFilter,
+        sort: MapMarkerSortOption,
+        currentLocation: GeoPoint?,
+        page: Int,
+        pageSize: Int,
+    ): List<Place> =
+        remoteDataSource
+            .getPins(
+                roomId = roomId,
+                category = category.toQueryValue(),
+                sort = sort.toQueryValue(),
+                lat = currentLocation?.latitude,
+                lng = currentLocation?.longitude,
+                page = page,
+                pageSize = pageSize,
+            ).map { it.toDomain() }
 
     /**
      * [FR-010] 장소 삭제 — 호출한 방에서만 제거한다(`DELETE /api/v1/pins/{pinId}`).
@@ -38,3 +74,21 @@ internal class RoomPlacesRepositoryImpl @Inject constructor(
         remoteDataSource.deletePin(pinId)
     }
 }
+
+/** `GET /api/v1/pins`의 `category` 쿼리 파라미터 값으로 변환. */
+private fun PlaceCategoryFilter.toQueryValue(): String =
+    when (this) {
+        PlaceCategoryFilter.ALL -> "all"
+        PlaceCategoryFilter.CAFE -> "cafe"
+        PlaceCategoryFilter.RESTAURANT -> "restaurant"
+    }
+
+/** `GET /api/v1/pins`의 `sort` 쿼리 파라미터 값으로 변환. */
+private fun MapMarkerSortOption.toQueryValue(): String =
+    when (this) {
+        MapMarkerSortOption.ALL -> "all"
+        MapMarkerSortOption.LATEST -> "latest"
+        MapMarkerSortOption.GGUK_PICK -> "ggukPick"
+        MapMarkerSortOption.NEARBY -> "distance"
+        MapMarkerSortOption.MOST_COMMENTED -> "commented"
+    }

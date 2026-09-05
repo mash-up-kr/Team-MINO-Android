@@ -1,27 +1,35 @@
 package team.mino.feature.room.detail.vm
 
+import android.annotation.SuppressLint
+import android.content.Context
+import android.location.LocationManager
 import androidx.lifecycle.ViewModel
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toPersistentSet
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.catch
 import team.mino.core.common.android.architecture.MviContainer
 import team.mino.core.common.android.architecture.mviContainer
 import team.mino.core.common.android.extension.launchSafely
+import team.mino.core.common.kotlin.geo.GeoPoint
 import team.mino.core.domain.invite.InviteLinkBuilder
 import team.mino.core.domain.model.MapMarkerSortOption
 import team.mino.core.domain.model.Place
 import team.mino.core.domain.model.PlaceCategoryFilter
 import team.mino.core.domain.model.Room
+import team.mino.core.domain.model.RoomMember
 import team.mino.core.domain.model.RoomMemberSummary
+import team.mino.core.domain.repository.DEFAULT_PLACES_PAGE_SIZE
+import team.mino.core.domain.repository.PermissionRepository
 import team.mino.core.domain.repository.PlaceRepository
 import team.mino.core.domain.repository.ProfileRepository
 import team.mino.core.domain.repository.RoomPlacesRepository
@@ -50,9 +58,11 @@ import team.mino.feature.room.main.model.toMemberSummary
 @HiltViewModel(assistedFactory = RoomDetailViewModel.Factory::class)
 internal class RoomDetailViewModel @AssistedInject constructor(
     @Assisted private val roomId: String,
+    @param:ApplicationContext private val context: Context,
     private val roomRepository: RoomRepository,
     private val roomPlacesRepository: RoomPlacesRepository,
     private val placeRepository: PlaceRepository,
+    private val permissionRepository: PermissionRepository,
     private val getRoomPickerRooms: GetRoomPickerRoomsUseCase,
     private val profileRepository: ProfileRepository,
     private val inviteLinkBuilder: InviteLinkBuilder,
@@ -66,10 +76,12 @@ internal class RoomDetailViewModel @AssistedInject constructor(
     }
 
     /**
-     * [FR-011] `observePlaces` 재구독 시 정렬·필터가 되돌아가지 않도록 서버 원본 순서를 별도로 들고
-     * 있는다 — [RoomDetailUiState.places]는 이 값에서 파생된 정렬·필터 결과만 노출한다.
+     * [FR-011] 카테고리·정렬은 이제 서버가 처리한다(`GET /api/v1/pins`가 `category`·`sort`·`lat,lng`
+     * 쿼리를 지원). [onSortSelected]·[onCategoryFilterSelected]가 바뀔 때마다 이 잡을 취소하고
+     * [subscribePlaces]로 새 파라미터를 실어 재구독한다 — 클라이언트 메모리 필터링(예전 `rawPlaces`
+     * 방식)은 더 이상 하지 않는다.
      */
-    private var rawPlaces: List<Place> = emptyList()
+    private var placesJob: Job? = null
 
     /**
      * [loadRoomMembers]가 조회한 실제 멤버 아바타. [loadRoom]과 서로 다른 왕복이라 어느 쪽이 먼저
@@ -87,6 +99,7 @@ internal class RoomDetailViewModel @AssistedInject constructor(
             is RoomDetailIntent.OnSortSelected -> onSortSelected(intent.option)
             is RoomDetailIntent.OnCategoryFilterSelected -> onCategoryFilterSelected(intent.category)
             is RoomDetailIntent.OnViewTypeSelected -> onViewTypeSelected(intent.viewType)
+            RoomDetailIntent.OnPlacesLoadMore -> onPlacesLoadMore()
             RoomDetailIntent.OnCloseClick -> onCloseClick()
             is RoomDetailIntent.OnPlaceClick -> onPlaceClick(intent.place)
             is RoomDetailIntent.OnPlaceMoreClick -> onPlaceMoreClick(intent.place)
@@ -111,6 +124,8 @@ internal class RoomDetailViewModel @AssistedInject constructor(
             RoomDetailIntent.OnLeaveConfirm -> onLeaveConfirm()
             RoomDetailIntent.OnLeaveCancel -> onLeaveCancel()
             is RoomDetailIntent.OnOwnerDelegateSelected -> onOwnerDelegateSelected(intent.memberId)
+            RoomDetailIntent.OnOwnerDelegateIntroConfirm -> onOwnerDelegateIntroConfirm()
+            RoomDetailIntent.OnOwnerDelegateBack -> onOwnerDelegateBack()
             RoomDetailIntent.OnOwnerDelegateConfirm -> onOwnerDelegateConfirm()
             is RoomDetailIntent.OnRoomFormResult -> onRoomFormResult(intent.updated)
         }
@@ -122,25 +137,95 @@ internal class RoomDetailViewModel @AssistedInject constructor(
      * [Room.ownerId]와 비교해 판정한다 — Firebase 익명 로그인 uid와는 다른 식별자라 그걸로 비교하면
      * 항상 불일치한다(실기기 확인된 결함).
      *
-     * 새 emit마다 현재 [RoomDetailUiState.sortOption]·[RoomDetailUiState.categoryFilter]를 다시
-     * 적용한다 — 그렇지 않으면 재구독 결과가 사용자가 고른 정렬·필터를 되돌린다.
+     * 장소 구독은 [subscribePlaces]로 위임한다 — 현재 [RoomDetailUiState.sortOption]·
+     * [RoomDetailUiState.categoryFilter](재진입이면 이전 선택이 그대로 남아 있다)를 서버 쿼리 파라미터로
+     * 실어 보낸다.
      */
     private fun onScreenEntered() {
         launchSafely { loadRoom() }
         launchSafely { loadRoomMembers() }
+        subscribePlaces()
+    }
+
+    /**
+     * [FR-011] `RoomPlacesRepository.getPlacesPage`로 첫 페이지(20개, [DEFAULT_PLACES_PAGE_SIZE])부터
+     * 다시 받는다. 서버가 필터·정렬을 수행하므로(`GET /api/v1/pins` `category`·`sort`·`lat,lng`) 클라이언트는
+     * 응답을 그대로 반영한다.
+     *
+     * **전체를 한 번에 받지 않는다.** 지도([RoomListViewModel.observePlaces])와 달리 이 화면의 장소
+     * 목록은 스크롤형([PlaceCardList]/[PlaceCardGrid])이라, 장소가 많은 방에서도 화면에 보일 만큼만
+     * 왕복한다 — [onPlacesLoadMore]가 스크롤 끝에서 다음 페이지를 이어 받는다.
+     *
+     * **거리순([MapMarkerSortOption.NEARBY])은 [currentLocation]이 필요하다.** 이 화면엔 위치 권한
+     * 요청·실시간 위치 추적 UI가 없어([RoomListViewModel]과 달리 지도가 아니다), 능동 GPS 측위 대신
+     * 이미 허용된 권한 아래 마지막으로 알려진 위치([cachedDeviceLocation])만 쓴다. 호출부([onSortSelected])가
+     * 위치를 못 구하면 아예 이 함수를 부르지 않고 이전 정렬을 유지한다 — 위치 없이 거리순 요청을 보내면
+     * 서버가 기대하는 파라미터가 빠진 채 나가는 셈이라, 가장 보수적으로 요청 자체를 만들지 않는다.
+     *
+     * 이전 요청은 취소하고 새로 연다 — 안 그러면 이전 파라미터로 흐르던 요청이 새 요청과 뒤섞여 응답
+     * 순서가 뒤바뀔 수 있다.
+     */
+    private fun subscribePlaces(
+        category: PlaceCategoryFilter = state.value.categoryFilter,
+        sort: MapMarkerSortOption = state.value.sortOption,
+        currentLocation: GeoPoint? = if (sort == MapMarkerSortOption.NEARBY) cachedDeviceLocation() else null,
+    ) {
+        placesJob?.cancel()
+        updateState { copy(places = persistentListOf(), placesNextPage = 0, hasMorePlaces = true) }
+        placesJob = launchSafely { fetchPlacesPage(category, sort, currentLocation, page = 0, append = false) }
+    }
+
+    /**
+     * [FR-011] 장소 목록 스크롤이 끝에 가까워졌을 때 다음 페이지를 이어 받는다. 이미 로딩 중이거나
+     * [RoomDetailUiState.hasMorePlaces]가 `false`면 조용히 무시한다 — 매 스크롤 프레임마다 호출될 수
+     * 있어 여기서 막지 않으면 같은 페이지를 여러 번 왕복한다.
+     */
+    private fun onPlacesLoadMore() {
+        if (state.value.isLoadingMorePlaces || !state.value.hasMorePlaces) return
+        val sort = state.value.sortOption
+        val currentLocation = if (sort == MapMarkerSortOption.NEARBY) cachedDeviceLocation() else null
         launchSafely {
-            roomPlacesRepository
-                .observePlaces(roomId)
-                .catch { throwable ->
-                    if (throwable is MinoDomainException) {
-                        updateState { copy(loadError = throwable) }
-                    } else {
-                        throw throwable
-                    }
-                }.collect { places ->
-                    rawPlaces = places
-                    updateState { copy(places = filteredAndSorted()) }
-                }
+            fetchPlacesPage(
+                category = state.value.categoryFilter,
+                sort = sort,
+                currentLocation = currentLocation,
+                page = state.value.placesNextPage,
+                append = true,
+            )
+        }
+    }
+
+    /**
+     * [subscribePlaces]·[onPlacesLoadMore]가 공유하는 한 페이지 조회 — 첫 페이지([append]=`false`)는
+     * 목록을 교체하고, 다음 페이지([append]=`true`)는 이어 붙인다.
+     *
+     * 실패 처리만 갈린다. 첫 페이지 실패는 보여줄 목록 자체가 없다는 뜻이라 [RoomDetailUiState.loadError]로
+     * 전체 화면을 덮지만, 다음 페이지 실패는 이미 보이는 목록을 지울 이유가 없어 [emitDomainError]로
+     * 토스트만 띄운다.
+     */
+    private suspend fun fetchPlacesPage(
+        category: PlaceCategoryFilter,
+        sort: MapMarkerSortOption,
+        currentLocation: GeoPoint?,
+        page: Int,
+        append: Boolean,
+    ) {
+        updateState { copy(isLoadingMorePlaces = true) }
+        runCatchingDomain {
+            roomPlacesRepository.getPlacesPage(roomId, category, sort, currentLocation, page = page)
+        }.onSuccess { result ->
+            updateState {
+                copy(
+                    places = (if (append) places + result else result).toImmutableList(),
+                    placesNextPage = page + 1,
+                    hasMorePlaces = result.size == DEFAULT_PLACES_PAGE_SIZE,
+                    isLoadingMorePlaces = false,
+                    loadError = if (append) loadError else null,
+                )
+            }
+        }.onDomainFailure { throwable ->
+            updateState { copy(isLoadingMorePlaces = false) }
+            if (append) emitDomainError(throwable) else updateState { copy(loadError = throwable) }
         }
     }
 
@@ -175,25 +260,25 @@ internal class RoomDetailViewModel @AssistedInject constructor(
     }
 
     /**
-     * [rawPlaces]에 현재(또는 인자로 넘긴) 정렬·필터를 적용한 목록. 필터·정렬·삭제 각 분기가 같은 파생
-     * 규칙을 공유하므로 한 곳에 둔다 — 갈리면 한쪽만 규칙이 바뀌는 사고가 난다.
+     * [FR-011] 정렬 옵션 변경 — 서버에 새 `sort`로 재구독한다(현재 `categoryFilter`는 유지).
+     *
+     * [MapMarkerSortOption.NEARBY]인데 위치를 못 구하면([cachedDeviceLocation]이 `null`) 요청을 보내지
+     * 않고 이전 정렬을 그대로 둔다(가장 보수적인 처리, [subscribePlaces] KDoc 참고).
      */
-    private fun filteredAndSorted(
-        category: PlaceCategoryFilter = state.value.categoryFilter,
-        sort: MapMarkerSortOption = state.value.sortOption,
-    ): ImmutableList<Place> = rawPlaces.filterByCategory(category).sortedByOption(sort).toImmutableList()
-
-    /** [FR-011] 정렬 옵션 변경 — 현재 [RoomDetailUiState.categoryFilter]를 유지한 채 [rawPlaces]를 재정렬한다. */
     private fun onSortSelected(option: MapMarkerSortOption) {
-        updateState { copy(sortOption = option, places = filteredAndSorted(sort = option)) }
+        val currentLocation = if (option == MapMarkerSortOption.NEARBY) cachedDeviceLocation() else null
+        if (option == MapMarkerSortOption.NEARBY && currentLocation == null) return
+        updateState { copy(sortOption = option) }
+        subscribePlaces(sort = option, currentLocation = currentLocation)
     }
 
     /**
-     * [FR-011][EC-003] 카테고리 필터 변경 — 현재 [RoomDetailUiState.sortOption]을 유지한 채 [rawPlaces]를
-     * 재필터링한다. 해당 카테고리 장소가 없으면 빈 목록을 그대로 반영한다.
+     * [FR-011][EC-003] 카테고리 필터 변경 — 서버에 새 `category`로 재구독한다(현재 `sortOption`은 유지).
+     * 해당 카테고리 장소가 없으면 서버가 빈 목록을 내려주고 그대로 반영한다.
      */
     private fun onCategoryFilterSelected(category: PlaceCategoryFilter) {
-        updateState { copy(categoryFilter = category, places = filteredAndSorted(category = category)) }
+        updateState { copy(categoryFilter = category) }
+        subscribePlaces(category = category)
     }
 
     /** [FR-007] 장소 리스트형/카드형 뷰 토글. */
@@ -408,17 +493,26 @@ internal class RoomDetailViewModel @AssistedInject constructor(
     }
 
     /**
-     * [FR-010] 장소 삭제 확정 — 성공하면 [rawPlaces]에서 즉시 제거하고 현재 정렬·필터를 다시 적용한다.
-     * 일회성 사용자 액션 실패이므로 [loadRoom]과 달리 `loadError`가 아니라 [DomainErrorEmitter]로
-     * 방출한다(`docs/conventions/error_handling.md` §5).
+     * [FR-010] 장소 삭제 확정 — 성공하면 현재 [RoomDetailUiState.places]에서 즉시 제거한다(서버 재조회를
+     * 기다리지 않는 낙관적 갱신). 일회성 사용자 액션 실패이므로 [loadRoom]과 달리 `loadError`가 아니라
+     * [DomainErrorEmitter]로 방출한다(`docs/conventions/error_handling.md` §5).
      */
+    @OptIn(kotlin.time.ExperimentalTime::class)
     private fun onPlaceDeleteConfirm() {
         val place = state.value.placeToDelete ?: return
         launchSafely {
             runCatchingDomain { roomPlacesRepository.deletePlace(roomId, place.id) }
                 .onSuccess {
-                    rawPlaces = rawPlaces.filterNot { it.id == place.id }
-                    updateState { copy(placeToDelete = null, places = filteredAndSorted()) }
+                    updateState {
+                        copy(
+                            placeToDelete = null,
+                            places = places.filterNot { it.id == place.id }.toImmutableList(),
+                            // 헤더의 "장소 N개"는 이제 로드된 목록 크기(`places.size`, 페이징으로 일부만
+                            // 담긴다)가 아니라 `room.placeCount`를 쓰므로, 낙관적 갱신도 여기서 맞춰 줘야
+                            // 삭제 직후 개수가 그대로 남아있지 않는다.
+                            room = room?.copy(placeCount = (room.placeCount - 1).coerceAtLeast(0)),
+                        )
+                    }
                 }.onDomainFailure(::emitDomainError)
         }
     }
@@ -501,7 +595,7 @@ internal class RoomDetailViewModel @AssistedInject constructor(
      * 알고 있는 실제 멤버 수를 함께 본다.
      *
      * 예전엔 방장이면 멤버 수와 무관하게 항상 `ConfirmOwnerSingle`("나가면 방이 삭제돼요")부터 띄우고
-     * `leaveRoom` 호출의 `409`로만 [LeaveDialogState.DelegateOwner]로 전이했다(서버 판정을 SSOT로 삼아
+     * `leaveRoom` 호출의 `409`로만 [LeaveDialogState.ConfirmOwnerDelegateIntro]로 전이했다(서버 판정을 SSOT로 삼아
      * 클라이언트가 멤버 수를 중복 계산하지 않는다는 판단, `research.md` D15). 그런데 실기기 확인 결과
      * 공유 중인 방(멤버 2명 이상)의 방장에게도 "혼자라 방이 삭제된다"는 **사실과 다른 문구**가 먼저 보이는
      * 결함으로 드러났다 — 서버가 옳게 판정해도 그 사이 화면이 거짓말을 하는 것 자체가 문제였다.
@@ -518,17 +612,10 @@ internal class RoomDetailViewModel @AssistedInject constructor(
             copy(
                 leaveDialogState = when {
                     !isOwner -> LeaveDialogState.ConfirmMember
-                    memberCount > 1 -> LeaveDialogState.DelegateOwner
+                    memberCount > 1 -> LeaveDialogState.ConfirmOwnerDelegateIntro
                     else -> LeaveDialogState.ConfirmOwnerSingle
                 },
             )
-        }
-        if (state.value.leaveDialogState == LeaveDialogState.DelegateOwner) {
-            launchSafely {
-                runCatchingDomain { roomRepository.getMembers(roomId) }
-                    .onSuccess { members -> updateState { copy(roomMembers = members.toImmutableList()) } }
-                    .onDomainFailure(::emitDomainError)
-            }
         }
     }
 
@@ -541,12 +628,14 @@ internal class RoomDetailViewModel @AssistedInject constructor(
     private fun onLeaveConfirm() {
         launchSafely {
             runCatchingDomain { roomRepository.leaveRoom(roomId) }
-                .onSuccess { postSideEffect(RoomDetailSideEffect.NavigateToRoomList) }
-                .onDomainFailure { throwable ->
+                .onSuccess {
+                    updateState { copy(leaveDialogState = LeaveDialogState.None) }
+                    postSideEffect(RoomDetailSideEffect.LeaveRoomCompleted(message = "방을 나갔어요"))
+                }.onDomainFailure { throwable ->
                     if (throwable is MinoDomainException.Http && throwable.code == 409) {
                         updateState { copy(leaveDialogState = LeaveDialogState.DelegateOwner) }
                         runCatchingDomain { roomRepository.getMembers(roomId) }
-                            .onSuccess { members -> updateState { copy(roomMembers = members.toImmutableList()) } }
+                            .onSuccess { members -> updateState { copy(roomMembers = members.excludingOwner()) } }
                             .onDomainFailure(::emitDomainError)
                     } else {
                         emitDomainError(throwable)
@@ -557,7 +646,30 @@ internal class RoomDetailViewModel @AssistedInject constructor(
 
     /** [SYS-007] 나가기 취소 — 확인 다이얼로그를 닫는다. */
     private fun onLeaveCancel() {
-        updateState { copy(leaveDialogState = LeaveDialogState.None) }
+        updateState { copy(leaveDialogState = LeaveDialogState.None, selectedDelegateMemberId = null) }
+    }
+
+    /**
+     * [SYS-007] 방장 위임 안내 팝업의 [다음] — 위임 대상 선택 화면으로 전이하며 후보 멤버 목록을 불러온다.
+     *
+     * 본인(현재 방장)은 위임 대상이 될 수 없으므로 [excludingOwner]로 뺀다 — 이 화면에 들어오는 사람은
+     * 항상 방장이라(`onLeaveClick`이 `isOwner`일 때만 이 경로로 보낸다), `GET /rooms/{roomId}/members`가
+     * 돌려준 목록에서 `isOwner == true`인 한 명이 곧 본인이다.
+     */
+    private fun onOwnerDelegateIntroConfirm() {
+        updateState { copy(leaveDialogState = LeaveDialogState.DelegateOwner) }
+        launchSafely {
+            runCatchingDomain { roomRepository.getMembers(roomId) }
+                .onSuccess { members -> updateState { copy(roomMembers = members.excludingOwner()) } }
+                .onDomainFailure(::emitDomainError)
+        }
+    }
+
+    /** [SYS-007] 위임 대상 선택 화면의 [이전으로] — 방장 위임 안내 팝업으로 되돌아간다. */
+    private fun onOwnerDelegateBack() {
+        updateState {
+            copy(leaveDialogState = LeaveDialogState.ConfirmOwnerDelegateIntro, selectedDelegateMemberId = null)
+        }
     }
 
     /** [SYS-007] 방장 위임 대상 선택 — 목록에서 고른 대상을 상태에 기록한다. */
@@ -585,30 +697,33 @@ internal class RoomDetailViewModel @AssistedInject constructor(
                         )
                     }
                     runCatchingDomain { roomRepository.leaveRoom(roomId) }
-                        .onSuccess { postSideEffect(RoomDetailSideEffect.NavigateToRoomList) }
-                        .onDomainFailure(::emitDomainError)
+                        .onSuccess {
+                            postSideEffect(RoomDetailSideEffect.LeaveRoomCompleted(message = "방장을 넘기고 나갔어요"))
+                        }.onDomainFailure(::emitDomainError)
                 }.onDomainFailure(::emitDomainError)
         }
     }
+
+    /**
+     * [MapMarkerSortOption.NEARBY] 재구독에 실을 위치 — 마지막으로 알려진 위치([LocationManager.getLastKnownLocation])만
+     * 쓰고, 없으면 `null`을 돌려준다. [RoomListViewModel.currentDeviceLocation]과 달리 능동 GPS 측위나
+     * 권한 요청 흐름을 두지 않는다 — 이 화면엔 지도가 없어 위치 권한을 스스로 요청할 UI가 없고
+     * ([subscribePlaces] KDoc), 거리순은 선택형 정렬 하나일 뿐이라 능동 측위의 대기 비용을 들일 이유가
+     * 없다는 판단이다(가장 보수적인 처리).
+     */
+    @SuppressLint("MissingPermission")
+    private fun cachedDeviceLocation(): GeoPoint? {
+        if (!permissionRepository.isLocationPermissionGranted()) return null
+        val locationManager = context.getSystemService(LocationManager::class.java) ?: return null
+        return locationManager.allProviders
+            .mapNotNull { provider -> runCatching { locationManager.getLastKnownLocation(provider) }.getOrNull() }
+            .maxByOrNull { it.time }
+            ?.let { GeoPoint(latitude = it.latitude, longitude = it.longitude) }
+    }
 }
 
-/** [PlaceCategoryFilter.ALL]은 원래 목록을 그대로 유지한다(별도 필터 없음). */
-private fun List<Place>.filterByCategory(category: PlaceCategoryFilter): List<Place> =
-    when (category) {
-        PlaceCategoryFilter.ALL -> this
-        else -> filter { it.category == category }
-    }
-
 /**
- * [MapMarkerSortOption.ALL]은 서버가 내려준 원래 순서를 유지한다(별도 정렬 기준 없음).
- * [MapMarkerSortOption.NEARBY]에서 [Place.distanceMeters]가 `null`인 장소는 가장 뒤로 보낸다.
+ * 방장 위임 대상 후보 목록 — 본인(현재 방장)을 뺀다. `GET /rooms/{roomId}/members`는 방장 자신도
+ * 포함해 돌려주는데, [RoomOwnerLeaveDialog]의 위임 대상 선택 화면에 자기 자신이 뜨면 안 된다.
  */
-@OptIn(kotlin.time.ExperimentalTime::class)
-private fun List<Place>.sortedByOption(option: MapMarkerSortOption): List<Place> =
-    when (option) {
-        MapMarkerSortOption.ALL -> this
-        MapMarkerSortOption.GGUK_PICK -> sortedByDescending { it.isGgukPick }
-        MapMarkerSortOption.LATEST -> sortedByDescending { it.savedAt }
-        MapMarkerSortOption.NEARBY -> sortedBy { it.distanceMeters ?: Double.MAX_VALUE }
-        MapMarkerSortOption.MOST_COMMENTED -> sortedByDescending { it.commentCount }
-    }
+private fun List<RoomMember>.excludingOwner(): ImmutableList<RoomMember> = filterNot { it.isOwner }.toImmutableList()

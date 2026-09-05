@@ -46,6 +46,10 @@ import team.mino.feature.room.showShareCompleted
  *   방 상세와 같은 목적지 안의 로컬 상태(`selectedPinId`)라 이 Route가 직접 열 수 없다 — 그 상태를 가진
  *   `RoomListViewModel`에게 넘겨야 하므로 `onCurrentLocationClick`과 같은 이유로 호출부가 넘겨준다
  *   (docs/specs/place-detail/contracts/place-detail-entry.md §2).
+ * @param onLeaveRoom [SYS-007] 나가기 완료 — 방 상세를 닫고 [message] 토스트("방을 나갔어요"/"방장을
+ *   넘기고 나갔어요")를 띄운다. 이 Route는 `onBack()` 호출과 동시에 컴포지션에서 사라지므로, 여기서
+ *   `rememberCoroutineScope()`로 토스트를 띄우면 스낵바가 미처 뜨기 전에 스코프가 취소된다 — 컴포지션에
+ *   계속 남아있는 `RoomListRoute`가 대신 띄워야 하므로 닫기와 토스트를 함께 호출부에 위임한다.
  */
 @Composable
 internal fun BoxScope.RoomDetailRoute(
@@ -53,6 +57,7 @@ internal fun BoxScope.RoomDetailRoute(
     onBack: () -> Unit,
     onCurrentLocationClick: () -> Unit,
     onOpenPlaceDetail: (pinId: String) -> Unit,
+    onLeaveRoom: (message: String) -> Unit,
     modifier: Modifier = Modifier,
     // compose-lints `ViewModels` 규칙 — hiltViewModel() 호출은 컴포저블 시그니처에서 명시적으로 드러나야
     // 하므로 본문이 아니라 기본 파라미터 자리에 둔다(`RoomListRoute.rememberDetailSheetLevel`과 같은 이유).
@@ -109,8 +114,9 @@ internal fun BoxScope.RoomDetailRoute(
 
             // [SYS-007] 나가기 완료 — 방 상세는 room-list 백스택 위에 쌓인 nested Route라
             // NavigateBack과 같은 popBackStackIfResumed(entry) 메커니즘으로 SCR-004에 복귀한다
-            // (research.md D12, T032와 동일한 onBack 콜백을 재사용).
-            RoomDetailSideEffect.NavigateToRoomList -> onBack()
+            // (research.md D12, T032와 동일한 onBack 콜백을 재사용). 토스트는 이 Route가 사라진 뒤에도
+            // 남아있어야 해서 [onLeaveRoom] KDoc대로 호출부(`RoomListRoute`)에 함께 위임한다.
+            is RoomDetailSideEffect.LeaveRoomCompleted -> onLeaveRoom(effect.message)
 
             // [FR-011] "초대하기" — OS 공유 시트. `OnboardingActivity.shareInviteLink`와 같은 패턴
             // (createChooser로 감싸는 이유도 같다 — 기본 앱이 정해져 있어도 매번 시트를 띄운다).

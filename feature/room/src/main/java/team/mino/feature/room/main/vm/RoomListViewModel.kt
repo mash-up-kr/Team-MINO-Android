@@ -1,13 +1,8 @@
 package team.mino.feature.room.main.vm
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
-import android.location.Location
-import android.location.LocationListener
-import android.location.LocationManager
-import android.os.Looper
 import android.os.SystemClock
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
@@ -16,10 +11,9 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlinx.coroutines.withTimeoutOrNull
 import team.mino.core.common.android.architecture.MviContainer
 import team.mino.core.common.android.architecture.mviContainer
+import team.mino.core.common.android.extension.currentDeviceLocation
 import team.mino.core.common.android.extension.launchSafely
 import team.mino.core.common.kotlin.geo.GeoPoint
 import team.mino.core.common.kotlin.geo.distanceMetersTo
@@ -45,10 +39,8 @@ import team.mino.feature.room.main.model.BottomSheetLevel
 import team.mino.feature.room.main.model.MapPinUiModel
 import team.mino.feature.room.main.model.toMemberSummary
 import javax.inject.Inject
-import kotlin.coroutines.resume
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.days
-import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
@@ -382,12 +374,12 @@ class RoomListViewModel @Inject constructor(
      * **장소 상세가 열려 있으면 카메라를 옮기지 않는다**(spec EC-030). 홈·알림 진입은 탭 전환(→
      * [onScreenEntered])과 장소 상세 열기([openRequestedPlaceDetail])가 같은 순간에 일어나 두 카메라
      * 이동이 겹치는데, 어느 쪽이 이기는지가 위치 해석 속도에 달린다 — 캐시된 마지막 위치가 있으면 즉시
-     * 끝나 장소 쪽이 이기지만, 없어서 활성 측위로 넘어가면 최대 `LOCATION_FETCH_TIMEOUT` 뒤에 도착해
-     * 선택 핀에 맞춰 둔 카메라를 현재 위치가 덮는다. 순서로는 고정되지 않으므로 규칙으로 고정한다.
+     * 끝나 장소 쪽이 이기지만, 없어서 활성 측위로 넘어가면 [Context.currentDeviceLocation]의 타임아웃
+     * 뒤에 도착해 선택 핀에 맞춰 둔 카메라를 현재 위치가 덮는다. 순서로는 고정되지 않으므로 규칙으로 고정한다.
      *
      * **판정이 위치 해석 앞뒤로 두 번 있다.** 뒤의 것이 위 경합을 닫는다 — 앞에서만 보면 해석을 기다리는
      * 사이에 열린 장소 상세를 놓친다. 앞의 것은 낭비를 막는다 — 이미 열려 있는데 들어오면(탭 재진입)
-     * 캐시가 없는 기기에서 GPS를 켜고 [LOCATION_FETCH_TIMEOUT]까지 기다린 뒤 결과를 버리게 된다.
+     * 캐시가 없는 기기에서 GPS를 켜고 그 타임아웃까지 기다린 뒤 결과를 버리게 된다.
      *
      * @param skipWhenPlaceDetailOpen 위 가드를 걸지 여부. 사용자가 직접 누른 [현재 위치]
      *  ([onCurrentLocationClick])만 `false`로 끈다 — 지목을 바꾸는 조작이라 규칙의 예외이며, 그 예외를
@@ -431,7 +423,7 @@ class RoomListViewModel @Inject constructor(
 
     /** 거부 시 기본 디폴트 좌표, 허용 시 실제 위치로 해석한다(EC-002). 세 호출부가 공유하는 단일 규칙. */
     private suspend fun resolveMapCenter(granted: Boolean): GeoPoint =
-        if (granted) currentDeviceLocation() ?: DefaultMapCenter else DefaultMapCenter
+        if (granted) context.currentDeviceLocation() ?: DefaultMapCenter else DefaultMapCenter
 
     /** [contracts/room-list-main-contract.md 「분기 규칙 — 시트 드래그 전이」] */
     private fun onSheetDraggedUp() {
@@ -616,58 +608,7 @@ class RoomListViewModel @Inject constructor(
             ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) ==
             PackageManager.PERMISSION_GRANTED
 
-    /**
-     * 기기 위치. `:core:map`은 지도 렌더링만 담당하고 위치 조회 인프라가 없어(README 확인 완료)
-     * 프레임워크 `LocationManager`로 직접 조회한다 — 별도 SDK 의존을 새로 들이지 않는다.
-     *
-     * 캐시된 마지막 위치(`getLastKnownLocation`)부터 확인하고, 없으면(다른 앱이 최근에 위치를 요청한
-     * 적이 없는 기기에서는 모든 provider가 `null`을 반환한다) 활성화된 provider로 새 위치를 능동적으로
-     * 요청한다. `LOCATION_FETCH_TIMEOUT`을 넘기면 [resolveMapCenter]가 기본 좌표로 폴백한다.
-     */
-    @SuppressLint("MissingPermission")
-    private suspend fun currentDeviceLocation(): GeoPoint? {
-        val locationManager = context.getSystemService(LocationManager::class.java) ?: return null
-        val cached = locationManager.allProviders
-            .mapNotNull { provider -> runCatching { locationManager.getLastKnownLocation(provider) }.getOrNull() }
-            .maxByOrNull { it.time }
-        if (cached != null) return cached.toGeoPoint()
-
-        val provider = when {
-            locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) -> LocationManager.GPS_PROVIDER
-            locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER) -> LocationManager.NETWORK_PROVIDER
-            else -> return null
-        }
-        return withTimeoutOrNull(LOCATION_FETCH_TIMEOUT) { requestSingleLocationUpdate(locationManager, provider) }
-    }
-
-    /** [requestSingleUpdate]는 API 21부터 지원한다(minSdk 29) — `getCurrentLocation`(API 30+)보다 넓은 범위를 커버한다.
-     * `@Suppress("DEPRECATION")`은 그 이유로 대체하지 않고 그대로 쓰기로 한 의도적 선택이다. */
-    @Suppress("DEPRECATION")
-    @SuppressLint("MissingPermission")
-    private suspend fun requestSingleLocationUpdate(
-        locationManager: LocationManager,
-        provider: String,
-    ): GeoPoint? =
-        suspendCancellableCoroutine { continuation ->
-            val listener = object : LocationListener {
-                override fun onLocationChanged(location: Location) {
-                    locationManager.removeUpdates(this)
-                    if (continuation.isActive) continuation.resume(location.toGeoPoint())
-                }
-            }
-            continuation.invokeOnCancellation { locationManager.removeUpdates(listener) }
-            runCatching {
-                locationManager.requestSingleUpdate(provider, listener, Looper.getMainLooper())
-            }.onFailure {
-                if (continuation.isActive) continuation.resume(null)
-            }
-        }
-
-    private fun Location.toGeoPoint(): GeoPoint = GeoPoint(latitude = latitude, longitude = longitude)
-
     private companion object {
-        val LOCATION_FETCH_TIMEOUT = 10.seconds
-
         /** [SYS-009] [나중에 만들래요] 클릭 시 Nudge 팝업을 재표출하지 않는 기간(PRD 11.1.0). */
         val NUDGE_SUPPRESSION_DURATION = 14.days
 

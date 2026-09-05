@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -12,12 +14,17 @@ import com.google.maps.android.compose.GoogleMapComposable
 import com.google.maps.android.compose.MarkerComposable
 import com.google.maps.android.compose.rememberUpdatedMarkerState
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.coroutines.launch
 import team.mino.core.common.kotlin.geo.GeoPoint
+import team.mino.core.common.ui.component.RoomMapClusterPin
 import team.mino.core.common.ui.component.RoomMapPin
 import team.mino.core.map.MinoMap
 import team.mino.core.map.rememberMinoCameraState
 import team.mino.core.map.toLatLng
+import team.mino.feature.room.main.model.MapPinCluster
 import team.mino.feature.room.main.model.MapPinUiModel
+import team.mino.feature.room.main.model.toMapPinClusters
+import kotlin.math.roundToInt
 
 /** [RoomListMap] 기본 줌 레벨. Figma 대조 노드가 지도 줌 값을 변수로 노출하지 않아 실측 근거가 없다 — 화면 전체가 보이는 통상 줌 값을 그대로 쓴다. */
 private const val DEFAULT_ZOOM = 15f
@@ -35,12 +42,17 @@ private val PinIconHeight = 37.dp
  *
  * @param contentPadding 바텀시트·상태바에 가려 보이지 않는 가장자리. 카메라를 옮길 때 타깃이 이 패딩을 뺀
  *  영역의 중앙에 놓인다 — 값을 정하는 것은 시트를 아는 [RoomListScreen]이다.
+ * @param onPinClick 핀을 눌렀다 — 그 장소의 id([MapPinUiModel.place]`.id`)를 올린다. 장소 상세를 여는
+ *  것은 [RoomListViewModel][team.mino.feature.room.main.vm.RoomListViewModel]의 몫이라(FR-002) 이
+ *  컴포저블은 클릭 사실만 콜백으로 넘긴다. 방 상세도 이 지도를 그대로 공유해 쓰므로 같은 콜백 하나로
+ *  두 진입이 함께 배선된다(클래스 KDoc 참고).
  */
 @Composable
 internal fun RoomListMap(
     mapCenter: GeoPoint?,
     mapCenterRequestId: Int,
     mapPins: ImmutableList<MapPinUiModel>,
+    onPinClick: (String) -> Unit,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(),
 ) {
@@ -48,6 +60,7 @@ internal fun RoomListMap(
         center = mapCenter ?: DefaultMapCenter,
         zoom = DEFAULT_ZOOM,
     )
+    val scope = rememberCoroutineScope()
 
     // rememberMinoCameraState는 최초 컴포지션 시점의 center만 반영한다 — 권한 허용·현재 위치
     // 버튼 클릭으로 mapCenter가 바뀔 때마다 카메라를 그 위치로 옮기려면 별도로 반응해야 한다.
@@ -65,7 +78,35 @@ internal fun RoomListMap(
         modifier = modifier.fillMaxSize(),
         contentPadding = contentPadding,
     ) {
-        mapPins.forEach { pin -> PlacePin(pin) }
+        // cameraPositionState.position은 Compose 상태라, 줌이 바뀌면 이 블록이 다시 실행돼 클러스터도
+        // 함께 다시 계산된다(PRD Flow C "지도 축소 시… 클러스터로 묶는다"). 원시 줌 값을 그대로 key로
+        // 쓰면 핀치 줌 제스처 도중 손가락이 움직이는 매 프레임마다 다시 계산된다 — 클러스터 결과가
+        // 실제로 바뀌는 단위는 그보다 훨씬 성기므로, 0.5 단계로 반올림해 같은 "구간" 안에서는 다시
+        // 계산하지 않는다.
+        val zoomBucket = (cameraPositionState.position.zoom * 2).roundToInt()
+        val clusters = remember(mapPins, zoomBucket) {
+            mapPins.toMapPinClusters(zoom = zoomBucket / 2f, defaultZoom = DEFAULT_ZOOM)
+        }
+        clusters.forEach { cluster ->
+            val singlePin = cluster.pins.singleOrNull()
+            if (singlePin != null) {
+                PlacePin(singlePin, onClick = { onPinClick(singlePin.place.id) })
+            } else {
+                ClusterPin(
+                    cluster = cluster,
+                    onClick = {
+                        scope.launch {
+                            cameraPositionState.animate(
+                                CameraUpdateFactory.newLatLngZoom(
+                                    cluster.center.toLatLng(),
+                                    cameraPositionState.position.zoom + CLUSTER_CLICK_ZOOM_STEP,
+                                ),
+                            )
+                        }
+                    },
+                )
+            }
+        }
     }
 }
 
@@ -74,13 +115,24 @@ internal fun RoomListMap(
  *
  * [MarkerComposable]은 content를 비트맵으로 한 번 구워 두고 keys가 달라질 때만 다시 굽는다 — 핀 그림을
  * 고르는 두 값을 키로 넘기지 않으면 [MapPinUiModel.selected]가 뒤집혀도 마커가 이전 그림 그대로 남는다.
+ *
+ * [onClick]은 `true`를 돌려줘 기본 동작(정보창 표시·카메라 이동)을 막는다 — 장소 상세를 여는 것은
+ * [RoomListViewModel][team.mino.feature.room.main.vm.RoomListViewModel]이 `OnPlaceSelected`로 카메라까지
+ * 함께 옮기므로, 기본 동작이 먼저 끼어들면 그 사이에 지도가 한 번 더 움직이는 중간 상태가 보인다.
  */
 @Composable
 @GoogleMapComposable
-private fun PlacePin(pin: MapPinUiModel) {
+private fun PlacePin(
+    pin: MapPinUiModel,
+    onClick: () -> Unit,
+) {
     MarkerComposable(
         pin.color to pin.selected,
         state = rememberUpdatedMarkerState(position = pin.place.location.toLatLng()),
+        onClick = {
+            onClick()
+            true
+        },
     ) {
         RoomMapPin(
             color = pin.color,
@@ -89,6 +141,35 @@ private fun PlacePin(pin: MapPinUiModel) {
         )
     }
 }
+
+/**
+ * 겹치는 핀 2개 이상을 묶은 클러스터 마커([MapPinCluster], PRD Flow C). 누르면 그 자리를 확대해
+ * 낱개 핀이 드러나게 한다 — 클러스터를 눌렀을 때 어느 화면으로 갈지는 디자인이 정해 둔 바가 없어,
+ * 지도 클러스터의 통상 관례(확대해서 풀기)를 따른다.
+ *
+ * [MarkerComposable]의 키는 색·개수 둘 다 실어야 한다 — [PlacePin] KDoc과 같은 이유로, 둘 중
+ * 하나만 바뀌어도 다시 구워야 배지 그림이 실제 상태를 따라간다.
+ */
+@Composable
+@GoogleMapComposable
+private fun ClusterPin(
+    cluster: MapPinCluster,
+    onClick: () -> Unit,
+) {
+    MarkerComposable(
+        cluster.color to cluster.pins.size,
+        state = rememberUpdatedMarkerState(position = cluster.center.toLatLng()),
+        onClick = {
+            onClick()
+            true
+        },
+    ) {
+        RoomMapClusterPin(color = cluster.color, count = cluster.pins.size)
+    }
+}
+
+/** [ClusterPin] 클릭 시 확대하는 줌 단계 — 겹침이 풀릴 만큼(경험적 값, [TBD] 실기기 대조 필요). */
+private const val CLUSTER_CLICK_ZOOM_STEP = 2f
 
 /**
  * [EC-002] 기본 디폴트 좌표 — 강남역(PRD [SYS-004] Flow A "현재 강남역으로 임시 지정, 추후 변경될 수 있음").

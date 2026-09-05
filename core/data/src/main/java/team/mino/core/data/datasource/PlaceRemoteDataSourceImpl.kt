@@ -11,7 +11,15 @@ import javax.inject.Inject
 internal class PlaceRemoteDataSourceImpl @Inject constructor(
     private val service: PlaceApiService,
 ) : PlaceRemoteDataSource {
-    override suspend fun getPins(roomId: String): List<PinResponse> = service.getPins(roomId)
+    override suspend fun getPins(
+        roomId: String?,
+        category: String,
+        sort: String,
+        lat: Double?,
+        lng: Double?,
+        page: Int?,
+        pageSize: Int?,
+    ): List<PinResponse> = service.getPins(roomId, category, sort, lat, lng, page, pageSize)
 
     override suspend fun deletePin(pinId: String) {
         service.deletePin(pinId)

@@ -67,6 +67,13 @@ dependencies {
 
     implementation(libs.timber)
 
+    // MinoApplication이 SingletonImageLoader.Factory를 구현하려면 coil3 핵심 타입(ImageLoader 등)이 필요하다 —
+    // core:design-system은 coil-compose를 `implementation`으로만 갖고 있어 이 모듈 컴파일 classpath에
+    // 노출되지 않는다. coil-network-ktor3는 그 위에 실제 네트워크 fetcher를 더한다(없으면 모든 http(s)
+    // 이미지 요청이 즉시 실패해 fallback 글리프만 보인다).
+    implementation(libs.coil.compose)
+    implementation(libs.coil.network.ktor3)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

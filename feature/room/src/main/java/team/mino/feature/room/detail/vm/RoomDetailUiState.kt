@@ -24,6 +24,12 @@ internal data class RoomDetailUiState(
     val room: Room? = null,
     val sheetLevel: BottomSheetLevel = BottomSheetLevel.HALF,
     val places: ImmutableList<Place> = persistentListOf(),
+    // [SYS-007과 무관, FR-011] 장소 목록 페이징 — 20개씩(`DEFAULT_PLACES_PAGE_SIZE`) 나눠 받는다("api
+    // 낭비 없게"). 지도(RoomListViewModel.observePlaces)는 여전히 전체를 한 번에 받으므로 이 상태와
+    // 무관하다.
+    val placesNextPage: Int = 0,
+    val hasMorePlaces: Boolean = true,
+    val isLoadingMorePlaces: Boolean = false,
     // room-list의 mapMarkerSort 기본값(ALL)과 맞춘다 — GGUK_PICK을 기본값으로 두면 진입 즉시 트리거가
     // "꾹 Pick"으로 보여 room-list와 달라 보인다.
     val sortOption: MapMarkerSortOption = MapMarkerSortOption.ALL,
@@ -72,4 +78,10 @@ internal data class RoomDetailUiState(
 /**
  * 나가기/위임 모달 상태([SYS-007]).
  */
-internal enum class LeaveDialogState { None, ConfirmMember, ConfirmOwnerSingle, DelegateOwner }
+internal enum class LeaveDialogState {
+    None,
+    ConfirmMember,
+    ConfirmOwnerSingle,
+    ConfirmOwnerDelegateIntro,
+    DelegateOwner,
+}

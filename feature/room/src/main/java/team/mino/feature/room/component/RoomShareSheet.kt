@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -68,8 +67,10 @@ import team.mino.feature.room.detail.component.RoomDetailSheetHeight
  * 같으므로, 시트 높이는 `목록 영역 + `[FixedChromeHeight]로 나온다 — 단계가 바뀌어도 [공유하기]가 화면
  * 밖으로 밀리지 않는다.
  *
- * **끄는 것을 받는 자리는 손잡이 하나다.** 시트 본문 전체가 받으면 목록을 세로로 훑는 손짓과 단계를 바꾸는
- * 손짓이 같은 자리에서 갈린다.
+ * **끄는 것을 받는 자리는 손잡이 + 대상 장소 행·[새 방 만들기] 행·구분선이다.** 스크롤하는 목록만 빼고
+ * 나머지 전부를 드래그 인식 영역에 둔다 — 손잡이 30dp 하나만 받으면 실기기에서 그 좁은 자리를 정확히
+ * 짚기 어려워, 못 짚은 손짓이 시트 바깥 딤 영역까지 넘어가 의도치 않게 닫혀 버리는 결함이 있었다(실기기
+ * 확인). 목록을 넣으면 세로로 훑는 손짓과 단계를 바꾸는 손짓이 같은 자리에서 갈리므로 목록만 제외한다.
  *
  * **닫는 판단은 하지 않는다.** `Peek`에서 아래로 끌렸다는 사실만 [onDismissRequest]로 올리고, 치우는 것은
  * 상태를 든 쪽이다. 단계([RoomShareSheetLevel])만 로컬 상태인데, 이 컴포저블이 화면에서 빠졌다 다시 붙을
@@ -116,10 +117,12 @@ internal fun RoomShareSheet(
             // 손잡이는 이 모듈의 시트가 함께 쓰는 [SheetDragHandle](30dp)을 그대로 쓴다 — RoomDetailDraggableSheet
             // 기본 손잡이(20dp)로 두면 [FixedChromeHeight]가 어긋난다.
             handle = { SheetDragHandle() },
-            // 손잡이만 끄는 것을 받는다 — header를 비워 두면 RoomDetailDraggableSheet의 드래그 인식 영역이
-            // 손잡이에만 걸린다([RoomShareSheet] KDoc "끄는 것을 받는 자리는 손잡이 하나다" 참고). 아래
-            // 행들은 content로 내려 목록 스크롤과 같은 자리에서 갈리지 않게 한다.
-            content = {
+            // 스크롤 가능한 목록만 드래그 인식 밖으로 뺀다([RoomShareSheet] KDoc "끄는 것을 받는 자리는
+            // 손잡이 하나다"는 손잡이 30dp 하나로 너무 좁아 실기기에서 못 찾고 딤 영역까지 손이 넘어가
+            // 닫혀 버리는 결함이 있었다 — 대상 장소 행·새 방 만들기 행·구분선은 스크롤하지 않으니 여기
+            // 넣어도 목록 스크롤과 갈릴 게 없다). 그래서 이 셋을 header로 옮겨 손잡이와 함께 드래그
+            // 인식 영역에 넣고, 실제로 스크롤하는 목록만 content에 남긴다.
+            header = {
                 TargetPlaceRow(
                     placeName = placeName,
                     placeAddress = placeAddress,
@@ -127,27 +130,39 @@ internal fun RoomShareSheet(
                 )
                 CreateRoomRow(onCreateRoomClick = onCreateRoomClick)
                 SheetSectionDivider(horizontalPadding = HorizontalPadding)
-                RoomList(
-                    rooms = rooms,
-                    selectedRoomIds = selectedRoomIds,
-                    onRoomToggle = onRoomToggle,
-                    // 시트 전체 높이가 이미 [listAreaHeight]를 포함해 고정되므로, 목록도 같은 값으로 직접
-                    // 잘라 받는다 — `weight(1f)`는 RoomDetailDraggableSheet의 `content` 슬롯이 ColumnScope가
-                    // 아니라 못 쓴다.
-                    modifier = Modifier.height(listAreaHeight(level, rooms.size)),
-                )
-                // 시트 아랫변이 내비게이션 바 뒤까지 닿으므로(`DimmedSheetContainer`) 시스템 바를 피하는 건
-                // 맨 밑 요소인 액션 영역 몫이다. Figma의 102dp도 홈 바 자리를 품은 값이라 둘이 어긋나지 않는다.
-                MinoActionArea(
-                    modifier = Modifier.navigationBarsPadding(),
-                    mainAction = ActionAreaAction(
-                        text = stringResource(R.string.roomshare_confirm),
-                        onClick = onShareClick,
-                        enabled = isShareEnabled,
-                    ),
-                    // 목록이 이 영역 밑으로 지나가며 잘리므로, 배경과 그 위 페이드가 함께 필요하다.
-                    sticky = true,
-                )
+            },
+            content = {
+                // 목록과 액션 영역은 겹친다 — `Column`으로 순차 배치해 [listAreaHeight]에서 딱 자르면
+                // 목록이 [listAreaHeight]에서 하드 컷되고 그 아래 `MinoActionArea`의 `sticky` 페이드가 가릴
+                // 대상 자체가 없어져 장식으로만 남는다(Figma 실측 — peek에서 세 번째 카드 제목·메모 일부가
+                // 액션 영역 뒤로 비치며 옅어진다, `2392-128669`). `MinoActionArea`의 sticky 배경은 원래 목록이
+                // 그 밑을 지나가며 페이드로 흐려지는 용도로 설계돼 있다(`ActionAreaContainer` KDoc). 그래서
+                // 목록 뷰포트를 [listAreaHeight] + 액션 영역 높이([ActionAreaHeight])만큼 주고, 액션 영역을
+                // 그 뷰포트 맨 아래에 겹쳐 그린다 — 목록이 액션 영역 뒤로 [ActionAreaHeight]만큼 더 이어지다
+                // 페이드에 잠긴다.
+                Box(modifier = Modifier.height(listAreaHeight(level, rooms.size) + ActionAreaHeight)) {
+                    RoomList(
+                        rooms = rooms,
+                        selectedRoomIds = selectedRoomIds,
+                        onRoomToggle = onRoomToggle,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                    // 시트 아랫변이 내비게이션 바 뒤까지 닿으므로(`DimmedSheetContainer`의 `systemBarBleed`)
+                    // 액션 영역이 여기서 `navigationBarsPadding()`을 또 걸면 안 된다 — Figma의 102dp 자체가
+                    // 이미 홈 바 자리를 품은 고정값(디자인 정책 `2400:268882` — peek 500/full 676/full+ 708
+                    // 고정)이라, 실기기 내비게이션 바 인셋을 한 번 더 더하면 그 고정 높이를 넘겨 액션 영역이
+                    // 시트 밖으로 밀려 잘린다(실기기 확인 — "다른 방에 공유" 시트에서 공유하기 버튼이 안
+                    // 보이던 결함).
+                    MinoActionArea(
+                        modifier = Modifier.align(Alignment.BottomCenter),
+                        mainAction = ActionAreaAction(
+                            text = stringResource(R.string.roomshare_confirm),
+                            onClick = onShareClick,
+                            enabled = isShareEnabled,
+                        ),
+                        sticky = true,
+                    )
+                }
             },
         )
     }
@@ -258,6 +273,12 @@ private fun CreateRoomRow(
  *
  * 오른쪽 끝에 겹쳐 놓인 [MinoScrollBar]는 스크롤 여지를 알리는 보조 수단이다. 목록과 같은 상태를 보며
  * 표시만 하고, 카드 폭 밖에 놓여 탭을 가로채지 않는다.
+ *
+ * **아랫변에 [ActionAreaHeight]만큼 여백을 준다.** 이 목록의 뷰포트([RoomShareSheet]의 `Box`)는 액션
+ * 영역과 겹치도록 그 높이만큼 더 받는데(`RoomShareSheet` 본문 KDoc), 이 여백이 없으면 방이 딱 뷰포트를
+ * 채우는 경계 개수(Full에서 정확히 5개)일 때 스크롤할 거리 자체가 0이 되어 마지막 카드가 액션 영역
+ * 뒤에 영영 가려진 채 체크박스를 못 누르는 결함이 생긴다(실기기 확인) — 방이 몇 개든 마지막 카드까지
+ * 액션 영역 위로 끌어올릴 수 있어야 한다.
  */
 @Composable
 private fun RoomList(
@@ -272,7 +293,11 @@ private fun RoomList(
         LazyColumn(
             modifier = Modifier.fillMaxWidth(),
             state = listState,
-            contentPadding = PaddingValues(horizontal = HorizontalPadding),
+            contentPadding = PaddingValues(
+                start = HorizontalPadding,
+                end = HorizontalPadding,
+                bottom = ActionAreaHeight,
+            ),
         ) {
             items(items = rooms, key = { it.id }) { room ->
                 MinoRoomCheckBoxCard(
@@ -304,11 +329,18 @@ private fun RoomList(
 
 /**
  * 단계와 무관하게 늘 같은 위아래 영역의 합 — 손잡이 30 + 장소 행 60 + [새 방 만들기] 행 56 + 구분선 띠 12
- * + 액션 영역 102(홈 바 자리 포함). 목록 영역만 단계에 따라 달라지므로 시트 높이가 이 값 하나로 나온다.
+ * + 액션 영역 102([ActionAreaHeight], 홈 바 자리 포함). 목록 영역만 단계에 따라 달라지므로 시트 높이가 이
+ * 값 하나로 나온다. 액션 영역은 목록과 순차로 쌓이지 않고 목록 뷰포트 맨 아래에 겹쳐 그려지지만
+ * (`RoomShareSheet` 본문의 `Box` 참고), 합산 높이 자체는 겹치기 전과 같다 — 겹친 만큼을 목록 뷰포트가
+ * 그만큼 더 받기 때문이다.
  */
 private val FixedChromeHeight = 260.dp
 
-/** Figma `2392-128669`("011-1-1 다른 방에 공유_peek") 실측 — 카드 두 장과 세 번째의 윗부분이 보인다. */
+/** [RoomShareSheet] 본문에서 목록 뷰포트 마지막 [ActionAreaHeight]에 `MinoActionArea`를 겹쳐 그릴 때 쓴다. */
+private val ActionAreaHeight = 102.dp
+
+/** Figma `2392-128669`("011-1-1 다른 방에 공유_peek") 실측 — 카드 두 장과 세 번째의 대부분이 액션 영역
+ * 페이드 뒤로 비쳐 보인다. */
 private val PeekListHeight = 240.dp
 
 /** Figma `2542-10516`("011-1-2-1 다른 방에 공유_full_4개") 실측 — 104dp × 4로 딱 맞는다. */

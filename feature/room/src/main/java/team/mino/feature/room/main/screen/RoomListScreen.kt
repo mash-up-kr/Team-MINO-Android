@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -35,7 +34,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.layout.LayoutCoordinates
-import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
@@ -81,10 +79,9 @@ import kotlin.math.roundToInt
  * **[detailContent]보다 우선한다** — 장소 상세가 열려 있으면 [RoomListUiState.selectedRoomId]도 함께 세워져
  * 있어([나가기] 뒤에 드러날 자리다) 두 슬롯이 동시에 채워진 채로 들어오지만, 그동안 방 상세 시트는 그리지
  * 않는다. 지도를 공유하는 것은 방 상세와 같다.
- * @param detailSheetLevel `detailContent`가 그리는 방 상세 바텀시트의 현재 단계. 지도가 상태바 밑으로
- * 새어 나와야 하는지(`mapBleed`)는 "현재 활성화된 시트"가 `Full`인지로 판정해야 한다 — 상세 모드인데도
- * 리스트의 `state.sheetLevel`만 보면 상세가 `Full`이라 지도가 안 보여야 할 때도 지도가 계속 새어 나와
- * 상태바 영역에 지도 색이 비치고 그 아래서 흰 시트가 시작되는 이음매가 생긴다(실기기 확인된 결함).
+ * @param detailSheetLevel `detailContent`가 그리는 방 상세 바텀시트의 현재 단계. 지도가 가려지는 높이는
+ * "현재 활성화된 시트"가 `Full`인지로 판정해야 한다 — 상세 모드인데도 리스트의 `state.sheetLevel`만 보면
+ * 상세가 `Full`이라 지도가 안 보여야 할 때도 컨트롤이 계속 뜨는 결함이 생긴다(실기기 확인된 결함).
  * @param placeDetailSheetLevel `placeDetailContent`가 그리는 장소 상세 바텀시트의 현재 단계. 활성 시트가
  * 셋으로 늘어도 판정 기준은 하나다 — 지금 활성인 시트의 단계다.
  */
@@ -102,8 +99,8 @@ internal fun RoomListScreen(
     // (장소 상세 → 방 상세 → 리스트). `null`이 `Full` — 지도가 통째로 덮여 보이지 않는 상태다.
     //
     // **장소 상세만 내비게이션 바 자리까지 덮는다.** 이 지도는 아랫변이 내비게이션 바 위에서 끝나므로
-    // (아래 `mapBleed`는 위쪽만 되찾는다) 그 시트가 실제로 지도를 가리는 높이는 인셋만큼 짧다. 다른 두
-    // 시트는 지도와 같은 자리에서 끝나 시트 높이가 곧 가려지는 높이다.
+    // 그 시트가 실제로 지도를 가리는 높이는 인셋만큼 짧다. 다른 두 시트는 지도와 같은 자리에서 끝나
+    // 시트 높이가 곧 가려지는 높이다.
     val navigationBarInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val obscuredMapHeight = when {
         placeDetailContent != null ->
@@ -116,8 +113,8 @@ internal fun RoomListScreen(
         else -> bottomSheetHeightOrNull(state.sheetLevel, state.groupRooms.size)
     }
 
-    // 지도 위 컨트롤(과 그에 딸린 mapBleed)은 지도가 보이는 동안에만 뜬다 — 가려진 높이를 알 수 있다는 것이
-    // 곧 지도가 보인다는 뜻이라, 판정을 둘로 두지 않고 위 값 하나에서 가른다.
+    // 지도 위 컨트롤은 지도가 보이는 동안에만 뜬다 — 가려진 높이를 알 수 있다는 것이 곧 지도가 보인다는
+    // 뜻이라, 판정을 둘로 두지 않고 위 값 하나에서 가른다.
     val isMapControlVisible = obscuredMapHeight != null
     var sortMenuExpanded by remember { mutableStateOf(false) }
     // 트리거 위치를 이 Box 기준 좌표(root 기준 아님)로 계산하려고 두 LayoutCoordinates를 그대로
@@ -128,18 +125,13 @@ internal fun RoomListScreen(
     // SortMenuGap은 상수라 매 배치마다 다시 px로 환산할 필요가 없다.
     val sortMenuGapPx = remember(density) { with(density) { SortMenuGap.toPx() } }
 
-    // Figma(node 2661-157242 Peek/2661-157338 Half)는 지도가 상태바 뒤까지 edge-to-edge로 깔리고
-    // 상태바는 그 위에 투명 오버레이로 얹힌다 — `Full`(003-1-3)은 반대로 상태바 영역이 일반 inset이다.
-    // `MainShell`의 `MinoScaffold`가 상태바 높이만큼 top padding을 이미 소비해서 이 컴포저블이 받는
-    // 영역은 항상 상태바 아래에서 시작한다 — 그래서 지도만 [mapBleed]만큼 위로 끌어올려 그 padding을
-    // 뚫고 진짜 화면 최상단부터 채운다(아래 `Modifier.layout` — 측정 높이 자체를 늘려야 지도 하단에
-    // 빈틈이 안 남는다). 지도 위 다른 콘텐츠(정렬 컨트롤 등)는 원래 자리(이미 올바르게 inset된
-    // 위치) 그대로 둔다.
-    val statusBarInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-    val mapBleed = remember(isMapControlVisible, statusBarInset) {
-        if (isMapControlVisible) statusBarInset else 0.dp
-    }
-
+    // 지도(`RoomListMap`)는 순수 Compose가 아니라 Google Maps SDK의 네이티브 `MapView`를 `AndroidView`로
+    // 감싼 것이다(`MinoMap`). 상태바 뒤로 파고드는 edge-to-edge를 시도했으나(음수 오프셋 배치·`systemBarBleed`
+    // 둘 다), `SurfaceView` 기반 네이티브 뷰라 같은 창 안의 형제 뷰가 바뀔 때마다(Full↔Peek/Half 전환·딤
+    // 시트 열고 닫기·리스트↔상세 진입 등) 서페이스 합성이 깨져 그 자리가 흰 배경으로 굳는 결함이 실기기에서
+    // 반복 재현됐다(2026-09-04) — Compose 쪽에서 근본 차단이 안 되는 SurfaceView의 알려진 한계로 판단해
+    // 포기했다. 지도는 `MainShell`의 `MinoScaffold`가 상태바 높이만큼 이미 물러난 자리에 그대로 둔다
+    // (Peek/Half/Full 공통, Figma 대비 상태바 자리만 지도가 아니라 흰 배경이다).
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -149,28 +141,11 @@ internal fun RoomListScreen(
             mapCenter = state.mapCenter,
             mapCenterRequestId = state.mapCenterRequestId,
             mapPins = state.mapPins,
-            // 마커를 「화면」이 아니라 「시트에 가리지 않은 지도」의 중앙에 놓는다(spec FR-002). 위쪽은
-            // [mapBleed]만큼 상태바 뒤로 들어가 있고, 아래쪽은 지금 선 시트가 가린다.
-            contentPadding = PaddingValues(
-                top = mapBleed,
-                bottom = obscuredMapHeight ?: 0.dp,
-            ),
-            modifier = Modifier
-                .fillMaxWidth()
-                .layout { measurable, constraints ->
-                    val bleedPx = mapBleed.roundToPx()
-                    val targetHeight = if (constraints.hasBoundedHeight) {
-                        constraints.maxHeight + bleedPx
-                    } else {
-                        constraints.maxHeight
-                    }
-                    val placeable = measurable.measure(
-                        constraints.copy(minHeight = targetHeight, maxHeight = targetHeight),
-                    )
-                    layout(placeable.width, placeable.height) {
-                        placeable.placeRelative(0, -bleedPx)
-                    }
-                },
+            // [FR-002] 핀 클릭 → 장소 상세 진입. 방 상세도 이 지도를 공유해 쓰므로 같은 콜백 하나로
+            // 두 진입점이 함께 배선된다(RoomListMap KDoc 참고).
+            onPinClick = { placeId -> onIntent(RoomListIntent.OnPlaceSelected(placeId)) },
+            contentPadding = PaddingValues(bottom = obscuredMapHeight ?: 0.dp),
+            modifier = Modifier.fillMaxSize(),
         )
 
         if (placeDetailContent != null) {

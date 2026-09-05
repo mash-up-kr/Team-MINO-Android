@@ -30,7 +30,12 @@ data class Place(
     val name: String,
     val address: String,
     val category: PlaceCategoryFilter,
-    val thumbnailUrl: String?,
+    /**
+     * `Pin.images`(서버가 이 장소에 저장한 사진 여러 장, 순서 보장) 전체 — 카드형([PlaceGridItem])의
+     * 2장 콜라주가 `images[0]`·`images[1]`처럼 서로 다른 사진을 채워야 하기 때문에 첫 장만 남기지 않는다.
+     * 비어 있으면 사진이 없는 장소다.
+     */
+    val thumbnailUrls: List<String>,
     val savedAt: Instant,
     val commentCount: Int,
     val isGgukPick: Boolean,

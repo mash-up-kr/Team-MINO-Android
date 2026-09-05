@@ -682,7 +682,7 @@ class RoomListViewModelTest {
             name = id,
             address = "",
             category = PlaceCategoryFilter.CAFE,
-            thumbnailUrl = null,
+            thumbnailUrls = emptyList(),
             savedAt = Instant.DISTANT_PAST,
             commentCount = 0,
             isGgukPick = false,

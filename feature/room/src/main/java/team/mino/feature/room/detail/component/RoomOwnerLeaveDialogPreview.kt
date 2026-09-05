@@ -28,6 +28,22 @@ private fun RoomOwnerLeaveDialogSingleMemberPreview() {
     }
 }
 
+/** [RoomOwnerLeaveDialog] — 방장 위임 안내 상태. */
+@UiModePreviews
+@Composable
+private fun RoomOwnerLeaveDialogDelegateIntroPreview() {
+    MinoAndroidAppTheme {
+        RoomOwnerLeaveDialog(
+            leaveDialogState = LeaveDialogState.ConfirmOwnerDelegateIntro,
+            roomMembers = persistentListOf(),
+            selectedMemberId = null,
+            onMemberSelected = {},
+            onConfirm = {},
+            onCancel = {},
+        )
+    }
+}
+
 /** [RoomOwnerLeaveDialog] — 위임 대상 선택 상태. */
 @UiModePreviews
 @Composable

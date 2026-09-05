@@ -94,7 +94,9 @@ internal fun BoxScope.RoomDetailScreen(
     RoomDetailBottomSheet(
         sheetLevel = state.sheetLevel,
         room = state.room,
-        placeCount = state.places.size,
+        // `state.places`는 이제 페이징(20개씩)된 일부만 담아, 로드된 개수가 아니라 서버가 방 자체에
+        // 실어 준 실제 총 개수(`Room.placeCount`, `RoomResponse.pinCount`)를 써야 한다.
+        placeCount = state.room?.placeCount ?: 0,
         sortOption = state.sortOption,
         categoryFilter = state.categoryFilter,
         viewType = state.viewType,
@@ -128,12 +130,14 @@ internal fun BoxScope.RoomDetailScreen(
                         onDeleteClick = { onIntent(RoomDetailIntent.OnPlaceDeleteClick(place)) },
                     )
                 }
+                val onLoadMore = { onIntent(RoomDetailIntent.OnPlacesLoadMore) }
                 when (state.viewType) {
                     PlaceViewType.LIST ->
                         PlaceCardList(
                             places = state.places,
                             onPlaceClick = onPlaceClick,
                             onPlaceMoreClick = onPlaceMoreClick,
+                            onLoadMore = onLoadMore,
                             actionMenu = actionMenu,
                         )
                     PlaceViewType.CARD ->
@@ -141,6 +145,7 @@ internal fun BoxScope.RoomDetailScreen(
                             places = state.places,
                             onPlaceClick = onPlaceClick,
                             onPlaceMoreClick = onPlaceMoreClick,
+                            onLoadMore = onLoadMore,
                             actionMenu = actionMenu,
                         )
                 }
@@ -153,7 +158,7 @@ internal fun BoxScope.RoomDetailScreen(
         RoomShareSheet(
             placeName = placeToShare.name,
             placeAddress = placeToShare.address,
-            placeImageUrl = placeToShare.thumbnailUrl,
+            placeImageUrl = placeToShare.thumbnailUrls.firstOrNull(),
             rooms = state.shareRooms,
             selectedRoomIds = state.shareSelectedRoomIds,
             isShareEnabled = state.isShareEnabled,
@@ -197,6 +202,16 @@ internal fun BoxScope.RoomDetailScreen(
                 onCancel = { onIntent(RoomDetailIntent.OnLeaveCancel) },
             )
 
+        LeaveDialogState.ConfirmOwnerDelegateIntro ->
+            RoomOwnerLeaveDialog(
+                leaveDialogState = state.leaveDialogState,
+                roomMembers = state.roomMembers,
+                selectedMemberId = state.selectedDelegateMemberId,
+                onMemberSelected = { onIntent(RoomDetailIntent.OnOwnerDelegateSelected(it)) },
+                onConfirm = { onIntent(RoomDetailIntent.OnOwnerDelegateIntroConfirm) },
+                onCancel = { onIntent(RoomDetailIntent.OnLeaveCancel) },
+            )
+
         LeaveDialogState.DelegateOwner ->
             RoomOwnerLeaveDialog(
                 leaveDialogState = state.leaveDialogState,
@@ -204,7 +219,7 @@ internal fun BoxScope.RoomDetailScreen(
                 selectedMemberId = state.selectedDelegateMemberId,
                 onMemberSelected = { onIntent(RoomDetailIntent.OnOwnerDelegateSelected(it)) },
                 onConfirm = { onIntent(RoomDetailIntent.OnOwnerDelegateConfirm) },
-                onCancel = { onIntent(RoomDetailIntent.OnLeaveCancel) },
+                onCancel = { onIntent(RoomDetailIntent.OnOwnerDelegateBack) },
             )
 
         LeaveDialogState.None -> Unit
