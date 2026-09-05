@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notification_elapsed_just_now">방금</string>
+    <string name="notification_elapsed_hours_ago">%1$d시간 전</string>
+    <string name="notification_elapsed_days_ago">%1$d일 전</string>
+    <string name="notification_elapsed_date">%1$d월 %2$d일</string>
+
+    <string name="notification_title">알림</string>
+
+    <string name="notification_empty_message">받은 알림이 없어요</string>
+
+    <string name="notification_error_network">인터넷 연결을 확인해주세요</string>
+    <string name="notification_error_load_failed">알림을 불러오지 못했어요. 잠시 후 다시 시도해주세요.</string>
+    <string name="notification_error_retry">다시 시도</string>
+    <string name="notification_append_error">알림을 더 불러오지 못했어요</string>
+
+    <string name="notification_save_error_guide_title">확인해주세요</string>
+    <string name="notification_save_error_guide_line_1">현재 한국 내 장소만 지원됩니다.</string>
+    <string name="notification_save_error_guide_line_2">사진 속 장소인식은 아직 지원하지 않습니다</string>
+    <string name="notification_save_error_guide_line_3">본문에 주소나 장소명을 포함해주세요</string>
+</resources>
