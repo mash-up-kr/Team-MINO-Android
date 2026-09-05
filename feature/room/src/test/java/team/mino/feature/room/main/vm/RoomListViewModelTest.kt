@@ -1,5 +1,6 @@
 package team.mino.feature.room.main.vm
 
+import androidx.lifecycle.SavedStateHandle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.toList
@@ -633,6 +634,9 @@ class RoomListViewModelTest {
 
     private fun createViewModel(permissionGranted: Boolean = true): RoomListViewModel =
         RoomListViewModel(
+            // 빈 SavedStateHandle은 RoomMain.initialRoomId를 기본값(null)으로 디코딩한다 — 딥링크
+            // 진입(초기 selectedRoomId)은 RoomNavigationTest류가 아니라 여기 관심사가 아니다.
+            savedStateHandle = SavedStateHandle(),
             context = FakeLocationContext(permissionGranted = permissionGranted),
             roomRepository = roomRepository,
             roomPlacesRepository = roomPlacesRepository,

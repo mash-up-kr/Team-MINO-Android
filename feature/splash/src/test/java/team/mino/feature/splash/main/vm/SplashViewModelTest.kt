@@ -21,13 +21,16 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import team.mino.core.domain.model.AnonymousSession
+import team.mino.core.domain.model.InvitationPreview
 import team.mino.core.domain.model.OnboardingProgress
 import team.mino.core.domain.model.OnboardingStep
 import team.mino.core.domain.model.SplashEntry
 import team.mino.core.domain.repository.AnonymousAuthRepository
 import team.mino.core.domain.repository.OnboardingProgressRepository
 import team.mino.core.domain.repository.ProfileRegistrationRepository
+import team.mino.core.domain.repository.RoomInvitationRepository
 import team.mino.core.domain.usecase.EnsureAnonymousSessionUseCase
+import team.mino.core.domain.usecase.JoinRoomByInviteCodeUseCase
 import team.mino.core.domain.usecase.ResolveSplashEntryUseCase
 import team.mino.core.errorhandling.MinoDomainException
 import java.io.IOException
@@ -211,6 +214,7 @@ class SplashViewModelTest {
                         profileRegistrationRepository = FakeProfileRegistrationRepository(isRegistered),
                         onboardingProgressRepository = FakeOnboardingProgressRepository(isOnboardingCompleted),
                     ),
+                joinRoomByInviteCode = JoinRoomByInviteCodeUseCase(FakeRoomInvitationRepository()),
             )
 
         val states = mutableListOf<SplashUiState>()
@@ -220,7 +224,7 @@ class SplashViewModelTest {
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.sideEffect.toList(effects) }
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.domainErrors.toList(domainErrors) }
 
-        viewModel.processIntent(SplashIntent.Start)
+        viewModel.processIntent(SplashIntent.Start())
         try {
             assertions(Recording(states, effects, domainErrors, authRepository))
         } finally {
@@ -284,6 +288,23 @@ class SplashViewModelTest {
         override suspend fun setCreatedRoomId(roomId: String) = error("스플래시는 진행 상태를 쓰지 않는다")
 
         override suspend fun markCompleted() = error("스플래시는 진행 상태를 쓰지 않는다")
+    }
+
+    /**
+     * 이 화면의 관심사는 확보·지연·실패이지 딥링크 자동 참여가 아니다(그건 별도 테스트가 다룬다).
+     * 여기 있는 모든 케이스가 `inviteCode = null`로 시작하므로 호출되면 오히려 버그다.
+     */
+    private class FakeRoomInvitationRepository : RoomInvitationRepository {
+        override suspend fun issueInviteCode(roomId: String): String =
+            error("이 테스트는 초대 코드 발급을 부르지 않는다")
+
+        override suspend fun previewInvitation(inviteCode: String): InvitationPreview =
+            error("이 테스트는 inviteCode 없이 시작해 미리보기를 부르지 않는다")
+
+        override suspend fun joinRoom(
+            roomId: String,
+            inviteCode: String,
+        ) = error("이 테스트는 inviteCode 없이 시작해 참여를 부르지 않는다")
     }
 
     private companion object {
