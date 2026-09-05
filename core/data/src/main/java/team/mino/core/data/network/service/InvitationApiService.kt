@@ -2,7 +2,9 @@ package team.mino.core.data.network.service
 
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.request.get
 import io.ktor.client.request.post
+import team.mino.core.data.network.dto.response.InvitationPreviewResponse
 import team.mino.core.data.network.dto.response.InvitationResponse
 import team.mino.core.data.network.dto.response.MinoResponse
 import javax.inject.Inject
@@ -35,5 +37,16 @@ internal class InvitationApiService @Inject constructor(
         client
             .post("api/v1/rooms/$roomId/invitations")
             .body<MinoResponse<InvitationResponse>>()
+            .data
+
+    /**
+     * [code]가 가리키는 방을 참여 전에 미리 들여다본다. 인증이 필요 없는 조회다.
+     *
+     * 없는 코드는 `404`로 `MinoDomainException`이 전파된다. 여기서 잡지 않는다.
+     */
+    suspend fun previewInvitation(code: String): InvitationPreviewResponse =
+        client
+            .get("api/v1/invitations/$code")
+            .body<MinoResponse<InvitationPreviewResponse>>()
             .data
 }

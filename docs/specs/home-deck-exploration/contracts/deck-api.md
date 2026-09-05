@@ -12,8 +12,16 @@
 |---|---|
 | 출처 | `https://api.gguk.org/api-docs-json` |
 | 최초 조회 | 2026-08-27T21:12:20+09:00 — 오퍼레이션 24개 |
-| 재조회 | **2026-08-29 — 오퍼레이션 25개.** 늘어난 하나가 `GET /api/v1/rooms/{roomId}/cards`다 |
+| 재조회 2026-08-29 | 오퍼레이션 25개. 늘어난 하나가 `GET /api/v1/rooms/{roomId}/cards`다 |
+| 재조회 2026-09-02 | 오퍼레이션 27개. **`data`가 담는 모양이 바뀌었다**(§2.2). `createdBy.avatar`는 `{ color }`로 고쳐져 구현과 일치한다. 늘어난 둘(`GET /api/v1/notifications`·`PUT /api/v1/users/me/push-token`)은 홈과 무관하다 |
 | 문서 | Team MINO API 1.0.0 |
+| 실기 확인 2026-09-02 | `SM-G996N`(Android 15) qaDebug에서 `GET /rooms/{roomId}/cards?sort=ggukPick` 200 수신. **응답이 문서와 일치**해 봉투 판단의 근거가 문서 대조에 머물지 않는다 |
+| 재조회 2026-09-03T17:49:28+09:00 (plan 3.0.0) | 오퍼레이션 28개. **홈이 쓰는 네 계약(`/cards`·`/rooms`·`/pins/{pinId}/accesses`·`/pins/{pinId}/duplicate`)이 모두 그대로다.** 늘어난 하나는 홈과 무관하다 |
+
+**plan 3.0.0의 재조회에서 확인한 두 가지**
+
+1. **`GET /api/v1/rooms`가 FR-012의 순회 순서를 만들 재료를 다 갖고 있다** — `type`(`personal`/`shared`)과 `createdAt`이 응답에 있어 「개인방 먼저, 그다음 생성 오래된 순」을 클라이언트가 정렬할 수 있다. 응답 순서 자체는 계약이 보장하지 않으므로 정렬은 앱이 한다([`home-ui.md`](./home-ui.md) §4.2).
+2. **`color` enum은 13색(`brown`·`gray` 포함)이다.** 시안 컴포넌트셋에 `brown` variant가 없는 것은 서버·도메인이 아니라 **디자인 쪽의 공백**이다(R-015). `/cards`의 `room` 설명이 *"캐릭터는 room.color에서 파생되는 클라이언트 에셋"* 이라고 적어 방 색별 캐릭터 에셋이라는 설계를 계약이 그대로 뒷받침한다.
 
 최초 조회는 [`.claude/skills/mino-plan/scripts/openapi_digest.py`](../../../../.claude/skills/mino-plan/scripts/openapi_digest.py)로 수행했다. 그 시점의 이 계약은 배포 문서와 미배포 서버 PR [Node#94](https://github.com/mash-up-kr/Team-MINO-Node/pull/94)를 구분해 적었으나, **재조회 시점에 그 PR이 배포되어 구분이 사라졌다.** 아래는 전부 배포된 계약이다.
 
@@ -21,10 +29,9 @@
 
 ## 2. 홈 덱의 주 계약 — `GET /api/v1/rooms/{roomId}/cards`
 
-> **배포됨(2026-08-29 재조회).** 응답 코드는 `200`·`400`·`401`·`403`이다. 다만 문서와 실제 응답이 두 곳에서 어긋나므로 DTO가 방어한다.
+> **배포됨.** 응답 코드는 `200`·`400`·`401`·`403`이다.
 >
 > - 카드 객체에 `required` 배열이 없다 → `CardResponse`가 모든 필드에 기본값을 둔다.
-> - **`createdBy.avatar`를 `{ id: integer }`로 적어 두었으나 실제 응답에 `id`가 없다.** 같은 서버의 `/users/me`·`/pins`·`/pins/{pinId}`는 모두 아바타를 `{ color }`로 내려주며, 실제 `/cards` 응답도 그쪽이다. **문서가 아니라 실제 응답을 따른다** — `CardCreatedByResponse`가 프로필과 같은 `AvatarResponse`를 쓴다.
 
 FR-004 · 009~012 · 015가 이 하나에 걸려 있다. 홈 카드 덱의 전부다.
 
@@ -44,8 +51,19 @@ GET /api/v1/rooms/{roomId}/cards
 ### 2.2 응답
 
 ```
-200: { data: Card[] }   maxItems: 10
+200: { data: { room: Room, cards: Card[] } }   cards maxItems: 10
 ```
+
+> **2026-09-02 재조회에서 `data`가 담는 모양이 바뀌었다.** 카드 배열이던 것이 객체가 되면서 카드가 `cards`
+> 아래로 들어갔다. 실기 응답도 같은 모양이었다 —
+> `{"data":{"room":{"id":…,"type":"personal","name":"내 장소","color":"gray"},"cards":[{…}]}}`. `MinoResponse<List<CardResponse>>`로 읽던 자리가 배열을 기대하는데 객체가 오므로
+> 직렬화가 실패하고, 그 실패는 카드 한 장이 아니라 **덱 전체**를 떨어뜨린다. 봉투는 여전히 `MinoResponse`
+> 하나이고, 그것이 담는 페이로드를 `CardFeedResponse`로 받는다.
+>
+> **`room`은 담지 않는다.** 홈 헤더(방 뱃지·캐릭터)가 쓸 방 메타(`id`·`type`·`name`·`color`)인데, 홈은 그
+> 정보를 §3.1 `GET /api/v1/rooms`로 이미 받고 있고 방 전환 시트 때문에 그 호출은 어차피 남는다. 두 출처를
+> 만들지 않기 위해 지금은 무시하고 `ignoreUnknownKeys`가 흡수하게 둔다. 헤더와 덱이 어긋나는 사례가 실제로
+> 나오면 그때 이쪽으로 옮긴다.
 
 `Card` 한 장이 담는 것 — 배포된 `GET /api/v1/pins`의 `data[]`와 **같은 모양에 `labelGroup` 하나가 더 붙는다.**
 
@@ -54,7 +72,7 @@ id          string(uuid)                 ← PlaceCard.pinId
 roomId      string(uuid)
 place       { name, address, lat, lng, category, ... }
 images      string[]                     ← 대표 이미지 2칸 그리드
-createdBy   { userId, nickname, avatar } | null   ← 등록자 아바타 (avatar는 { color }, 위 경고 참조)
+createdBy   { userId, nickname, avatar } | null   ← 등록자 아바타 (avatar는 { color })
 createdAt   string(date-time)
 labelGroup  enum: worthVisiting | manySaves | manyComments | manyViews
 ```
@@ -121,7 +139,7 @@ requestBody: { roomIds: string(uuid)[] }   required, minItems: 1
 409: 대상 방 중 하나라도 같은 장소가 있으면 전체 거절
 ```
 
-FR-005가 쓴다. spec §3.2가 복제 처리 자체를 비목표로 두었으므로 홈은 시트를 열고 선택한 `roomId`를 전달하는 데까지만 다룬다. 409는 도메인 예외로 매핑해 스낵바로 알린다 — [`conventions/error_handling.md`](../../../conventions/error_handling.md).
+FR-005가 쓴다. spec §3.2가 복제 처리 자체를 비목표로 두었으므로 홈은 시트를 열고 **선택한 `roomIds` 목록**을 전달하는 데까지만 다룬다 — spec 4.0.0에서 복수 선택이 되어 인자가 목록이다. 이 호출은 `PlaceRepository.duplicatePin`이 소유하며 홈이 자기 함수를 두지 않는다(R-019). 409는 도메인 예외로 매핑해 스낵바로 알린다 — [`conventions/error_handling.md`](../../../conventions/error_handling.md).
 
 ---
 
@@ -129,7 +147,7 @@ FR-005가 쓴다. spec §3.2가 복제 처리 자체를 비목표로 두었으�
 
 > **전환 완료(2026-08-29).** 아래 세 지점을 모두 닫고 mock(`DeckMockRemoteDataSourceImpl`·`DeckMockStore`)을 삭제했다. 예고한 대로 `DeckRemoteDataSource`·`DeckMapper`·`HomeDeckRepositoryImpl`·화면은 바뀌지 않았다. 이 절은 무엇을 걷어냈는지 남기기 위해 그대로 둔다.
 
-`/cards`가 배포될 때까지 `DeckRemoteDataSource` 뒤에 mock을 둔다(R-001·R-002). `group-room-form`의 [`room-api-mock.md`](../../group-room-form/contracts/room-api-mock.md) 선례를 따른다.
+`/cards`가 배포될 때까지 `DeckRemoteDataSource` 뒤에 mock을 둔다(R-001·R-002). `group-room-form`이 같은 패턴을 먼저 썼다 — 그쪽 `room-api-mock.md`도 실서버 전환 때 함께 삭제됐다(`fa34ddba`).
 
 ```
 interface DeckRemoteDataSource {

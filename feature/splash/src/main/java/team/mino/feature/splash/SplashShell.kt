@@ -14,15 +14,17 @@ import team.mino.core.common.ui.scaffold.MinoScaffold
  * 로깅이 거기 딸려 온다(feature-module.md 4장). 시작 목적지는 하나뿐이라 Activity에서 받지 않고
  * 그래프가 갖는다.
  *
- * **셸이 받은 인셋 패딩을 화면에 걸지 않는다.** 이 화면은 배경 아트가 화면 바닥까지 닿아야 하고
- * 하단에 놓이는 요소들도 시스템 바가 아니라 화면 바닥을 기준으로 자리를 잡는다. 인셋을 여기서
- * 소비하면 아래에 배경색 띠가 남고 하단 기준 요소가 통째로 밀리며, 화면 정중앙에 놓이는 요소도
- * 위아래 인셋 차이만큼 어긋난다. 그래서 화면은 전체 영역에 그리고, 시스템 바를 피해야 하는
- * 요소만 [team.mino.feature.splash.main.screen.SplashScreen]이 직접 상단 인셋을 소비한다.
+ * **셸이 받은 인셋 패딩을 화면에 걸지 않는다.** 디자인이 위아래 인셋을 다르게 다루기 때문이다 —
+ * 상태바는 화면 위에 겹쳐 그려져 위 여백의 기준이 화면 최상단이고, 마스코트는 내비게이션 바
+ * 위에서 잘린다. 여기서 한꺼번에 소비하면 위 요소가 상태바 높이만큼 밀린다. 그래서 화면은 전체
+ * 영역에 그리고, 어느 쪽을 소비할지는
+ * [team.mino.feature.splash.main.screen.SplashScreen]이 정한다.
  */
 @Composable
 internal fun SplashShell(
+    inviteCode: String?,
     onNavigateToMain: () -> Unit,
+    onNavigateToInvitedRoom: (String) -> Unit,
     onNavigateToOnboarding: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -32,7 +34,9 @@ internal fun SplashShell(
     MinoScaffold(modifier = modifier) { _ ->
         SplashNavHost(
             navController = navController,
+            inviteCode = inviteCode,
             onNavigateToMain = onNavigateToMain,
+            onNavigateToInvitedRoom = onNavigateToInvitedRoom,
             onNavigateToOnboarding = onNavigateToOnboarding,
             modifier = Modifier.fillMaxSize(),
         )

@@ -1,7 +1,7 @@
 package team.mino.feature.sharereceiver.picker.vm
 
 import team.mino.core.common.android.architecture.Intent
-import team.mino.feature.sharereceiver.picker.model.SheetStep
+import team.mino.core.common.ui.component.roompicker.model.SheetStep
 
 /**
  * 방 선택 시트에서 사용자가 일으키는 일.

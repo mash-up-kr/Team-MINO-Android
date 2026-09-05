@@ -17,9 +17,9 @@
 
     <string name="home_tooltip_room_changed">%1$s방이에요.</string>
     <string name="home_tooltip_next_room">다음은 %1$s방이에요.</string>
-    <string name="home_tooltip_next_sort_gguk_pick">다음은 꾹 Pick이에요.</string>
-    <string name="home_tooltip_next_sort_latest">다음은 최신순이에요.</string>
-    <string name="home_tooltip_next_sort_nearest">다음은 가까운순이에요.</string>
+    <string name="home_tooltip_next_sort_gguk_pick">곧 꾹 Pick으로 이동해요!</string>
+    <string name="home_tooltip_next_sort_latest">곧 최신순으로 이동해요!</string>
+    <string name="home_tooltip_next_sort_nearest">곧 가까운순으로 이동해요!</string>
 
     <string name="home_all_exhausted_message">꾹 눌러둔 장소를 모두 둘러봤어요</string>
 

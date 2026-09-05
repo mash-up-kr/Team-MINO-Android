@@ -43,9 +43,11 @@ import team.mino.feature.onboarding.flow.vm.OnboardingFlowViewModel
  */
 @Composable
 internal fun OnboardingShell(
+    pendingInviteCode: String?,
     onLaunchProfile: () -> Unit,
     onLaunchRoomForm: () -> Unit,
     onNavigateToHome: () -> Unit,
+    onNavigateToHomeWithRoom: (String) -> Unit,
     onShareInviteLink: (String) -> Unit,
     onBackToBackground: () -> Unit,
     modifier: Modifier = Modifier,
@@ -62,11 +64,13 @@ internal fun OnboardingShell(
             OnboardingFlowSideEffect.NavigateToTutorial -> navController.replaceWith(OnboardingTutorial)
             // 완료 표시는 이 지시가 나오기 전에 ViewModel이 이미 기록했다(research.md R-019).
             OnboardingFlowSideEffect.NavigateToHome -> onNavigateToHome()
+            // 초대 코드 자동 참여(SYS-010 Flow A)로 나머지 스텝을 건너뛰고 바로 그 방으로 간다.
+            is OnboardingFlowSideEffect.NavigateToHomeWithRoom -> onNavigateToHomeWithRoom(effect.roomId)
         }
     }
 
     // 수집기가 붙은 뒤에 보낸다. 재개 조회는 ViewModel이 한 번만 돌린다.
-    LaunchedEffect(Unit) { viewModel.processIntent(OnboardingFlowIntent.Start) }
+    LaunchedEffect(Unit) { viewModel.processIntent(OnboardingFlowIntent.Start(pendingInviteCode)) }
 
     // 온보딩이 소유한 지점의 시스템 뒤로가기는 앱을 백그라운드로 보낸다. 앞 스텝으로 돌아가지도,
     // 온보딩을 끝낸 것으로 보지도 않는다 — 완료 표시를 기록하지 않고 스텝도 바꾸지 않는다

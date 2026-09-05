@@ -55,7 +55,7 @@ private val ContentWidth = 294.dp
 // Figma base lg 변수 대응 — 토큰 미존재
 private val ContentSpacing = 20.dp
 
-private val IllustrationSize = 249.dp
+private val IllustrationSize = 209.dp
 
 @Suppress("ComposeModifierMissing") // 프리뷰 함수는 modifier가 불필요
 @UiModePreviews

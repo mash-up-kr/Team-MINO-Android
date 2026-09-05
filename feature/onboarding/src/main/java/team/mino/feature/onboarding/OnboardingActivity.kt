@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import dagger.hilt.android.AndroidEntryPoint
 import team.mino.core.designsystem.theme.MinoAndroidAppTheme
+import team.mino.core.navigation.activity.launcher.EXTRA_MAIN_ROOM_ID
+import team.mino.core.navigation.activity.launcher.EXTRA_ONBOARDING_INVITE_CODE
 import team.mino.core.navigation.activity.launcher.EXTRA_PROFILE_ENTRY_POINT
 import team.mino.core.navigation.activity.launcher.EXTRA_ROOM_FORM_ONBOARDING
 import team.mino.core.navigation.activity.launcher.EXTRA_ROOM_FORM_RESULT_OUTCOME
@@ -39,8 +41,11 @@ import javax.inject.Inject
  * 수집기도 셸에 하나뿐이다(`feature-module.md` 4장 · [OnboardingShell]).
  *
  * **`setResult`를 호출하지 않는다.** 온보딩의 종착지는 호출자가 아니라 홈 탭이고 그 전환을 온보딩이
- * 직접 한다(`contracts/onboarding-launcher.md` §3). **진입 인자도 읽지 않는다** — 어느 스텝부터
- * 시작할지는 호출자가 아니라 저장된 진행 상태가 정한다(같은 계약 §2).
+ * 직접 한다(`contracts/onboarding-launcher.md` §3). **어느 스텝부터 시작할지를 정하는 진입 인자는
+ * 읽지 않는다** — 그것은 호출자가 아니라 저장된 진행 상태가 정한다(같은 계약 §2).
+ *
+ * 단, [EXTRA_ONBOARDING_INVITE_CODE](SYS-010)는 예외다 — 재개 지점과 무관하게 "프로필 저장이 끝나는
+ * 시점에 이 코드로 자동 참여하라"는 값일 뿐이라 스텝 판정에 관여하지 않는다.
  */
 @AndroidEntryPoint
 class OnboardingActivity : ComponentActivity() {
@@ -78,15 +83,23 @@ class OnboardingActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        val pendingInviteCode = intent.getStringExtra(EXTRA_ONBOARDING_INVITE_CODE)
+
         enableEdgeToEdge()
         setContent {
             MinoAndroidAppTheme {
                 OnboardingShell(
+                    pendingInviteCode = pendingInviteCode,
                     onLaunchProfile = ::launchProfile,
                     onLaunchRoomForm = ::launchRoomForm,
                     // 홈은 되돌아올 대상이 아니라 withFinish = true다. 종료된 Activity는 결과를 받을
                     // 수 없으므로 resultLauncher와 함께 쓰지 않는다.
                     onNavigateToHome = { mainLauncher.launch(this, withFinish = true) },
+                    onNavigateToHomeWithRoom = { roomId ->
+                        mainLauncher.launch(this, withFinish = true) {
+                            putExtra(EXTRA_MAIN_ROOM_ID, roomId)
+                        }
+                    },
                     onShareInviteLink = ::shareInviteLink,
                     onBackToBackground = { moveTaskToBack(true) },
                     modifier = Modifier.fillMaxSize(),

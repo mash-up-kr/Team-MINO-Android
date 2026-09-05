@@ -27,6 +27,10 @@ class ValidateNicknameUseCaseTest {
         assertFalse(validateNickname("   "))
     }
 
+    /**
+     * 상한이 없다는 뜻이 아니라, 상한이 이 판정의 몫이 아님을 고정한다.
+     * 15자 상한은 오류가 아닌 입력 차단이라 `ProfileViewModel`이 지킨다(FR-014).
+     */
     @Test
     fun `한글 30자는 유효하다`() {
         assertTrue(validateNickname("민호".repeat(15)))

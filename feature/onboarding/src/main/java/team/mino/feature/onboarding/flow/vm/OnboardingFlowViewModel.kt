@@ -8,6 +8,7 @@ import team.mino.core.common.android.architecture.mviContainer
 import team.mino.core.common.android.extension.launchSafely
 import team.mino.core.domain.model.OnboardingStep
 import team.mino.core.domain.repository.OnboardingProgressRepository
+import team.mino.core.domain.usecase.JoinRoomByInviteCodeUseCase
 import team.mino.core.domain.usecase.ResolveOnboardingStepUseCase
 import javax.inject.Inject
 
@@ -36,10 +37,18 @@ import javax.inject.Inject
 internal class OnboardingFlowViewModel @Inject constructor(
     private val onboardingProgressRepository: OnboardingProgressRepository,
     private val resolveOnboardingStep: ResolveOnboardingStepUseCase,
+    private val joinRoomByInviteCode: JoinRoomByInviteCodeUseCase,
 ) : ViewModel(),
     MviContainer<OnboardingFlowUiState, OnboardingFlowSideEffect> by mviContainer(OnboardingFlowUiState()) {
     /** 재개 조회를 시작했는지. 구성 변경으로 [OnboardingFlowIntent.Start]가 다시 와도 조회는 한 번만 돈다. */
     private var hasStarted = false
+
+    /**
+     * [OnboardingFlowIntent.Start]가 실어 온, 프로필 저장 시점에 자동 참여할 초대 코드(SYS-010).
+     * [onProfileSaved]가 소비하는 즉시 `null`로 되돌려, 그 시도가 실패해 정상 흐름(Flow B)으로 폴백한
+     * 뒤에는 같은 코드로 다시 시도하지 않는다 — 재시도 조작 수단이 이 화면엔 없다.
+     */
+    private var pendingInviteCode: String? = null
 
     /** 진행 중인 전이. 살아 있는 동안 들어온 Intent는 [transitionFrom]이 버린다. */
     private var transitionJob: Job? = null
@@ -54,7 +63,7 @@ internal class OnboardingFlowViewModel @Inject constructor(
 
     fun processIntent(intent: OnboardingFlowIntent) {
         when (intent) {
-            OnboardingFlowIntent.Start -> start()
+            is OnboardingFlowIntent.Start -> start(intent.pendingInviteCode)
             OnboardingFlowIntent.ProfileSaved -> onProfileSaved()
             is OnboardingFlowIntent.RoomCreated -> onRoomCreated(intent.roomId)
             OnboardingFlowIntent.RoomFormSkipped -> onRoomFormSkipped()
@@ -70,22 +79,59 @@ internal class OnboardingFlowViewModel @Inject constructor(
      * 진입 자체는 아무것도 저장하지 않으며, 재개 스텝의 판정은 [ResolveOnboardingStepUseCase]가 소유한다 —
      * 여기서 저장 값을 다시 해석하지 않는다.
      */
-    private fun start() {
+    private fun start(pendingInviteCode: String?) {
         if (hasStarted) return
         hasStarted = true
+        this.pendingInviteCode = pendingInviteCode
 
         launchSafely {
             val progress = onboardingProgressRepository.getProgress()
             val resumedStep = resolveOnboardingStep(progress)
 
             updateState {
-                copy(isLoading = false, step = resumedStep, createdRoomId = progress.createdRoomId)
+                copy(
+                    isLoading = false,
+                    step = resumedStep,
+                    createdRoomId = progress.createdRoomId,
+                    invitedRoomId = progress.invitedRoomId,
+                )
             }
             postSideEffect(resumedStep.entryEffect(progress.createdRoomId))
         }
     }
 
-    private fun onProfileSaved() = advanceTo(from = OnboardingStep.PROFILE, to = OnboardingStep.ROOM_FORM)
+    /**
+     * 프로필 저장 직후. [pendingInviteCode]를 들고 있으면(SYS-010 Flow A, 신규 유저) 공동방 생성
+     * 유도(Flow B)로 가지 않고 그 코드로 자동 참여를 먼저 시도한다.
+     *
+     * 성공하면 공동방 생성·친구 초대 스텝만 건너뛰고 튜토리얼로 간다(Figma 스펙 — 온보딩 → 프로필
+     * 설정 → 튜토리얼 → 초대받은 방 상세). 참여한 방은 [OnboardingProgressRepository.setInvitedRoomId]로
+     * 남겨 튜토리얼을 마쳤을 때([onTutorialFinished]) 그 방으로 보낼 수 있게 한다.
+     * 실패(만료·잘못된 코드 등)는 조용히 폴백한다 — 코드 없이 진입한 것과 같은 정상 흐름(Flow B)으로
+     * 진행하고, 이 시도를 다시 걸지 않도록 [pendingInviteCode]를 비운다.
+     */
+    private fun onProfileSaved() {
+        val inviteCode = pendingInviteCode
+        if (inviteCode == null) {
+            advanceTo(from = OnboardingStep.PROFILE, to = OnboardingStep.ROOM_FORM)
+            return
+        }
+
+        transitionFrom(OnboardingStep.PROFILE) {
+            pendingInviteCode = null
+
+            val roomId = runCatching { joinRoomByInviteCode(inviteCode) }.getOrNull()
+            if (roomId != null) {
+                moveToStep(OnboardingStep.TUTORIAL) {
+                    onboardingProgressRepository.setInvitedRoomId(roomId)
+                    updateState { copy(invitedRoomId = roomId) }
+                }
+                return@transitionFrom
+            }
+
+            moveToStep(OnboardingStep.ROOM_FORM)
+        }
+    }
 
     private fun onRoomCreated(roomId: String) =
         advanceTo(from = OnboardingStep.ROOM_FORM, to = OnboardingStep.INVITE) {
@@ -112,7 +158,12 @@ internal class OnboardingFlowViewModel @Inject constructor(
     /** 초대를 닫아도 만든 방은 남는다 — 스텝만 넘어가고 `createdRoomId`는 그대로 둔다. */
     private fun onInviteClosed() = advanceTo(from = OnboardingStep.INVITE, to = OnboardingStep.TUTORIAL)
 
-    /** 완료는 스텝이 아니라 완료 표시가 든다. 그래서 이 줄에만 `setCurrentStep`이 없다. */
+    /**
+     * 완료는 스텝이 아니라 완료 표시가 든다. 그래서 이 줄에만 `setCurrentStep`이 없다.
+     *
+     * [OnboardingFlowUiState.invitedRoomId]가 있으면(SYS-010, 초대로 들어와 참여까지 끝난 온보딩)
+     * 평소 홈이 아니라 그 방으로 바로 들어간다.
+     */
     private fun onTutorialFinished() {
         if (state.value.step != OnboardingStep.TUTORIAL || hasFinishedTutorial) return
         hasFinishedTutorial = true
@@ -120,7 +171,14 @@ internal class OnboardingFlowViewModel @Inject constructor(
         launchSafely {
             onboardingProgressRepository.markCompleted()
 
-            postSideEffect(OnboardingFlowSideEffect.NavigateToHome)
+            val invitedRoomId = state.value.invitedRoomId
+            postSideEffect(
+                if (invitedRoomId != null) {
+                    OnboardingFlowSideEffect.NavigateToHomeWithRoom(invitedRoomId)
+                } else {
+                    OnboardingFlowSideEffect.NavigateToHome
+                },
+            )
         }
     }
 
@@ -135,7 +193,17 @@ internal class OnboardingFlowViewModel @Inject constructor(
         from: OnboardingStep,
         to: OnboardingStep,
         beforeStep: suspend () -> Unit = {},
-    ) = transitionFrom(from) {
+    ) = transitionFrom(from) { moveToStep(to, beforeStep) }
+
+    /**
+     * [to]를 열고 기록한다 — [advanceTo]의 몸통이자, 이미 [transitionFrom] 가드 안에서 실행 중인
+     * 다른 전이([onProfileSaved]의 참여 실패 폴백)가 재진입 없이 재사용하는 자리다. [transitionFrom]을
+     * 다시 부르면 자기 자신이 쥔 [transitionJob]이 아직 살아 있어 가드에 걸려 아무 일도 안 일어난다.
+     */
+    private suspend fun moveToStep(
+        to: OnboardingStep,
+        beforeStep: suspend () -> Unit = {},
+    ) {
         beforeStep()
         onboardingProgressRepository.setCurrentStep(to)
 

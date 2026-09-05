@@ -57,8 +57,9 @@ object MinoCheckboxDefaults {
 /**
  * [MinoCheckbox]의 상태별 색. 슬롯 값이 [Color.Unspecified]면 [copy]에서 원본을 유지한다.
  *
- * `enabled` 축의 슬롯은 두지 않는다. Figma 컴포넌트셋이 비활성 상태의 색을 따로 정의하지 않아,
- * [MinoCheckbox]의 `enabled`는 색이 아니라 입력만 막는다.
+ * `enabled` 축의 슬롯은 두지 않는다. Figma가 비활성을 색이 아니라 불투명도로 정의하므로
+ * ([CheckboxTokens.DisabledOpacity]), 비활성 체크박스는 여기 담긴 색을 그대로 쓴 채 [MinoCheckbox]가
+ * 자신을 흐리게 그린다.
  */
 @Immutable
 class MinoCheckboxColors(

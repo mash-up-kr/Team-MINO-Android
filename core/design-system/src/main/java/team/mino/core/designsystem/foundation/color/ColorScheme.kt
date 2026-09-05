@@ -1,7 +1,5 @@
 package team.mino.core.designsystem.foundation.color
 
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
@@ -14,6 +12,7 @@ import team.mino.core.designsystem.component.chip.MinoChipColors
 import team.mino.core.designsystem.component.contentbadge.MinoContentBadgeColors
 import team.mino.core.designsystem.component.menu.MinoMenuItemColors
 import team.mino.core.designsystem.component.pagination.MinoPaginationDotsColors
+import team.mino.core.designsystem.component.switch.MinoSwitchColors
 import team.mino.core.designsystem.component.textinput.MinoTextInputColors
 import team.mino.core.designsystem.foundation.color.token.ColorAccessKeyToken
 import team.mino.core.designsystem.foundation.color.token.ColorDarkTokens
@@ -93,6 +92,7 @@ class ColorScheme(
     internal var lightBlueContentBadgeColorsCached: MinoContentBadgeColors? = null
     internal var defaultMenuItemColorsCached: MinoMenuItemColors? = null
     internal var defaultPaginationDotsColorsCached: MinoPaginationDotsColors? = null
+    internal var defaultSwitchColorsCached: MinoSwitchColors? = null
     internal var defaultTextInputColorsCached: MinoTextInputColors? = null
 
     fun copy(
@@ -662,13 +662,13 @@ internal fun ColorScheme.fromToken(value: ColorAccessKeyToken): Color =
     }
 
 private val LightColorScheme = lightColorScheme()
-private val DarkColorScheme = darkColorScheme()
 
-@Composable
-internal fun provideColorScheme(): ColorScheme =
-    when {
-        isSystemInDarkTheme() -> DarkColorScheme
-        else -> LightColorScheme
-    }
+/**
+ * 앱은 라이트 테마 하나로만 동작한다 — OS 다크 모드를 따라가지 않는다
+ * (`docs/prd/business-context.md` §비목표, PRD 4.1.0에서 다크모드 설정을 철회).
+ *
+ * 다크 토큰과 [darkColorScheme]은 남겨 둔다. 다크 지원이 다시 목표가 되면 여기서 갈래를 되살리면 된다.
+ */
+internal fun provideColorScheme(): ColorScheme = LightColorScheme
 
 internal val LocalColorScheme = staticCompositionLocalOf { LightColorScheme }

@@ -46,6 +46,17 @@ internal sealed interface HomeIntent : Intent {
         val pinId: String,
     ) : HomeIntent
 
+    /** 「방 선택 시트」의 체크박스 탭. 같은 방을 다시 탭하면 선택이 풀린다(spec FR-005). */
+    data class ToggleSaveTargetRoom(
+        val roomId: String,
+    ) : HomeIntent
+
+    /** 「방 선택 시트」의 `저장하기` 탭. 선택된 방이 없으면 애초에 눌리지 않는다(spec EC-018). */
+    data object ConfirmSaveTargets : HomeIntent
+
+    /** 방을 고르지 않고 「방 선택 시트」를 닫는다. */
+    data object DismissSavePicker : HomeIntent
+
     /**
      * 카드 본문 탭. 경과일 초기화를 알리고 상세로 넘어간다.
      *

@@ -10,6 +10,9 @@ internal interface OnboardingProgressLocalDataSource {
     /** 온보딩에서 만든 공동방 id를 덮어쓴다. */
     suspend fun setCreatedRoomId(roomId: String)
 
+    /** 초대 딥링크로 자동 참여한 방 id를 덮어쓴다. */
+    suspend fun setInvitedRoomId(roomId: String)
+
     /** 완료 표시를 세운다. 되돌리는 함수를 두지 않는다 — 한 번 완료된 설치는 온보딩으로 돌아가지 않는다. */
     suspend fun markCompleted()
 }

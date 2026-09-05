@@ -44,6 +44,7 @@ ADR은 [`adr-writer` 스킬](../../.claude/skills/adr-writer/SKILL.md)이 자동
 | 2026-08-13 | [디자인 토큰은 값이 일치할 때만 강제하고, 없으면 실측 raw를 그대로 쓴다](2026-08-13-design-token-when-value-matches.md) | Accepted | Jaesung Lee |
 | 2026-08-14 | [방 대표 색상 12종 팔레트와 색상 칩은 `:core:design-system`이 소유한다](2026-08-14-room-color-palette-in-design-system.md) | Accepted | Jaesung Lee |
 | 2026-08-16 | [mino-implement는 배정을 잘게 쪼개 병렬로 돌리고, Figma 값은 착수 시점에 한 번만 추출해 공유한다](2026-08-16-implement-chunking-parallelism-figma-value-sheet.md) | Accepted | Jaesung Lee |
+| 2026-08-18 | [방 카드·방 칩·방 헤더 컴포넌트는 `:core:design-system`이 소유한다](2026-08-18-room-card-components-in-design-system.md) | Accepted | Chea-yunzi |
 | 2026-08-18 | [디자인 검수는 Phase 종료가 아니라 컴포넌트가 완성되는 즉시 붙인다](2026-08-18-design-audit-at-component-completion.md) | Accepted | Jaesung Lee |
 | 2026-08-19 | [공유 래스터 이미지는 `:core:common:ui`에 두고, WebP·밀도 규칙은 배치 규약이 소유한다](2026-08-19-raster-image-placement-and-format.md) | Accepted | Jaesung Lee |
 | 2026-08-22 | [비회원 사용자 구분은 Firebase 익명 인증이 소유하고, 앱은 세션·신원 증명을 저장하지 않는다](2026-08-22-firebase-anonymous-auth-session.md) | Accepted | Jaesung Lee |
@@ -57,5 +58,8 @@ ADR은 [`adr-writer` 스킬](../../.claude/skills/adr-writer/SKILL.md)이 자동
 | 2026-08-27 | [서버 응답의 `{ data }` 봉투는 제네릭 DTO 하나로 `ApiService`에서 벗긴다](2026-08-27-response-envelope-unwrapped-in-apiservice.md) | Accepted | Jaesung Lee |
 | 2026-08-28 | [실패 응답의 `errorCode`를 도메인 예외로 올리지 않고, 에러 본문 타입은 공용으로 하나만 둔다](2026-08-28-error-body-type-and-no-error-code-leaf.md) | Accepted | Jaesung Lee |
 | 2026-08-28 | [`ApiService`의 단위는 feature가 아니라 서버 리소스(OpenAPI 태그)다](2026-08-28-api-service-owned-per-server-tag.md) | Accepted | Jaesung Lee |
-| 2026-08-29 | [여러 탭에서 진입하는 몰입 화면은 탭 Route가 아니라 진입형 feature로 둔다](2026-08-29-entry-feature-for-cross-tab-immersive-screen.md) | Proposed | Jaesung Lee |
+| 2026-08-29 | [여러 탭에서 진입하는 몰입 화면은 탭 Route가 아니라 진입형 feature로 둔다](2026-08-29-entry-feature-for-cross-tab-immersive-screen.md) | Superseded | Jaesung Lee |
 | 2026-08-29 | [앱 진입 화면 판정은 온보딩이 소유하고, 스플래시는 그 판정을 소비한다](2026-08-29-onboarding-entry-decision-owned-by-onboarding.md) | Accepted | Jaesung Lee |
+| 2026-09-02 | [몰입 지도 화면의 배치는 진입점이 걸친 탭 수가 아니라 지도를 공유하는지로 가른다](2026-09-02-immersive-map-screen-shares-one-map-in-tab-feature.md) | Accepted | Jaesung Lee |
+| 2026-09-04 | [FCM 수신·알림 표시는 전용 모듈 `:core:notification`이 갖고, 토큰 등록은 `:core:data`에 남긴다](2026-09-04-core-notification-module.md) | Accepted | Jaesung Lee |
+| 2026-09-05 | [지도 핀 클러스터는 같은 방(색)의 핀끼리만 묶는다](2026-09-05-map-pin-cluster-groups-by-room-color-only.md) | Accepted | Chea-yunzi |

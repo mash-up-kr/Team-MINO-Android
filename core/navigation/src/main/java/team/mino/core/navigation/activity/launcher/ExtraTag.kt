@@ -7,10 +7,6 @@ package team.mino.core.navigation.activity.launcher
  * 최상위 상수라 스코프가 없으므로, 접두어로 어느 feature에 전달되는 값인지 드러낸다.
  */
 
-const val EXTRA_SAMPLE_GREETING = "sample_greeting"
-const val EXTRA_SAMPLE_FROM_HOME = "sample_from_home"
-const val EXTRA_SAMPLE_RESULT_CONFIRMED = "sample_result_confirmed"
-
 const val EXTRA_PROFILE_ENTRY_POINT = "profile_entry_point"
 
 const val EXTRA_ROOM_FORM_ROOM_ID = "room_form_room_id"
@@ -18,9 +14,22 @@ const val EXTRA_ROOM_FORM_ONBOARDING = "room_form_onboarding"
 const val EXTRA_ROOM_FORM_RESULT_OUTCOME = "room_form_result_outcome"
 const val EXTRA_ROOM_FORM_RESULT_ROOM_ID = "room_form_result_room_id"
 
+/** 초대 딥링크(SYS-010)로 참여까지 끝난 방으로 바로 들어가야 할 때. */
+const val EXTRA_MAIN_ROOM_ID = "main_room_id"
+
+/** 온보딩의 프로필 저장이 끝나는 시점에 이 코드로 자동 참여해야 할 때. */
+const val EXTRA_ONBOARDING_INVITE_CODE = "onboarding_invite_code"
+
 // EXTRA_ROOM_FORM_RESULT_OUTCOME에 실리는 값. 폼과 호출자가 같은 문자열을 보도록 계약 자리에서 공유한다.
 const val ROOM_FORM_OUTCOME_CREATED = "created"
 const val ROOM_FORM_OUTCOME_UPDATED = "updated"
 const val ROOM_FORM_OUTCOME_SKIPPED = "skipped"
 
-const val EXTRA_PLACE_DETAIL_PIN_ID = "place_detail_pin_id"
+// 알림 탭 딥링크. 대상 feature 접두어를 붙이지 않는 이유는 docs/specs/push-notification/contracts/push-deeplink-contract.md §1.
+const val EXTRA_PUSH_DESTINATION_TYPE = "push_destination_type"
+const val EXTRA_PUSH_DESTINATION_ID = "push_destination_id"
+
+// EXTRA_PUSH_DESTINATION_TYPE에 실리는 값
+const val PUSH_DESTINATION_TYPE_PLACE = "place"
+const val PUSH_DESTINATION_TYPE_ROOM = "room"
+const val PUSH_DESTINATION_TYPE_NOTIFICATION_TAB = "notification_tab"

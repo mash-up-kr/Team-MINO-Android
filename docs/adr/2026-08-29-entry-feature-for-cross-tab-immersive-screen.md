@@ -1,6 +1,6 @@
 # 여러 탭에서 진입하는 몰입 화면은 탭 Route가 아니라 진입형 feature로 둔다
 
-- **상태**: Proposed
+- **상태**: Superseded by [몰입 지도 화면의 배치는 진입점이 걸친 탭 수가 아니라 지도를 공유하는지로 가른다](2026-09-02-immersive-map-screen-shares-one-map-in-tab-feature.md)
 - **작성일**: 2026-08-29
 - **작성자**: Jaesung Lee
 

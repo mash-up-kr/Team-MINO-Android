@@ -1,7 +1,5 @@
 package team.mino.core.designsystem.component.avatar
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
@@ -10,7 +8,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
@@ -19,10 +17,13 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import team.mino.core.designsystem.R
 import team.mino.core.designsystem.component.avatar.token.AvatarTokens
+import team.mino.core.designsystem.component.profileavatar.MinoProfileAvatar
+import team.mino.core.designsystem.component.profileavatar.ProfileAvatarPainting
 import team.mino.core.designsystem.foundation.icons.MinoIcons
 import team.mino.core.designsystem.foundation.icons.icons.PersonFill
 import team.mino.core.designsystem.util.image.MinoAsyncImage
 import team.mino.core.designsystem.util.modifier.clickable.rippleSingleClickable
+import team.mino.core.designsystem.util.modifier.surface.surface
 
 /**
  * Avatar 형태. 형태에 따라 클리핑 모양과 placeholder 글리프가 달라진다.
@@ -55,6 +56,8 @@ enum class MinoAvatarSize(val dp: Dp) {
  * (Coil로) 로드해 형태에 맞게 클리핑하고, 없거나 **로딩에 실패하면** [variant]별 기본 placeholder
  * 글리프를 보여준다.
  *
+ * 그림 식별자로 내려오는 사람(방 멤버 등)은 이 함수가 아니라 **번들 아바타 오버로드**를 쓴다.
+ *
  * @param variant 형태(Person 원형 / Company·Academy 둥근 사각형).
  * @param size 크기([MinoAvatarSize]).
  * @param imageUrl 표시할 웹 이미지 URL. null이면 placeholder 글리프를 표시한다.
@@ -78,26 +81,77 @@ fun MinoAvatar(
     onClick: (() -> Unit)? = null,
     pushBadge: (@Composable () -> Unit)? = null,
 ) {
-    val shape = MinoAvatarDefaults.shape(variant)
+    AvatarFrame(
+        shape = MinoAvatarDefaults.shape(variant),
+        size = size,
+        onClick = onClick,
+        pushBadge = pushBadge,
+        modifier = modifier,
+    ) {
+        MinoAsyncImage(
+            imageUrl = imageUrl,
+            fallback = variant.placeholderPainter(),
+            fallbackTint = MinoAvatarDefaults.placeholderTint,
+            modifier = Modifier.fillMaxSize(),
+            fallbackModifier = Modifier.padding(size.dp * variant.placeholderInsetRatio),
+            contentDescription = contentDescription,
+            contentScale = ContentScale.Crop,
+        )
+    }
+}
 
+/**
+ * 번들 아바타로 사람을 그리는 [MinoAvatar]. 서버가 이미지를 URL이 아니라 그림 식별자로 내려주는
+ * 사람(방 멤버 등)을 그릴 때 쓴다. 번들 아바타는 언제나 사람이라 형태를 받지 않는다.
+ *
+ * @param profileAvatar 표시할 번들 아바타. `null`이면 기본 아바타를 그린다([ProfileAvatarPainting]) —
+ *   URL 갈래의 `imageUrl = null`(= placeholder 글리프)과는 뜻이 다르다.
+ * @param size 크기([MinoAvatarSize]).
+ * @param contentDescription 접근성 설명.
+ * @param onClick 누를 수 있는 아바타로 만든다. null이면 클릭을 받지 않는다.
+ * @param pushBadge 우상단에 얹히는 알림 배지 슬롯.
+ */
+@Composable
+fun MinoAvatar(
+    profileAvatar: MinoProfileAvatar?,
+    modifier: Modifier = Modifier,
+    size: MinoAvatarSize = MinoAvatarSize.Small,
+    contentDescription: String? = null,
+    onClick: (() -> Unit)? = null,
+    pushBadge: (@Composable () -> Unit)? = null,
+) {
+    AvatarFrame(
+        shape = MinoAvatarDefaults.shape(MinoAvatarVariant.Person),
+        size = size,
+        onClick = onClick,
+        pushBadge = pushBadge,
+        modifier = modifier,
+    ) {
+        ProfileAvatarPainting(avatar = profileAvatar, contentDescription = contentDescription)
+    }
+}
+
+@Composable
+private fun AvatarFrame(
+    shape: Shape,
+    size: MinoAvatarSize,
+    onClick: (() -> Unit)?,
+    pushBadge: (@Composable () -> Unit)?,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
     Box(modifier = modifier.size(size.dp)) {
         Box(
             modifier = Modifier
                 .matchParentSize()
-                .clip(shape)
-                .background(MinoAvatarDefaults.backgroundColor)
-                .border(AvatarTokens.BorderWidth, MinoAvatarDefaults.borderColor, shape)
-                .then(if (onClick != null) Modifier.rippleSingleClickable(onClick = onClick) else Modifier),
+                .surface(
+                    shape = shape,
+                    containerColor = MinoAvatarDefaults.backgroundColor,
+                    borderColor = MinoAvatarDefaults.borderColor,
+                    borderWidth = AvatarTokens.BorderWidth,
+                ).then(if (onClick != null) Modifier.rippleSingleClickable(onClick = onClick) else Modifier),
         ) {
-            MinoAsyncImage(
-                imageUrl = imageUrl,
-                fallback = variant.placeholderPainter(),
-                fallbackTint = MinoAvatarDefaults.placeholderTint,
-                modifier = Modifier.fillMaxSize(),
-                fallbackModifier = Modifier.padding(size.dp * variant.placeholderInsetRatio),
-                contentDescription = contentDescription,
-                contentScale = ContentScale.Crop,
-            )
+            content()
         }
 
         if (pushBadge != null) {

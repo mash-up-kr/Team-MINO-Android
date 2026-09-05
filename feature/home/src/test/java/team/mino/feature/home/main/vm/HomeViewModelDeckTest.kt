@@ -22,9 +22,11 @@ import team.mino.core.domain.model.RoomColor
 import team.mino.core.domain.model.RoomSummary
 import team.mino.core.domain.model.RoomType
 import team.mino.core.domain.usecase.ResolveNextDeckUseCase
+import team.mino.core.domain.usecase.ResolveRoomEntryDeckUseCase
 import team.mino.core.errorhandling.MinoDomainException
 import team.mino.feature.home.fake.FakeHomeDeckRepository
 import team.mino.feature.home.fake.FakeHomePreferencesRepository
+import team.mino.feature.home.fake.FakePlaceRepository
 import team.mino.feature.home.main.model.HomePhase
 import java.io.IOException
 
@@ -51,6 +53,7 @@ import java.io.IOException
 class HomeViewModelDeckTest {
     private val deckRepository = FakeHomeDeckRepository()
     private val preferencesRepository = FakeHomePreferencesRepository()
+    private val placeRepository = FakePlaceRepository()
 
     @Before
     fun setUp() {
@@ -365,7 +368,9 @@ class HomeViewModelDeckTest {
         HomeViewModel(
             homeDeckRepository = deckRepository,
             homePreferencesRepository = preferencesRepository,
+            placeRepository = placeRepository,
             resolveNextDeck = ResolveNextDeckUseCase(),
+            resolveRoomEntryDeck = ResolveRoomEntryDeckUseCase(),
         )
 
     /** 순서를 눈으로 구별할 수 있게 pinId에 번호를 매긴다. 카드의 나머지 필드는 판정에 쓰이지 않는다. */

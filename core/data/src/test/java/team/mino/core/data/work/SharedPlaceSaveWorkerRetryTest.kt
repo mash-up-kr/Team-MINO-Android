@@ -23,6 +23,7 @@ import team.mino.core.data.datasource.PinRemoteDataSource
 import team.mino.core.data.datasource.PinRemoteDataSourceImpl
 import team.mino.core.data.network.dto.request.PinCreateRequest
 import team.mino.core.data.network.dto.request.PinDuplicateRequest
+import team.mino.core.data.network.dto.response.PinDetailResponse
 import team.mino.core.data.network.extension.convertDomainException
 import team.mino.core.data.network.service.PinApiService
 import java.io.IOException
@@ -175,9 +176,11 @@ class SharedPlaceSaveWorkerRetryTest {
             ),
         )
 
-    /** 워커는 [createPin]만 부른다. 나머지 둘은 홈이 쓰는 함수라 여기 닿으면 그것 자체가 실패다. */
+    /** 워커는 [createPin]만 부른다. 나머지는 홈·장소 상세가 쓰는 함수라 여기 닿으면 그것 자체가 실패다. */
     private class ThrowingPinRemoteDataSource(private val error: Throwable) : PinRemoteDataSource {
         override suspend fun createPin(request: PinCreateRequest): Unit = throw error
+
+        override suspend fun getPinDetail(pinId: String): PinDetailResponse = throw UNCALLED
 
         override suspend fun recordAccess(pinId: String): Unit = throw UNCALLED
 

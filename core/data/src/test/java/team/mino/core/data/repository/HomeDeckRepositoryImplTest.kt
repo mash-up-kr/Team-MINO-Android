@@ -2,23 +2,19 @@ package team.mino.core.data.repository
 
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import team.mino.core.common.kotlin.geo.GeoPoint
 import team.mino.core.data.datasource.DeckRemoteDataSource
-import team.mino.core.data.datasource.PinRemoteDataSource
 import team.mino.core.data.datasource.RoomRemoteDataSource
-import team.mino.core.data.network.dto.request.PinCreateRequest
-import team.mino.core.data.network.dto.request.PinDuplicateRequest
 import team.mino.core.data.network.dto.request.RoomRequest
 import team.mino.core.data.network.dto.response.CardPlaceResponse
 import team.mino.core.data.network.dto.response.CardResponse
+import team.mino.core.data.network.dto.response.RoomInvitationResponse
+import team.mino.core.data.network.dto.response.RoomMemberDetailResponse
 import team.mino.core.data.network.dto.response.RoomResponse
 import team.mino.core.data.network.dto.response.RoomSummaryResponse
 import team.mino.core.domain.model.DeckSort
-import team.mino.core.errorhandling.MinoDomainException
-import java.io.IOException
 
 /**
  * `HomeDeckRepositoryImpl`이 **더하는 규칙**만 판정한다. 위임뿐인 함수는 컴파일이 이미 보증하므로 셋만 본다.
@@ -27,16 +23,20 @@ import java.io.IOException
  *    (FR-004, `docs/specs/home-deck-exploration/data-model.md` §1.3).
  * 2. 좌표 없는 `가까운순`은 **요청 자체를 보내지 않는다**. 빈 덱만 확인하면 "불렀는데 빈 덱이 왔다"와 구별되지
  *    않으므로 호출 횟수 0을 함께 본다(EC-009, R-013).
- * 3. 다른 방 저장의 실패를 흡수하지 않는다. 저장되지 않은 것이 저장된 것으로 보이면 안 된다(FR-005).
+ * 3. `getRoomSummaries`가 순회 순서를 확정한다 — 개인방 먼저, 그다음 공동방을 생성 오래된 순으로.
+ *    응답 순서에 기대지 않는다(FR-012, R-014, TS-019a,
+ *    `docs/specs/home-deck-exploration/contracts/home-ui.md` §4.2).
+ *
+ * `savePinToRoom`(구 FR-005 중복 저장 409 전파)은 더 이상 이 Repository의 함수가 아니다 —
+ * `PlaceRepository.duplicatePin`으로 옮겨졌고(R-019, 계약 §4.2.1), 같은 판정은 이미
+ * `PlaceRepositoryImplTest.이미 저장된 방의 409는 그대로 올라온다`가 지킨다. 여기서 되풀이하지 않는다.
  */
 class HomeDeckRepositoryImplTest {
     private val deckRemoteDataSource = RecordingDeckRemoteDataSource()
-    private val pinRemoteDataSource = RecordingPinRemoteDataSource()
     private val repository =
         HomeDeckRepositoryImpl(
             deckRemoteDataSource = deckRemoteDataSource,
             roomRemoteDataSource = UnusedRoomRemoteDataSource,
-            pinRemoteDataSource = pinRemoteDataSource,
         )
 
     @Test
@@ -86,21 +86,79 @@ class HomeDeckRepositoryImplTest {
         }
 
     @Test
-    fun `다른 방 저장의 중복 실패는 그대로 올라온다`() =
+    fun `순회 순서 - 개인방이 먼저, 공동방은 생성 오래된 순으로 잇는다`() =
         runTest {
-            val conflict = MinoDomainException.Http(code = 409, cause = IOException())
-            pinRemoteDataSource.duplicateFailure = conflict
+            // 응답 순서에 기대지 않는다는 것까지 함께 잡기 위해, 원래 순서(개인방-A-B)와 다르게 뒤섞어 넣는다
+            // (FR-012, R-014). 개인방이 어디 끼어 있어도 최상단으로 올라와야 한다.
+            val personal =
+                roomSummaryResponse(
+                    id = "room-personal",
+                    type = "personal",
+                    createdAt = "2026-01-01T00:00:00Z",
+                )
+            val groupA = roomSummaryResponse(id = "room-group-a", type = "shared", createdAt = "2026-01-02T00:00:00Z")
+            val groupB = roomSummaryResponse(id = "room-group-b", type = "shared", createdAt = "2026-01-03T00:00:00Z")
+            val roomRemoteDataSource = StubRoomRemoteDataSource(rooms = listOf(groupB, groupA, personal))
+            val repositoryWithRooms =
+                HomeDeckRepositoryImpl(
+                    deckRemoteDataSource = deckRemoteDataSource,
+                    roomRemoteDataSource = roomRemoteDataSource,
+                )
 
-            val thrown =
-                try {
-                    repository.savePinToRoom(pinId = "pin-0", roomId = "room-2")
-                    null
-                } catch (e: MinoDomainException) {
-                    e
-                }
+            val summaries = repositoryWithRooms.getRoomSummaries()
 
-            assertSame("409를 흡수하면 저장되지 않은 것이 저장된 것으로 보인다", conflict, thrown)
+            assertEquals(
+                "개인방이 먼저, 그다음 공동방은 만든 지 오래된 순이어야 한다(TS-019a)",
+                listOf("room-personal", "room-group-a", "room-group-b"),
+                summaries.map { it.id },
+            )
         }
+
+    @Test
+    fun `생성 시각을 읽을 수 없는 방이 있어도 목록이 떨어지지 않고 맨 뒤로 밀린다`() =
+        runTest {
+            // 서버가 createdAt을 빼면 DTO 기본값 ""가 남는다. 그 값이 정렬 키로 들어가도 목록 전체가 실패하지
+            // 않아야 한다 — 「방 하나의 값이 어긋났다는 이유로 목록 전체가 실패하면 안 된다」는 RoomSummaryMapper의
+            // 규칙을 정렬까지 이은 것이다. 예외가 나면 MinoDomainException이 아니라 홈 첫 화면이 통째로 죽는다.
+            val personal =
+                roomSummaryResponse(
+                    id = "room-personal",
+                    type = "personal",
+                    createdAt = "2026-01-01T00:00:00Z",
+                )
+            val groupA = roomSummaryResponse(id = "room-group-a", type = "shared", createdAt = "2026-01-02T00:00:00Z")
+            val broken = roomSummaryResponse(id = "room-broken", type = "shared", createdAt = "")
+            val roomRemoteDataSource = StubRoomRemoteDataSource(rooms = listOf(broken, groupA, personal))
+            val repositoryWithRooms =
+                HomeDeckRepositoryImpl(
+                    deckRemoteDataSource = deckRemoteDataSource,
+                    roomRemoteDataSource = roomRemoteDataSource,
+                )
+
+            val summaries = repositoryWithRooms.getRoomSummaries()
+
+            assertEquals(
+                "읽히지 않은 생성 시각은 순서를 잃을 뿐 목록에서 사라지지 않는다",
+                listOf("room-personal", "room-group-a", "room-broken"),
+                summaries.map { it.id },
+            )
+        }
+
+    private fun roomSummaryResponse(
+        id: String,
+        type: String,
+        createdAt: String,
+    ): RoomSummaryResponse =
+        RoomSummaryResponse(
+            id = id,
+            name = "방 $id",
+            type = type,
+            color = "gray",
+            ownerId = "user-0",
+            pinCount = 0,
+            memberCount = 1,
+            createdAt = createdAt,
+        )
 
     private fun cardResponse(id: String): CardResponse =
         CardResponse(
@@ -134,24 +192,10 @@ class HomeDeckRepositoryImplTest {
         }
     }
 
-    private class RecordingPinRemoteDataSource : PinRemoteDataSource {
-        var duplicateFailure: Throwable? = null
-
-        override suspend fun createPin(request: PinCreateRequest) = Unit
-
-        override suspend fun recordAccess(pinId: String) = Unit
-
-        override suspend fun duplicatePin(
-            pinId: String,
-            request: PinDuplicateRequest,
-        ) {
-            duplicateFailure?.let { throw it }
-        }
-    }
-
     /** 덱과 저장만 보는 테스트라 방 출처는 닿지 않는다. 닿으면 그것 자체가 실패다. */
     private object UnusedRoomRemoteDataSource : RoomRemoteDataSource {
-        override suspend fun listRooms(): List<RoomSummaryResponse> = throw IllegalStateException("부르지 않는다")
+        override suspend fun listRooms(showHasPlaceId: String?): List<RoomSummaryResponse> =
+            throw IllegalStateException("부르지 않는다")
 
         override suspend fun getRoom(roomId: String): RoomResponse = throw IllegalStateException("부르지 않는다")
 
@@ -161,5 +205,30 @@ class HomeDeckRepositoryImplTest {
             roomId: String,
             request: RoomRequest,
         ): RoomResponse = throw IllegalStateException("부르지 않는다")
+
+        override suspend fun getMembers(roomId: String): List<RoomMemberDetailResponse> =
+            throw IllegalStateException("부르지 않는다")
+
+        override suspend fun createInvitation(roomId: String): RoomInvitationResponse =
+            throw IllegalStateException("부르지 않는다")
+
+        override suspend fun leaveRoom(roomId: String): Unit = throw IllegalStateException("부르지 않는다")
+
+        override suspend fun transferOwner(
+            roomId: String,
+            nextOwnerId: String,
+        ): Unit = throw IllegalStateException("부르지 않는다")
+
+        override suspend fun joinRoom(
+            roomId: String,
+            inviteCode: String,
+        ): Unit = throw IllegalStateException("부르지 않는다")
+    }
+
+    /** 순회 순서 테스트 전용. `listRooms`만 재정의하고 나머지는 [UnusedRoomRemoteDataSource]에 위임한다. */
+    private class StubRoomRemoteDataSource(
+        private val rooms: List<RoomSummaryResponse>,
+    ) : RoomRemoteDataSource by UnusedRoomRemoteDataSource {
+        override suspend fun listRooms(showHasPlaceId: String?): List<RoomSummaryResponse> = rooms
     }
 }

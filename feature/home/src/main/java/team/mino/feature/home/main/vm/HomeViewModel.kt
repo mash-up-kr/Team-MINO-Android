@@ -18,7 +18,9 @@ import team.mino.core.domain.model.RoomSummary
 import team.mino.core.domain.model.RoomType
 import team.mino.core.domain.repository.HomeDeckRepository
 import team.mino.core.domain.repository.HomePreferencesRepository
+import team.mino.core.domain.repository.PlaceRepository
 import team.mino.core.domain.usecase.ResolveNextDeckUseCase
+import team.mino.core.domain.usecase.ResolveRoomEntryDeckUseCase
 import team.mino.core.errorhandling.DomainErrorEmitter
 import team.mino.core.errorhandling.MinoDomainException
 import team.mino.core.errorhandling.domainErrorEmitter
@@ -26,6 +28,7 @@ import team.mino.core.errorhandling.onDomainFailure
 import team.mino.core.errorhandling.runCatchingDomain
 import team.mino.feature.home.main.model.HomePhase
 import team.mino.feature.home.main.model.HomeTooltip
+import team.mino.feature.home.main.model.SavePickerState
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.seconds
 
@@ -56,6 +59,8 @@ internal class HomeViewModel
         private val homeDeckRepository: HomeDeckRepository,
         private val homePreferencesRepository: HomePreferencesRepository,
         private val resolveNextDeck: ResolveNextDeckUseCase,
+        private val placeRepository: PlaceRepository,
+        private val resolveRoomEntryDeck: ResolveRoomEntryDeckUseCase,
     ) :
     ViewModel(),
         MviContainer<HomeUiState, HomeSideEffect> by mviContainer(HomeUiState()),
@@ -74,15 +79,6 @@ internal class HomeViewModel
 
         /** 권한 응답을 기다리는 방. 응답이 왔을 때 어느 방의 `가까운순`이었는지는 상태에 남지 않는다. */
         private var roomAwaitingLocation: RoomSummary? = null
-
-        /**
-         * 저장할 방을 고르기를 기다리는 카드(FR-005). **방 시트가 두 목적으로 쓰이므로 이 값이 그 둘을 가른다** —
-         * 차 있으면 뒤따르는 [HomeIntent.SelectRoom]이 방 전환이 아니라 저장이다.
-         *
-         * [HomeUiState.actionMenuTarget]을 대신 쓸 수 없다. TS-011이 「메뉴를 닫고 시트를 연다」를 요구해
-         * 그 필드는 저장을 기다리는 내내 `null`이다.
-         */
-        private var pendingSavePinId: String? = null
 
         /** 홈에 들어온 뒤 카드를 한 장이라도 띄웠는가. 완료 안내와 빈 상태 안내를 가르는 값이다(EC-011). */
         private var hasShownCard = false
@@ -112,6 +108,9 @@ internal class HomeViewModel
                 is HomeIntent.OpenActionMenu -> updateState { copy(actionMenuTarget = intent.pinId) }
                 HomeIntent.DismissActionMenu -> updateState { copy(actionMenuTarget = null) }
                 is HomeIntent.SaveToAnotherRoom -> saveToAnotherRoom(intent.pinId)
+                is HomeIntent.ToggleSaveTargetRoom -> toggleSaveTargetRoom(intent.roomId)
+                HomeIntent.ConfirmSaveTargets -> confirmSaveTargets()
+                HomeIntent.DismissSavePicker -> updateState { copy(savePicker = null) }
                 is HomeIntent.OpenPlaceDetail -> openPlaceDetail(intent.pinId)
                 HomeIntent.OpenRoomSheet -> updateState { copy(isRoomSheetOpen = true) }
                 is HomeIntent.SelectRoom -> selectRoom(intent.roomId)
@@ -176,7 +175,7 @@ internal class HomeViewModel
          * 우→좌 되돌리기. 넘긴 순서의 **역순으로 한 장씩** 되돌린다(FR-002, `data-model.md` §2.2) —
          * 이 덱에서 넘긴 카드가 남아 있는 한 몇 번이든 이어서 되돌아간다.
          *
-         * 이미 나간 `recordPlaceOpened`는 취소하지 않는다 — 보상 호출을 흘리지 않는 것이 EC-017이다.
+         * [SCR-006]이 이미 기록한 「경과일 초기화 확인」은 취소하지 않는다 — 보상 호출을 흘리지 않는 것이 EC-017이다.
          * 되돌릴 것이 없으면 상태를 건드리지 않는다(EC-001).
          */
         private fun swipeBackward() {
@@ -216,24 +215,18 @@ internal class HomeViewModel
         }
 
         /**
-         * 카드 본문 탭. **덱의 진행 상태를 어느 것도 건드리지 않는다**(FR-023, TS-013).
+         * 카드 본문 탭. 상세로 보내는 것이 전부이고 **덱의 진행 상태를 어느 것도 건드리지 않는다**(FR-023, TS-013).
          *
-         * 두 코루틴으로 나누는 것이 R-012의 「결과를 기다리지 않는다」다. 하나로 묶으면 초기화 응답이
-         * 상세 전환 앞을 막고, 실패하면 전환이 아예 일어나지 않는다.
+         * **「경과일 초기화 확인」을 여기서 보내지 않는다**(FR-007·023, TS-034). 이동한 [SCR-006] 장소 상세가
+         * 열리면서 기록하며(`docs/specs/place-detail/spec.md` FR-026 — 진입 경로와 무관하게 기록한다), 홈까지
+         * 부르면 같은 `POST /pins/{pinId}/accesses`가 카드 한 번 탭에 두 건 쌓인다.
          *
-         * **[HomeDeckRepository.recordPlaceOpened] 호출은 걷어낼 코드다.** [SCR-006] 장소 상세가 배선되면서
-         * 같은 「경과일 초기화 확인」을 상세가 열릴 때마다 기록한다(`docs/specs/place-detail/spec.md` FR-026 —
-         * 진입 경로와 무관하게 기록한다). 두 호출이 같은 서버 기록으로 가므로 카드 한 번 탭에 2회가 나간다.
-         * 이 스펙의 FR-007·TS-034가 홈에도 기록을 요구해 지금은 남겨 두며, 기록의 소유를 상세로 넘기는
-         * spec 개정과 함께 아래 첫 `launchSafely` 블록을 지운다.
+         * **[PlaceRepository]가 주입돼 있어도 [PlaceRepository.recordAccess]는 부르지 않는다.** 그 의존은
+         * `다른 방 저장`의 [PlaceRepository.duplicatePin] 때문에 있는 것이지 기록 때문이 아니다 — R-019가
+         * 처음 세울 때는 기록도 이 경로였으나 spec 4.0.0이 소유를 [SCR-006]으로 넘겼다.
          */
-        private fun openPlaceDetail(pinId: String) {
-            launchSafely {
-                runCatchingDomain { homeDeckRepository.recordPlaceOpened(pinId) }
-                    .onDomainFailure(::emitDomainError)
-            }
+        private fun openPlaceDetail(pinId: String) =
             launchSafely { postSideEffect(HomeSideEffect.NavigateToPlaceDetail(pinId)) }
-        }
 
         /**
          * 정렬 칩 직접 선택(FR-010, TS-020·021).
@@ -248,55 +241,108 @@ internal class HomeViewModel
             }
 
         /**
-         * 액션 메뉴의 `다른 방 저장`. 메뉴를 닫고 시트를 여는 것까지가 여기이고(TS-011), 어느 방인지는
-         * 뒤따르는 [selectRoom]이 정한다. 덱은 건드리지 않는다(FR-005).
+         * 액션 메뉴의 `다른 방 저장`. 메뉴를 닫고 「방 선택 시트」를 여는 것까지가 여기다(TS-011).
+         * 덱도 「홈 방 시트」도 건드리지 않는다(FR-005) — 서로 다른 시트라 [HomeUiState.isRoomSheetOpen]과
+         * 값을 공유하지 않는다.
          */
         private fun saveToAnotherRoom(pinId: String) {
-            pendingSavePinId = pinId
-            updateState { copy(actionMenuTarget = null, isRoomSheetOpen = true) }
+            updateState { copy(actionMenuTarget = null, savePicker = SavePickerState(pinId = pinId)) }
         }
 
-        /** 고르지 않고 닫으면 저장도 없던 일이다 — 남겨 두면 다음 방 전환이 저장으로 뒤바뀐다. */
+        /** 「방 선택 시트」의 체크박스 탭. 시트가 닫혀 있으면 무시한다. */
+        private fun toggleSaveTargetRoom(roomId: String) {
+            val picker = state.value.savePicker ?: return
+            val selected =
+                if (roomId in picker.selectedRoomIds) {
+                    picker.selectedRoomIds - roomId
+                } else {
+                    picker.selectedRoomIds + roomId
+                }
+            updateState { copy(savePicker = picker.copy(selectedRoomIds = selected)) }
+        }
+
+        /**
+         * 「방 선택 시트」의 `저장하기`. 선택이 비어 있으면 확정하지 않는다(EC-018).
+         *
+         * 성공과 실패가 서로 다른 통로로 나간다 — 실패는 사용자 액션의 일회성 실패라 SideEffect가 아니라
+         * `emitDomainError`다(`docs/conventions/error_handling.md` §5). **성패와 무관하게 시트는 닫는다** —
+         * 실패해도 다시 고르게 붙잡아 두지 않는다. 덱·현재 방·되돌리기 이력 어느 것도 건드리지 않는다.
+         */
+        private fun confirmSaveTargets() {
+            val picker = state.value.savePicker ?: return
+            if (picker.selectedRoomIds.isEmpty()) return
+            launchSafely {
+                updateState { copy(savePicker = null) }
+                runCatchingDomain { placeRepository.duplicatePin(picker.pinId, picker.selectedRoomIds.toList()) }
+                    .onSuccess { postSideEffect(HomeSideEffect.ShowSaveResult) }
+                    .onDomainFailure(::emitDomainError)
+            }
+        }
+
+        /** 방을 고르지 않고 닫는다 — 저장도 없던 일이다. */
         private fun dismissRoomSheet() {
-            pendingSavePinId = null
             updateState { copy(isRoomSheetOpen = false) }
         }
 
         /**
-         * 시트의 방 선택은 곧 확정이다(FR-018, TS-028). 보던 방을 다시 골랐으면 시트만 닫는다(EC-014).
+         * 「홈 방 시트」의 방 선택(FR-024, SC-008). 보던 방을 다시 골랐으면 시트만 닫는다(EC-014).
          *
-         * **시트가 무엇으로 열렸는지가 먼저다.** `다른 방 저장`으로 열렸으면 이 선택은 방 전환이 아니라
-         * 저장 대상 지정이다 — 홈이 다루는 마지막 단계가 이 「선택을 전달」이다(FR-005, spec §3.2).
+         * [ResolveRoomEntryDeckUseCase]로 그 방 안에서만 다음 칸을 고른다 — [advance]로 넘기면 그 방이
+         * 소진일 때 다른 방으로 튕긴다.
          */
         private fun selectRoom(roomId: String) {
             val room = rooms.firstOrNull { it.id == roomId } ?: return
-            pendingSavePinId?.let { pinId ->
-                pendingSavePinId = null
-                savePin(pinId, room.id)
-                return
-            }
             if (room.id == state.value.room?.id) {
                 updateState { copy(isRoomSheetOpen = false) }
                 return
             }
-            launchSafely { switchRoom(room) }
+            launchSafely {
+                homePreferencesRepository.setLastRoomId(room.id)
+                enterRoom(room)
+            }
         }
 
         /**
-         * 고른 방으로 저장을 내보낸다(FR-005). 신호만 흘리고 **문구는 화면이 정한다**(contracts §3).
+         * 정렬을 `꾹 Pick`으로 되감아 그 방에 들어간다. 세 칸 모두 소진이면 그 방을 단 채 완료 안내로 간다.
          *
-         * 성공과 실패가 서로 다른 통로로 나간다 — 실패는 사용자 액션의 일회성 실패라 SideEffect가 아니라
-         * `emitDomainError`다(`docs/conventions/error_handling.md` §5). 둘 다 보내지 않으므로 스낵바는 한 번이다.
-         * 덱·현재 방·되돌리기 이력 어느 것도 건드리지 않는다.
+         * 고른 덱이 막상 비어 있으면 [advance]로 다른 방으로 튕기지 않고, [openDeck]에 자기 자신을
+         * `onExhausted`로 넘겨 같은 방 안에서 다시 판정한다 — [ResolveRoomEntryDeckUseCase]는 애초에
+         * [NextDeck.NextRoom]을 내지 않는다(FR-024, SC-008). 재귀는 최대 3단계(정렬 셋을 각각 한 번씩
+         * 소진 처리)로 반드시 [NextDeck.AllExhausted]에 닿아 끝난다.
+         *
+         * **완료 안내와 빈 상태를 가르는 기준은 [advance]와 같다**(EC-011·EC-020). 「고른 방**만** 비어 있으면
+         * 완료 안내, 모든 방을 통틀어 볼 장소가 없으면 빈 상태」가 spec §5의 확정이고, 후자를 가리는 값이
+         * [hasShownCard]다 — 이 값이 거짓이면 순회가 어느 방에서도 카드를 못 띄웠다는 뜻이라
+         * `[공동방 만들기]` CTA가 붙은 빈 상태가 맞다(FR-020).
          */
-        private fun savePin(
-            pinId: String,
-            roomId: String,
-        ) = launchSafely {
-            updateState { copy(isRoomSheetOpen = false) }
-            runCatchingDomain { homeDeckRepository.savePinToRoom(pinId, roomId) }
-                .onSuccess { postSideEffect(HomeSideEffect.ShowSaveResult) }
-                .onDomainFailure(::emitDomainError)
+        private suspend fun enterRoom(room: RoomSummary) {
+            when (val next = resolveRoomEntryDeck(deckContext(room.id, exhausted), room.id)) {
+                is NextDeck.SameRoom -> {
+                    updateState {
+                        copy(room = room, isRoomSheetOpen = false, undoStack = persistentListOf())
+                    }
+                    showTooltip(HomeTooltip.RoomChanged(room.name))
+                    openDeck(room, next.sort, onExhausted = ::enterRoom)
+                }
+
+                NextDeck.AllExhausted ->
+                    updateState {
+                        copy(
+                            room = room,
+                            isRoomSheetOpen = false,
+                            sort = DeckSort.GGUK_PICK,
+                            // 볼 것이 있었는지가 완료 안내와 빈 상태 안내를 가른다(EC-011, EC-020, FR-020).
+                            phase = if (hasShownCard) HomePhase.ALL_EXHAUSTED else HomePhase.EMPTY,
+                            cards = persistentListOf(),
+                            isTransitioning = false,
+                            undoStack = persistentListOf(),
+                            loadError = null,
+                        )
+                    }
+
+                is NextDeck.NextRoom ->
+                    error("ResolveRoomEntryDeckUseCase는 NextRoom을 내지 않는다 — 계약 위반")
+            }
         }
 
         private fun dismissGuide() =
@@ -306,29 +352,42 @@ internal class HomeViewModel
             }
 
         /**
-         * 권한 응답. 거부(`null`)도 정상 흐름이라 그대로 [getDeck][HomeDeckRepository.getDeck]에 넘긴다 —
-         * 좌표 없는 `가까운순`은 빈 덱이 되어 소진으로 흡수된다(EC-009, R-009·R-013).
+         * 권한 응답. **거부는 방별 값이 아니다** — `가까운순 × 모든 방`을 통째로 소진 집합에 넣고 판정을
+         * 다시 불러 방마다 다시 묻지 않는다(EC-009).
          */
         private fun onLocationPermissionResult(location: GeoPoint?) {
             val room = roomAwaitingLocation ?: return
             roomAwaitingLocation = null
             grantedLocation = location
-            launchSafely { loadDeck(room, DeckSort.NEAREST, location) }
+            if (location == null) {
+                rooms.forEach { exhausted += DeckKey(roomId = it.id, sort = DeckSort.NEAREST) }
+                launchSafely { advance(room) }
+            } else {
+                launchSafely { loadDeck(room, DeckSort.NEAREST, location) }
+            }
         }
 
-        /** 방 전환. 수동·자동을 구분하지 않는다(FR-012·016). 정렬은 되돌아가고 되돌리기 이력은 비운다(EC-003). */
-        private suspend fun switchRoom(room: RoomSummary) {
+        /**
+         * 방 전환. 수동·자동을 구분하지 않는다(FR-012·016). 되돌리기 이력은 비운다(EC-003).
+         *
+         * [sort]는 호출자가 정한다 — 자동 전환은 [NextDeck.NextRoom]이 실어 온 정렬을 그대로 쓰고
+         * 초기화하지 않는다(FR-012·016).
+         */
+        private suspend fun switchRoom(
+            room: RoomSummary,
+            sort: DeckSort,
+        ) {
             homePreferencesRepository.setLastRoomId(room.id)
             updateState {
                 copy(
                     room = room,
-                    sort = DeckSort.GGUK_PICK,
+                    sort = sort,
                     isRoomSheetOpen = false,
                     undoStack = persistentListOf(),
                 )
             }
             showTooltip(HomeTooltip.RoomChanged(room.name))
-            openDeck(room, DeckSort.GGUK_PICK)
+            openDeck(room, sort)
         }
 
         /**
@@ -340,10 +399,11 @@ internal class HomeViewModel
         private suspend fun openDeck(
             room: RoomSummary,
             sort: DeckSort,
+            onExhausted: suspend (RoomSummary) -> Unit = ::advance,
         ) {
             if (room.placeCount == 0) {
                 DeckSort.entries.forEach { exhausted += DeckKey(roomId = room.id, sort = it) }
-                advance(room)
+                onExhausted(room)
                 return
             }
             if (sort == DeckSort.NEAREST && grantedLocation == null) {
@@ -352,7 +412,7 @@ internal class HomeViewModel
                 postSideEffect(HomeSideEffect.RequestLocationPermission)
                 return
             }
-            loadDeck(room, sort, grantedLocation.takeIf { sort == DeckSort.NEAREST })
+            loadDeck(room, sort, grantedLocation.takeIf { sort == DeckSort.NEAREST }, onExhausted)
         }
 
         /** 받아 온 덱이 0장이면 **노출하지 않고** 소진으로 보고 규칙을 다시 적용한다(EC-013). */
@@ -360,6 +420,7 @@ internal class HomeViewModel
             room: RoomSummary,
             sort: DeckSort,
             location: GeoPoint?,
+            onExhausted: suspend (RoomSummary) -> Unit = ::advance,
         ) {
             val deck =
                 runCatchingDomain { homeDeckRepository.getDeck(room.id, sort, location) }
@@ -368,7 +429,7 @@ internal class HomeViewModel
 
             if (deck.cards.isEmpty()) {
                 exhausted += DeckKey(roomId = room.id, sort = sort)
-                advance(room)
+                onExhausted(room)
                 return
             }
 
@@ -403,12 +464,16 @@ internal class HomeViewModel
         private suspend fun advance(fromRoom: RoomSummary) {
             when (val next = resolveNextDeck(deckContext(fromRoom.id, exhausted))) {
                 is NextDeck.SameRoom -> openDeck(fromRoom, next.sort)
-                is NextDeck.NextRoom -> rooms.firstOrNull { it.id == next.roomId }?.let { switchRoom(it) }
+                is NextDeck.NextRoom ->
+                    rooms.firstOrNull { it.id == next.roomId }?.let { switchRoom(it, next.sort) }
+
                 NextDeck.AllExhausted ->
                     updateState {
                         copy(
                             // 볼 것이 있었는지가 완료 안내와 빈 상태 안내를 가른다(EC-011, FR-020).
                             phase = if (hasShownCard) HomePhase.ALL_EXHAUSTED else HomePhase.EMPTY,
+                            // 남은 칸이 없어 도달한 화면이라 칩은 마지막 정렬이 아니라 `꾹 Pick`에 머문다(FR-014).
+                            sort = DeckSort.GGUK_PICK,
                             cards = persistentListOf(),
                             isTransitioning = false,
                             undoStack = persistentListOf(),

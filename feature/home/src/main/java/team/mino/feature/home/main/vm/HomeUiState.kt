@@ -10,6 +10,7 @@ import team.mino.core.domain.model.RoomSummary
 import team.mino.core.errorhandling.MinoDomainException
 import team.mino.feature.home.main.model.HomePhase
 import team.mino.feature.home.main.model.HomeTooltip
+import team.mino.feature.home.main.model.SavePickerState
 
 /**
  * 홈 탭 화면의 상태.
@@ -30,6 +31,10 @@ import team.mino.feature.home.main.model.HomeTooltip
  *  않아 이후 스와이프가 전부 버려진다.
  * @property tooltip 한 번에 하나만 뜬다. 사라진 상태가 `null`이다.
  * @property actionMenuTarget 액션 메뉴가 열린 카드의 pinId. 메뉴는 카드 앵커에 묶여 있어 대상 없이 열리지 않는다.
+ * @property isRoomSheetOpen 「홈 방 시트」(방 변경)가 열렸는지(spec FR-017·018).
+ * @property savePicker 「방 선택 시트」(`다른 방 저장`)의 상태. `null`이면 닫힌 것이고, `selectedRoomIds`가
+ *  비어 있으면 `저장하기`가 비활성이다(spec FR-005, EC-018) — 시트가 서로 다른 컴포넌트라 [isRoomSheetOpen]과
+ *  값을 공유하지 않는다.
  * @property isGuideVisible 참인 동안 [HomeIntent.DismissGuide]를 뺀 모든 의도를 버린다(spec FR-019).
  *  [phase]와 직교한다 — 볼 카드가 없어도 가이드를 먼저 띄운다(spec EC-016).
  * @property undoStack 우→좌 스와이프로 되돌릴 카드들. 넘긴 순서대로 쌓이고 **뒤에서부터** 꺼낸다 —
@@ -49,6 +54,7 @@ internal data class HomeUiState(
     val tooltip: HomeTooltip? = null,
     val actionMenuTarget: String? = null,
     val isRoomSheetOpen: Boolean = false,
+    val savePicker: SavePickerState? = null,
     val isGuideVisible: Boolean = false,
     val undoStack: ImmutableList<PlaceCard> = persistentListOf(),
     val loadError: MinoDomainException? = null,

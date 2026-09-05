@@ -15,14 +15,23 @@ import team.mino.feature.profile.main.vm.ProfileUiState
 /*
  * ProfileScreen의 상태별 렌더 프리뷰.
  *
- * 화면은 stateless라 상태를 직접 만들어 넘긴다. 파생 값(썸네일·버튼 활성·오류 표시·뒤로가기)은
- * ProfileUiState가 계산하므로 여기서는 그 계산을 흉내 내지 않고 입력 필드만 조합한다.
+ * 화면은 stateless라 상태를 직접 만들어 넘긴다. 파생 값(버튼 활성·오류 표시·뒤로가기)은
+ * ProfileUiState가, 고르지 않은 아바타의 그림은 MinoProfileAvatarImage가 정하므로 여기서는 그
+ * 계산을 흉내 내지 않고 입력 필드만 조합한다.
  *
  * 앞의 네 장은 진입점을 온보딩으로 고정한 채 화면 상태만 바꾼다. 뒤의 두 장은 반대로 상태를
  * 고정하고 진입점만 바꿔, 상단 바 뒤로가기의 유무만 차이로 남긴다.
+ *
+ * 진입 직후와 입력 오류 두 장은 나란히 놓고 보는 것이 목적이다 — 기본 아바타가 그리드 12칸과
+ * 다른 그림인지(FR-015), 안내 문구가 평상시와 오류에서 갈리는지(FR-011)를 그 둘로 본다.
  */
 
-/** 아무것도 입력하지 않은 진입 직후. 두 버튼이 비활성이고 오류 문구는 아직 뜨지 않는다. */
+/**
+ * 아무것도 입력하지 않은 진입 직후. 두 버튼이 비활성이고 평상시 안내 문구가 놓인다.
+ *
+ * 아바타를 고르지 않았으므로 상단 썸네일이 기본 아바타로 그려진다 — 아래 그리드 12칸 어느 것과도
+ * 같은 그림이면 안 된다.
+ */
 @UiModePreviews
 @Composable
 private fun ProfileScreenInitialPreview() {
@@ -48,7 +57,11 @@ private fun ProfileScreenFilledPreview() {
     }
 }
 
-/** 유효하지 않은 닉네임을 입력한 뒤. 필드가 오류 상태가 되고 `저장`이 잠긴다. */
+/**
+ * 유효하지 않은 닉네임을 입력한 뒤. 필드가 오류 상태가 되고 `저장`이 잠긴다.
+ *
+ * 필드 아래 문구가 평상시와 다른 글자로 갈린다 — 자리는 그대로이고 두 문구가 함께 보이지 않는다.
+ */
 @UiModePreviews
 @Composable
 private fun ProfileScreenNicknameErrorPreview() {

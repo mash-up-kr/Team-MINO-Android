@@ -19,3 +19,6 @@
 | 발생일자 | 제목 | 관련 ADR | 상태 | 작성자 |
 |---|---|---|---|---|
 | 2026-07-30 | [feature를 `api`/`impl` 두 모듈로 분리한 규약이 탭 feature에서 성립하지 않았다](2026-07-30-feature-api-impl-split.md) | [단일 feature 모듈](../adr/2026-07-30-single-feature-module.md) | Resolved | Jaesung Lee |
+| 2026-08-30 | [방장 나가기 모달이 방 멤버 수를 사전에 세지 않아 실제 공유방에도 "혼자라 삭제된다" 문구를 보였다](2026-08-30-leave-flow-member-count.md) | 없음 — 문서화되지 않은 결정 | Resolved | Chea-yunzi |
+| 2026-08-30 | [장소 카드의 사진 없음 폴백 아이콘이 썸네일 박스 전체 크기로 커져 깨져 보였다](2026-08-30-thumbnail-fallback-icon-size.md) | 없음 — 문서화되지 않은 결정 | Resolved | Chea-yunzi |
+| 2026-09-02 | [장소 상세를 진입형 모듈로 둔 결정이 지도를 두 벌로 만들고 명세 하나를 닫지 못했다](2026-09-02-entry-feature-for-place-detail.md) | [진입형 feature](../adr/2026-08-29-entry-feature-for-cross-tab-immersive-screen.md) → [지도 공유 기준](../adr/2026-09-02-immersive-map-screen-shares-one-map-in-tab-feature.md) | Open | Jaesung Lee |

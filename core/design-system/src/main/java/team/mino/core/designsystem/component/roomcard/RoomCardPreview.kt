@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import kotlinx.collections.immutable.persistentListOf
+import team.mino.core.designsystem.component.profileavatar.MinoProfileAvatar
 import team.mino.core.designsystem.component.roomthumbnail.MinoRoomThumbnail
 import team.mino.core.designsystem.foundation.color.token.ColorAccessKeyToken
 import team.mino.core.designsystem.foundation.color.token.value
@@ -21,7 +22,8 @@ private const val PREVIEW_PLACE_COUNT_LABEL = "장소 0개"
  * `Card_Room`의 속성 축 프리뷰.
  *
  * `Show list cell` 축은 Figma에서 한 컴포넌트셋의 variant지만, 코드에서는 클릭 영역과 트레일링
- * 슬롯이 갈려 [MinoRoomCard]·[MinoRoomCheckBoxCard] 두 컴포넌트로 나뉜다.
+ * 슬롯이 갈려 [MinoRoomCard]·[MinoRoomCheckBoxCard]·[MinoRoomChevronCard] 세 컴포넌트로 나뉜다.
+ * 뒤의 둘은 같은 `on` variant이며 트레일링 슬롯의 인스턴스만 다르다.
  *
  * 만들지 않은 축:
  * - `checked` — Figma 문서 페이지에서 `Checkbox` 컴포넌트가 소유하는 축이라 블록을 따로 두지
@@ -35,18 +37,35 @@ private fun RoomCardPreview() {
             MinoRoomCard(
                 title = PREVIEW_TITLE,
                 placeCountLabel = PREVIEW_PLACE_COUNT_LABEL,
-                participantImageUrls = persistentListOf(null, null, null),
+                participantAvatars = persistentListOf(
+                    MinoProfileAvatar.Person1,
+                    MinoProfileAvatar.Person2,
+                    MinoProfileAvatar.Person3,
+                ),
                 onClick = {},
                 thumbnail = { PreviewThumbnail() },
                 memo = PREVIEW_MEMO,
             )
             PreviewCheckBoxCard(checked = true, memo = PREVIEW_MEMO)
+            MinoRoomChevronCard(
+                title = PREVIEW_TITLE,
+                placeCountLabel = PREVIEW_PLACE_COUNT_LABEL,
+                onClick = {},
+                thumbnail = { PreviewThumbnail() },
+                memo = PREVIEW_MEMO,
+            )
         }
         PreviewProperty(name = "Show memo", values = "on · off") {
             PreviewCheckBoxCard(checked = true, memo = PREVIEW_MEMO)
             PreviewCheckBoxCard(checked = false, memo = PREVIEW_MEMO)
             PreviewCheckBoxCard(checked = true, memo = null)
             PreviewCheckBoxCard(checked = false, memo = null)
+            MinoRoomChevronCard(
+                title = PREVIEW_TITLE,
+                placeCountLabel = PREVIEW_PLACE_COUNT_LABEL,
+                onClick = {},
+                thumbnail = { PreviewThumbnail() },
+            )
         }
     }
 }

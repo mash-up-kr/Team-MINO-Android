@@ -1,94 +1,118 @@
-# 계약: 코멘트 조회 · 작성 · 삭제 (Comment API)
+# 계약: 코멘트 API 대조
 
 **대상 스펙 경로**: `docs/specs/place-detail`
 
-**계획서**: [../plan.md](../plan.md)
+**계획서**: [plan.md](../plan.md)
 
-**참조 API 문서**: <https://api.gguk.org/api-docs-json> (Team MINO API 1.0.0) — 조회 시점 **2026-08-28T22:54:07+09:00**
+**출처**: <https://api.gguk.org/api-docs-json> (Team MINO API 1.0.0)
 
-코멘트는 (장소, 방) 단위로 귀속된다(FR-019). 서버가 핀을 그 단위로 다루므로 세 엔드포인트 모두 `pinId`를 경로에 받는다 — 별도의 방 인자가 필요 없다.
+**조회 시점**: **2026-09-01T21:46:23+09:00**
 
 ---
 
-## 1. `GET /api/v1/pins/{pinId}/comments` — 목록 조회 (FR-010 · FR-011)
+## 1. `GET /api/v1/pins/{pinId}/comments` — 목록 (FR-010·FR-028)
 
-> 설명: "최신 페이지부터 가져오며, 각 페이지 안에서는 오래된 코멘트가 먼저 온다."
+**판정: 대응 API 있음.**
 
-**요청**
+```
+description: "최신 코멘트가 첫 페이지(page=0)이고, page가 커질수록 더 예전 코멘트다.
+              한 페이지 안에서는 오래된 코멘트가 위, 최신이 아래로 온다(대화창 순서).
+              hasNext=true면 더 예전 코멘트가 남아있다는 뜻이다."
 
-| 파라미터 | 위치 | 필수 | 스키마 |
-|---|---|---|---|
-| `pinId` | path | 필수 | `string` |
-| `page` | query | 선택 | `example: 0` (타입 미선언) |
-| `pageSize` | query | 선택 | `maximum: 100` (타입 미선언) |
-
-**응답 200**: `required: [data, pagination]`
-
-`data[]` — `required: [id, content, createdAt, author, canDelete]`
-
-| 필드 | 스키마 | 매핑 |
-|---|---|---|
-| `id` | `string(uuid)` | `PlaceComment.id` |
-| `content` | `string`, `minLength: 1`, `maxLength: 200` | `PlaceComment.content` — FR-012의 200자 상한과 **정확히 일치** |
-| `createdAt` | `string(date-time)` | 매핑하지 않는다 — [spec.md §4](../spec.md)가 작성 시각 미표기를 가정으로 닫았다 |
-| `author.id` | `string(uuid)` | `PlaceCommentAuthor.userId` |
-| `author.nickname` | `string`, `minLength: 2`, `maxLength: 15` | `PlaceCommentAuthor.nickname` |
-| `author.avatar` | `object, nullable`, `required: [color]` | `PlaceCommentAuthor.avatarColor` |
-| `author.avatar.color` | `enum(red, red_orange, orange, lime, green, cyan, violet, pink, blue, brown, light_blue, purple, gray)` | 기존 `RoomColor` enum과 **13개 값이 동일**해 그대로 재사용한다 |
-| `canDelete` | `boolean` | `PlaceComment.canDelete` — [⋮] 노출의 유일한 근거([research.md D6](../research.md)) |
-
-`pagination` — `required: [page, pageSize, hasNext]`
-
-| 필드 | 스키마 | 매핑 |
-|---|---|---|
-| `page` | `integer` | `PlaceCommentPage.page` |
-| `pageSize` | `integer` | 쓰지 않는다 |
-| `hasNext` | `boolean` | `PlaceCommentPage.hasOlder` — **"다음 페이지"가 곧 "더 오래된 페이지"다**(§5) |
-
-## 2. `POST /api/v1/pins/{pinId}/comments` — 작성 (FR-013 · FR-014)
-
-**요청 본문**: `required: ["content"]`
-
-```json
-{ "content": { "type": "string", "description": "앞뒤 공백 제거 후 1~200자" } }
+parameters:
+  pinId     (path,  required, string)
+  page      (query, optional, string, pattern "^\d+$", minimum 0, default "0")
+  pageSize  (query, optional, string, pattern "^\d+$", minimum 1, maximum 100, default "20")
 ```
 
-> 서버가 **앞뒤 공백을 제거한 뒤** 1~200자를 판정한다. 이는 클라이언트의 [등록] 활성 조건(FR-013 — "공백을 제외한 입력이 1자 이상")과 같은 규칙이라, 화면이 막는 것과 서버가 막는 것이 어긋나지 않는다. EC-012(공백만 입력)도 양쪽에서 함께 걸린다.
+응답 `data[]` (required: `id`, `content`, `createdAt`, `author`, `canDelete`):
 
-**응답 201 `data`**: §1의 `data[]` 항목과 같은 형태. 등록된 코멘트가 그대로 돌아오므로 **목록을 다시 조회하지 않고 이 값을 맨 아래에 덧붙인다**(FR-014·UX-007).
+```json
+{
+  "id":        { "type": "string", "format": "uuid" },
+  "content":   { "type": "string", "minLength": 1, "maxLength": 200 },
+  "createdAt": { "type": "string", "format": "date-time" },
+  "author": {
+    "type": "object",
+    "required": ["id", "nickname", "avatar"],
+    "properties": {
+      "id":       { "type": "string", "format": "uuid" },
+      "nickname": { "type": "string", "minLength": 2, "maxLength": 15, "example": "지은" },
+      "avatar":   { "type": "object", "nullable": true, "required": ["color"],
+                    "properties": { "color": { "type": "string",
+                      "enum": ["red","red_orange","orange","lime","green","cyan","violet",
+                               "pink","blue","brown","light_blue","purple","gray"] } } }
+    }
+  },
+  "canDelete": { "type": "boolean" }
+}
+```
 
-**오류 400**: `errorCode: VALIDATION_ERROR`. 화면이 먼저 막으므로 정상 흐름에서는 나오지 않는다.
+### 1.1 매핑
+
+| 요구사항 | 응답 필드 | 비고 |
+|---|---|---|
+| FR-010 본문·작성자 | `content`·`author.nickname`·`author.avatar.color` | |
+| **FR-028 작성 시각** | **`createdAt`** | **spec 4.0.0 신규 요구. 대응 있음** |
+| FR-015 [⋮] 노출 | `canDelete` | 클라이언트가 작성자를 다시 따지지 않는다([research.md D6](../research.md)) |
+| FR-010 나열 순서 | 페이지 안 순서 그대로 | 클라이언트가 재정렬하지 않는다 |
+
+### 1.2 역방향 페이징
+
+`page` 0이 최신이다. 화면은 오래된 것이 위로 오게 나열하므로 **페이지 방향과 화면 방향이 반대다.**
+
+```
+page 0  ← 최초 조회. 그대로 그린다 (안에서는 오래된 것이 위)
+page 1  ← 위로 스크롤해 더 받은 것. 목록 "앞"에 붙인다
+page 2  ← 그 앞에 또 붙인다
+```
+
+`pageSize`를 지정하지 않고 서버 기본값 20을 쓴다. `hasNext`는 도메인에서 `PlaceCommentPage.hasOlder`로 바꿔 든다 — "더 받을 **이전** 페이지가 있는지"라는 화면의 물음에 맞춘 이름이다([research.md D11](../research.md)).
+
+### 1.3 `createdAt`을 표기로 옮기는 것은 이 계약이 하지 않는다
+
+서버는 ISO-8601 시각만 준다. 구간 판정(`방금`/`N시간 전`/`N일 전`/`NNNN년 NN월 NN일`)은 feature의 UI 매핑이 한다 — [place-detail-main-contract.md §6](./place-detail-main-contract.md), [research.md D22](../research.md).
+
+**어느 시계로 재는지는 spec §3.2가 위임하지 않은 채 남긴 지점이다.** 이 계약은 서버가 준 절대 시각을 그대로 도메인에 올리는 데까지만 정의한다.
+
+---
+
+## 2. `POST /api/v1/pins/{pinId}/comments` — 작성 (FR-013·FR-014)
+
+**판정: 대응 API 있음.**
+
+```
+requestBody (required):
+  { "content": { "type": "string", "description": "앞뒤 공백 제거 후 1~200자" } }
+```
+
+응답 `201`의 `data`는 §1의 항목과 **같은 스키마다** — `id`·`content`·`createdAt`·`author`·`canDelete`.
+
+- **만들어진 코멘트를 그대로 목록 끝에 붙인다.** 목록을 다시 조회하지 않는다(FR-014).
+- 돌려받은 `createdAt`이 곧 `방금`으로 표기된다(TS-054).
+- **앞뒤 공백 제거는 서버가 한다.** 클라이언트가 다듬지 않는다. 200자 상한은 입력 컴포저블이 201자째를 받지 않는 것으로 이미 막힌다(FR-012, EC-011).
+
+오류 응답: `400 VALIDATION_ERROR`, `401 UNIDENTIFIED_USER`, `403 NOT_ROOM_MEMBER`, `404 PIN_NOT_FOUND`. 모두 공통 매핑을 따르며 화면이 문구를 만들지 않는다([research.md D14](../research.md), `docs/conventions/error_handling.md`).
+
+---
 
 ## 3. `DELETE /api/v1/pins/{pinId}/comments/{commentId}` — 삭제 (FR-015)
 
-**요청**: 경로 파라미터 `pinId`·`commentId`. 본문 없음.
+**판정: 대응 API 있음.**
 
-**응답 200**: `data: { ok: boolean }` — `required: [ok]`.
+```
+parameters:
+  pinId     (path, required, string)
+  commentId (path, required, string)
+```
 
-확인 절차 없이 즉시 호출한다(FR-015). 되돌리기 수단이 없으므로 낙관적 제거 후 실패 시 되살리는 처리를 두지 않는다 — 실패는 공통 에러 경로로 흘리고 목록을 다시 조회한다. 구체적 형태는 [place-detail-main-contract.md](./place-detail-main-contract.md) §4가 정한다.
+- 반환값을 도메인에 올리지 않는다. 되돌리기 수단이 없어 삭제된 항목을 돌려받을 이유가 없다(EC-013).
+- **권한을 클라이언트가 판정하지 않는다.** 호출 자체가 `canDelete == true`인 코멘트에서만 일어난다.
 
-## 4. spec 대조 요약
+---
 
-| spec 요구사항 | 판정 | 근거 |
-|---|---|---|
-| FR-010 작성자 프로필·닉네임과 본문 | 대응 API 있음 | `author.nickname` · `author.avatar.color` |
-| FR-010 오래된 것부터 나열 | **있으나 방향이 반대** | 페이지 단위가 최신부터 → §5 |
-| FR-011 빈 상태 | 대응 API 있음 | `data: []` |
-| FR-012 200자 상한 | 대응 API 있음 | `maxLength: 200` 일치 |
-| FR-013 공백만 등록 불가 | 대응 API 있음 | "앞뒤 공백 제거 후 1~200자" |
-| FR-014 등록 후 목록 반영 | 대응 API 있음 | 201이 생성된 코멘트를 반환 |
-| FR-015 본인 코멘트만 삭제 | 대응 API 있음 | `canDelete` |
-| FR-019 (장소, 방) 단위 귀속 | 대응 API 있음 | 경로가 `pinId` |
-| FR-021 전문 노출 | 서버 무관 | 화면 레이아웃 규칙 |
-| EC-016 작성자가 방을 나감 | **미확인** | 서버가 탈퇴 멤버의 코멘트를 어떻게 내려주는지 문서에 없다. `author`가 `required`라 값은 오겠으나 "작성 당시 프로필"인지 확인되지 않았다 → §5 |
+## 4. 대응 API가 없는 요구사항
 
-## 5. 서버팀 협의 항목
+**없다.** 이 화면의 코멘트 관련 요구사항(FR-010·FR-012~015·FR-021·**FR-028**)이 모두 위 세 오퍼레이션으로 덮인다.
 
-| # | 항목 | 내용 |
-|---|---|---|
-| 1 | **페이징 방향** | 화면은 오래된 것이 위인 한 줄기 목록이고 입력창이 맨 아래다(FR-010·EC-015). 서버는 최신 페이지부터 준다. 이번 구현은 역방향 페이징으로 흡수하지만([research.md D11](../research.md)), 오름차순 정방향 옵션(`order=asc` 등)이 있으면 클라이언트가 단순해진다 |
-| 2 | **`hasNext`의 의미** | 역방향 페이징에서 `hasNext = true`가 "더 오래된 페이지가 있다"로 읽히는지 확인이 필요하다. 이 계약은 그렇게 가정하고 `hasOlder`로 매핑한다 |
-| 3 | **탈퇴 멤버의 코멘트** | EC-016이 "코멘트는 남기고 작성 당시의 프로필·닉네임으로 표시"를 요구한다. 서버가 방을 나간 사용자의 `author`를 어떻게 채우는지(작성 당시 스냅샷인지, 현재 프로필인지, 탈퇴 표시가 붙는지) 문서에 없다 |
-| 4 | **쿼리 파라미터 타입 미선언** | `page`·`pageSize`의 `schema`에 `type`이 없고 `example`·`maximum`만 있다 |
-
-3번은 이번 구현이 서버가 준 `author`를 그대로 그리는 것으로 진행한다 — 어느 쪽이든 화면 코드가 달라지지 않는다.
+spec 4.0.0이 새로 요구한 FR-028도 서버가 이미 `createdAt`을 주고 있어 **서버 변경 없이 닫힌다** — plan 1.1.0이 "코멘트에 시각을 표기하지 않는다"는 가정 아래 도메인에서 뺐던 필드를 되살리는 것뿐이다.

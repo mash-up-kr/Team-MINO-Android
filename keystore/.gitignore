@@ -1,0 +1,4 @@
+# release 키는 CI 시크릿으로만 배포한다.
+*.jks
+# debug 키는 AOSP 관례값을 쓰는 비밀 아닌 키라 추적한다 — 근거는 docs/operations/cd-pipeline.md
+!debug.jks

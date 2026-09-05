@@ -25,7 +25,7 @@ MinoAndroid의 **지도 공용 모듈**. Google Maps(maps-compose)를 감싸 표
 
 | API | 역할 |
 |---|---|
-| `MinoMap(...)` | 프로젝트 표준 지도 컴포저블. `GoogleMap`을 감싼 단일 진입점으로, 마커·폴리곤 등 오버레이는 `content` 슬롯에서 maps-compose 컴포저블로 구성한다. |
+| `MinoMap(...)` | 프로젝트 표준 지도 컴포저블. `GoogleMap`을 감싼 단일 진입점으로, 마커·폴리곤 등 오버레이는 `content` 슬롯에서 maps-compose 컴포저블로 구성한다. 다른 UI가 지도를 덮는 화면은 그 높이를 `contentPadding`으로 선언한다 — 카메라 타깃이 패딩을 뺀 영역의 중앙에 놓인다. |
 | `rememberMinoCameraState(center: GeoPoint, zoom: Float)` | `center`를 초기 위치로 하는 `CameraPositionState` 생성. `GeoPoint`→`LatLng` 변환과 카메라 초기화 보일러플레이트를 흡수한다. |
 | `GeoPoint.toLatLng()` | 프레임워크 무관 `GeoPoint`를 maps-compose의 `LatLng`로 변환하는 경계 확장. |
 | `List<GeoPoint>.sortedIntoPolygonOrder()` | 임의 순서의 좌표를 무게중심 기준 각도순으로 정렬해 둘레 순서로 재배열한다. |

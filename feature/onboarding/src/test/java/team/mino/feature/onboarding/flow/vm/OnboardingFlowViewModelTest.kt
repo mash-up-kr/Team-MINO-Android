@@ -18,15 +18,18 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import team.mino.core.domain.model.InvitationPreview
 import team.mino.core.domain.model.OnboardingProgress
 import team.mino.core.domain.model.OnboardingStep
+import team.mino.core.domain.repository.RoomInvitationRepository
+import team.mino.core.domain.usecase.JoinRoomByInviteCodeUseCase
 import team.mino.core.domain.usecase.ResolveOnboardingStepUseCase
 import team.mino.feature.onboarding.fake.FakeOnboardingProgressRepository
 import team.mino.feature.onboarding.fake.FakeOnboardingProgressRepository.Call
 
 /**
  * 온보딩 스텝 전이를 판정한다. 전이 표의 단일 출처는 `contracts/onboarding-flow-ui.md` §2.4이며,
- * 이 테스트는 그 표의 일곱 줄을 한 줄씩 그대로 옮긴다.
+ * 이 테스트는 그 표의 줄들을 한 줄씩 그대로 옮긴다(SYS-010 초대 자동 참여 갈래 포함).
  *
  * 표의 각 줄에서 판정하는 것은 세 가지다 — **무엇을 저장하는가 · 새 스텝은 무엇인가 · 어떤 SideEffect가
  * 나가는가.** 셋 중 하나만 어긋나도 전이가 어긋난 것이므로 한 테스트에서 셋을 함께 본다.
@@ -48,6 +51,7 @@ import team.mino.feature.onboarding.fake.FakeOnboardingProgressRepository.Call
 class OnboardingFlowViewModelTest {
     private val progressRepository = FakeOnboardingProgressRepository()
     private val resolveOnboardingStep = ResolveOnboardingStepUseCase()
+    private val roomInvitationRepository = FakeRoomInvitationRepository()
 
     @Before
     fun setUp() {
@@ -73,7 +77,7 @@ class OnboardingFlowViewModelTest {
             val viewModel = createViewModel()
             val effects = collectSideEffects(viewModel)
 
-            viewModel.processIntent(OnboardingFlowIntent.Start)
+            viewModel.processIntent(OnboardingFlowIntent.Start())
 
             val state = viewModel.state.value
             assertFalse(state.isLoading)
@@ -90,7 +94,7 @@ class OnboardingFlowViewModelTest {
             val viewModel = createViewModel()
             val effects = collectSideEffects(viewModel)
 
-            viewModel.processIntent(OnboardingFlowIntent.Start)
+            viewModel.processIntent(OnboardingFlowIntent.Start())
 
             assertEquals(OnboardingStep.ROOM_FORM, viewModel.state.value.step)
             assertEquals(listOf(OnboardingFlowSideEffect.LaunchRoomForm), effects)
@@ -109,7 +113,7 @@ class OnboardingFlowViewModelTest {
             val viewModel = createViewModel()
             val effects = collectSideEffects(viewModel)
 
-            viewModel.processIntent(OnboardingFlowIntent.Start)
+            viewModel.processIntent(OnboardingFlowIntent.Start())
 
             val state = viewModel.state.value
             assertEquals(OnboardingStep.INVITE, state.step)
@@ -130,7 +134,7 @@ class OnboardingFlowViewModelTest {
             val viewModel = createViewModel()
             val effects = collectSideEffects(viewModel)
 
-            viewModel.processIntent(OnboardingFlowIntent.Start)
+            viewModel.processIntent(OnboardingFlowIntent.Start())
 
             assertEquals(OnboardingStep.TUTORIAL, viewModel.state.value.step)
             assertEquals(listOf(OnboardingFlowSideEffect.NavigateToTutorial), effects)
@@ -143,7 +147,7 @@ class OnboardingFlowViewModelTest {
             val viewModel = createViewModel()
             val effects = collectSideEffects(viewModel)
 
-            viewModel.processIntent(OnboardingFlowIntent.Start)
+            viewModel.processIntent(OnboardingFlowIntent.Start())
 
             assertEquals(OnboardingStep.TUTORIAL, viewModel.state.value.step)
             assertEquals(listOf(OnboardingFlowSideEffect.NavigateToTutorial), effects)
@@ -159,7 +163,7 @@ class OnboardingFlowViewModelTest {
             val viewModel = createViewModel()
             val effects = collectSideEffects(viewModel)
 
-            viewModel.processIntent(OnboardingFlowIntent.Start)
+            viewModel.processIntent(OnboardingFlowIntent.Start())
 
             assertTrue(viewModel.state.value.isLoading)
             assertTrue(effects.isEmpty())
@@ -214,6 +218,45 @@ class OnboardingFlowViewModelTest {
             val fixture = startedAt(OnboardingStep.PROFILE)
 
             fixture.viewModel.processIntent(OnboardingFlowIntent.ProfileSaved)
+            fixture.viewModel.processIntent(OnboardingFlowIntent.ProfileSaved)
+
+            assertEquals(OnboardingStep.ROOM_FORM, fixture.step)
+            assertEquals(listOf(OnboardingFlowSideEffect.LaunchRoomForm), fixture.effects)
+            assertEquals(listOf(Call.SetCurrentStep(OnboardingStep.ROOM_FORM)), progressRepository.calls)
+        }
+
+    /**
+     * SYS-010 Flow A(신규 유저) — 프로필 저장 직후 대기 중이던 초대 코드로 자동 참여가 되면 공동방
+     * 생성 유도(Flow B)·친구 초대만 건너뛰고 튜토리얼로 간다(Figma 스펙 — 온보딩 → 프로필 설정 →
+     * 튜토리얼 → 초대받은 방 상세). 참여한 방은 재개 경로를 위해 영속화한다.
+     */
+    @Test
+    fun `대기 중인 초대 코드가 있으면 프로필 저장 직후 자동 참여하고 튜토리얼로 간다`() =
+        runTest {
+            roomInvitationRepository.previewRoomId = ROOM_ID
+            val fixture = startedAt(OnboardingStep.PROFILE, pendingInviteCode = INVITE_CODE)
+
+            fixture.viewModel.processIntent(OnboardingFlowIntent.ProfileSaved)
+
+            val state = fixture.viewModel.state.value
+            assertEquals(OnboardingStep.TUTORIAL, state.step)
+            assertEquals(ROOM_ID, state.invitedRoomId)
+            assertEquals(listOf(OnboardingFlowSideEffect.NavigateToTutorial), fixture.effects)
+            assertEquals(listOf(INVITE_CODE), roomInvitationRepository.previewedCodes)
+            assertEquals(listOf(ROOM_ID to INVITE_CODE), roomInvitationRepository.joinedRooms)
+            assertEquals(
+                listOf(Call.SetInvitedRoomId(ROOM_ID), Call.SetCurrentStep(OnboardingStep.TUTORIAL)),
+                progressRepository.calls,
+            )
+        }
+
+    /** 자동 참여가 실패(만료·잘못된 코드 등)하면 조용히 정상 흐름(Flow B)으로 폴백한다. */
+    @Test
+    fun `대기 중인 초대 코드로 자동 참여가 실패하면 정상 흐름으로 폴백한다`() =
+        runTest {
+            roomInvitationRepository.previewFailure = IllegalStateException("만료된 코드")
+            val fixture = startedAt(OnboardingStep.PROFILE, pendingInviteCode = INVITE_CODE)
+
             fixture.viewModel.processIntent(OnboardingFlowIntent.ProfileSaved)
 
             assertEquals(OnboardingStep.ROOM_FORM, fixture.step)
@@ -399,7 +442,7 @@ class OnboardingFlowViewModelTest {
 
     // endregion
 
-    // region TUTORIAL — 표 7행: TutorialFinished · markCompleted() · 스텝 변화 없음 · NavigateToHome
+    // region TUTORIAL — 표 7·8행: TutorialFinished · markCompleted() · 스텝 변화 없음 · NavigateToHome(WithRoom)
 
     /** 완료는 스텝이 아니라 완료 표시가 든다. 그래서 마지막 줄에는 `setCurrentStep`이 없다. */
     @Test
@@ -411,6 +454,22 @@ class OnboardingFlowViewModelTest {
 
             assertEquals(OnboardingStep.TUTORIAL, fixture.step)
             assertEquals(listOf(OnboardingFlowSideEffect.NavigateToHome), fixture.effects)
+            assertEquals(listOf(Call.MarkCompleted), progressRepository.calls)
+        }
+
+    /**
+     * SYS-010 표 8행 — 초대로 들어와 참여까지 끝난 온보딩(`invitedRoomId` 보유)은 튜토리얼을 마치면
+     * 평소 홈이 아니라 그 방으로 들어간다. 프로세스가 튜토리얼 스텝에서 죽었다 재개된 경우까지
+     * 커버하도록 `startedAt`으로 저장된 값을 그대로 복원해서 시작한다.
+     */
+    @Test
+    fun `초대로 참여한 방이 있으면 튜토리얼을 끝냈을 때 그 방으로 간다`() =
+        runTest {
+            val fixture = startedAt(OnboardingStep.TUTORIAL, invitedRoomId = ROOM_ID)
+
+            fixture.viewModel.processIntent(OnboardingFlowIntent.TutorialFinished)
+
+            assertEquals(listOf(OnboardingFlowSideEffect.NavigateToHomeWithRoom(ROOM_ID)), fixture.effects)
             assertEquals(listOf(Call.MarkCompleted), progressRepository.calls)
         }
 
@@ -483,20 +542,27 @@ class OnboardingFlowViewModelTest {
         OnboardingFlowViewModel(
             onboardingProgressRepository = progressRepository,
             resolveOnboardingStep = resolveOnboardingStep,
+            joinRoomByInviteCode = JoinRoomByInviteCodeUseCase(roomInvitationRepository),
         )
 
     /**
      * [step]에서 재개한 직후의 플로우를 세운다. `Start`가 남긴 SideEffect와 호출 기록은 지워, 뒤이어
      * 보내는 Intent 하나가 만든 것만 보이게 한다.
+     *
+     * @param pendingInviteCode SYS-010 자동 참여 시나리오만 채운다. 나머지 표의 일곱 줄은 전부
+     *  `null`로 시작해 `roomInvitationRepository`가 호출되지 않아야 한다.
      */
     private fun TestScope.startedAt(
         step: OnboardingStep,
         createdRoomId: String? = null,
+        invitedRoomId: String? = null,
+        pendingInviteCode: String? = null,
     ): Fixture {
-        progressRepository.progress = OnboardingProgress(lastStep = step, createdRoomId = createdRoomId)
+        progressRepository.progress =
+            OnboardingProgress(lastStep = step, createdRoomId = createdRoomId, invitedRoomId = invitedRoomId)
         val viewModel = createViewModel()
         val effects = collectSideEffects(viewModel)
-        viewModel.processIntent(OnboardingFlowIntent.Start)
+        viewModel.processIntent(OnboardingFlowIntent.Start(pendingInviteCode))
         check(viewModel.state.value.step == step) {
             "재개 스텝이 $step 이어야 준비가 끝난 것이다. 실제: ${viewModel.state.value.step}"
         }
@@ -520,11 +586,41 @@ class OnboardingFlowViewModelTest {
         return collected
     }
 
+    /**
+     * SYS-010 자동 참여 시나리오 전용 스텁. `previewFailure`가 있으면 미리보기에서 던지고, 없으면
+     * `previewRoomId`를 돌려준 뒤 참여까지 성공한다 — 이 테스트 파일이 보는 것은 전이 표뿐이라
+     * 참여 성공·실패 두 갈래만 있으면 충분하다.
+     */
+    private class FakeRoomInvitationRepository : RoomInvitationRepository {
+        var previewRoomId: String = ""
+        var previewFailure: Throwable? = null
+        val previewedCodes = mutableListOf<String>()
+        val joinedRooms = mutableListOf<Pair<String, String>>()
+
+        override suspend fun issueInviteCode(roomId: String): String = error("이 테스트는 발급을 부르지 않는다")
+
+        override suspend fun previewInvitation(inviteCode: String): InvitationPreview {
+            previewedCodes += inviteCode
+            previewFailure?.let { throw it }
+            return InvitationPreview(roomId = previewRoomId)
+        }
+
+        override suspend fun joinRoom(
+            roomId: String,
+            inviteCode: String,
+        ) {
+            joinedRooms += roomId to inviteCode
+        }
+    }
+
     private companion object {
         /** 온보딩에서 만든 공동방의 id. */
         const val ROOM_ID = "room-1"
 
         /** 중복으로 들어온 두 번째 생성 결과. 첫 결과를 덮어쓰지 않는 것을 보려고 값을 다르게 둔다. */
         const val ANOTHER_ROOM_ID = "room-2"
+
+        /** SYS-010 딥링크 초대 코드. */
+        const val INVITE_CODE = "invite-code"
     }
 }

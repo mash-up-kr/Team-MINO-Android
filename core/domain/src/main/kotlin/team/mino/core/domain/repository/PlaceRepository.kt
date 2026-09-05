@@ -17,13 +17,6 @@ interface PlaceRepository {
     /**
      * 핀 상세를 가져온다.
      *
-     * **[PlaceDetail.label]을 서버가 주지 않는다.** 값을 지어내는 대신 기본값이 실려 오며, 서버가 `labelGroup`을
-     * 추가하면 Mapper 한 곳만 고친다(`docs/specs/place-detail/research.md` D12).
-     *
-     * **방 대표 색을 채우지 않는다.** 이 응답에는 `roomId`만 있고 색이 없다. 방 목록에서 찾아 드는 것은
-     * 이 계약이 아니라 화면의 몫이다
-     * (`docs/specs/place-detail/contracts/place-detail-main-contract.md` §5.1).
-     *
      * 등록자가 없으면 [PlaceDetail.registrant]가 `null`이다. 기본 아바타로 대체하는 판정은 화면이 한다(EC-004).
      */
     suspend fun getPlaceDetail(pinId: String): PlaceDetail

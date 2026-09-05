@@ -52,13 +52,14 @@ class SaveProfileUseCase @Inject constructor(
 
 | UseCase | 책임 |
 |---|---|
-| `ValidateNicknameUseCase` | 앞뒤 공백을 제거한 값이 한글 음절·영문 알파벳만으로 2자 이상인지 판정한다(FR-002). 화면의 실시간 판정(UX-002)과 저장 경로가 같은 것을 쓴다 |
+| `ValidateNicknameUseCase` | 앞뒤 공백을 제거한 값이 한글 음절·영문 알파벳만으로 2자 이상인지 판정한다(FR-002). 화면의 실시간 판정(UX-002)과 저장 경로가 같은 것을 쓴다. **길이 상한은 판정하지 않는다** — 15자는 오류가 아니라 입력 차단이며 `ProfileViewModel`이 소유한다(FR-014, [D51](../research.md#d51-닉네임-15자-상한의-강제-지점--viewmodel이-자른다)) |
 | `SaveProfileUseCase` | ① 판정 통과 확인 → ② 앞뒤 공백 제거 → ③ `Profile(trimmed, avatar)`로 `saveProfile` 호출 |
 
 - `avatar` 파라미터의 타입이 `Int`에서 `ProfileAvatar`로 바뀐다([D37](../research.md#d37-아바타-식별자--도메인-profileavatar-enum-서버-표현은-avatarcolor-문자열)).
-- **클라이언트 검증은 spec을 따른다** — 서버가 더 넓게(공백 허용) 또는 더 좁게(15자 상한) 받는 것과 어긋나며, 그 어긋남은 [API 계약 §2](profile-api-contract.md)가 협의 항목으로 든다. 상한 15자를 여기에 심으면 spec §5의 확정을 설계가 뒤집는 꼴이 된다.
+- **클라이언트 검증은 spec을 따르고, 이제 서버 스키마와 완전히 같다** — 길이 `2~15자`·문자 `한글 음절·영문`·공백 불가가 양쪽에서 일치한다([API 계약 §2](profile-api-contract.md)의 소멸 항목). spec 3.0.0이 상한을 채택하고 서버가 `pattern`에서 공백을 뺀 결과다.
+- **그래도 상한을 이 UseCase에 심지 않는다.** spec FR-002가 "길이 상한 15자는 이 판정에 넣지 않는다"로 명시하고 FR-014가 그것을 입력 차단으로 돌린다. 심으면 오류 상태가 생기고, 디자인에 없는 "15자 초과" 문구를 만들어야 한다([D51](../research.md#d51-닉네임-15자-상한의-강제-지점--viewmodel이-자른다)). 같은 저장소의 `ValidateRoomNameUseCase`가 방 이름 15자를 판정하지 않는 것과 같은 형태다.
 - 판정 실패는 정상 흐름에서 도달할 수 없는 경로다 — 도메인 예외로 감싸지 않고 프로그래머 오류로 전파한다(에러 처리 규약 §1의 "버그" 갈래).
-- 아바타 미선택 저장(EC-002)에서 기본 아바타를 채우는 것은 화면의 책임이다. UseCase는 유효한 값이 온다고 전제한다.
+- 아바타 미선택 저장(EC-002)에서 기본 아바타를 채우는 것은 화면의 책임이다. UseCase는 유효한 값이 온다고 전제한다. **채워 넣는 값 자체는 도메인이 소유한다**(`ProfileAvatar.Default`) — 화면은 그것을 지목만 한다([D53](../research.md#d53-기본-아바타의-자리--도메인은-13항목-디자인-시스템-팔레트는-12종-그대로)).
 - `refreshProfile()`을 감싸는 UseCase는 두지 않는다. 판정도 조합도 없는 위임 한 줄이므로 ViewModel이 Repository를 직접 부른다([`core/domain/README.md`](../../../../core/domain/README.md)).
 
 ## 건드리지 않는 기존 표면
@@ -106,13 +107,13 @@ internal interface ProfileLocalDataSource {
 
 | 대상 | 방식 |
 |---|---|
-| `ValidateNicknameUseCase` | JVM 단위 테스트 — `민`·`abc1`·`  민호  `·공백만·한글 30자·낱자(`ㄱㄱ`)·중간 공백 (TS-012·TS-013·TS-017, EC-008·EC-009) |
+| `ValidateNicknameUseCase` | JVM 단위 테스트 — `민`·`abc1`·`  민호  `·공백만·낱자(`ㄱㄱ`)·중간 공백 (TS-012·TS-013, EC-008·EC-009). **한글 30자 케이스는 유지하되 의미가 바뀐다** — "상한 없이 통과"가 아니라 **"상한은 이 판정의 몫이 아니다"** 를 고정하는 케이스다. 상한 자체(TS-017·TS-020)는 `ProfileViewModelTest`가 검증한다 |
 | `SaveProfileUseCase` | Fake Repository로 ① trim된 값이 저장되는지 ② 무효 입력이 차단되는지 ③ Repository가 던진 예외가 그대로 전파되는지 |
 | `UserApiService` | `MockEngine` — 봉투(`{data}`) 해제, `401 USER_NOT_REGISTERED` → `getMe()` `null` / `hasProfile()` `false`, 다른 401·409의 전파, **`hasProfile()`이 성공 본문 스키마에 의존하지 않는지**(develop의 `{"data":{"id":1}}` 픽스처가 지키던 사실) |
 | `UserRemoteDataSourceImpl` | 네 함수가 서비스로 위임만 하는지. 기존 `isRegistered()` 테스트 중 `401` 판정 케이스는 `UserApiService` 쪽으로 옮겨간다 |
-| `ProfileMapper` | 아바타 문자열 왕복, 모르는 문자열·`null` 아바타 → 기본 아바타 |
+| `ProfileMapper` | 아바타 문자열 왕복 **13종**(기본 아바타 ↔ `gray` 포함), 모르는 문자열·`null` 아바타 → 기본 아바타 |
 | `ProfileLocalDataSourceImpl` | 저장 → `observeProfile()` 왕복, 키가 하나만 있을 때 `null`, `clearProfile()` 후 `null` |
 | `ProfileRepositoryImpl` | Fake DataSource — 등록/수정 분기, **원격 실패 시 캐시 불변**, 미등록 시 캐시 비움 |
-| `ProfileViewModel` | Fake Repository — 프리필, 실시간 판정, `지우기`, 저장 중 두 번째 인텐트 무시(UX-003·EC-004), 저장 실패 시 입력값 보존(FR-012) |
+| `ProfileViewModel` | Fake Repository — 프리필, 실시간 판정, `지우기`, 저장 중 두 번째 인텐트 무시(UX-003·EC-004), 저장 실패 시 입력값 보존(FR-012), **아바타 미선택 저장이 `ProfileAvatar.Default`를 넘기는지**(TS-023), **기본 아바타로 저장된 프로필을 프리필하면 `selectedAvatar`가 `null`이 되는지**([D53](../research.md#d53-기본-아바타의-자리--도메인은-13항목-디자인-시스템-팔레트는-12종-그대로)) |
 
 범위와 근거는 [research.md D43](../research.md#d43-테스트-범위--mockengine-기반-데이터-레이어-테스트를-더한다)에 있다.

@@ -337,6 +337,12 @@ private class FakeUserRemoteDataSource : UserRemoteDataSource {
         return request.echo()
     }
 
+    /** 푸시 토큰 등록은 `PushRegistrationRepositoryImpl`의 몫이다 — 프로필 저장소가 부르면 계약 위반이다. */
+    override suspend fun putPushToken(
+        token: String,
+        platform: String,
+    ) = error("ProfileRepositoryImpl은 putPushToken()을 쓰지 않는다 — 푸시 토큰은 PushRegistrationRepositoryImpl이 다룬다")
+
     private fun ProfileRequest.echo(): ProfileResponse = profileResponse(nickname = nickname, color = avatar.color)
 }
 

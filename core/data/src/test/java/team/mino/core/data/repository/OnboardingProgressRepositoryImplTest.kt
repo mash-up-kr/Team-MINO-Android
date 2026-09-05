@@ -22,7 +22,7 @@ class OnboardingProgressRepositoryImplTest {
     private val localDataSource = FakeOnboardingProgressLocalDataSource()
     private val repository = OnboardingProgressRepositoryImpl(localDataSource)
 
-    /** 키가 하나도 저장된 적 없는 첫 설치. 세 필드 모두 모델의 기본값이다(data-model §4.1). */
+    /** 키가 하나도 저장된 적 없는 첫 설치. 네 필드 모두 모델의 기본값이다(data-model §4.1). */
     @Test
     fun `저장된 값이 없으면 기본값을 돌려준다`() =
         runTest {
@@ -64,6 +64,14 @@ class OnboardingProgressRepositoryImplTest {
         }
 
     @Test
+    fun `기록한 초대 참여 방 id를 그대로 되읽는다`() =
+        runTest {
+            repository.setInvitedRoomId("room-9")
+
+            assertEquals("room-9", repository.getProgress().invitedRoomId)
+        }
+
+    @Test
     fun `완료를 기록하면 완료로 읽힌다`() =
         runTest {
             assertFalse("사전 조건: 완료 표시가 서 있지 않다", repository.getProgress().isCompleted)
@@ -73,18 +81,20 @@ class OnboardingProgressRepositoryImplTest {
             assertTrue(repository.getProgress().isCompleted)
         }
 
-    /** 세 쓰기는 서로 다른 키다. 하나를 쓴다고 나머지가 덮이면 재개 지점이나 방 id를 잃는다. */
+    /** 네 쓰기는 서로 다른 키다. 하나를 쓴다고 나머지가 덮이면 재개 지점이나 방 id를 잃는다. */
     @Test
-    fun `세 쓰기가 서로를 덮지 않는다`() =
+    fun `네 쓰기가 서로를 덮지 않는다`() =
         runTest {
             repository.setCurrentStep(OnboardingStep.INVITE)
             repository.setCreatedRoomId("room-1")
+            repository.setInvitedRoomId("room-9")
             repository.markCompleted()
 
             assertEquals(
                 OnboardingProgress(
                     lastStep = OnboardingStep.INVITE,
                     createdRoomId = "room-1",
+                    invitedRoomId = "room-9",
                     isCompleted = true,
                 ),
                 repository.getProgress(),
@@ -101,6 +111,7 @@ class OnboardingProgressRepositoryImplTest {
             localDataSource.entry = OnboardingProgressEntry(
                 lastStepName = "GARDEN",
                 createdRoomId = "room-1",
+                invitedRoomId = null,
                 isCompleted = false,
             )
 
@@ -117,6 +128,7 @@ class OnboardingProgressRepositoryImplTest {
             localDataSource.entry = OnboardingProgressEntry(
                 lastStepName = "",
                 createdRoomId = null,
+                invitedRoomId = null,
                 isCompleted = false,
             )
 
@@ -130,6 +142,7 @@ class OnboardingProgressRepositoryImplTest {
             localDataSource.entry = OnboardingProgressEntry(
                 lastStepName = "invite",
                 createdRoomId = "room-1",
+                invitedRoomId = null,
                 isCompleted = false,
             )
 
@@ -139,7 +152,8 @@ class OnboardingProgressRepositoryImplTest {
 
 /** 저장된 적 없는 키는 `null`, 완료 표시만 `false`로 채워지는 DataStore 쪽 규약을 그대로 흉내 낸다. */
 private class FakeOnboardingProgressLocalDataSource : OnboardingProgressLocalDataSource {
-    var entry = OnboardingProgressEntry(lastStepName = null, createdRoomId = null, isCompleted = false)
+    var entry =
+        OnboardingProgressEntry(lastStepName = null, createdRoomId = null, invitedRoomId = null, isCompleted = false)
 
     override suspend fun getProgress(): OnboardingProgressEntry = entry
 
@@ -149,6 +163,10 @@ private class FakeOnboardingProgressLocalDataSource : OnboardingProgressLocalDat
 
     override suspend fun setCreatedRoomId(roomId: String) {
         entry = entry.copy(createdRoomId = roomId)
+    }
+
+    override suspend fun setInvitedRoomId(roomId: String) {
+        entry = entry.copy(invitedRoomId = roomId)
     }
 
     override suspend fun markCompleted() {

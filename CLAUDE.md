@@ -28,6 +28,7 @@ Android 프로젝트. Git Flow 브랜치 전략 사용.
 | `core:navigation` 화면 전환 인프라 API 사용·확장 (Activity Launcher / type-safe Route) | `core/navigation/README.md` |
 | `core:map` 지도 모듈 사용·확장 (`MinoMap`·`GeoPoint` 좌표 변환·폴리곤) | `core/map/README.md` |
 | `core:analytics` 분석 모듈 사용·확장 (`AnalyticsTracker` 이벤트 로깅·`TrackScreenViews` 화면 자동 로깅) | `core/analytics/README.md` |
+| `core:notification` 푸시 알림 모듈 사용·확장 (FCM 수신 서비스·시스템 알림 표시·새 알림 유형 추가 시 고칠 곳) | `core/notification/README.md` |
 | CD 배포, Play Store 자동화, 시크릿·트리거 | `docs/operations/cd-pipeline.md` |
 | `core:data` 데이터 레이어 작업 (DataSource·Repository·Mapper·네트워크 추가) | `core/data/README.md` |
 | `core:error-handling` 에러 인프라 사용·확장 (`MinoDomainException` 리프 추가·`runCatchingDomain`·`DomainErrorEmitter`) | `core/error-handling/README.md` |

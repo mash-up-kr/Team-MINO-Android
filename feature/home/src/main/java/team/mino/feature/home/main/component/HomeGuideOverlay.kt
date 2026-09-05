@@ -2,6 +2,7 @@ package team.mino.feature.home.main.component
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -17,7 +18,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -38,7 +38,8 @@ import team.mino.feature.home.R
  *
  * 노출 여부·닫은 이력의 영속 저장은 `HomeViewModel`이 판정하므로 여기서 다시 세우지 않는다.
  * 가이드가 떠 있는 동안의 조작 차단도 ViewModel이 의도 단위로 이미 버리며(spec TS-030),
- * 이 컴포저블은 딤이 뒤쪽으로 터치를 흘리지 않게만 막는다.
+ * 이 컴포저블은 딤을 눌러도 아무 일이 없게만 한다 — 뒤 창으로 새는 터치는 가이드가 뜨는 팝업 창이
+ * 이미 막으므로, 여기서 포인터 변경을 소비하면 자기 화면의 하단 CTA만 잡는다.
  *
  * 딤 위에서 원색으로 되살아나는 카드·방 뱃지·캐릭터는 [content]로 받는다. 무엇을 그릴지는 홈의 상태를
  * 아는 화면 조립부가 정하고, 이 컴포저블은 그 **자리**만 정한다.
@@ -67,11 +68,10 @@ internal fun HomeGuideOverlay(
             .fillMaxSize()
             .background(GuideScrimColor)
             .pointerInput(GUIDE_SCRIM_POINTER_KEY) {
-                awaitPointerEventScope {
-                    while (true) {
-                        awaitPointerEvent().changes.forEach(PointerInputChange::consume)
-                    }
-                }
+                // 딤을 눌러도 아무 일이 없게만 한다. **포인터 변경을 통째로 소비하면 안 된다** — 부모가
+                // 소비한 변경은 자식의 클릭 제스처에 「취소」로 읽혀, 손가락이 몇 px만 움직여도 하단
+                // `시작하기`가 눌리지 않는다. 완전히 정지한 탭만 살아남아 자동화에서는 멀쩡해 보인다.
+                detectTapGestures { }
             },
     ) {
         content()
@@ -141,7 +141,7 @@ private val RoomChangeHintTop = 180.dp
 
 private val SwipeHandTop = 442.dp
 
-/** 딤이 뒤로 터치를 흘리지 않게만 하는 고정 제스처라 키가 바뀔 일이 없다. */
+/** 딤 위의 탭을 흡수하기만 하는 고정 제스처라 키가 바뀔 일이 없다. */
 private const val GUIDE_SCRIM_POINTER_KEY = "home-guide-scrim"
 
 @UiModePreviews

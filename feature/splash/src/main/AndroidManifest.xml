@@ -4,11 +4,29 @@
     <application>
         <activity
             android:name=".SplashActivity"
-            android:exported="true">
+            android:exported="true"
+            android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!--
+                초대 링크(SYS-010) App Links. autoVerify로 gguk.org 소유를 증명해야
+                브라우저를 거치지 않고 바로 이 Activity로 온다(assetlinks.json 검증,
+                docs/specs/onboarding-flow/contracts/invite-link.md 참고).
+            -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:scheme="https"
+                    android:host="gguk.org"
+                    android:pathPrefix="/r/" />
             </intent-filter>
         </activity>
     </application>

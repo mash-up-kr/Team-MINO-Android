@@ -5,7 +5,6 @@ import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
@@ -13,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -23,17 +21,18 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.lerp
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.launch
@@ -48,10 +47,13 @@ import team.mino.feature.home.R
 import kotlin.math.abs
 
 /**
- * 카드 덱. 맨 앞 한 장만 내용을 그리고 뒷장은 뒤로 겹쳐 좁아지며 위로 쌓인다.
+ * 카드 덱. 맨 앞 한 장이 온전히 보이고, 뒷장은 뒤로 겹쳐 좁아지며 위로 쌓인다.
  *
- * **뒷장은 카드 외곽만 그린다.** 디자인에서도 뒷장의 내용은 앞장에 거의 다 가려 보이지 않는 잔상 수준이라,
- * 다섯 장 전부의 이미지를 받아 오는 값을 하지 않는다.
+ * **뒷장도 내용을 그린다.** 카드가 반투명이라 앞장 너머로 뒷장의 헤더가 비쳐 보이는 것이 시안의 모습이라,
+ * 외곽만 그리면 [DepthAlphas]가 드러낼 대상이 사라진다. 넘기는 동안 앞장이 비켜나며 다음 장이 통째로
+ * 드러나는 것도 같은 이유로 해결된다. 대신 보이는 다섯 장 전부가 이미지를 받아 온다.
+ *
+ * **뒤로 갈수록 흐려진다**([DepthAlphas]). 자리(크기·위치)와 같은 depth 값을 쓰므로 한 칸 밀릴 때 함께 이어진다.
  *
  * 세 조작을 **하나의 `pointerInput`**에서 가른다(spec SC-006, `research.md` R-006).
  * - 터치 슬롭을 넘지 않고 손을 떼면 탭 — 맨 앞 카드의 상세로 간다(spec FR-007).
@@ -81,8 +83,8 @@ import kotlin.math.abs
  * @param isTransitioning 전환 애니메이션이 도는 중인가. 입력을 막는 데 쓰지 않고 완료 신호의 주인만 가린다.
  * @param canSwipeBackward 되돌릴 카드가 있는가. 되돌리기 애니메이션은 덱이 바뀌기 **전에** 자리를 잡아야 해서
  *  ViewModel의 판정을 기다릴 수 없다 — 되돌릴 것이 없는데 자리를 잡으면 지금 카드가 헛되이 날아간다(spec EC-001).
- * @param actionMenuTarget 액션 메뉴가 열린 카드의 pinId. **맨 앞 장에만 반영한다** — 뒷장은 내용을 그리지 않아
- *  앵커가 될 `[...]`가 없다.
+ * @param actionMenuTarget 액션 메뉴가 열린 카드의 pinId. **맨 앞 장에만 반영한다** — 다음 장도 `[...]`를
+ *  그리지만 조작을 받지 않는다([DeckCard]).
  * @param onCardClick 카드 본문 탭.
  * @param onMoreClick 카드의 `[...]` 탭. 무엇을 열지는 호출자가 정하고, 그 결과가 [actionMenuTarget]으로 돌아온다.
  * @param onSaveToAnotherRoom 액션 메뉴의 `다른 방 저장` 선택.
@@ -204,7 +206,7 @@ internal fun CardDeck(
                 .fillMaxSize()
                 .padding(horizontal = DeckHorizontalPadding),
         ) {
-            val visible = cards.take(VISIBLE_CARD_COUNT)
+            val visible = cards.take(VisibleCardCount)
             // 뒤에서 앞으로 그린다. 리스트가 한 칸 밀리면 각 카드가 제 자리로 애니메이션하며 올라온다(spec UX-001).
             for (index in visible.indices.reversed()) {
                 val card = visible[index]
@@ -239,10 +241,13 @@ internal fun CardDeck(
 }
 
 /**
- * 덱의 한 칸. [depth]가 0이면 내용을 그리고, 뒷장이면 카드 외곽만 그린다.
+ * 덱의 한 칸. 자리와 무관하게 **모든 칸이 내용을 그린다**.
  *
- * 자리(크기·위치)는 [depth]를 애니메이션한 값으로 잡아 리스트가 밀릴 때 이어서 움직인다. 값은 전부
+ * 자리(크기·위치)와 불투명도는 [depth]를 애니메이션한 값으로 잡아 리스트가 밀릴 때 이어서 움직인다. 값은 전부
  * `graphicsLayer` 안에서 읽어 레이아웃을 다시 재지 않는다.
+ *
+ * **내용을 그리는 것과 조작을 받는 것은 다르다.** 맨 앞이 아닌 칸은 내용을 그려도 `[...]`에 클릭 영역을
+ * 붙이지 않는다 — 붙이면 그 위에서 시작한 스와이프의 down을 `[...]`가 먼저 삼켜 덱이 넘어가지 않는다.
  */
 @Composable
 private fun DeckCard(
@@ -277,33 +282,29 @@ private fun DeckCard(
                 translationX = swipe.x
                 translationY = cardTop(currentDepth).toPx() + swipe.y
                 rotationZ = if (size.width == 0f) 0f else swipe.x / size.width * SWIPE_ROTATION_DEGREES
+                alpha = depthAlpha(currentDepth)
             },
     ) {
-        if (isFront) {
-            PlaceCardItem(
-                card = card,
-                isActionMenuOpen = isActionMenuOpen,
-                onMoreClick = onMoreClick,
-                onSaveToAnotherRoom = onSaveToAnotherRoom,
-                onDismissActionMenu = onDismissActionMenu,
-                // 탭은 제스처 쪽에서 받으므로 보조도구가 쓸 클릭 동작만 따로 얹는다.
-                modifier = Modifier.semantics {
+        PlaceCardItem(
+            card = card,
+            isActionMenuOpen = isActionMenuOpen,
+            // 뒷장은 조작을 받지 않는다 — 클릭 영역이 있으면 그 위에서 시작한 스와이프의 down을 삼킨다.
+            onMoreClick = onMoreClick.takeIf { isFront },
+            onSaveToAnotherRoom = onSaveToAnotherRoom,
+            onDismissActionMenu = onDismissActionMenu,
+            // 탭은 제스처 쪽에서 받으므로 보조도구가 쓸 클릭 동작만 따로 얹는다. 뒷장은 보조도구에도
+            // 내놓지 않는다 — 넘겨야 닿는 카드를 지금 열 수 있는 것처럼 읽히면 안 된다.
+            modifier = if (isFront) {
+                Modifier.semantics {
                     onClick(label = openDetailLabel) {
                         onCardClick()
                         true
                     }
-                },
-            )
-        } else {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(CardHeight)
-                    .clip(CardShape)
-                    .background(MinoAndroidTheme.colors.backgroundNormalNormal)
-                    .border(CardBorderWidth, MinoAndroidTheme.colors.backgroundNormalAlternative, CardShape),
-            )
-        }
+                }
+            } else {
+                Modifier.clearAndSetSemantics {}
+            },
+        )
     }
 }
 
@@ -315,8 +316,7 @@ private fun cardTop(depth: Float): Dp =
         FirstBackCardTop - BackCardTopStep * (depth - 1f)
     }
 
-private val CardShape = RoundedCornerShape(24.dp)
-private val CardBorderWidth = 1.dp
+/** 덱이 잡아 두는 카드 높이. [PlaceCardItem]은 내용으로 높이가 정해지므로 이 값은 자리를 확보하기 위한 시안 실측치다. */
 private val CardHeight = 328.dp
 private val FrontCardTop = 80.dp
 private val FirstBackCardTop = 60.dp
@@ -327,7 +327,24 @@ private val DepthWidthStep = 20.dp
 private val DepthScaleStep = DepthWidthStep / ReferenceCardWidth
 private val SettleSpec = tween<Offset>(TRANSITION_DURATION_MILLIS)
 
-private const val VISIBLE_CARD_COUNT = 5
+/**
+ * 자리별 불투명도. 시안에서 잰 값이라 **등차가 아니다**(100·98·90·80·70%) — 한 칸마다 일정하게 줄이면
+ * 바로 뒷장이 시안보다 흐려진다. **이 배열의 길이가 곧 덱이 그리는 장수다**([VisibleCardCount]).
+ */
+private val DepthAlphas = floatArrayOf(1f, 0.98f, 0.9f, 0.8f, 0.7f)
+
+/** 한 번에 그리는 장수. [DepthAlphas]가 자리마다 값을 하나씩 갖고 있으므로 그 길이가 곧 이 값이다. */
+private val VisibleCardCount = DepthAlphas.size
+
+/**
+ * 칸 사이를 지나는 동안의 불투명도. 자리가 정수 칸에만 머무는 것이 아니라 애니메이션으로 그 사이를 지나므로
+ * [DepthAlphas]의 두 칸을 선형으로 잇는다 — 값을 칸마다 끊어 주면 카드가 밀릴 때 불투명도만 계단으로 튄다.
+ */
+private fun depthAlpha(depth: Float): Float {
+    val lower = depth.toInt().coerceAtMost(DepthAlphas.lastIndex - 1)
+    return lerp(DepthAlphas[lower], DepthAlphas[lower + 1], depth - lower)
+}
+
 private const val TRANSITION_DURATION_MILLIS = 260
 
 /**

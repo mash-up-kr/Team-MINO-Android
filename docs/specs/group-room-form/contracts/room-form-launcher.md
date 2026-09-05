@@ -69,7 +69,9 @@ roomFormLauncher.launch(activity, resultLauncher = …) { putExtra(EXTRA_ROOM_FO
 
 `ROOM_FORM_OUTCOME_SKIPPED`를 `RESULT_CANCELED`가 아니라 `RESULT_OK`로 두는 이유: 건너뛰기는 **다음 스텝으로 나아가는 조작**이라 되돌아가는 이탈과 도착점이 다르다(TS-024는 튜토리얼 스텝, TS-035는 원래 화면). 두 경우를 한 코드로 합치면 호출자가 구분할 방법이 없다.
 
-`created`가 `roomId`를 함께 싣는 이유: FR-011의 도착점 두 갈래(방 상세로 이동 / 복제 시트에서 새 방 선택 가능)가 모두 새 방의 식별자를 필요로 한다. FR-019의 "개인방 바로 아래 배치"도 이 값으로 이뤄진다.
+`created`가 `roomId`를 함께 싣는 이유: FR-011의 도착점 **세 갈래**(방 상세로 이동 / 복제 시트에서 새 방 선택 가능 / **홈이 보는 방을 새 방으로 전환**)가 모두 새 방의 식별자를 필요로 한다. FR-019의 "개인방 바로 아래 배치"도 이 값으로 이뤄진다.
+
+> spec 4.0.0이 홈 방 시트의 도착점을 방 상세에서 **홈 덱 전환**으로 뒤집었으나 **이 계약은 한 글자도 바뀌지 않았다.** 홈이 새로 필요로 하는 값(`created` + `roomId`)을 이미 싣고 있기 때문이며, 도착점을 폼 밖에 둔 [research.md](../research.md) R-004의 판단이 그 대가를 치르지 않게 했다. 홈 쪽 배선은 [`home-deck-exploration`](../../home-deck-exploration/spec.md)의 몫이다 — [research.md](../research.md) R-036.
 
 ---
 

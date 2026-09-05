@@ -6,16 +6,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentSetOf
+import team.mino.core.common.ui.component.roompicker.RoomPickerActionArea
+import team.mino.core.common.ui.component.roompicker.RoomPickerHeader
+import team.mino.core.common.ui.component.roompicker.RoomPickerList
+import team.mino.core.common.ui.component.roompicker.RoomPickerSheet
+import team.mino.core.common.ui.component.roompicker.model.RoomPickerItem
 import team.mino.core.designsystem.component.roomcolorchip.MinoRoomColor
 import team.mino.core.designsystem.theme.MinoAndroidAppTheme
 import team.mino.core.designsystem.util.preview.UiModePreviews
 import team.mino.feature.sharereceiver.R
-import team.mino.feature.sharereceiver.picker.component.RoomPickerActionArea
 import team.mino.feature.sharereceiver.picker.component.RoomPickerEmpty
-import team.mino.feature.sharereceiver.picker.component.RoomPickerHeader
-import team.mino.feature.sharereceiver.picker.component.RoomPickerList
-import team.mino.feature.sharereceiver.picker.component.RoomPickerSheet
-import team.mino.feature.sharereceiver.picker.model.RoomPickerItem
 import team.mino.feature.sharereceiver.picker.vm.ShareReceiverIntent
 import team.mino.feature.sharereceiver.picker.vm.ShareReceiverUiState
 

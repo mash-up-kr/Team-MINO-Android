@@ -1,5 +1,6 @@
 package team.mino.core.data.datasource
 
+import team.mino.core.data.network.dto.response.InvitationPreviewResponse
 import team.mino.core.data.network.dto.response.InvitationResponse
 
 /**
@@ -16,4 +17,11 @@ internal interface InvitationRemoteDataSource {
      * 네트워크·서버 오류와 `401`·`403`·`404`는 `MinoDomainException`으로 전파된다.
      */
     suspend fun issueInvitation(roomId: String): InvitationResponse
+
+    /**
+     * [code]가 가리키는 방을 참여 전에 미리 들여다본다.
+     *
+     * 없는 코드(`404`)를 포함한 실패는 `MinoDomainException`으로 전파된다.
+     */
+    suspend fun previewInvitation(code: String): InvitationPreviewResponse
 }

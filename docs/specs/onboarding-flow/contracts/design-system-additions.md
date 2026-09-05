@@ -118,9 +118,8 @@ fun MinoTopNavigation(
 | 에셋 | 노드 | 비고 |
 |---|---|---|
 | 튜토리얼 예시 이미지 스텝 1~4 | `3798-167084` 및 각 스텝의 대응 프레임 | — |
-| 튜토리얼 예시 이미지 스텝 5 | `3798-167145` | **아직 없다.** 설명 텍스트만 든 자리표시자다 — [열린 항목 C](../research.md#열린-항목) |
-| 친구 초대 캐릭터·구름 배경 | `2314-95551`(BG) · `2314-95553`(Character Group) | 벡터 도형 묶음이라 `ImageVector` 변환 가능 여부를 export 시 판정한다 |
-| 친구 초대 중앙 일러스트 | `2314-95565` | — |
+| 튜토리얼 예시 이미지 스텝 5 | `4396-184972`의 `MAP 4` | 스텝 5 프레임이 다시 그려지며 자리표시자가 채워졌다 |
+| 친구 초대 일러스트 | `5073-101129` | 한 장이다. **구름 배경은 없다** — 확정 브랜딩에서 노드가 사라졌다 |
 
 - 위치는 `feature/onboarding/src/main/res/drawable-{mdpi,xhdpi,xxhdpi}/`, 포맷은 **WebP**다 — [래스터 이미지 배치·포맷 ADR](../../../adr/2026-08-19-raster-image-placement-and-format.md).
 - **`:core:design-system`에 두지 않는다.** 그 모듈은 이미지 에셋을 받지 않는다([`component-asset-placement.md`](../../../conventions/component-asset-placement.md) §1.1).

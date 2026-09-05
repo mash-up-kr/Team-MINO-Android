@@ -1,5 +1,6 @@
 package team.mino.core.data.datasource
 
+import team.mino.core.data.network.dto.response.InvitationPreviewResponse
 import team.mino.core.data.network.dto.response.InvitationResponse
 import team.mino.core.data.network.service.InvitationApiService
 import javax.inject.Inject
@@ -15,4 +16,6 @@ internal class InvitationRemoteDataSourceImpl @Inject constructor(
     private val service: InvitationApiService,
 ) : InvitationRemoteDataSource {
     override suspend fun issueInvitation(roomId: String): InvitationResponse = service.issueInvitation(roomId)
+
+    override suspend fun previewInvitation(code: String): InvitationPreviewResponse = service.previewInvitation(code)
 }

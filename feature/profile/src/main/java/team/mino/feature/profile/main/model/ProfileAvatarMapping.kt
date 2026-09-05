@@ -13,8 +13,12 @@ import team.mino.core.domain.model.ProfileAvatar
  * **선언 순서에서 파생하지 않는다.** `ordinal`로 이으면 어느 한쪽에 항목이 끼어들어도 컴파일이 통과해,
  * 그 지점부터 뒤의 모든 항목이 조용히 어긋난 그림으로 이어진다. 전수 `when`으로 적어 두면 어느 목록이
  * 늘어나든 컴파일이 깨져 두 목록을 함께 고치도록 강제된다 — `ProfileMapper`의 색 표와 같은 이유다.
+ *
+ * 기본 아바타의 그림은 [MinoProfileAvatar] 항목이 아니라 `MinoProfileAvatarImage`가 `null`에서 그리는
+ * 별개의 그림이라, 이 방향은 기본 아바타에서만 `null`을 낸다. 그래서 두 목록의 항목 수가 갈린다
+ * (`docs/specs/profile/research.md` D53).
  */
-internal val ProfileAvatar.image: MinoProfileAvatar
+internal val ProfileAvatar.image: MinoProfileAvatar?
     get() =
         when (this) {
             ProfileAvatar.Person1 -> MinoProfileAvatar.Person1
@@ -29,9 +33,13 @@ internal val ProfileAvatar.image: MinoProfileAvatar
             ProfileAvatar.Person10 -> MinoProfileAvatar.Person10
             ProfileAvatar.Person11 -> MinoProfileAvatar.Person11
             ProfileAvatar.Person12 -> MinoProfileAvatar.Person12
+            ProfileAvatar.Basic -> null
         }
 
-/** [image]의 반대 방향. */
+/**
+ * [image]의 반대 방향. 고를 수 있는 12종만 출발점이라 기본 아바타로 가는 항목이 없다 —
+ * 고르지 않은 상태를 도메인 값으로 옮기는 것은 이 표가 아니라 [ProfileAvatar.Default]다.
+ */
 internal val MinoProfileAvatar.profileAvatar: ProfileAvatar
     get() =
         when (this) {
@@ -48,6 +56,3 @@ internal val MinoProfileAvatar.profileAvatar: ProfileAvatar
             MinoProfileAvatar.Person11 -> ProfileAvatar.Person11
             MinoProfileAvatar.Person12 -> ProfileAvatar.Person12
         }
-
-/** 미선택 상태의 상단 썸네일이 쓰는 값. 기본값 자체는 [ProfileAvatar.Default]가 소유한다. */
-internal val DefaultProfileAvatar: MinoProfileAvatar = ProfileAvatar.Default.image

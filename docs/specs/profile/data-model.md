@@ -17,23 +17,31 @@ data class Profile(
 
 | 필드 | 의미 | 규칙 |
 |---|---|---|
-| `nickname` | 다른 사람에게 보이는 이름 | 앞뒤 공백이 제거된 값만 담는다. 한글 음절·영문 알파벳만, 길이 2 이상, 클라이언트 상한 없음 (FR-002, EC-008) |
-| `avatar` | 고정 12종 중 하나 | 항상 값이 있다. 미선택 저장(EC-002)은 기본 아바타로 채워져 들어온다 |
+| `nickname` | 다른 사람에게 보이는 이름 | 앞뒤 공백이 제거된 값만 담는다. 한글 음절·영문 알파벳만, 길이 2~15자 (FR-002, FR-014, EC-008) |
+| `avatar` | 고정 13종 중 하나 | 항상 값이 있다. 미선택 저장(EC-002)은 기본 아바타로 채워져 들어온다 |
 
 - 하나의 익명 세션(앱 설치)에 **하나만** 존재한다. 없는 상태는 `Profile?`의 `null`이며 "빈 프로필" 값을 따로 두지 않는다(spec §2.3).
 - 닉네임 유효성은 생성자에서 강제하지 않는다. 판정은 `ValidateNicknameUseCase`, 정규화(trim)는 `SaveProfileUseCase`가 한다([research.md D7](research.md#d7-닉네임-검증의-위치--coredomain의-usecase)).
+- **상한 15자는 판정이 아니라 입력 차단이라 도메인에 없다.** `ProfileViewModel`이 입력 시점에 잘라 16자 이상이 도메인에 도달하지 못하게 한다([research.md D51](research.md#d51-닉네임-15자-상한의-강제-지점--viewmodel이-자른다)). 모델·UseCase·Repository 어디에도 상한 검사가 없는 것은 누락이 아니라 그 설계의 결과다.
 - 서버 응답의 `id`(uuid)·`createdAt`은 도메인에 올리지 않는다. spec의 어느 요구사항도 그것을 쓰지 않으며, 필요해지는 화면이 생길 때 그 스펙이 판단한다.
 
 ### `ProfileAvatar`
 
 ```kotlin
-enum class ProfileAvatar { /* 12항목 — 선언 순서는 디자인 목록의 좌→우·상→하 */ }
+enum class ProfileAvatar {
+    /* 선택 12항목 — 선언 순서는 디자인 목록의 좌→우·상→하 */
+    /* 기본 아바타 1항목 — 마지막에 선언한다 */
+    ;
+    companion object { val Default: ProfileAvatar = /* 기본 아바타 */ }
+}
 ```
 
-- **아바타는 도메인 개념이다** — spec §2.3이 "앱이 제공하는 고정 12종 캐릭터 이미지 중 하나. 프로필은 이 목록 중 하나를 가리킨다"로 정의하고, spec §4가 목록을 서버에서 내려받지 않는다고 확정했다.
+- **아바타는 도메인 개념이다** — spec §2.3이 "사용자가 고를 수 있는 12종과, 아무것도 고르지 않았을 때 쓰이는 기본 아바타 1종을 합쳐 모두 13종. 프로필은 언제나 이 13종 중 하나를 가리킨다"로 정의하고, spec §4가 목록을 서버에서 내려받지 않는다고 확정했다.
+- **13번째가 기본 아바타다**(FR-015). 선택 목록에 놓이지 않고, 미선택 상태의 상단 썸네일·미선택 저장 값(EC-002)·서버가 모르는 값이나 `null`을 보냈을 때의 대체값이 모두 이것이다. **"값 없음"이 아니라 고르지 않은 프로필이 갖게 되는 값이다** — [`RoomColor.GRAY`](../../../core/domain/src/main/kotlin/team/mino/core/domain/model/RoomColor.kt)와 같은 성격이며, 근거는 [research.md D53](research.md#d53-기본-아바타의-자리--도메인은-13항목-디자인-시스템-팔레트는-12종-그대로)이다.
+- **`selectable` 목록을 두지 않는다.** 선택 가능한 12종을 순회하는 곳은 아바타 그리드 하나인데, 그리드는 도메인이 아니라 `MinoProfileAvatar.entries`(12종)를 순회하므로 필터가 필요 없다. `RoomColor`가 `selectable`을 가진 것과 갈리는 지점이다.
 - 그림·에셋을 갖지 않는다. **무엇인지**만 알고 **어떻게 보이는지**는 `:core:design-system`의 `MinoProfileAvatar`가 안다([아바타 ADR](../../adr/2026-08-25-profile-avatar-assets-in-design-system.md)). 서버 문자열도 알지 않는다 — 그 표는 `:core:data`의 `ProfileMapper`가 소유한다.
 - 구조는 [`RoomColor`](../../../core/domain/src/main/kotlin/team/mino/core/domain/model/RoomColor.kt)와 동형이다(도메인 enum / 디자인 시스템 표현 / feature 대응 / 매퍼의 서버 표). 근거는 [research.md D37](research.md#d37-아바타-식별자--도메인-profileavatar-enum-서버-표현은-avatarcolor-문자열).
-- **기본 아바타**는 도메인이 `ProfileAvatar.Default`로 소유한다(목록의 첫 항목). 미선택 상태의 상단 썸네일, 미선택 저장 값(EC-002), 서버가 모르는 값이나 `null`을 보냈을 때의 대체값이 모두 이 값이며, 어느 레이어도 그 값을 다시 유도하지 않는다.
+- **기본 아바타의 단일 출처는 `ProfileAvatar.Default`다.** 어느 레이어도 그 값을 다시 유도하지 않는다 — feature에 `DefaultProfileAvatar` 같은 사본을 두지 않는다(plan 5.x까지 있던 상수는 이 개정에서 없어진다).
 
 ## 2. 데이터 흐름
 
@@ -114,28 +122,34 @@ internal data class ProfileEntry(val nickname: String, val avatarName: String)
 
 - 대응의 근거는 추정이 아니라 **에셋 실측**이다 — 아바타 배경 원 색 11개가 디자인 시스템 토큰과 hex 단위로 일치하고, 12개가 선택 가능한 12색을 중복 없이 덮는다([research.md D44](research.md#d44-아바타-서버-문자열--12종이-방-팔레트-12색에-1대1로-대응한다)). `Person10` → `brown`만 소거법이라 디자인 확인 항목으로 남아 있다.
 - **표를 선언 순서에서 파생하지 않는다.** 위 대응은 `RoomColor`의 선언 순서와 어긋나므로 `ordinal`로 이으면 조용히 틀린 값이 나간다. 도메인 이름이 바뀌었을 때 서버 계약이 따라 바뀌어서도 안 된다([`RoomMapper`](../../../core/data/src/main/java/team/mino/core/data/repository/mapper/RoomMapper.kt)와 같은 판단).
-- `gray`는 보내지 않는다 — 방에서 "색을 고르지 않음"을 뜻하는 값이고 프로필에는 그 상태가 없다.
-- **받는 쪽**: 표에 없는 문자열과 `null` 아바타는 기본 아바타로 읽는다. 서버가 팔레트를 넓혔다는 이유로 프로필 조회가 실패하면 안 된다.
+- **13번째 색은 기본 아바타가 갖는다.** plan 5.x까지 "보내지 않는다"로 두었던 것이 이 개정에서 뒤집혔다 — 프로필에도 "고르지 않음" 상태가 실재하고(FR-015), 서버 `enum`에 그 자리가 이미 있다([D53](research.md#d53-기본-아바타의-자리--도메인은-13항목-디자인-시스템-팔레트는-12종-그대로)). [`RoomMapper`](../../../core/data/src/main/java/team/mino/core/data/repository/mapper/RoomMapper.kt)가 미선택 방을 13번째 색으로 확정해 보내는 것과 같다.
+- **받는 쪽**: 표에 없는 문자열과 `null` 아바타는 기본 아바타로 읽는다. 서버가 팔레트를 넓혔다는 이유로 프로필 조회가 실패하면 안 된다. 13번째 색과 `null`이 같은 곳으로 모이므로, 서버가 둘 중 무엇을 주든 화면은 같게 선다.
 
 ## 4. 아바타 그림 (`core:design-system` + `:feature:profile`)
 
 ```kotlin
-enum class MinoProfileAvatar { /* 12항목 */ }   // :core:design-system
+enum class MinoProfileAvatar { /* 12항목 */ }   // :core:design-system — 이 개정에서도 그대로다
+
+@Composable
+fun MinoProfileAvatarImage(avatar: MinoProfileAvatar?, /* ... */)   // null이면 기본 그림
 ```
 
 - 12항목은 **`Person1`~`Person12`**이고 드로어블은 `profile_avatar_person_01`~`_12`다. 선언 순서는 Figma [그리드](https://www.figma.com/design/5P3HE7q8MGc6yAr4rTOSZn/MU_%EB%94%94%EC%9E%90%EC%9D%B8?node-id=2314-95672&m=dev)의 좌→우·상→하 배치 순서다.
 - enum은 그림만 안다. 저장 식별자·"미선택"·그리드 배치를 갖지 않는다. 소유 근거는 [ADR](../../adr/2026-08-25-profile-avatar-assets-in-design-system.md)이다.
+- **기본 아바타는 이 열거에 들어가지 않는다.** 그림은 모듈이 갖되(에셋 한 장 추가) 항목이 아니라 `MinoProfileAvatarImage`의 `avatar == null` 갈래가 그린다. [`MinoRoomColor`](../../../core/design-system/src/main/java/team/mino/core/designsystem/component/roomcolorchip/MinoRoomColor.kt)가 회색 기본값을 팔레트에서 빼고 소비처의 `null`에 맡기는 것과 같은 형태다([D53](research.md#d53-기본-아바타의-자리--도메인은-13항목-디자인-시스템-팔레트는-12종-그대로)).
+- 덕분에 **아바타 그리드는 이 개정에서 한 줄도 바뀌지 않는다** — `entries`가 여전히 12개라 4열 × 3행이 그대로 서고, 기본 아바타를 걸러 내는 필터가 필요 없다.
 - **선택 상태의 시각 표시는 없다.** 원본에 표현이 없어 `selected`는 접근성 시맨틱만 싣는다([research.md D28](research.md#d28-아바타-선택-상태의-시각-표시를-만들지-않는다)).
 
 ### `ProfileAvatar` ↔ `MinoProfileAvatar` 매핑 — `:feature:profile`이 소유
 
-| 방향 | 규칙 |
-|---|---|
-| 도메인 → 그림 | 12항목을 전수 `when`으로 하나씩 적는다 |
-| 그림 → 도메인 | 같은 방식 |
+| 방향 | 시그니처 | 규칙 |
+|---|---|---|
+| 도메인 → 그림 | `ProfileAvatar.image: MinoProfileAvatar?` | 13항목을 전수 `when`으로 적고 **기본 아바타만 `null`** 로 간다 |
+| 그림 → 도메인 | `MinoProfileAvatar.profileAvatar: ProfileAvatar` | 12항목 전수 `when`. 기본 아바타로 가는 입력이 없다 |
 
 - **선언 순서에서 파생하지 않는다.** `ordinal`로 이으면 어느 한쪽에 항목이 끼어들어도 컴파일이 통과해 그 지점부터 조용히 어긋난 그림이 나온다. 전수 `when`은 목록이 늘면 컴파일을 깨 두 목록을 함께 고치도록 강제한다(§4 서버 문자열 표와 같은 판단).
 - 이 매핑은 서버를 모른다. 서버 문자열은 `:core:data`에 갇혀 있고 feature까지 오지 않는다.
+- **`image`가 `null`을 내는 것이 프리필을 옳게 만든다.** 서버가 기본 아바타로 저장된 프로필을 주면 `selectedAvatar = null`, 즉 "고르지 않음"으로 복원된다 — 실제 상태가 그러하므로 `지우기` 활성 조건(FR-005)도 옳게 계산된다.
 
 ## 5. 화면 상태 (`:feature:profile`)
 
@@ -152,14 +166,16 @@ data class ProfileUiState(
 
 | 파생 값 | 계산 | 근거 |
 |---|---|---|
-| 상단 썸네일 | `selectedAvatar ?: 기본 아바타` | FR-003, UX-005 |
+| 상단 썸네일 | **파생 값이 아니다** — `selectedAvatar`를 `MinoProfileAvatarImage`에 그대로 넘기고, `null`이면 컴포넌트가 기본 그림을 그린다 | FR-003, FR-015, UX-005 |
 | `저장` 활성 | `isNicknameValid && !isSaving` | FR-004, UX-003 |
 | `지우기` 활성 | `isNicknameValid && selectedAvatar != null && !isSaving` | FR-005, EC-012 |
-| 오류 표시 | `isNicknameTouched && !isNicknameValid` | FR-011, TS-001 |
+| 오류 표시 | `isNicknameTouched && !isNicknameValid`. 이 값이 참이면 필드가 오류 상태가 되고 **안내 문구 자리의 글자도 함께 갈린다**(§7) | FR-011, TS-001, TS-025 |
+| 닉네임 상한 | 파생 값이 아니라 **쓰기 시점의 불변식**이다 — `nickname`에는 15자를 넘는 값이 들어가지 않는다(`NicknameChanged` 처리가 자른다). 화면에 카운터·상한 안내를 그리지 않는다 | FR-014, UX-007 |
 | 뒤로가기 노출 | `entryPoint == MyPage` — **거짓이면 버튼을 그리지 않는다**(비활성이 아니라 숨김) | FR-010, [D29](research.md#d29-온보딩-진입에서-뒤로가기를-노출하지-않는다) |
 
 - **UiState의 필드는 원격이 붙어도 바뀌지 않는다.** 화면은 저장이 어디로 나가는지 모른다 — 등록인지 수정인지도, 서버가 응답했는지도 UiState에 흔적을 남기지 않는다.
 - `selectedAvatar`의 `null`은 "고르지 않음"이다. 기본 아바타로 초기화하지 않는다 — 그러면 `지우기` 활성 조건(FR-005)이 첫 화면부터 참이 된다.
+- **`displayedAvatar` 파생 프로퍼티는 없다.** plan 5.x까지 `selectedAvatar ?: DefaultProfileAvatar`로 썸네일 값을 계산하던 자리인데, 컴포넌트가 `null`을 직접 다루게 되면서 필요가 없어졌다. 저장이 넘기는 도메인 값도 같은 이유로 `selectedAvatar?.profileAvatar ?: ProfileAvatar.Default`가 되어, **기본 아바타의 단일 출처가 도메인 하나로 모인다**([D53](research.md#d53-기본-아바타의-자리--도메인은-13항목-디자인-시스템-팔레트는-12종-그대로)).
 - `isNicknameTouched`는 진입 직후(TS-001)에 오류 문구가 뜨지 않게 하는 값이다. 첫 입력에서 참이 되고 `지우기`로 거짓으로 돌아간다.
 - **프리필(FR-006)은 두 번 돈다**([research.md D45](research.md#d45-프리필과-갱신의-순서--캐시로-먼저-채우고-갱신이-성공하면-조건부로-한-번-더)).
   1. 진입 즉시 `observeProfile()`의 **첫 값**(캐시)으로 `nickname`·`selectedAvatar`를 채우고 `isNicknameValid=true`, `isNicknameTouched=false`로 둔다.
@@ -182,8 +198,22 @@ enum class ProfileEntryPoint { Onboarding, MyPage }
 |---|---|---|
 | 정규화 | 앞뒤 공백 제거 후 판정하고, 저장 값도 제거된 값이다 | FR-002, EC-008 |
 | 문자 | 한글 음절(`가`–`힣`)과 영문 알파벳만. 숫자·특수문자·이모지·공백·낱자(`ㄱ`) 불가 | FR-002, spec §4·§5 |
-| 길이 | 2자 이상, 클라이언트 상한 없음 | FR-002, TS-017 |
+| 길이(하한) | 2자 이상 — `ValidateNicknameUseCase`가 판정하고 미달은 **오류 상태** | FR-002, TS-012 |
+| 길이(상한) | 15자 — `ProfileViewModel`이 입력 시점에 자르고, 초과는 **오류가 아니다**. 카운터도 없다 | FR-014, UX-007, TS-017·TS-020·TS-021 |
 | 공백만 입력 | 정규화 결과가 빈 문자열이므로 무효 | EC-009 |
-| 아바타 | 선택 입력. 미선택 저장은 기본 아바타로 보관 | FR-003, EC-002 |
+| 아바타 | 선택 입력. 미선택 저장은 **기본 아바타(선택 12종 밖의 값)** 로 보관하며 12종 중 하나로 바꿔치지 않는다 | FR-003, FR-015, EC-002, TS-023 |
 
-> **서버 규칙과 어긋나는 구간(이제 사용자에게 드러난다)**: 서버는 `minLength 2 · maxLength 15 · pattern ^[가-힣A-Za-z ]+$`다. **상한**(spec 없음 / 서버 15자)과 **공백**(spec 불가 / 서버 허용) 두 지점이 어긋나며, 16자 이상 닉네임은 서버가 거절해 FR-012의 저장 실패로 보인다. 거절 시의 상태 코드는 문서에 없다. 세 지점 모두 [API 계약 §2](contracts/profile-api-contract.md)가 서버팀 협의 항목으로 들고 있고, 결론에 따라 **spec부터** 고쳐야 한다([research.md D19](research.md#d19-닉네임-규칙-불일치--클라이언트는-spec을-따르고-서버-거절은-저장-실패로-받는다)).
+> **서버 규칙과 이제 완전히 같다**: 서버는 `minLength 2 · maxLength 15 · pattern ^[가-힣A-Za-z]+$`다(2026-08-31 조회). 4.x가 들고 있던 두 어긋남이 **서로 다른 쪽에서** 닫혔다 — **상한**은 [spec 3.0.0](spec.md)이 15자를 채택해서, **공백**은 서버가 `pattern`에서 공백을 빼서다([research.md D52](research.md#d52-서버-문서-재조회2026-08-31--닉네임-pattern에서-공백이-빠졌다)). **클라이언트가 통과시킨 닉네임을 서버가 길이·문자로 거절하는 경로가 없다.** 경위는 [API 계약 §2](contracts/profile-api-contract.md)의 소멸 항목이 소유한다.
+
+## 7. 닉네임 안내 문구 (`:feature:profile`)
+
+필드 아래 안내 문구 자리는 **하나**이고, 그 자리에 놓이는 글자가 오류 여부로 갈린다(FR-011).
+
+| 상태 | 문구 | 색 |
+|---|---|---|
+| 평상시 | `최대 15자까지 입력할 수 있어요.` | 평상시 |
+| `isNicknameErrorVisible` | `한글·영문 2글자 이상을 입력해주세요.` | 오류 |
+
+- 두 문자열은 `:feature:profile`의 `strings.xml`이 갖고, **고르는 것은 화면**이다. `ProfileUiState`에 문구 필드를 두지 않는다 — 갈림의 조건이 이미 있는 파생 값과 같고, 상태가 리소스 식별자를 알 이유가 없다([research.md D54](research.md#d54-닉네임-안내-문구--평상시와-오류를-다른-문구로-가른다)).
+- **상한용 오류 문구는 없다.** 상한 초과는 입력 차단이 막아 오류 상태가 생기지 않으므로(FR-014), 상한은 평상시 문구가 **미리** 알려 주는 것으로만 드러난다(UX-007).
+- 플레이스홀더 `한글·영문 2글자 이상`은 그대로다 — 값이 비었을 때만 보이므로 위 두 문구와 자리가 겹치지 않는다.

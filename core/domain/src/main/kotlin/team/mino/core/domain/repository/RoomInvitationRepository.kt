@@ -1,5 +1,7 @@
 package team.mino.core.domain.repository
 
+import team.mino.core.domain.model.InvitationPreview
+
 /**
  * 방의 초대 코드 발급 계약.
  *
@@ -20,4 +22,21 @@ interface RoomInvitationRepository {
      * (`docs/adr/2026-08-28-error-body-type-and-no-error-code-leaf.md`).
      */
     suspend fun issueInviteCode(roomId: String): String
+
+    /**
+     * [inviteCode]가 가리키는 방을 참여 전에 미리 들여다본다. 인증이 필요 없는 조회다.
+     *
+     * 실패는 `MinoDomainException`으로 던진다. 없는 코드(`404`)도 이 계약이 값으로 뭉개지 않는다.
+     */
+    suspend fun previewInvitation(inviteCode: String): InvitationPreview
+
+    /**
+     * [inviteCode]로 [roomId] 방에 참여한다. 이미 멤버면 서버가 멱등하게 성공으로 응답한다.
+     *
+     * 실패는 `MinoDomainException`으로 던지고 취소는 그대로 전파한다.
+     */
+    suspend fun joinRoom(
+        roomId: String,
+        inviteCode: String,
+    )
 }

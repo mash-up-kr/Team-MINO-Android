@@ -27,7 +27,7 @@ import team.mino.core.designsystem.util.image.MinoAsyncImage
  * 의존하지 않고 이미지 에셋도 받지 않기 때문이다.
  *
  * @param imageUrls 콜라주에 넣을 사진 URL. 비어 있으면 [fallback]을 그린다. **네 장 이하만 들어온다** —
- *   그보다 많으면 호출부가 앞에서부터 잘라 넘긴다.
+ *   그보다 많으면 호출부가 앞에서부터 잘라 넘긴다. 레이아웃은 장수(1·2·3·4)마다 다르다(Figma `Room Thumbnail`).
  * @param fallback 사진이 한 장도 없을 때 썸네일 자리를 채울 내용. 썸네일과 같은 정사각형을 채우고
  *   같은 모서리로 잘린다.
  */

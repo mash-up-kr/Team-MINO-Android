@@ -16,7 +16,9 @@ import team.mino.feature.splash.main.screen.SplashRoute
 @Composable
 internal fun SplashNavHost(
     navController: NavHostController,
+    inviteCode: String?,
     onNavigateToMain: () -> Unit,
+    onNavigateToInvitedRoom: (String) -> Unit,
     onNavigateToOnboarding: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -27,7 +29,9 @@ internal fun SplashNavHost(
     ) {
         screen<SplashMain> {
             SplashRoute(
+                inviteCode = inviteCode,
                 onNavigateToMain = onNavigateToMain,
+                onNavigateToInvitedRoom = onNavigateToInvitedRoom,
                 onNavigateToOnboarding = onNavigateToOnboarding,
                 modifier = Modifier.fillMaxSize(),
             )

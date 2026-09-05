@@ -36,6 +36,14 @@ internal object MenuTokens {
     val ActiveLabelFont = TypographyAccessKeyToken.Body1NormalMedium
     val DisabledLabelColor = ColorAccessKeyToken.LabelAlternative
 
+    /**
+     * `Active`=true 셀 배경(`Menu/Resource/Item/Cell` 실측값). `Interaction/Light`(Normal 5%의
+     * 0.75배 = 3.75%) — [AtomicOpacityToken]의 5% 단계 자체가 아니라 그 위에서 한 번 더 가중치가
+     * 곱해진 값이라 별도 상수로 둔다.
+     */
+    val ActiveBackgroundColor = ColorAccessKeyToken.LabelNormal
+    val ActiveBackgroundOpacity = 0.0375f
+
     val CaptionColor = ColorAccessKeyToken.LabelAlternative
     val CaptionFont = TypographyAccessKeyToken.Label2Regular
     val LabelCaptionSpacing = 4.dp

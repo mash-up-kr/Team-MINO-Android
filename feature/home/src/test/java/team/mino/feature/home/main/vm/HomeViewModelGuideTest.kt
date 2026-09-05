@@ -2,6 +2,9 @@ package team.mino.feature.home.main.vm
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -20,8 +23,10 @@ import team.mino.core.domain.model.RoomColor
 import team.mino.core.domain.model.RoomSummary
 import team.mino.core.domain.model.RoomType
 import team.mino.core.domain.usecase.ResolveNextDeckUseCase
+import team.mino.core.domain.usecase.ResolveRoomEntryDeckUseCase
 import team.mino.feature.home.fake.FakeHomeDeckRepository
 import team.mino.feature.home.fake.FakeHomePreferencesRepository
+import team.mino.feature.home.fake.FakePlaceRepository
 import team.mino.feature.home.main.model.HomePhase
 
 /**
@@ -50,6 +55,7 @@ import team.mino.feature.home.main.model.HomePhase
 class HomeViewModelGuideTest {
     private val deckRepository = FakeHomeDeckRepository()
     private val preferencesRepository = FakeHomePreferencesRepository()
+    private val placeRepository = FakePlaceRepository()
 
     @Before
     fun setUp() {
@@ -90,8 +96,8 @@ class HomeViewModelGuideTest {
      *
      * 상태 전체를 한 번에 비교하는 것이 이 케이스의 전부다 — 카드 수만 보면 시트가 열리거나 정렬이 바뀐 구현도
      * 통과한다. 저장소 호출까지 함께 보는 이유는 조작 중 셋이 상태에 흔적을 남기지 않기 때문이다.
-     * `OpenPlaceDetail`은 `recordPlaceOpened`를, `SelectRoom`은 마지막 방 저장을, `SelectSort`는 덱 재요청을
-     * 각각 상태 밖에서 일으킨다. 상태만 보면 **"화면은 그대로인데 서버와 DataStore에는 나갔다"** 를 놓친다.
+     * `OpenPlaceDetail`은 상세 이동 SideEffect를, `SelectRoom`은 마지막 방 저장을, `SelectSort`는 덱 재요청을
+     * 각각 상태 밖에서 일으킨다. 상태만 보면 **"화면은 그대로인데 상세로 넘어가고 DataStore에는 나갔다"** 를 놓친다.
      *
      * **전제부터 단언한다.** "아무 변화 없음"은 아무것도 하지 않는 구현에서도 성립하므로, 가이드가 실제로 떠
      * 있고 넘길 카드가 실려 있는지를 먼저 본다.
@@ -107,6 +113,7 @@ class HomeViewModelGuideTest {
 
             val before = viewModel.state.value
             val deckRequestsBefore = deckRepository.deckRequests.size
+            val effects = recordSideEffects(viewModel)
             assertTrue("가이드가 떠 있지 않으면 막을 구간 자체가 없다", before.isGuideVisible)
             assertEquals("버려짐을 보려면 넘길 카드가 실려 있어야 한다", cards, before.cards.toList())
 
@@ -120,7 +127,7 @@ class HomeViewModelGuideTest {
 
             assertEquals(before, viewModel.state.value)
             assertEquals("버려진 의도가 덱을 다시 받아오면 안 된다", deckRequestsBefore, deckRepository.deckRequests.size)
-            assertEquals("카드 탭이 버려졌다면 경과일 초기화도 나가지 않는다", emptyList<String>(), deckRepository.openedPinIds)
+            assertEquals("카드 탭이 버려졌다면 상세로 넘어가지도 않는다", emptyList<HomeSideEffect>(), effects)
             assertEquals(
                 "방 선택이 버려졌다면 마지막 방 저장도 나가지 않는다",
                 emptyList<String>(),
@@ -212,11 +219,20 @@ class HomeViewModelGuideTest {
             assertEquals("가이드를 걷어내도 빈 상태 안내는 남는다", HomePhase.EMPTY, after.phase)
         }
 
+    /** [HomeSideEffect]는 Channel이라 흘려보낸 뒤에는 남지 않는다. 나온 순서대로 담아 두고 뒤에서 본다. */
+    private fun TestScope.recordSideEffects(viewModel: HomeViewModel): List<HomeSideEffect> {
+        val effects = mutableListOf<HomeSideEffect>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.sideEffect.toList(effects) }
+        return effects
+    }
+
     private fun createViewModel(): HomeViewModel =
         HomeViewModel(
             homeDeckRepository = deckRepository,
             homePreferencesRepository = preferencesRepository,
+            placeRepository = placeRepository,
             resolveNextDeck = ResolveNextDeckUseCase(),
+            resolveRoomEntryDeck = ResolveRoomEntryDeckUseCase(),
         )
 
     /** 순서를 눈으로 구별할 수 있게 pinId에 번호를 매긴다. 카드의 나머지 필드는 판정에 쓰이지 않는다. */

@@ -100,6 +100,14 @@ feature 간 순환 참조는 금지한다. 탭끼리 서로를 의존하지 않�
 ```
 
 
+### 모듈 루트 `component/` — 여러 화면이 함께 쓰는 컴포저블
+
+**두 화면 이상이 같은 컴포저블을 쓰는데 그것이 어느 한 화면의 것이 아닐 때** 모듈 루트에 `component/`를 두고 거기 담는다. 한 화면만 쓰는 것은 그대로 `<screen>/component/`다 — 기본값은 언제나 화면 쪽이고, 이 자리는 **두 번째 화면이 실제로 생긴 뒤에** 만든다([`component-asset-placement.md` §2.1](../conventions/component-asset-placement.md#21-시점)과 같은 시점 규칙이다).
+
+**`:core:common:ui`로 올리는 것과 헷갈리지 않는다.** 그쪽은 **둘 이상의 feature**가 쓸 때이고([같은 문서 §1.2](../conventions/component-asset-placement.md#12-컴포넌트)), 이 자리는 **한 feature 안의 두 화면**이 쓸 때다. 사용처가 같은 모듈에 머무는 한 공용 모듈로 올리지 않는다 — 검증되지 않은 API가 모듈 밖 표면으로 굳는 것을 미루는 것이 그 규칙의 취지다.
+
+컴포저블이 받는 UiModel도 같은 자리에 둔다. 어느 화면의 `model/`에 두면 다른 화면이 남의 화면 패키지를 참조하게 된다.
+
 ### 디렉터리 역할 (`<screen>/` 하위)
 
 | 디렉터리 | 역할 |
@@ -304,4 +312,4 @@ internal fun XNavHost(navController: NavHostController, startDestination: Route,
 
 > 이미 셸에 placeholder로 등록된 탭을 모듈로 떼어내는 경우라면, Route를 셸의 `MainDestinations`에서 새 모듈로 옮겨 `XGraph`로 만들고, `MainTab`이 그것을 참조하도록 바꾼 뒤 placeholder `screen<T>` 등록을 지운다.
 
-> 참고: 현재 `:feature:sample`이 진입형, `:feature:home`이 탭의 구현 예시다. 단 **데모용이라 추후 제거될 수 있으므로** 규약의 기준은 이 문서이며, 두 모듈의 존재에 의존하지 않는다.
+> 참고: 진입형은 `:feature:roomform`, 탭은 `:feature:home`이 구현 예시다. 단 규약의 기준은 어디까지나 이 문서이며, 특정 모듈의 존재에 의존하지 않는다.

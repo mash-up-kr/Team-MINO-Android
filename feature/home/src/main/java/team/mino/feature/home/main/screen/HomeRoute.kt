@@ -1,8 +1,6 @@
 package team.mino.feature.home.main.screen
 
 import android.Manifest
-import android.content.Context
-import android.location.LocationManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
@@ -15,7 +13,7 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
-import team.mino.core.common.kotlin.geo.GeoPoint
+import team.mino.core.common.android.extension.currentDeviceLocation
 import team.mino.core.common.ui.architecture.CollectSideEffect
 import team.mino.core.common.ui.error.CollectDomainError
 import team.mino.core.common.ui.scaffold.LocalSnackbarHostState
@@ -58,8 +56,13 @@ internal fun HomeRoute(
     // 거부도 좌표를 못 얻은 것도 결과가 같아 둘 다 null로 되돌린다 — ViewModel이 소진으로 흡수한다(EC-009).
     val locationPermissionLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { grants ->
-            val location = if (grants.values.any { it }) context.lastKnownLocation() else null
-            viewModel.processIntent(HomeIntent.LocationPermissionResult(location))
+            if (grants.values.any { it }) {
+                scope.launch {
+                    viewModel.processIntent(HomeIntent.LocationPermissionResult(context.currentDeviceLocation()))
+                }
+            } else {
+                viewModel.processIntent(HomeIntent.LocationPermissionResult(null))
+            }
         }
 
     CollectSideEffect(viewModel.sideEffect) { effect ->
@@ -92,22 +95,6 @@ internal fun HomeRoute(
         onCreateRoomFromEmpty = onCreateRoomFromEmpty,
         modifier = modifier,
     )
-}
-
-/**
- * 마지막으로 알려진 좌표. 없으면 `null`이고 거부와 같은 길로 흡수된다(spec EC-009, R-013).
- *
- * 새 측위를 걸지 않는다 — 덱 요청 하나를 위해 GPS를 깨우면 첫 카드가 그만큼 늦게 뜬다.
- * 응답과 조회 사이에 권한이 철회되면 `SecurityException`이 나므로 그것까지 좌표 없음으로 흡수한다.
- */
-private fun Context.lastKnownLocation(): GeoPoint? {
-    val manager = getSystemService(LocationManager::class.java) ?: return null
-    val location = try {
-        manager.getProviders(true).firstNotNullOfOrNull(manager::getLastKnownLocation)
-    } catch (permissionRevoked: SecurityException) {
-        null
-    }
-    return location?.let { GeoPoint(latitude = it.latitude, longitude = it.longitude) }
 }
 
 /** 둘 중 하나만 허용돼도 좌표를 얻을 수 있다. 정렬에 쓰는 거리라 대략적 위치로 충분하다. */

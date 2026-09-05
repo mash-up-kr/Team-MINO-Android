@@ -1,6 +1,8 @@
 package team.mino.core.data.datasource
 
 import team.mino.core.data.network.dto.request.RoomRequest
+import team.mino.core.data.network.dto.response.RoomInvitationResponse
+import team.mino.core.data.network.dto.response.RoomMemberDetailResponse
 import team.mino.core.data.network.dto.response.RoomResponse
 import team.mino.core.data.network.dto.response.RoomSummaryResponse
 import team.mino.core.data.network.service.RoomApiService
@@ -16,7 +18,8 @@ import javax.inject.Inject
 internal class RoomRemoteDataSourceImpl @Inject constructor(
     private val service: RoomApiService,
 ) : RoomRemoteDataSource {
-    override suspend fun listRooms(): List<RoomSummaryResponse> = service.listRooms()
+    override suspend fun listRooms(showHasPlaceId: String?): List<RoomSummaryResponse> =
+        service.listRooms(showHasPlaceId)
 
     override suspend fun getRoom(roomId: String): RoomResponse = service.getRoom(roomId)
 
@@ -26,4 +29,26 @@ internal class RoomRemoteDataSourceImpl @Inject constructor(
         roomId: String,
         request: RoomRequest,
     ): RoomResponse = service.updateRoom(roomId, request)
+
+    override suspend fun getMembers(roomId: String): List<RoomMemberDetailResponse> = service.getMembers(roomId)
+
+    override suspend fun createInvitation(roomId: String): RoomInvitationResponse = service.createInvitation(roomId)
+
+    override suspend fun leaveRoom(roomId: String) {
+        service.leaveRoom(roomId)
+    }
+
+    override suspend fun transferOwner(
+        roomId: String,
+        nextOwnerId: String,
+    ) {
+        service.transferOwner(roomId, nextOwnerId)
+    }
+
+    override suspend fun joinRoom(
+        roomId: String,
+        inviteCode: String,
+    ) {
+        service.joinRoom(roomId, inviteCode)
+    }
 }
