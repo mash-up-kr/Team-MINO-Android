@@ -172,9 +172,8 @@ private fun PlaceCardHeader(
 /**
  * 장소분류 라벨 뱃지. 라벨은 항상 존재하고 4종 중 1종이라(FR-008) 「라벨 없음」 자리를 두지 않는다.
  *
- * design-system `MinoContentBadge`의 `Accent`는 Cyan 한 색으로 고정돼 4색을 표현할 수 없어 여기서 조립한다
- * (`:feature:sample`의 `HomeCard`가 같은 이유로 같은 판단을 했다). Content Badge의 `Color` 축이 넓어지면
- * 이 뱃지를 그쪽으로 옮긴다.
+ * design-system `MinoContentBadge`의 `Accent`는 Cyan 한 색으로 고정돼 4색을 표현할 수 없어 여기서 조립한다.
+ * Content Badge의 `Color` 축이 넓어지면 이 뱃지를 그쪽으로 옮긴다.
  */
 @Composable
 private fun PlaceLabelBadge(

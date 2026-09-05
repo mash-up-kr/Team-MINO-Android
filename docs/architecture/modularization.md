@@ -81,8 +81,8 @@ BottomNavigation 탭 셸을 소유하고 탭 feature의 그래프를 조립한�
 외부 앱 공유(`ACTION_SEND`) 수신 화면. 받은 링크를 저장할 방을 고르는 바텀시트를 소유한다.
 → Android Library (Compose)
 
-### `:feature:sample` (진입형)·`:feature:home` (탭)
-데모 feature(추후 제거 가능).
+### `:feature:home` (탭)
+홈 탭. 방을 순회하며 저장한 장소를 탐색하는 시작 화면을 소유한다.
 → Android Library (Compose)
 
 > feature는 단일 모듈이며 진입형·탭 두 종류로 나뉜다. 종류별 골격과 공개 범위는 `docs/architecture/feature-module.md`, 전환 규약은 `feature-navigation.md`.
