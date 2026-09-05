@@ -44,10 +44,11 @@ core/common/kotlin/src/main/kotlin/team/mino/core/common/kotlin/
 ├── geo/
 │   └── GeoPoint.kt        # 위경도 값 객체
 ├── extension/             # (예약 — 공용 Kotlin 확장 함수)
-└── util/                  # (예약 — 순수 Kotlin 유틸)
+└── util/
+    └── ElapsedTime.kt     # 경과 시간 네 구간 판정
 ```
 
-`extension`·`util`은 현재 비어 있는 **예약 패키지**다. 새 코드를 추가할 때 아래 분류 기준을 따른다.
+`extension`은 아직 비어 있는 **예약 패키지**다. 새 코드를 추가할 때 아래 분류 기준을 따른다.
 
 ---
 

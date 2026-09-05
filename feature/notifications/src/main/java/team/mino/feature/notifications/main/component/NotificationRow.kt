@@ -26,6 +26,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import team.mino.core.common.kotlin.util.ElapsedTime
 import team.mino.core.designsystem.foundation.icons.MinoIcons
 import team.mino.core.designsystem.foundation.icons.icons.Image
 import team.mino.core.designsystem.theme.MinoAndroidAppTheme
@@ -36,7 +37,6 @@ import team.mino.core.designsystem.util.preview.UiModePreviews
 import team.mino.feature.notifications.R
 import team.mino.feature.notifications.main.model.NotificationItemUiModel
 import team.mino.feature.notifications.main.model.NotificationThumbnail
-import team.mino.feature.notifications.main.util.ElapsedTime
 
 /**
  * 알림 한 건. 썸네일·유형 문구·대상 이름·경과 시간 네 요소가 한 행에 놓인다(spec FR-002).
@@ -216,7 +216,7 @@ private val SaveErrorSample = NotificationItemUiModel(
     id = "2",
     typeLabel = "장소를 저장하지 못했어요. 잠시 후 다시 시도해주세요",
     targetName = "잠시 후 다시 시도해주세요",
-    elapsed = ElapsedTime.AbsoluteDate(month = 8, day = 10),
+    elapsed = ElapsedTime.AbsoluteDate(year = 2027, month = 8, day = 10),
     thumbnail = NotificationThumbnail.SaveError,
 )
 
