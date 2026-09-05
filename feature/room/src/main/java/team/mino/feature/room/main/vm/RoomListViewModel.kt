@@ -5,7 +5,9 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.SystemClock
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
+import androidx.navigation.toRoute
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.collections.immutable.toImmutableList
@@ -33,6 +35,7 @@ import team.mino.core.errorhandling.runCatchingDomain
 import team.mino.core.navigation.activity.launcher.RoomFormLauncher
 import team.mino.core.navigation.entry.PlaceDetailEntryOrigin
 import team.mino.core.navigation.entry.PlaceDetailRequestHolder
+import team.mino.feature.room.RoomMain
 import team.mino.feature.room.component.chip
 import team.mino.feature.room.main.component.DefaultMapCenter
 import team.mino.feature.room.main.model.BottomSheetLevel
@@ -54,6 +57,7 @@ import kotlin.time.Instant
  */
 @HiltViewModel
 class RoomListViewModel @Inject constructor(
+    savedStateHandle: SavedStateHandle,
     @param:ApplicationContext private val context: Context,
     private val roomRepository: RoomRepository,
     private val roomPlacesRepository: RoomPlacesRepository,
@@ -63,7 +67,12 @@ class RoomListViewModel @Inject constructor(
     private val placeDetailRequestHolder: PlaceDetailRequestHolder,
     val roomFormLauncher: RoomFormLauncher,
 ) : ViewModel(),
-    MviContainer<RoomListUiState, RoomListSideEffect> by mviContainer(RoomListUiState()) {
+    // 초대 딥링크(SYS-010)로 특정 방 상세부터 시작해야 하면 시작 라우트가 그 roomId를 싣고 온다 —
+    // 방 카드를 눌러 여는 것과 같은 로컬 상태 전환이라 selectedRoomId의 초기값으로 복원한다
+    // (`RoomNavigation.kt`의 `RoomMain.initialRoomId` KDoc).
+    MviContainer<RoomListUiState, RoomListSideEffect> by mviContainer(
+        RoomListUiState(selectedRoomId = savedStateHandle.toRoute<RoomMain>().initialRoomId),
+    ) {
     /** 방마다 조회한 장소. 방 목록이 바뀌어도 이미 받아 둔 장소는 유지하려고 상태 밖에 둔다. */
     private var placesByRoomId: Map<String, List<Place>> = emptyMap()
 

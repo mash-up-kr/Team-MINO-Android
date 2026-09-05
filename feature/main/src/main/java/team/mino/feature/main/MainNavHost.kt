@@ -13,6 +13,11 @@ import team.mino.feature.main.placeholder.screen.MainTabPlaceholderScreen
 import team.mino.feature.mypage.mypageGraph
 import team.mino.feature.room.roomGraph
 
+/**
+ * @param initialRoomId 초대 딥링크(SYS-010)로 특정 방 상세부터 시작해야 할 때(콜드 스타트 전용).
+ *   값이 있으면 시작 탭 자체를 방 리스트 탭(`RoomGraph`)으로 바꾸고, 그 탭 그래프도 리스트가 아니라
+ *   이 방의 상세에서 시작한다 — 앱이 뜨자마자 그 방으로 바로 들어가야 하기 때문이다.
+ */
 @Composable
 internal fun MainNavHost(
     navController: NavHostController,
@@ -22,11 +27,12 @@ internal fun MainNavHost(
     onNavigateToRoomForm: () -> Unit,
     onNavigateToProfileEdit: () -> Unit,
     roomFormEntryPoint: RoomFormEntryPoint,
+    initialRoomId: String? = null,
     modifier: Modifier = Modifier,
 ) {
     MinoNavHost(
         navController = navController,
-        startDestination = MainTab.HOME.route,
+        startDestination = if (initialRoomId != null) MainTab.SAVED.route else MainTab.HOME.route,
         modifier = modifier,
     ) {
         homeGraph(
@@ -53,6 +59,9 @@ internal fun MainNavHost(
             // 어느 탭인지도, 홈이 몇 번째 탭인지도 모르므로 판정만 하고 이동은 셸이 한다.
             // 홈의 덱 위치는 탭 전환의 saveState/restoreState가 되살린다.
             onNavigateToHome = { navController.navigateToTab(MainTab.HOME) },
+            // 초대 딥링크(SYS-010) 콜드 스타트 진입. 방 탭 안에서 새로 생기는 값이 아니라 Activity의
+            // 진입 인자를 그대로 흘려보낸다.
+            initialRoomId = initialRoomId,
         )
         // 아직 탭 feature 모듈이 없는 탭은 전환 검증용 placeholder다. 모듈이 생기면 홈처럼 그 모듈의
         // 등록 함수 호출로 교체하고 Route 소유도 그쪽으로 옮긴다(→ docs/architecture/feature-navigation.md 3장).

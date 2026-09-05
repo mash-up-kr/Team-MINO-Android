@@ -42,7 +42,9 @@ import team.mino.feature.splash.main.vm.SplashViewModel
  */
 @Composable
 internal fun SplashRoute(
+    inviteCode: String?,
     onNavigateToMain: () -> Unit,
+    onNavigateToInvitedRoom: (String) -> Unit,
     onNavigateToOnboarding: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SplashViewModel = hiltViewModel(),
@@ -53,14 +55,15 @@ internal fun SplashRoute(
 
     // 진입 신호는 화면이 보이는 순간 한 번. 중복 진입 방어는 ViewModel이 갖는다.
     LaunchedEffect(viewModel) {
-        viewModel.processIntent(SplashIntent.Start)
+        viewModel.processIntent(SplashIntent.Start(inviteCode))
     }
 
     CollectSideEffect(viewModel.sideEffect) { effect ->
         when (effect) {
             is SplashSideEffect.NavigateTo ->
-                when (effect.entry) {
+                when (val entry = effect.entry) {
                     SplashEntry.Main -> onNavigateToMain()
+                    is SplashEntry.InvitedRoom -> onNavigateToInvitedRoom(entry.roomId)
                     SplashEntry.Onboarding -> onNavigateToOnboarding()
                 }
 
