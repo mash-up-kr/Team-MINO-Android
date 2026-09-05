@@ -27,6 +27,7 @@ internal class OnboardingProgressRepositoryImpl @Inject constructor(
         return OnboardingProgress(
             lastStep = entry.lastStepName.toOnboardingStep(),
             createdRoomId = entry.createdRoomId,
+            invitedRoomId = entry.invitedRoomId,
             isCompleted = entry.isCompleted,
         )
     }
@@ -37,6 +38,10 @@ internal class OnboardingProgressRepositoryImpl @Inject constructor(
 
     override suspend fun setCreatedRoomId(roomId: String) {
         onboardingProgressLocalDataSource.setCreatedRoomId(roomId)
+    }
+
+    override suspend fun setInvitedRoomId(roomId: String) {
+        onboardingProgressLocalDataSource.setInvitedRoomId(roomId)
     }
 
     override suspend fun markCompleted() {

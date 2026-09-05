@@ -24,6 +24,7 @@ internal class OnboardingProgressLocalDataSourceImpl @Inject constructor(
         return OnboardingProgressEntry(
             lastStepName = preferences[LAST_STEP_KEY],
             createdRoomId = preferences[CREATED_ROOM_ID_KEY],
+            invitedRoomId = preferences[INVITED_ROOM_ID_KEY],
             isCompleted = preferences[COMPLETED_KEY] ?: false,
         )
     }
@@ -40,6 +41,12 @@ internal class OnboardingProgressLocalDataSourceImpl @Inject constructor(
         }
     }
 
+    override suspend fun setInvitedRoomId(roomId: String) {
+        dataStore.edit { preferences ->
+            preferences[INVITED_ROOM_ID_KEY] = roomId
+        }
+    }
+
     override suspend fun markCompleted() {
         dataStore.edit { preferences ->
             preferences[COMPLETED_KEY] = true
@@ -49,6 +56,7 @@ internal class OnboardingProgressLocalDataSourceImpl @Inject constructor(
     private companion object {
         val LAST_STEP_KEY = stringPreferencesKey("onboarding_last_step")
         val CREATED_ROOM_ID_KEY = stringPreferencesKey("onboarding_created_room_id")
+        val INVITED_ROOM_ID_KEY = stringPreferencesKey("onboarding_invited_room_id")
         val COMPLETED_KEY = booleanPreferencesKey("onboarding_completed")
     }
 }

@@ -38,6 +38,12 @@ interface OnboardingProgressRepository {
     suspend fun setCreatedRoomId(roomId: String)
 
     /**
+     * 초대 딥링크(SYS-010)로 자동 참여한 방의 id를 기록한다. 튜토리얼을 마친 뒤 이 방으로 들어가야
+     * 한다는 것을 재개 경로에도 남기기 위함이다.
+     */
+    suspend fun setInvitedRoomId(roomId: String)
+
+    /**
      * 온보딩 완료를 기록한다. 되돌리는 함수는 두지 않는다.
      */
     suspend fun markCompleted()

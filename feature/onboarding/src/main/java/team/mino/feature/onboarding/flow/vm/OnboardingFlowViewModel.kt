@@ -89,7 +89,12 @@ internal class OnboardingFlowViewModel @Inject constructor(
             val resumedStep = resolveOnboardingStep(progress)
 
             updateState {
-                copy(isLoading = false, step = resumedStep, createdRoomId = progress.createdRoomId)
+                copy(
+                    isLoading = false,
+                    step = resumedStep,
+                    createdRoomId = progress.createdRoomId,
+                    invitedRoomId = progress.invitedRoomId,
+                )
             }
             postSideEffect(resumedStep.entryEffect(progress.createdRoomId))
         }
@@ -99,8 +104,9 @@ internal class OnboardingFlowViewModel @Inject constructor(
      * 프로필 저장 직후. [pendingInviteCode]를 들고 있으면(SYS-010 Flow A, 신규 유저) 공동방 생성
      * 유도(Flow B)로 가지 않고 그 코드로 자동 참여를 먼저 시도한다.
      *
-     * 성공하면 나머지 스텝(공동방 생성·초대·튜토리얼)을 전부 건너뛰고 메인의 그 방으로 바로 간다 —
-     * 튜토리얼을 다 본 것과 같은 결말이라 [onTutorialFinished]와 마찬가지로 완료 표시를 남긴다.
+     * 성공하면 공동방 생성·친구 초대 스텝만 건너뛰고 튜토리얼로 간다(Figma 스펙 — 온보딩 → 프로필
+     * 설정 → 튜토리얼 → 초대받은 방 상세). 참여한 방은 [OnboardingProgressRepository.setInvitedRoomId]로
+     * 남겨 튜토리얼을 마쳤을 때([onTutorialFinished]) 그 방으로 보낼 수 있게 한다.
      * 실패(만료·잘못된 코드 등)는 조용히 폴백한다 — 코드 없이 진입한 것과 같은 정상 흐름(Flow B)으로
      * 진행하고, 이 시도를 다시 걸지 않도록 [pendingInviteCode]를 비운다.
      */
@@ -116,8 +122,10 @@ internal class OnboardingFlowViewModel @Inject constructor(
 
             val roomId = runCatching { joinRoomByInviteCode(inviteCode) }.getOrNull()
             if (roomId != null) {
-                onboardingProgressRepository.markCompleted()
-                postSideEffect(OnboardingFlowSideEffect.NavigateToHomeWithRoom(roomId))
+                moveToStep(OnboardingStep.TUTORIAL) {
+                    onboardingProgressRepository.setInvitedRoomId(roomId)
+                    updateState { copy(invitedRoomId = roomId) }
+                }
                 return@transitionFrom
             }
 
@@ -150,7 +158,12 @@ internal class OnboardingFlowViewModel @Inject constructor(
     /** 초대를 닫아도 만든 방은 남는다 — 스텝만 넘어가고 `createdRoomId`는 그대로 둔다. */
     private fun onInviteClosed() = advanceTo(from = OnboardingStep.INVITE, to = OnboardingStep.TUTORIAL)
 
-    /** 완료는 스텝이 아니라 완료 표시가 든다. 그래서 이 줄에만 `setCurrentStep`이 없다. */
+    /**
+     * 완료는 스텝이 아니라 완료 표시가 든다. 그래서 이 줄에만 `setCurrentStep`이 없다.
+     *
+     * [OnboardingFlowUiState.invitedRoomId]가 있으면(SYS-010, 초대로 들어와 참여까지 끝난 온보딩)
+     * 평소 홈이 아니라 그 방으로 바로 들어간다.
+     */
     private fun onTutorialFinished() {
         if (state.value.step != OnboardingStep.TUTORIAL || hasFinishedTutorial) return
         hasFinishedTutorial = true
@@ -158,7 +171,14 @@ internal class OnboardingFlowViewModel @Inject constructor(
         launchSafely {
             onboardingProgressRepository.markCompleted()
 
-            postSideEffect(OnboardingFlowSideEffect.NavigateToHome)
+            val invitedRoomId = state.value.invitedRoomId
+            postSideEffect(
+                if (invitedRoomId != null) {
+                    OnboardingFlowSideEffect.NavigateToHomeWithRoom(invitedRoomId)
+                } else {
+                    OnboardingFlowSideEffect.NavigateToHome
+                },
+            )
         }
     }
 
