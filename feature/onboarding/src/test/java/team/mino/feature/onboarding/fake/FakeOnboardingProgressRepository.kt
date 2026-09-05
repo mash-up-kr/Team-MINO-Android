@@ -58,6 +58,11 @@ internal class FakeOnboardingProgressRepository : OnboardingProgressRepository {
         writeGate?.await()
     }
 
+    override suspend fun setInvitedRoomId(roomId: String) {
+        recorded += Call.SetInvitedRoomId(roomId)
+        writeGate?.await()
+    }
+
     override suspend fun markCompleted() {
         recorded += Call.MarkCompleted
         writeGate?.await()
@@ -72,6 +77,10 @@ internal class FakeOnboardingProgressRepository : OnboardingProgressRepository {
         ) : Call
 
         data class SetCreatedRoomId(
+            val roomId: String,
+        ) : Call
+
+        data class SetInvitedRoomId(
             val roomId: String,
         ) : Call
 

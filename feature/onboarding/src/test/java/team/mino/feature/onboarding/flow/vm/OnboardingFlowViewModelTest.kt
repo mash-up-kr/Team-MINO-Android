@@ -29,7 +29,7 @@ import team.mino.feature.onboarding.fake.FakeOnboardingProgressRepository.Call
 
 /**
  * 온보딩 스텝 전이를 판정한다. 전이 표의 단일 출처는 `contracts/onboarding-flow-ui.md` §2.4이며,
- * 이 테스트는 그 표의 일곱 줄을 한 줄씩 그대로 옮긴다.
+ * 이 테스트는 그 표의 줄들을 한 줄씩 그대로 옮긴다(SYS-010 초대 자동 참여 갈래 포함).
  *
  * 표의 각 줄에서 판정하는 것은 세 가지다 — **무엇을 저장하는가 · 새 스텝은 무엇인가 · 어떤 SideEffect가
  * 나가는가.** 셋 중 하나만 어긋나도 전이가 어긋난 것이므로 한 테스트에서 셋을 함께 본다.
@@ -227,20 +227,27 @@ class OnboardingFlowViewModelTest {
 
     /**
      * SYS-010 Flow A(신규 유저) — 프로필 저장 직후 대기 중이던 초대 코드로 자동 참여가 되면 공동방
-     * 생성 유도(Flow B)로 가지 않고 나머지 스텝을 전부 건너뛴다.
+     * 생성 유도(Flow B)·친구 초대만 건너뛰고 튜토리얼로 간다(Figma 스펙 — 온보딩 → 프로필 설정 →
+     * 튜토리얼 → 초대받은 방 상세). 참여한 방은 재개 경로를 위해 영속화한다.
      */
     @Test
-    fun `대기 중인 초대 코드가 있으면 프로필 저장 직후 자동 참여하고 나머지 스텝을 건너뛴다`() =
+    fun `대기 중인 초대 코드가 있으면 프로필 저장 직후 자동 참여하고 튜토리얼로 간다`() =
         runTest {
             roomInvitationRepository.previewRoomId = ROOM_ID
             val fixture = startedAt(OnboardingStep.PROFILE, pendingInviteCode = INVITE_CODE)
 
             fixture.viewModel.processIntent(OnboardingFlowIntent.ProfileSaved)
 
-            assertEquals(listOf(OnboardingFlowSideEffect.NavigateToHomeWithRoom(ROOM_ID)), fixture.effects)
+            val state = fixture.viewModel.state.value
+            assertEquals(OnboardingStep.TUTORIAL, state.step)
+            assertEquals(ROOM_ID, state.invitedRoomId)
+            assertEquals(listOf(OnboardingFlowSideEffect.NavigateToTutorial), fixture.effects)
             assertEquals(listOf(INVITE_CODE), roomInvitationRepository.previewedCodes)
             assertEquals(listOf(ROOM_ID to INVITE_CODE), roomInvitationRepository.joinedRooms)
-            assertEquals(listOf(Call.MarkCompleted), progressRepository.calls)
+            assertEquals(
+                listOf(Call.SetInvitedRoomId(ROOM_ID), Call.SetCurrentStep(OnboardingStep.TUTORIAL)),
+                progressRepository.calls,
+            )
         }
 
     /** 자동 참여가 실패(만료·잘못된 코드 등)하면 조용히 정상 흐름(Flow B)으로 폴백한다. */
@@ -435,7 +442,7 @@ class OnboardingFlowViewModelTest {
 
     // endregion
 
-    // region TUTORIAL — 표 7행: TutorialFinished · markCompleted() · 스텝 변화 없음 · NavigateToHome
+    // region TUTORIAL — 표 7·8행: TutorialFinished · markCompleted() · 스텝 변화 없음 · NavigateToHome(WithRoom)
 
     /** 완료는 스텝이 아니라 완료 표시가 든다. 그래서 마지막 줄에는 `setCurrentStep`이 없다. */
     @Test
@@ -447,6 +454,22 @@ class OnboardingFlowViewModelTest {
 
             assertEquals(OnboardingStep.TUTORIAL, fixture.step)
             assertEquals(listOf(OnboardingFlowSideEffect.NavigateToHome), fixture.effects)
+            assertEquals(listOf(Call.MarkCompleted), progressRepository.calls)
+        }
+
+    /**
+     * SYS-010 표 8행 — 초대로 들어와 참여까지 끝난 온보딩(`invitedRoomId` 보유)은 튜토리얼을 마치면
+     * 평소 홈이 아니라 그 방으로 들어간다. 프로세스가 튜토리얼 스텝에서 죽었다 재개된 경우까지
+     * 커버하도록 `startedAt`으로 저장된 값을 그대로 복원해서 시작한다.
+     */
+    @Test
+    fun `초대로 참여한 방이 있으면 튜토리얼을 끝냈을 때 그 방으로 간다`() =
+        runTest {
+            val fixture = startedAt(OnboardingStep.TUTORIAL, invitedRoomId = ROOM_ID)
+
+            fixture.viewModel.processIntent(OnboardingFlowIntent.TutorialFinished)
+
+            assertEquals(listOf(OnboardingFlowSideEffect.NavigateToHomeWithRoom(ROOM_ID)), fixture.effects)
             assertEquals(listOf(Call.MarkCompleted), progressRepository.calls)
         }
 
@@ -532,9 +555,11 @@ class OnboardingFlowViewModelTest {
     private fun TestScope.startedAt(
         step: OnboardingStep,
         createdRoomId: String? = null,
+        invitedRoomId: String? = null,
         pendingInviteCode: String? = null,
     ): Fixture {
-        progressRepository.progress = OnboardingProgress(lastStep = step, createdRoomId = createdRoomId)
+        progressRepository.progress =
+            OnboardingProgress(lastStep = step, createdRoomId = createdRoomId, invitedRoomId = invitedRoomId)
         val viewModel = createViewModel()
         val effects = collectSideEffects(viewModel)
         viewModel.processIntent(OnboardingFlowIntent.Start(pendingInviteCode))

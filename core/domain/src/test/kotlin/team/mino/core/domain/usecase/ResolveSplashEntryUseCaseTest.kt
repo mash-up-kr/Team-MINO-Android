@@ -210,6 +210,10 @@ private class FakeOnboardingProgressRepository(
         calls += "setCreatedRoomId"
     }
 
+    override suspend fun setInvitedRoomId(roomId: String) {
+        calls += "setInvitedRoomId"
+    }
+
     override suspend fun markCompleted() {
         calls += "markCompleted"
     }
