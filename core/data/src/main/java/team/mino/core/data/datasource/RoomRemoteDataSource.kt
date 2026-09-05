@@ -54,4 +54,10 @@ internal interface RoomRemoteDataSource {
         roomId: String,
         nextOwnerId: String,
     )
+
+    /** 초대 코드로 방에 참여한다. `POST /api/v1/rooms/{roomId}/members`. 이미 멤버면 서버가 멱등하게 성공 처리한다. */
+    suspend fun joinRoom(
+        roomId: String,
+        inviteCode: String,
+    )
 }

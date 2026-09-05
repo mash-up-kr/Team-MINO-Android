@@ -44,4 +44,11 @@ internal class RoomRemoteDataSourceImpl @Inject constructor(
     ) {
         service.transferOwner(roomId, nextOwnerId)
     }
+
+    override suspend fun joinRoom(
+        roomId: String,
+        inviteCode: String,
+    ) {
+        service.joinRoom(roomId, inviteCode)
+    }
 }
