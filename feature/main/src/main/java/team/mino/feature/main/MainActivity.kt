@@ -18,6 +18,7 @@ import androidx.core.net.toUri
 import androidx.core.view.WindowInsetsControllerCompat
 import dagger.hilt.android.AndroidEntryPoint
 import team.mino.core.designsystem.theme.MinoAndroidAppTheme
+import team.mino.core.navigation.activity.launcher.EXTRA_MAIN_ROOM_ID
 import team.mino.core.navigation.activity.launcher.EXTRA_PROFILE_ENTRY_POINT
 import team.mino.core.navigation.activity.launcher.EXTRA_ROOM_FORM_ONBOARDING
 import team.mino.core.navigation.activity.launcher.EXTRA_ROOM_FORM_RESULT_OUTCOME
@@ -79,6 +80,9 @@ class MainActivity : ComponentActivity() {
                     onOpenSourceLink = ::openSourceLink,
                     onNavigateToRoomForm = { launchRoomForm() },
                     onNavigateToProfileEdit = ::launchProfileEdit,
+                    // 초대 딥링크(SYS-010)로 참여까지 끝난 방. 콜드 스타트 진입 인자라 컴포저블로
+                    // 드릴링하지 않고 시작 라우트에 실어 보낸다(feature-navigation.md 2장).
+                    initialRoomId = intent.getStringExtra(EXTRA_MAIN_ROOM_ID),
                     // 결과가 바뀔 때만 새로 만든다. 매 리컴포지션마다 새 묶음을 넘기면 셸 아래의
                     // `NavHost`가 그래프 생성 키를 잃어 그래프를 통째로 다시 만든다.
                     roomFormEntryPoint =

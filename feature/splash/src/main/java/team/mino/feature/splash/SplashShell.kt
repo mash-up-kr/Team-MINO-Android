@@ -22,7 +22,9 @@ import team.mino.core.common.ui.scaffold.MinoScaffold
  */
 @Composable
 internal fun SplashShell(
+    inviteCode: String?,
     onNavigateToMain: () -> Unit,
+    onNavigateToInvitedRoom: (String) -> Unit,
     onNavigateToOnboarding: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -32,7 +34,9 @@ internal fun SplashShell(
     MinoScaffold(modifier = modifier) { _ ->
         SplashNavHost(
             navController = navController,
+            inviteCode = inviteCode,
             onNavigateToMain = onNavigateToMain,
+            onNavigateToInvitedRoom = onNavigateToInvitedRoom,
             onNavigateToOnboarding = onNavigateToOnboarding,
             modifier = Modifier.fillMaxSize(),
         )

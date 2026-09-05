@@ -14,8 +14,14 @@ import team.mino.core.common.android.architecture.Intent
  * 프로필 스텝에는 건너뛰기가 없다 — 그래서 이 목록에도 그에 해당하는 값이 없다.
  */
 internal sealed interface OnboardingFlowIntent : Intent {
-    /** Activity 최초 생성 1회. 저장된 진행 상태를 읽어 재개할 스텝을 정한다. */
-    data object Start : OnboardingFlowIntent
+    /**
+     * Activity 최초 생성 1회. 저장된 진행 상태를 읽어 재개할 스텝을 정한다.
+     *
+     * @param pendingInviteCode App Links(SYS-010)로 열려 신규 유저가 온보딩에 들어왔을 때의 초대 코드.
+     *  일반 진입이면 `null`이다. 재개 지점 판정과는 무관하고, 프로필 저장([onProfileSaved])이 끝나는
+     *  시점에만 쓰인다.
+     */
+    data class Start(val pendingInviteCode: String? = null) : OnboardingFlowIntent
 
     /** 프로필 Activity가 `RESULT_OK`로 끝났다. */
     data object ProfileSaved : OnboardingFlowIntent

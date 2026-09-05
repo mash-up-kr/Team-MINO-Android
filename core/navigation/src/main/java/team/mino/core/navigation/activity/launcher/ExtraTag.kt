@@ -18,6 +18,12 @@ const val EXTRA_ROOM_FORM_ONBOARDING = "room_form_onboarding"
 const val EXTRA_ROOM_FORM_RESULT_OUTCOME = "room_form_result_outcome"
 const val EXTRA_ROOM_FORM_RESULT_ROOM_ID = "room_form_result_room_id"
 
+/** 초대 딥링크(SYS-010)로 참여까지 끝난 방으로 바로 들어가야 할 때. */
+const val EXTRA_MAIN_ROOM_ID = "main_room_id"
+
+/** 온보딩의 프로필 저장이 끝나는 시점에 이 코드로 자동 참여해야 할 때. */
+const val EXTRA_ONBOARDING_INVITE_CODE = "onboarding_invite_code"
+
 // EXTRA_ROOM_FORM_RESULT_OUTCOME에 실리는 값. 폼과 호출자가 같은 문자열을 보도록 계약 자리에서 공유한다.
 const val ROOM_FORM_OUTCOME_CREATED = "created"
 const val ROOM_FORM_OUTCOME_UPDATED = "updated"

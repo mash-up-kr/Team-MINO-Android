@@ -18,4 +18,7 @@ sealed interface SplashEntry {
 
     /** 프로필이 등록됐고 온보딩 완료 표시도 있다. 메인으로 간다. */
     data object Main : SplashEntry
+
+    /** 초대 딥링크로 진입한 기존 유저 — 참여까지 끝났고 이 방으로 바로 들어가야 한다. */
+    data class InvitedRoom(val roomId: String) : SplashEntry
 }

@@ -11,6 +11,7 @@ import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import team.mino.core.data.network.dto.request.JoinRoomRequest
 import team.mino.core.data.network.dto.request.RoomRequest
 import team.mino.core.data.network.dto.request.TransferOwnerRequest
 import team.mino.core.data.network.dto.response.MinoResponse
@@ -102,6 +103,22 @@ internal class RoomApiService @Inject constructor(
     /** `DELETE /api/v1/rooms/{roomId}/members/me`. 방장이 다른 멤버와 함께 호출하면 `409 OWNER_TRANSFER_REQUIRED`. */
     suspend fun leaveRoom(roomId: String) {
         client.delete("api/v1/rooms/$roomId/members/me")
+    }
+
+    /**
+     * `POST /api/v1/rooms/{roomId}/members`. 초대 코드로 방에 참여한다.
+     *
+     * 이미 멤버면 서버가 에러 대신 멱등하게 성공으로 응답한다. 응답 본문은 `{"ok":true}` 뿐이라
+     * 읽지 않는다.
+     */
+    suspend fun joinRoom(
+        roomId: String,
+        inviteCode: String,
+    ) {
+        client.post("api/v1/rooms/$roomId/members") {
+            contentType(ContentType.Application.Json)
+            setBody(JoinRoomRequest(inviteCode = inviteCode))
+        }
     }
 
     /** `PUT /api/v1/rooms/{roomId}/owner`. */

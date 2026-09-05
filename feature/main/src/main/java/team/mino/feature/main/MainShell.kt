@@ -22,6 +22,7 @@ internal fun MainShell(
     onNavigateToRoomForm: () -> Unit,
     onNavigateToProfileEdit: () -> Unit,
     roomFormEntryPoint: RoomFormEntryPoint,
+    initialRoomId: String? = null,
     modifier: Modifier = Modifier,
 ) {
     val navController = rememberNavController()
@@ -49,6 +50,7 @@ internal fun MainShell(
                 onNavigateToRoomForm = onNavigateToRoomForm,
                 onNavigateToProfileEdit = onNavigateToProfileEdit,
                 roomFormEntryPoint = roomFormEntryPoint,
+                initialRoomId = initialRoomId,
                 modifier = Modifier.padding(innerPadding),
             )
         }

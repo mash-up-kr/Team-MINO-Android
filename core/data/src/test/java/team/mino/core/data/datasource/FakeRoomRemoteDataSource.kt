@@ -41,4 +41,21 @@ internal class FakeRoomRemoteDataSource : RoomRemoteDataSource {
         roomId: String,
         nextOwnerId: String,
     ): Unit = error("FakeRoomRemoteDataSource는 transferOwner를 지원하지 않는다.")
+
+    var joinRoomError: Throwable? = null
+
+    /** [joinRoom]에 마지막으로 넘어온 `roomId`·`inviteCode`. */
+    var lastJoinRoomId: String? = null
+        private set
+    var lastJoinInviteCode: String? = null
+        private set
+
+    override suspend fun joinRoom(
+        roomId: String,
+        inviteCode: String,
+    ) {
+        lastJoinRoomId = roomId
+        lastJoinInviteCode = inviteCode
+        joinRoomError?.let { throw it }
+    }
 }

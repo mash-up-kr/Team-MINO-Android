@@ -11,6 +11,7 @@ import team.mino.core.common.android.architecture.mviContainer
 import team.mino.core.common.android.extension.launchSafely
 import team.mino.core.domain.model.SplashEntry
 import team.mino.core.domain.usecase.EnsureAnonymousSessionUseCase
+import team.mino.core.domain.usecase.JoinRoomByInviteCodeUseCase
 import team.mino.core.domain.usecase.ResolveSplashEntryUseCase
 import team.mino.core.errorhandling.DomainErrorEmitter
 import team.mino.core.errorhandling.domainErrorEmitter
@@ -23,6 +24,7 @@ import kotlin.time.Duration.Companion.seconds
 internal class SplashViewModel @Inject constructor(
     private val ensureAnonymousSession: EnsureAnonymousSessionUseCase,
     private val resolveSplashEntry: ResolveSplashEntryUseCase,
+    private val joinRoomByInviteCode: JoinRoomByInviteCodeUseCase,
 ) : ViewModel(),
     MviContainer<SplashUiState, SplashSideEffect> by mviContainer(SplashUiState()),
     DomainErrorEmitter by domainErrorEmitter() {
@@ -37,7 +39,7 @@ internal class SplashViewModel @Inject constructor(
 
     fun processIntent(intent: SplashIntent) {
         when (intent) {
-            SplashIntent.Start -> start()
+            is SplashIntent.Start -> start(intent.inviteCode)
         }
     }
 
@@ -47,8 +49,12 @@ internal class SplashViewModel @Inject constructor(
      *
      * 지연 안내([indicateProgress])는 확보되는 순간 취소되므로, 정상 속도에서는 스피너도 안내도
      * 한 번 뜨지 않는다. 전환은 [awaitEntry]가 값을 돌려준 뒤에만 일어난다(호출자 계약 C-2).
+     *
+     * [inviteCode]가 있고 진입 지점이 [SplashEntry.Main]이면(PRD SYS-010 Flow A, 기존 유저) 참여까지
+     * 자동으로 마치고 그 방으로 바로 들어간다([resolveDestination]). 이 자동 참여는 실패해도 삼킨다 —
+     * 딥링크가 앱을 여는 것을 막지 않는 것이 우선이고, 별도 에러 UI 요구사항도 아직 없다.
      */
-    private fun start() {
+    private fun start(inviteCode: String?) {
         if (startJob != null) return
 
         startJob = launchSafely {
@@ -56,13 +62,31 @@ internal class SplashViewModel @Inject constructor(
             val progress = launch { indicateProgress() }
             val entry = async { awaitEntry() }
 
-            val destination = entry.await()
+            val resolvedEntry = entry.await()
+            val destination = resolveDestination(resolvedEntry, inviteCode)
             progress.cancel()
             minimumExposure.await()
 
             updateState { copy(isSpinnerVisible = false) }
             postSideEffect(SplashSideEffect.NavigateTo(destination))
         }
+    }
+
+    /**
+     * [entry]가 [SplashEntry.Main]이고 [inviteCode]가 있을 때만 자동 참여를 시도한다 — 온보딩으로 갈
+     * 신규 유저의 참여는 온보딩의 프로필 저장 시점(`OnboardingFlowViewModel`)이 맡는다.
+     *
+     * 실패(만료·잘못된 코드 등)는 값으로도 예외로도 위로 전파하지 않고 원래 [entry]로 폴백한다 —
+     * 이 화면에서 딥링크 실패를 따로 안내하지 않는다(브리프 배경 1번).
+     */
+    private suspend fun resolveDestination(
+        entry: SplashEntry,
+        inviteCode: String?,
+    ): SplashEntry {
+        if (entry != SplashEntry.Main || inviteCode == null) return entry
+
+        val roomId = runCatching { joinRoomByInviteCode(inviteCode) }.getOrNull() ?: return entry
+        return SplashEntry.InvitedRoom(roomId)
     }
 
     /**
