@@ -111,12 +111,13 @@ enum class OnboardingStep { PROFILE, ROOM_FORM, INVITE, TUTORIAL }
 
 ### 4.1 로컬 저장 — 온보딩 진행 상태
 
-공유 `DataStore<Preferences>`(`core/data/storage/DataStoreModule`, 파일 `mino_preferences`)에 3개 키를 둔다. 새 DataStore 파일을 만들지 않는다([research.md R-007](./research.md)).
+공유 `DataStore<Preferences>`(`core/data/storage/DataStoreModule`, 파일 `mino_preferences`)에 4개 키를 둔다. 새 DataStore 파일을 만들지 않는다([research.md R-007](./research.md)).
 
 | 키 | 타입 | 대응 필드 | 없을 때 |
 |---|---|---|---|
 | `onboarding_last_step` | `String` (`OnboardingStep.name`) | `lastStep` | `PROFILE` |
 | `onboarding_created_room_id` | `String` | `createdRoomId` | `null` |
+| `onboarding_invited_room_id` | `String` | `invitedRoomId` | `null` |
 | `onboarding_completed` | `Boolean` | `isCompleted` | `false` |
 
 - **저장 값이 enum 이름이므로 파싱 실패가 가능하다.** 알 수 없는 값은 `PROFILE`로 떨어뜨린다 — 온보딩을 처음부터 다시 태우는 것이 홈으로 튕기는 것보다 안전하다(SC-002).

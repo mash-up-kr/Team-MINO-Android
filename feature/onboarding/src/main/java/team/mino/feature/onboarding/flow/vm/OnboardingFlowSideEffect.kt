@@ -28,8 +28,9 @@ internal sealed interface OnboardingFlowSideEffect : SideEffect {
     data object NavigateToHome : OnboardingFlowSideEffect
 
     /**
-     * 프로필 저장 직후 대기 중이던 초대 코드로 자동 참여까지 끝났다(PRD SYS-010 Flow A, 신규 유저).
-     * 온보딩의 나머지 스텝(공동방 생성 유도·친구 초대·튜토리얼)을 전부 건너뛰고 그 방으로 바로 간다.
+     * 튜토리얼을 마쳤고, 그 온보딩이 초대 딥링크로 자동 참여까지 끝난 것이었다(PRD SYS-010 Flow A,
+     * 신규 유저). 공동방 생성 유도·친구 초대 스텝은 건너뛰었지만 튜토리얼은 거쳤고, 끝나는 시점에
+     * 평소 홈이 아니라 참여한 그 방으로 바로 들어간다.
      */
     data class NavigateToHomeWithRoom(val roomId: String) : OnboardingFlowSideEffect
 }
