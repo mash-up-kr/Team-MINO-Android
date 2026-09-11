@@ -22,11 +22,15 @@ sources:
       refreshToken: ${GMAIL_REFRESH_TOKEN}
     lookbackHours: 24
 
+# 관리형 게시(Managed publishing)를 켜 두어 APPROVED(게시 준비됨)와 LIVE(게시 버튼 누름)가 다른 시점에 온다.
+# 그래서 LIVE를 APPROVED로 합치지 않고 6개 이벤트를 모두 따로 받는다.
 events:
+  PENDING_SUBMISSION: { enabled: true }
+  SUBMITTED: { enabled: true }
+  APPROVED: { enabled: true }
   REJECTED: { enabled: true, mentions: ['@here'] }
-  LIVE: { enabled: true, mergeInto: APPROVED }   # one message per release instead of approved + live
-  # SUBMITTED: { enabled: true }             # off by default: submitted for review
-  # PENDING_SUBMISSION: { enabled: true }    # off by default: release created but not sent for review
+  LIVE: { enabled: true }
+  POLICY_WARNING: { enabled: true }
 
 channels:
   discord:
