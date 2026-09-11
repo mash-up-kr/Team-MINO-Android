@@ -8,29 +8,25 @@ apps:
     tracks: [production]
 
 sources:
+  playApi:
+    # PENDING_SUBMISSION, SUBMITTED, APPROVED, REJECTED and LIVE from the release lifecycle
+    # of each configured track. Setup: https://github.com/JaesungLeee/google-play-review-notify/blob/main/docs/play-api-setup.md
+    enabled: true
+    serviceAccountJson: ${PLAY_SERVICE_ACCOUNT_JSON}
   email:
-    # REJECTED and POLICY_WARNING from Play Console emails. Setup: https://github.com/JaesungLeee/google-play-review-notify/blob/main/docs/gmail-oauth.md
+    # POLICY_WARNING and the reason text of rejections from Play Console emails. Setup: https://github.com/JaesungLeee/google-play-review-notify/blob/main/docs/gmail-oauth.md
     enabled: true
     auth:
       clientId: ${GMAIL_CLIENT_ID}
       clientSecret: ${GMAIL_CLIENT_SECRET}
       refreshToken: ${GMAIL_REFRESH_TOKEN}
     lookbackHours: 24
-  playApi:
-    # SUBMITTED when a new versionCode appears on a track. Setup: https://github.com/JaesungLeee/google-play-review-notify/blob/main/docs/play-api-setup.md
-    enabled: true
-    serviceAccountJson: ${PLAY_SERVICE_ACCOUNT_JSON}
-  storeListing:
-    # LIVE (production track) when the public store page appears or its "Updated on" date changes.
-    enabled: true
-    locale: ko
-    country: KR
 
 events:
   REJECTED: { enabled: true, mentions: ['@here'] }
-  LIVE: { enabled: true, mergeInto: APPROVED }
-  # SUBMITTED: { enabled: true }        # off by default; needs the playApi source or `emit`
-  # UNKNOWN_NOTICE: { enabled: true }   # turn on to see Play emails the rules could not classify
+  LIVE: { enabled: true, mergeInto: APPROVED }   # one message per release instead of approved + live
+  # SUBMITTED: { enabled: true }             # off by default: submitted for review
+  # PENDING_SUBMISSION: { enabled: true }    # off by default: release created but not sent for review
 
 channels:
   discord:
