@@ -35,11 +35,6 @@ internal fun Project.configureKotlinAndroid(extension: LibraryExtension) {
             sourceCompatibility = JavaVersion.VERSION_17
             targetCompatibility = JavaVersion.VERSION_17
         }
-        buildTypes {
-            named("release") {
-                isMinifyEnabled = false
-            }
-        }
     }
     configureKotlinAndroidCommon()
 }
