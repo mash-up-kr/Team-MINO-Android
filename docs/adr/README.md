@@ -63,3 +63,4 @@ ADR은 [`adr-writer` 스킬](../../.claude/skills/adr-writer/SKILL.md)이 자동
 | 2026-09-02 | [몰입 지도 화면의 배치는 진입점이 걸친 탭 수가 아니라 지도를 공유하는지로 가른다](2026-09-02-immersive-map-screen-shares-one-map-in-tab-feature.md) | Accepted | Jaesung Lee |
 | 2026-09-04 | [FCM 수신·알림 표시는 전용 모듈 `:core:notification`이 갖고, 토큰 등록은 `:core:data`에 남긴다](2026-09-04-core-notification-module.md) | Accepted | Jaesung Lee |
 | 2026-09-05 | [지도 핀 클러스터는 같은 방(색)의 핀끼리만 묶는다](2026-09-05-map-pin-cluster-groups-by-room-color-only.md) | Accepted | Chea-yunzi |
+| 2026-09-14 | [R8 설정은 컨벤션 플러그인이 갖고, keep 규칙은 의존을 가진 모듈이 소유한다](2026-09-14-r8-config-in-convention-plugin-keep-rule-ownership.md) | Accepted | Jaesung Lee |
