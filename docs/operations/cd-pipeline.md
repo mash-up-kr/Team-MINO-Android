@@ -33,7 +33,7 @@ GitHub Actions + Fastlane 기반 Play Store 배포 자동화. 배포는 `release
 .github/
 ├── workflows/        cd-qa.yml · cd-internal.yml · cd-promote.yml
 └── actions/          (공통 스텝 composite)
-    ├── setup-android-build      JDK 17 + Gradle
+    ├── setup-android-build      JDK 21 + Gradle
     ├── restore-signing         keystore.properties + jks 복원
     ├── restore-google-services  google-services.json 복원
     ├── restore-play-credentials Play 서비스계정 키 복원
