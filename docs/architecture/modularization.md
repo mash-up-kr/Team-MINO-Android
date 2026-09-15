@@ -182,6 +182,7 @@ feature는 **단일 모듈**이다. 여기서는 절차만 적고, 구조·역�
 
 > 진입형/탭 구분·패키지 구조·공개 범위·Route↔Screen → `docs/architecture/feature-module.md`
 > 화면 전환(feature 간 Launcher / 내부 Route·인자 전달 / 탭 그래프 편입) → `docs/architecture/feature-navigation.md`
+> keep 규칙(`consumer-rules.pro`) 필요 여부·소유 → `docs/conventions/r8-keep-rules.md`
 
 1. `feature/<name>/` 디렉터리와 `build.gradle.kts` 생성. `alias(libs.plugins.mino.android.feature)` + `namespace`만 적용한다(진입형·탭 공통).
 2. `settings.gradle.kts`에 `include(":feature:<name>")` 등록.
