@@ -2,9 +2,7 @@ package team.mino.buildlogic
 
 import com.android.build.api.dsl.ApplicationExtension
 import com.android.build.api.dsl.LibraryExtension
-import org.gradle.api.JavaVersion
 import org.gradle.api.Project
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension
 
 // AGP 9에서 CommonExtension의 block 메서드(compileSdk/defaultConfig/compileOptions/buildTypes)가
@@ -15,10 +13,6 @@ internal fun Project.configureKotlinAndroid(extension: ApplicationExtension) {
         defaultConfig {
             minSdk = intVersion("minSdk")
             testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        }
-        compileOptions {
-            sourceCompatibility = JavaVersion.VERSION_17
-            targetCompatibility = JavaVersion.VERSION_17
         }
     }
     configureKotlinAndroidCommon()
@@ -31,19 +25,12 @@ internal fun Project.configureKotlinAndroid(extension: LibraryExtension) {
             minSdk = intVersion("minSdk")
             testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         }
-        compileOptions {
-            sourceCompatibility = JavaVersion.VERSION_17
-            targetCompatibility = JavaVersion.VERSION_17
-        }
     }
     configureKotlinAndroidCommon()
 }
 
 private fun Project.configureKotlinAndroidCommon() {
     extensions.configure(KotlinAndroidProjectExtension::class.java) {
-        jvmToolchain(17)
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_17)
-        }
+        jvmToolchain { configureBuildJvm(this) }
     }
 }

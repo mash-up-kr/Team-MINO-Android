@@ -4,13 +4,12 @@ plugins {
 
 group = "team.mino.buildlogic"
 
-java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
-}
-
+// 컨벤션 플러그인의 BuildJvm.kt와 같은 값. 이 스크립트가 그 코드를 컴파일하므로 가져다 쓸 수 없어 여기서 한 번 더 적는다.
 kotlin {
-    jvmToolchain(17)
+    jvmToolchain {
+        languageVersion.set(JavaLanguageVersion.of(libs.versions.jdk.get().toInt()))
+        vendor.set(JvmVendorSpec.ADOPTIUM)
+    }
 }
 
 dependencies {
