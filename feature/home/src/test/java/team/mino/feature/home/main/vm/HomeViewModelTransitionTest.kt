@@ -114,6 +114,29 @@ class HomeViewModelTransitionTest {
         }
 
     /**
+     * **볼 장소가 하나도 없어도 칩은 사용자가 누른 정렬로 옮겨진다**(FR-010).
+     *
+     * 소진 경로는 칩을 `꾹 Pick`으로 되감는다(FR-014). 그 되감기가 직접 누른 칩까지 덮으면, 빈 계정에서는
+     * 어느 칩을 눌러도 표시가 제자리로 튕겨 **칩 셋이 통째로 죽은 것처럼 보인다** — 사용자에게는
+     * 「눌러도 아무 반응이 없다」로만 나타난다.
+     *
+     * 화면 갈래는 함께 본다 — 칩만 옮기려다 빈 상태의 `[공동방 만들기]` CTA를 잃으면 안 된다(FR-020).
+     */
+    @Test
+    fun `볼 장소가 없어도 정렬 칩을 누르면 칩 표시가 그 정렬로 옮겨진다`() =
+        runTest {
+            deckRepository.rooms = listOf(roomSummary(ROOM_ID, placeCount = 0))
+            val viewModel = createViewModel()
+            assertEquals("빈 계정이어야 이 판정이 성립한다", HomePhase.EMPTY, viewModel.state.value.phase)
+
+            viewModel.processIntent(HomeIntent.SelectSort(DeckSort.LATEST))
+
+            val state = viewModel.state.value
+            assertEquals("누른 칩이 선택 표시를 가져가야 한다", DeckSort.LATEST, state.sort)
+            assertEquals("볼 것이 없다는 사실은 그대로다 — CTA가 걸린 화면을 잃으면 안 된다", HomePhase.EMPTY, state.phase)
+        }
+
+    /**
      * `가까운순`은 좌표를 받은 뒤에야 덱을 받는다(TS-020, R-009·R-013).
      *
      * 응답을 기다리지 않고 부르면 좌표 없는 요청이 되어 **빈 덱**이 돌아온다(EC-009). 그러면 사용자가 고른 덱이
@@ -150,17 +173,51 @@ class HomeViewModelTransitionTest {
         }
 
     /**
-     * 권한 거부는 오류가 아니라 **소진**이다(EC-009, R-013).
+     * **다른 정렬에 볼 것이 남아 있어도 직접 누른 칩은 그 자리에 남는다**(FR-010).
+     *
+     * 빈 덱은 소진으로 흡수된다(EC-013). 그 흡수를 `advance`에 넘기면 우선순위가 가장 높은 남은 덱
+     * (대개 `꾹 Pick`)이 열리면서 칩이 눌린 자리에서 튕겨 나가, 사용자에게는 **누른 칩이 아니라 첫 칩이
+     * 켜지는 것**으로 보인다 — 「눌러도 반응이 없다」는 제보가 이것이다.
+     *
+     * **세 정렬을 모두 돈다.** 규칙은 `가까운순`의 것이 아니라 칩 전체의 것이고, 좌표를 요구하는 정렬이
+     * 하나뿐이라 한 정렬만 보면 「권한 경로만 고친 수정」이 그대로 통과한다. 소진 흡수 자체는 그대로여서
+     * (EC-013) 화면은 종착 안내로 간다 — 뒤집은 것은 「무엇을 소진으로 보는가」가 아니라 「누가 화면을
+     * 넘기는가」뿐이다.
+     */
+    @Test
+    fun `어느 정렬이든 데이터가 없는 칩을 누르면 그 칩에 머문다`() =
+        runTest {
+            deckRepository.rooms = listOf(roomSummary(ROOM_ID))
+
+            DeckSort.entries.forEach { emptySort ->
+                // 고른 하나만 비우고 나머지는 채운다 — 「넘어갈 곳이 있는데도 안 넘어간다」가 판정 대상이다.
+                DeckSort.entries.forEach { stage(it, count = if (it == emptySort) 0 else 3) }
+                val viewModel = createViewModel()
+
+                viewModel.processIntent(HomeIntent.SelectSort(emptySort))
+                // 좌표를 묻는 것은 `가까운순`뿐이고, 나머지 정렬에서는 기다리는 방이 없어 그대로 버려진다.
+                viewModel.processIntent(HomeIntent.LocationPermissionResult(HERE))
+
+                val state = viewModel.state.value
+                assertEquals("$emptySort 칩이 그 자리에 남아야 한다", emptySort, state.sort)
+                assertTrue("$emptySort 는 볼 카드가 없는 정렬이다", state.cards.isEmpty())
+                assertEquals("$emptySort — 카드 자리만 비고 화면은 종착 안내다", HomePhase.ALL_EXHAUSTED, state.phase)
+            }
+        }
+
+    /**
+     * 권한 거부는 오류가 아니라 **소진**이다(EC-009, R-013). 화면은 [HomePhase.ERROR]로 가지 않는다.
      *
      * 이 변환은 여기서만 잡힌다. `ResolveNextDeckUseCase`의 입력에서는 「권한 거부」와 「원래 후보가 0장」이
      * 구별되지 않으므로(둘 다 소진 집합의 원소다), 거부를 소진으로 **바꿔 넣는 쪽**이 판정 대상이다.
      *
-     * 어느 덱으로 가는지는 UseCase가 정한 결과라 여기서 되풀이하지 않는다. 보는 것은 셋이다 — 화면이 계속
-     * 넘길 수 있는 상태로 남고([HomePhase.DECK]), 빈 `가까운순`이 화면에 얹히지 않으며, 칩과 카드가 어긋나지
-     * 않는다(UX-004).
+     * **거부한 뒤 어디에 서 있는지는 누가 `가까운순`을 열었는지가 가른다.** 직접 누른 칩이면 그 자리에
+     * 남고(FR-010, 위 케이스와 같은 규칙 — 기기가 좌표를 못 주는 것과 사용자가 거부한 것은
+     * `HomeRoute`에서 이미 같은 `null`로 합쳐져 들어온다), 순회가 떠민 것이면 `advance`가 다음 칸을 찾는다.
+     * 후자는 [`위치 권한 거부는 가까운순을 모든 방에 대해 소진 처리해 다시 묻지 않는다`]가 본다.
      */
     @Test
-    fun `위치 권한을 거부하면 가까운순이 소진으로 흡수돼 화면에 남지 않는다`() =
+    fun `직접 누른 가까운순은 권한을 거부해도 다른 덱으로 튕기지 않는다`() =
         runTest {
             stage(DeckSort.GGUK_PICK, count = 1)
             stage(DeckSort.LATEST, count = 3)
@@ -175,9 +232,9 @@ class HomeViewModelTransitionTest {
             viewModel.processIntent(HomeIntent.LocationPermissionResult(null))
 
             val state = viewModel.state.value
-            assertEquals("거부는 정상 흐름이다 — 계속 넘길 수 있어야 한다", HomePhase.DECK, state.phase)
-            assertNotEquals("빈 가까운순을 그대로 띄우면 넘길 카드가 없는 덱이 화면에 남는다", DeckSort.NEAREST, state.sort)
-            assertDeckMatchesChip(state)
+            assertNotEquals("거부는 정상 흐름이다 — 오류 화면이 아니다", HomePhase.ERROR, state.phase)
+            assertEquals("누른 칩이 그 자리에 남아야 한다", DeckSort.NEAREST, state.sort)
+            assertTrue("좌표가 없으면 가까운순은 빈 덱이다", state.cards.isEmpty())
         }
 
     /**
@@ -514,15 +571,6 @@ class HomeViewModelTransitionTest {
         return effects
     }
 
-    /** 칩이 가리키는 정렬과 화면의 카드가 같은 덱에서 왔는가(UX-004). 카드가 없으면 대조 자체가 성립하지 않는다. */
-    private fun assertDeckMatchesChip(state: HomeUiState) {
-        assertTrue("대조할 카드가 없다 — 빈 덱이 화면에 남아 있다", state.cards.isNotEmpty())
-        assertTrue(
-            "칩은 ${state.sort}인데 카드는 ${state.cards.map { it.pinId }}",
-            state.cards.all { it.pinId.startsWith(prefixOf(state.sort)) },
-        )
-    }
-
     /** [sort] 덱을 [count]장으로 세우고 그 목록을 돌려준다. pinId 접두사가 곧 출신 덱이라 칩과의 대조에 쓴다. */
     private fun stage(
         sort: DeckSort,
@@ -543,15 +591,18 @@ class HomeViewModelTransitionTest {
             registrant = Registrant(userId = "user-1", nickname = "민호", avatar = null),
         )
 
-    /** 방 전환 대상이 되도록 [RoomSummary.placeCount]를 0보다 크게 둔다(FR-013). */
-    private fun roomSummary(id: String): RoomSummary =
+    /** 방 전환 대상이 되도록 [RoomSummary.placeCount]를 0보다 크게 둔다(FR-013). 0을 주면 「볼 것이 없는 방」이다. */
+    private fun roomSummary(
+        id: String,
+        placeCount: Int = 10,
+    ): RoomSummary =
         RoomSummary(
             id = id,
             name = "$id 방",
             description = "",
             type = RoomType.GROUP,
             color = RoomColor.GRAY,
-            placeCount = 10,
+            placeCount = placeCount,
             thumbnailImageUrls = emptyList(),
         )
 
