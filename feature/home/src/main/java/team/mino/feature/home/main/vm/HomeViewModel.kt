@@ -80,6 +80,14 @@ internal class HomeViewModel
         /** 권한 응답을 기다리는 방. 응답이 왔을 때 어느 방의 `가까운순`이었는지는 상태에 남지 않는다. */
         private var roomAwaitingLocation: RoomSummary? = null
 
+        /**
+         * 그 `가까운순`이 비었을 때 갈 곳. 응답을 기다리는 사이 [openDeck]의 인자가 사라지므로 방과 함께 든다.
+         *
+         * 들지 않으면 권한을 거치는 덱만 [advance]로 새어 나가, 사용자가 누른 칩이 튕겨 돌아가고
+         * (FR-010) 수동 방 선택도 다른 방으로 넘어간다(SC-008).
+         */
+        private var onLocationDeckExhausted: suspend (RoomSummary) -> Unit = ::advance
+
         /** 홈에 들어온 뒤 카드를 한 장이라도 띄웠는가. 완료 안내와 빈 상태 안내를 가르는 값이다(EC-011). */
         private var hasShownCard = false
 
@@ -232,12 +240,19 @@ internal class HomeViewModel
          * 정렬 칩 직접 선택(FR-010, TS-020·021).
          *
          * 보던 덱을 소진으로 넣지 않는다 — 건너뛴 덱은 방을 넘기기 전에 다시 와야 한다.
+         *
+         * **고른 덱이 비어 있어도 다른 덱으로 넘기지 않는다.** 빈 덱을 [advance]에 넘기면 우선순위가 가장
+         * 높은 남은 덱(대개 `꾹 Pick`)이 열리면서 칩이 제자리로 튕겨, 사용자에게는 「눌러도 반응이 없다」로만
+         * 보인다. 누른 칩은 카드가 없더라도 그 자리에 남고 카드 자리만 빈다 — 자동 전환은 사용자가 고르지
+         * 않은 이동이라 칸을 찾아 넘기지만, 직접 누른 칩은 그 자체가 사용자의 선택이다.
+         *
+         * 빈 덱을 소진 집합에 넣는 것은 그대로다(EC-013) — 이후 **자동** 순회는 이 칸을 다시 데려오지 않는다.
          */
         private fun selectSort(sort: DeckSort) =
             launchSafely {
                 val room = state.value.room ?: return@launchSafely
                 if (sort == state.value.sort) return@launchSafely
-                openDeck(room, sort)
+                openDeck(room, sort, onExhausted = { showNoDeck(sort) })
             }
 
         /**
@@ -357,13 +372,15 @@ internal class HomeViewModel
          */
         private fun onLocationPermissionResult(location: GeoPoint?) {
             val room = roomAwaitingLocation ?: return
+            val onExhausted = onLocationDeckExhausted
             roomAwaitingLocation = null
+            onLocationDeckExhausted = ::advance
             grantedLocation = location
             if (location == null) {
                 rooms.forEach { exhausted += DeckKey(roomId = it.id, sort = DeckSort.NEAREST) }
-                launchSafely { advance(room) }
+                launchSafely { onExhausted(room) }
             } else {
-                launchSafely { loadDeck(room, DeckSort.NEAREST, location) }
+                launchSafely { loadDeck(room, DeckSort.NEAREST, location, onExhausted) }
             }
         }
 
@@ -408,6 +425,7 @@ internal class HomeViewModel
             }
             if (sort == DeckSort.NEAREST && grantedLocation == null) {
                 roomAwaitingLocation = room
+                onLocationDeckExhausted = onExhausted
                 updateState { copy(phase = HomePhase.LOADING, isTransitioning = false) }
                 postSideEffect(HomeSideEffect.RequestLocationPermission)
                 return
@@ -467,21 +485,29 @@ internal class HomeViewModel
                 is NextDeck.NextRoom ->
                     rooms.firstOrNull { it.id == next.roomId }?.let { switchRoom(it, next.sort) }
 
-                NextDeck.AllExhausted ->
-                    updateState {
-                        copy(
-                            // 볼 것이 있었는지가 완료 안내와 빈 상태 안내를 가른다(EC-011, FR-020).
-                            phase = if (hasShownCard) HomePhase.ALL_EXHAUSTED else HomePhase.EMPTY,
-                            // 남은 칸이 없어 도달한 화면이라 칩은 마지막 정렬이 아니라 `꾹 Pick`에 머문다(FR-014).
-                            sort = DeckSort.GGUK_PICK,
-                            cards = persistentListOf(),
-                            isTransitioning = false,
-                            undoStack = persistentListOf(),
-                            loadError = null,
-                        )
-                    }
+                // 남은 칸이 없어 도달한 화면이라 칩은 마지막 정렬이 아니라 `꾹 Pick`에 머문다(FR-014).
+                NextDeck.AllExhausted -> showNoDeck(DeckSort.GGUK_PICK)
             }
         }
+
+        /**
+         * 카드 자리를 비우는 종착 화면. 상단은 어느 값에서도 그대로 남는다(FR-014).
+         *
+         * [chipSort]가 칩에 남는 정렬이다 — 순회로 떠밀려 도달했으면 `꾹 Pick`이고(FR-014), 사용자가 직접
+         * 누른 칩이면 그 정렬 그대로다(FR-010). 화면은 같고 칩만 갈린다.
+         */
+        private fun showNoDeck(chipSort: DeckSort) =
+            updateState {
+                copy(
+                    // 볼 것이 있었는지가 완료 안내와 빈 상태 안내를 가른다(EC-011, FR-020).
+                    phase = if (hasShownCard) HomePhase.ALL_EXHAUSTED else HomePhase.EMPTY,
+                    sort = chipSort,
+                    cards = persistentListOf(),
+                    isTransitioning = false,
+                    undoStack = persistentListOf(),
+                    loadError = null,
+                )
+            }
 
         /**
          * 잔여 2장 이하가 되면 **실제로 다음에 올** 덱·방을 예고한다(FR-015, TS-022, EC-012).
