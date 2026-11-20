@@ -3,6 +3,7 @@
 compileSdk = "36"
 minSdk = "29"
 targetSdk = "36"
+jdk = "21"
 
 # Build tooling
 agp = "9.1.1"

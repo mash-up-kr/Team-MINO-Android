@@ -249,3 +249,6 @@ fabric.properties
 
 # Figma MCP로 임시로 받은 스크린샷 등 스크래치 파일
 .figma-tmp/
+
+# play-review-notify 로컬 검증용 환경변수
+.env

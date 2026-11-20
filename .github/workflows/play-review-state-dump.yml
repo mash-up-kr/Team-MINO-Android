@@ -1,0 +1,24 @@
+# play-review-notify가 Actions 캐시에 저장한 상태(ledger)를 로그로 출력한다.
+# 캐시는 UI·API로 내려받을 수 없어 워크플로우 안에서 복원하는 것이 유일한 확인 방법이다.
+# 복원만 하고 저장하지 않으므로 실제 상태에는 영향이 없다.
+name: Play review state dump
+
+on:
+  workflow_dispatch:
+
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+    steps:
+      - uses: actions/cache/restore@v4
+        id: restore
+        with:
+          path: ${{ runner.temp }}/.play-review-notify/state.json
+          key: play-review-notify-state-never-match
+          restore-keys: play-review-notify-state-
+      - name: Print state
+        run: |
+          echo "restored key: ${{ steps.restore.outputs.cache-matched-key }}"
+          jq . "${{ runner.temp }}/.play-review-notify/state.json"

@@ -3,6 +3,7 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
 import team.mino.buildlogic.configureKotlinAndroid
+import team.mino.buildlogic.configureReleaseShrinking
 import team.mino.buildlogic.intVersion
 
 class AndroidApplicationConventionPlugin : Plugin<Project> {
@@ -12,6 +13,7 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
 
             extensions.configure<ApplicationExtension> {
                 configureKotlinAndroid(this)
+                configureReleaseShrinking(this)
                 defaultConfig.targetSdk = intVersion("targetSdk")
                 buildFeatures.buildConfig = true
             }

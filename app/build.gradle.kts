@@ -31,16 +31,6 @@ android {
 
         manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
     }
-
-    buildTypes {
-        release {
-            isMinifyEnabled = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro",
-            )
-        }
-    }
 }
 
 dependencies {
